@@ -218,14 +218,27 @@ export default function Navbar() {
   }, [pathname])
 
   useEffect(() => {
-    if (menuOpen) {
-      document.body.style.overflow = 'hidden'
-    } else {
-      document.body.style.overflow = 'auto'
+    if (!menuOpen) {
+      if (document.body.style.overflow === 'auto') {
+        document.body.style.overflow = ''
+      }
+
+      if (document.documentElement.style.overflow === 'auto') {
+        document.documentElement.style.overflow = ''
+      }
+
+      return undefined
     }
 
+    const previousOverflow = document.body.style.overflow
+    const previousRootOverflow = document.documentElement.style.overflow
+
+    document.body.style.overflow = 'hidden'
+    document.documentElement.style.overflow = 'hidden'
+
     return () => {
-      document.body.style.overflow = 'auto'
+      document.body.style.overflow = previousOverflow
+      document.documentElement.style.overflow = previousRootOverflow
     }
   }, [menuOpen])
 

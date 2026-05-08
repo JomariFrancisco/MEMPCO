@@ -151,8 +151,15 @@
     text-rendering: optimizeLegibility;
   }
 
-  body {
+  html {
     overflow-x: hidden;
+    overflow-y: auto;
+    scrollbar-gutter: stable;
+  }
+
+  body {
+    overflow-x: clip;
+    overflow-y: visible;
     @apply bg-background text-foreground;
   }
 

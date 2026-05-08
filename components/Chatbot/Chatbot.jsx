@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { getCurrentPortalUser } from '@/lib/auth/portalAuth';
 import './Chatbot.css';
 
 // ─────────────────────────────────────────────
@@ -701,6 +702,9 @@ function SearchResults({ results, onSelect }) {
 export default function Chatbot() {
   const pathname = usePathname();
   const router = useRouter();
+  const portalRouteHidden =
+    pathname?.startsWith('/dashboard') ||
+    pathname?.startsWith('/admin-dashboard');
 
   const scrollRef = useRef(null);
   const endRef = useRef(null);
@@ -712,6 +716,7 @@ export default function Chatbot() {
 
   const [isOpen, setIsOpen] = useState(false);
   const [showLauncher, setShowLauncher] = useState(false);
+  const [hasPortalSession, setHasPortalSession] = useState(false);
   const [searchValue, setSearchValue] = useState('');
   const [messages, setMessages] = useState(() => [buildWelcomeMessage(pathname)]);
 
@@ -719,6 +724,48 @@ export default function Chatbot() {
 
   // Keep ref in sync
   useEffect(() => { isOpenRef.current = isOpen; }, [isOpen]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const checkPortalSession = async () => {
+      if (portalRouteHidden) {
+        setHasPortalSession(true);
+        setIsOpen(false);
+        setShowLauncher(false);
+        return;
+      }
+
+      try {
+        const user = await getCurrentPortalUser();
+
+        if (!cancelled) {
+          const loggedIn = ['employee', 'admin', 'superadmin'].includes(user?.role);
+          setHasPortalSession(loggedIn);
+
+          if (loggedIn) {
+            setIsOpen(false);
+            setShowLauncher(false);
+          }
+        }
+      } catch {
+        if (!cancelled) {
+          setHasPortalSession(false);
+        }
+      }
+    };
+
+    void checkPortalSession();
+
+    window.addEventListener('focus', checkPortalSession);
+    window.addEventListener('storage', checkPortalSession);
+
+    return () => {
+      cancelled = true;
+      window.removeEventListener('focus', checkPortalSession);
+      window.removeEventListener('storage', checkPortalSession);
+    };
+  }, [pathname, portalRouteHidden]);
 
   // ── Search ──────────────────────────────────
   const searchResults = useMemo(() => search(searchValue), [searchValue]);
@@ -941,6 +988,10 @@ export default function Chatbot() {
     setSearchValue('');
     setMessages([buildWelcomeMessage(pathname)]);
   }, [pathname]);
+
+  if (portalRouteHidden || hasPortalSession) {
+    return null;
+  }
 
   // ────────────────────────────────────────────
   // RENDER

@@ -2,13 +2,28 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import {
+  Building2,
+  Clock3,
+  FileText,
+  Monitor,
+  RefreshCw,
+  Search,
+  ShieldCheck,
+  SlidersHorizontal,
+  Trash2,
+  UserRound,
+  Wrench,
+} from 'lucide-react';
 import Navbar from '@/components/Navbar/Navbar';
 import {
   BRANCHES,
+  DEPARTMENTS,
   SLA_LEVELS,
   SUPPORT_CATEGORIES,
   TECHNICIANS,
   TICKET_STATUSES,
+  deleteTicket,
   getTickets,
   isUnresolved,
   slugify,
@@ -30,6 +45,34 @@ import './admin-dashboard.css';
 ========================= */
 
 const LOGIN_ROUTE = '/LogIn';
+
+const MonoIcon = ({ icon: IconComponent }) => (
+  <IconComponent className="admin-mono-icon" aria-hidden="true" />
+);
+
+function useBodyScrollLock(active) {
+  useEffect(() => {
+    if (!active || typeof document === 'undefined') return undefined;
+
+    const originalOverflow = document.body.style.overflow;
+    const originalRootOverflow = document.documentElement.style.overflow;
+    const originalPaddingRight = document.body.style.paddingRight;
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+
+    if (scrollbarWidth > 0) {
+      document.body.style.paddingRight = `${scrollbarWidth}px`;
+    }
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      document.documentElement.style.overflow = originalRootOverflow;
+      document.body.style.paddingRight = originalPaddingRight;
+    };
+  }, [active]);
+}
 
 const emptyCreateUserForm = {
   name: '',
@@ -259,7 +302,7 @@ function Sidebar({ active, onNav, onLogout, open, canCreateUsers }) {
 function StatCard({ icon, label, value, meta }) {
   return (
     <article className="stat-card glass">
-      <div className="stat-icon">{icon}</div>
+      <div className="stat-icon">{typeof icon === 'string' ? icon : <MonoIcon icon={icon} />}</div>
       <span className="stat-label">{label}</span>
       <p className="stat-value">{value}</p>
       <span className="stat-meta">{meta}</span>
@@ -277,72 +320,84 @@ function TicketBadges({ ticket }) {
   );
 }
 
-function TicketTable({ tickets, onOpenTicket, compact = false }) {
+function TicketTable({ tickets, onOpenTicket, onDeleteTicket, canDelete = false, compact = false }) {
   return (
-    <div className="admin-table-wrap">
-      <table className="admin-ticket-table">
-        <thead>
-          <tr>
-            <th>Ticket</th>
-            <th>Requester</th>
-            <th>Branch</th>
-            <th>Support</th>
-            {!compact && <th>Concern</th>}
-            {!compact && <th>Device / System</th>}
-            <th>Status</th>
-            <th>SLA</th>
-            <th>Technician</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-
-        <tbody>
-          {tickets.map((ticket) => (
-            <tr key={ticket.id}>
-              <td>
-                <div className="admin-table-main">
-                  <strong>{ticket.id}</strong>
-                  <span>{ticket.date || ticket.createdAt || 'Submitted'}</span>
-                </div>
-              </td>
-
-              <td>
-                <div className="admin-table-main">
-                  <strong>{ticket.requester || ticket.ownerEmail || 'Employee'}</strong>
-                  <span>{ticket.department || 'No department'}</span>
-                </div>
-              </td>
-
-              <td>{ticket.branch || 'Unspecified'}</td>
-              <td>{ticket.supportCategory || 'Unspecified'}</td>
-              {!compact && <td>{ticket.concernType || 'Unspecified'}</td>}
-              {!compact && <td>{ticket.deviceName || 'Not provided'}</td>}
-
-              <td>
-                <span className={`status ${slugify(ticket.status)}`}>{ticket.status}</span>
-              </td>
-
-              <td>
-                <span className={`priority ${slugify(ticket.sla)}`}>{ticket.sla}</span>
-              </td>
-
-              <td>{ticket.technician || 'Unassigned'}</td>
-
-              <td>
-                <button type="button" className="ticket-action-btn" onClick={() => onOpenTicket(ticket)}>
-                  Take Action
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
+    <div className={`admin-ticket-queue${compact ? ' compact' : ''}`}>
       {tickets.length === 0 && (
         <div className="empty-state">
-          <div className="empty-icon">🎫</div>
+          <div className="empty-icon">TK</div>
           <h4>No tickets found</h4>
           <p>New employee requests will appear here once submitted.</p>
+        </div>
+      )}
+
+      {tickets.length > 0 && (
+        <div className="admin-ticket-queue-grid">
+          {tickets.map((ticket) => (
+            <article key={ticket.id} className="admin-ticket-card">
+              <div className="admin-ticket-card-head">
+                <div className="admin-ticket-title">
+                  <span className="ticket-id">{ticket.id}</span>
+                  <h4>{ticket.concernType || 'Unspecified concern'}</h4>
+                  <p>{ticket.createdAt || ticket.date || 'Submitted'}</p>
+                </div>
+
+                <TicketBadges ticket={ticket} />
+              </div>
+
+              <div className="admin-ticket-summary-grid">
+                <div>
+                  <span><MonoIcon icon={UserRound} />Requester</span>
+                  <strong>{ticket.requester || ticket.ownerEmail || 'Employee'}</strong>
+                  <p>{ticket.department || 'No department'}</p>
+                </div>
+
+                <div>
+                  <span><MonoIcon icon={Building2} />Branch</span>
+                  <strong>{ticket.branch || 'Unspecified'}</strong>
+                  <p>{ticket.supportCategory || 'No category'}</p>
+                </div>
+
+                {!compact && (
+                  <div>
+                    <span><MonoIcon icon={Monitor} />Device / System</span>
+                    <strong>{ticket.deviceName || 'Not provided'}</strong>
+                    <p>{ticket.impact || 'No impact recorded'}</p>
+                  </div>
+                )}
+
+                <div>
+                  <span><MonoIcon icon={Wrench} />Technician</span>
+                  <strong>{ticket.technician || 'Unassigned'}</strong>
+                  <p>{ticket.lastUpdated || 'No update yet'}</p>
+                </div>
+              </div>
+
+              {!compact && (
+                <p className="admin-ticket-card-description">
+                  {ticket.description || 'No description provided.'}
+                </p>
+              )}
+
+              <div className="admin-ticket-card-actions">
+                <button type="button" className="ticket-action-btn" onClick={() => onOpenTicket(ticket)}>
+                  <MonoIcon icon={Wrench} />
+                  Take Action
+                </button>
+
+                {canDelete && (
+                  <button
+                    type="button"
+                    className="ticket-action-btn danger"
+                    onClick={() => onDeleteTicket(ticket)}
+                  >
+                    <MonoIcon icon={Trash2} />
+                    Delete Ticket
+                  </button>
+                )}
+              </div>
+            </article>
+          ))}
         </div>
       )}
     </div>
@@ -391,13 +446,11 @@ function BreakdownList({ title, kicker, items, total }) {
    DASHBOARD VIEW
 ========================= */
 
-function DashboardView({ tickets, summary, categorySummary, onGoTo, onOpenTicket, onRefresh }) {
+function DashboardView({ tickets, summary, categorySummary, onGoTo, onOpenTicket, onDeleteTicket, canDeleteTickets, onRefresh }) {
   const urgentTickets = tickets
     .filter((ticket) => ['High', 'Critical'].includes(ticket.sla) && isUnresolved(ticket.status))
     .sort((a, b) => getSlaRank(a.sla) - getSlaRank(b.sla) || normalizeDate(b) - normalizeDate(a))
     .slice(0, 5);
-
-  const recentTickets = tickets.slice(0, 6);
 
   return (
     <div className="dashboard-view">
@@ -415,19 +468,17 @@ function DashboardView({ tickets, summary, categorySummary, onGoTo, onOpenTicket
           <span className="meta-pill">{summary.active} Active Tickets</span>
           <span className="meta-pill">{summary.critical} High/Critical</span>
           <button type="button" className="quick-action-btn" onClick={onRefresh}>
+            <MonoIcon icon={RefreshCw} />
             Refresh Queue
-          </button>
-          <button type="button" className="quick-action-btn primary" onClick={() => onGoTo('tickets')}>
-            Open Queue
           </button>
         </div>
       </section>
 
       <section className="stats-grid" aria-label="Admin statistics">
-        <StatCard icon="🎫" label="Total Tickets" value={summary.total} meta="All received concerns" />
-        <StatCard icon="🆕" label="New / Modified" value={summary.created + summary.modified} meta="Needs admin review" />
-        <StatCard icon="🛠️" label="In Progress" value={summary.inProgress} meta="Currently handled" />
-        <StatCard icon="⚠️" label="High / Critical" value={summary.critical} meta="Needs immediate attention" />
+        <StatCard icon={FileText} label="Total Tickets" value={summary.total} meta="All received concerns" />
+        <StatCard icon={Clock3} label="New / Modified" value={summary.created + summary.modified} meta="Needs admin review" />
+        <StatCard icon={Wrench} label="In Progress" value={summary.inProgress} meta="Currently handled" />
+        <StatCard icon={ShieldCheck} label="High / Critical" value={summary.critical} meta="Needs immediate attention" />
       </section>
 
       <div className="dashboard-columns equal-columns">
@@ -436,14 +487,16 @@ function DashboardView({ tickets, summary, categorySummary, onGoTo, onOpenTicket
             <div className="section-head">
               <div>
                 <span className="section-kicker">Ticket Queue</span>
-                <h3>Recent Employee Concerns</h3>
+                <h3>Employee Concerns</h3>
               </div>
-              <button type="button" className="ticket-action-btn" onClick={() => onGoTo('tickets')}>
-                View All
-              </button>
             </div>
 
-            <TicketTable tickets={recentTickets} onOpenTicket={onOpenTicket} compact />
+            <TicketTable
+              tickets={tickets}
+              onOpenTicket={onOpenTicket}
+              onDeleteTicket={onDeleteTicket}
+              canDelete={canDeleteTickets}
+            />
           </section>
 
           <BreakdownList title="Support Category Load" kicker="Workload" items={categorySummary.slice(0, 8)} total={tickets.length} />
@@ -493,8 +546,9 @@ function DashboardView({ tickets, summary, categorySummary, onGoTo, onOpenTicket
             </div>
 
             <div className="quick-actions-grid">
-              <button type="button" className="quick-action-btn primary" onClick={() => onGoTo('tickets')}>
-                Manage Tickets
+              <button type="button" className="quick-action-btn primary" onClick={onRefresh}>
+                <MonoIcon icon={RefreshCw} />
+                Refresh Queue
               </button>
               <button type="button" className="quick-action-btn" onClick={() => onGoTo('branches')}>
                 Branch Monitor
@@ -517,7 +571,7 @@ function DashboardView({ tickets, summary, categorySummary, onGoTo, onOpenTicket
    TICKETS VIEW
 ========================= */
 
-function TicketsView({ tickets, filteredTickets, filters, setFilters, onOpenTicket, onRefresh }) {
+function TicketsView({ tickets, filteredTickets, filters, setFilters, onOpenTicket, onDeleteTicket, canDeleteTickets, onRefresh }) {
   const clearFilters = () => setFilters({ search: '', status: 'All', branch: 'All', category: 'All', sla: 'All' });
 
   return (
@@ -536,6 +590,7 @@ function TicketsView({ tickets, filteredTickets, filters, setFilters, onOpenTick
           <span className="helpdesk-badge">{tickets.length} Total</span>
           <span className="helpdesk-badge">{filteredTickets.length} Showing</span>
           <button type="button" className="quick-action-btn primary" onClick={onRefresh}>
+            <MonoIcon icon={RefreshCw} />
             Refresh Queue
           </button>
         </div>
@@ -543,8 +598,11 @@ function TicketsView({ tickets, filteredTickets, filters, setFilters, onOpenTick
 
       <section className="ticket-queue-shell">
         <div className="admin-filter-grid">
-          <div className="ticket-form-group full">
+          <div className="ticket-form-group full search-field-group">
             <label htmlFor="search">Search Ticket</label>
+            <span className="field-leading-icon" aria-hidden="true">
+              <MonoIcon icon={Search} />
+            </span>
             <input
               id="search"
               className="ticket-field ticket-input"
@@ -612,11 +670,17 @@ function TicketsView({ tickets, filteredTickets, filters, setFilters, onOpenTick
           </div>
 
           <button type="button" className="quick-action-btn filter-clear-btn" onClick={clearFilters}>
+            <MonoIcon icon={SlidersHorizontal} />
             Clear Filters
           </button>
         </div>
 
-        <TicketTable tickets={filteredTickets} onOpenTicket={onOpenTicket} />
+        <TicketTable
+          tickets={filteredTickets}
+          onOpenTicket={onOpenTicket}
+          onDeleteTicket={onDeleteTicket}
+          canDelete={canDeleteTickets}
+        />
       </section>
     </div>
   );
@@ -626,7 +690,7 @@ function TicketsView({ tickets, filteredTickets, filters, setFilters, onOpenTick
    BRANCHES VIEW
 ========================= */
 
-function BranchesView({ branchSummary, tickets, onOpenTicket }) {
+function BranchesView({ branchSummary, tickets, onOpenTicket, onDeleteTicket, canDeleteTickets }) {
   const activeTickets = tickets.filter((ticket) => isUnresolved(ticket.status));
 
   return (
@@ -642,7 +706,7 @@ function BranchesView({ branchSummary, tickets, onOpenTicket }) {
       <section className="admin-branch-grid">
         {branchSummary.length === 0 ? (
           <div className="empty-state">
-            <div className="empty-icon">🏢</div>
+            <div className="empty-icon">BR</div>
             <h4>No branch requests yet</h4>
             <p>Submitted employee tickets will generate branch monitoring data.</p>
           </div>
@@ -677,7 +741,13 @@ function BranchesView({ branchSummary, tickets, onOpenTicket }) {
           </div>
         </div>
 
-        <TicketTable tickets={activeTickets} onOpenTicket={onOpenTicket} compact />
+        <TicketTable
+          tickets={activeTickets}
+          onOpenTicket={onOpenTicket}
+          onDeleteTicket={onDeleteTicket}
+          canDelete={canDeleteTickets}
+          compact
+        />
       </section>
     </div>
   );
@@ -708,10 +778,10 @@ function ReportsView({ tickets, summary, categorySummary, statusSummary, branchS
       </section>
 
       <section className="stats-grid">
-        <StatCard icon="✅" label="Resolved" value={summary.resolved} meta="Completed tickets" />
-        <StatCard icon="⏳" label="Pending" value={summary.pending} meta="Awaiting action" />
-        <StatCard icon="🛠️" label="In Progress" value={summary.inProgress} meta="Currently handled" />
-        <StatCard icon="⚠️" label="High / Critical" value={summary.critical} meta="Urgent active tickets" />
+        <StatCard icon={ShieldCheck} label="Resolved" value={summary.resolved} meta="Completed tickets" />
+        <StatCard icon={Clock3} label="Pending" value={summary.pending} meta="Awaiting action" />
+        <StatCard icon={Wrench} label="In Progress" value={summary.inProgress} meta="Currently handled" />
+        <StatCard icon={FileText} label="High / Critical" value={summary.critical} meta="Urgent active tickets" />
       </section>
 
       <div className="admin-report-grid">
@@ -734,6 +804,7 @@ function UsersView({ users, canManageUsers, currentUserId, onUsersChanged }) {
   const [editForm, setEditForm] = useState(null);
   const [message, setMessage] = useState({ type: '', text: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  useBodyScrollLock(Boolean(editingUser));
 
   const beginEdit = (user) => {
     setEditingUser(user);
@@ -886,7 +957,7 @@ function UsersView({ users, canManageUsers, currentUserId, onUsersChanged }) {
 
           {users.length === 0 && (
             <div className="empty-state">
-              <div className="empty-icon">👥</div>
+              <div className="empty-icon">US</div>
               <h4>No users found</h4>
               <p>Registered accounts will appear here.</p>
             </div>
@@ -1069,6 +1140,10 @@ function CreateUserView({ onCreated, onGoToUsers }) {
     setMessage({ type: '', text: '' });
 
     try {
+      if (!/^\d{3}$/.test(form.employeeId)) {
+        throw new Error('Employee ID must be the last three digits only.');
+      }
+
       await createPortalUser(form);
       setForm(emptyCreateUserForm);
       setMessage({
@@ -1131,42 +1206,52 @@ function CreateUserView({ onCreated, onGoToUsers }) {
             </div>
 
             <div className="ticket-form-group">
-              <label htmlFor="create-employee-id">Employee ID</label>
+              <label htmlFor="create-employee-id">Employee ID Last 3 Digits</label>
               <input
                 id="create-employee-id"
                 className="ticket-field ticket-input"
                 type="text"
                 required
+                inputMode="numeric"
+                pattern="[0-9]{3}"
+                maxLength={3}
                 value={form.employeeId}
-                onChange={(e) => updateForm('employeeId', e.target.value)}
-                placeholder="Enter employee ID"
+                onChange={(e) => updateForm('employeeId', e.target.value.replace(/\D/g, '').slice(0, 3))}
+                placeholder="Example: 854"
+                title="Enter the last three digits only."
               />
             </div>
 
             <div className="ticket-form-group">
               <label htmlFor="create-department">Department</label>
-              <input
+              <select
                 id="create-department"
-                className="ticket-field ticket-input"
-                type="text"
+                className="ticket-field ticket-select"
                 required
                 value={form.department}
                 onChange={(e) => updateForm('department', e.target.value)}
-                placeholder="Enter department"
-              />
+              >
+                <option value="" disabled>Select department</option>
+                {DEPARTMENTS.map((department) => (
+                  <option key={department} value={department}>{department}</option>
+                ))}
+              </select>
             </div>
 
             <div className="ticket-form-group">
               <label htmlFor="create-branch">Branch / Office</label>
-              <input
+              <select
                 id="create-branch"
-                className="ticket-field ticket-input"
-                type="text"
+                className="ticket-field ticket-select"
                 required
                 value={form.branch}
                 onChange={(e) => updateForm('branch', e.target.value)}
-                placeholder="Enter assigned office"
-              />
+              >
+                <option value="" disabled>Select branch / office</option>
+                {BRANCHES.map((branch) => (
+                  <option key={branch} value={branch}>{branch}</option>
+                ))}
+              </select>
             </div>
 
             <div className="ticket-form-group">
@@ -1196,21 +1281,6 @@ function CreateUserView({ onCreated, onGoToUsers }) {
             </div>
 
             <div className="ticket-form-group">
-              <label htmlFor="create-role">Portal Role</label>
-              <select
-                id="create-role"
-                className="ticket-field ticket-select"
-                value={form.role}
-                onChange={(e) => updateForm('role', e.target.value)}
-                required
-              >
-                <option value="employee">Employee</option>
-                <option value="admin">Admin</option>
-                <option value="superadmin">Super Admin</option>
-              </select>
-            </div>
-
-            <div className="ticket-form-group">
               <label htmlFor="create-password">Temporary Password</label>
               <input
                 id="create-password"
@@ -1236,6 +1306,21 @@ function CreateUserView({ onCreated, onGoToUsers }) {
                 onChange={(e) => updateForm('confirmPassword', e.target.value)}
                 placeholder="Confirm password"
               />
+            </div>
+
+            <div className="ticket-form-group full portal-role-field">
+              <label htmlFor="create-role">Portal Role</label>
+              <select
+                id="create-role"
+                className="ticket-field ticket-select"
+                value={form.role}
+                onChange={(e) => updateForm('role', e.target.value)}
+                required
+              >
+                <option value="employee">Employee</option>
+                <option value="admin">Admin</option>
+                <option value="superadmin">Super Admin</option>
+              </select>
             </div>
           </div>
 
@@ -1263,7 +1348,9 @@ function CreateUserView({ onCreated, onGoToUsers }) {
    TICKET ACTION MODAL
 ========================= */
 
-function TicketActionModal({ ticket, onClose, onSave }) {
+function TicketActionModal({ ticket, onClose, onSave, onDelete, canDelete }) {
+  useBodyScrollLock(true);
+
   const [draft, setDraft] = useState({
     status: ticket.status || 'Pending',
     sla: ticket.sla || 'Low',
@@ -1428,10 +1515,18 @@ function TicketActionModal({ ticket, onClose, onSave }) {
         </div>
 
         <div className="modal-footer">
+          {canDelete && (
+            <button type="button" className="modal-btn danger" onClick={() => onDelete(ticket)}>
+              <MonoIcon icon={Trash2} />
+              Delete Ticket
+            </button>
+          )}
+
           <button type="button" className="modal-btn cancel" onClick={onClose}>
             Cancel
           </button>
           <button type="submit" className="modal-btn confirm">
+            <MonoIcon icon={ShieldCheck} />
             Save Admin Action
           </button>
         </div>
@@ -1572,6 +1667,7 @@ export default function AdminDashboardPage() {
   const statusSummary = useMemo(() => breakdown(tickets, 'status', TICKET_STATUSES), [tickets]);
   const branchSummary = useMemo(() => breakdown(tickets, 'branch', BRANCHES), [tickets]);
   const canCreateUsers = admin?.role === 'superadmin';
+  const canDeleteTickets = isAdminRole(admin?.role);
 
   const goTo = (section) => {
     setActiveSection(section);
@@ -1590,14 +1686,32 @@ export default function AdminDashboardPage() {
     setSelectedTicket(null);
   };
 
+  const handleDeleteTicket = (ticket) => {
+    if (!ticket?.id) return;
+
+    const confirmed = window.confirm(
+      `Delete ticket ${ticket.id}? This action cannot be undone.`
+    );
+
+    if (!confirmed) return;
+
+    deleteTicket(ticket.id);
+    setSelectedTicket(null);
+    void loadData();
+  };
+
   if (!authChecked || !admin) {
     return (
       <>
         <Navbar />
         <main className="portal-main portal-app-main">
           <div className="portal-shell">
-            <section className="panel-card glass empty-state">
-              <div className="empty-icon">🔐</div>
+            <section className="panel-card glass empty-state admin-auth-check">
+              <div className="admin-auth-loader" aria-hidden="true">
+                <span />
+                <span />
+                <span />
+              </div>
               <h4>Checking admin access...</h4>
               <p>Please wait while your admin session is verified.</p>
             </section>
@@ -1678,6 +1792,8 @@ export default function AdminDashboardPage() {
                   categorySummary={categorySummary}
                   onGoTo={goTo}
                   onOpenTicket={setSelectedTicket}
+                  onDeleteTicket={handleDeleteTicket}
+                  canDeleteTickets={canDeleteTickets}
                   onRefresh={loadData}
                 />
               )}
@@ -1689,6 +1805,8 @@ export default function AdminDashboardPage() {
                   filters={filters}
                   setFilters={setFilters}
                   onOpenTicket={setSelectedTicket}
+                  onDeleteTicket={handleDeleteTicket}
+                  canDeleteTickets={canDeleteTickets}
                   onRefresh={loadData}
                 />
               )}
@@ -1698,6 +1816,8 @@ export default function AdminDashboardPage() {
                   branchSummary={branchSummary}
                   tickets={tickets}
                   onOpenTicket={setSelectedTicket}
+                  onDeleteTicket={handleDeleteTicket}
+                  canDeleteTickets={canDeleteTickets}
                 />
               )}
 
@@ -1737,6 +1857,8 @@ export default function AdminDashboardPage() {
           ticket={selectedTicket}
           onClose={() => setSelectedTicket(null)}
           onSave={handleSaveTicket}
+          onDelete={handleDeleteTicket}
+          canDelete={canDeleteTickets}
         />
       )}
 

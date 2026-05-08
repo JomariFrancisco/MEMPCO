@@ -28,10 +28,10 @@
   --grad-red: linear-gradient(180deg, #f03a3a 0%, #dc2626 56%, #c81e1e 100%);
   --grad-dark: linear-gradient(180deg, rgba(22, 32, 48, 0.99), rgba(13, 21, 39, 0.99));
 
-  --radius-xl: 28px;
-  --radius-lg: 22px;
-  --radius-md: 16px;
-  --radius-sm: 12px;
+  --radius-xl: 12px;
+  --radius-lg: 10px;
+  --radius-md: 8px;
+  --radius-sm: 6px;
   --radius-pill: 999px;
 
   --transition: 0.22s cubic-bezier(0.22, 1, 0.36, 1);
@@ -62,6 +62,7 @@ button {
 ========================= */
 
 .portal-main {
+  display: block;
   position: relative;
   width: 100%;
   max-width: 100%;
@@ -70,7 +71,8 @@ button {
   background:
     radial-gradient(circle at top center, rgba(220, 38, 38, 0.1), transparent 34%),
     linear-gradient(180deg, #FCFBFA 0%, #F5F1EE 100%);
-  overflow-x: hidden;
+  overflow-x: clip;
+  overflow-y: visible;
 }
 
 .portal-main::before {
@@ -288,7 +290,7 @@ button {
   position: sticky;
   top: 1rem;
   align-self: start;
-  min-height: calc(100vh - 9rem);
+  min-height: auto;
   padding: 1.35rem 1.1rem;
   border-radius: var(--radius-xl);
   background: var(--grad-dark);
@@ -1681,4 +1683,243 @@ button {
   .auth-submit-btn {
     max-width: 100%;
   }
+}
+
+/* =========================
+   CLEAN RESPONSIVE POLISH
+========================= */
+
+.portal-topbar,
+.panel-card,
+.stat-card,
+.support-flow-card,
+.announcement-item,
+.guide-item,
+.snapshot-cell,
+.support-insight-card,
+.ticket-card,
+.latest-ticket-card,
+.modal-box {
+  min-width: 0;
+}
+
+.portal-topbar-copy,
+.hero-copy,
+.profile-banner-copy,
+.helpdesk-banner-copy,
+.ticket-header-left,
+.snapshot-top-copy,
+.profile-chip-copy {
+  min-width: 0;
+}
+
+.portal-topbar-copy h1,
+.portal-topbar-copy p,
+.hero-copy h2,
+.hero-copy p,
+.profile-banner-copy h2,
+.profile-banner-copy p,
+.helpdesk-banner-copy h2,
+.helpdesk-banner-copy p,
+.section-head h3,
+.announcement-item h4,
+.announcement-item p,
+.support-flow-card h4,
+.support-flow-card p,
+.ticket-header-left h4,
+.ticket-description,
+.empty-state p {
+  overflow-wrap: anywhere;
+}
+
+.profile-chip {
+  min-width: 0;
+  max-width: min(280px, 100%);
+}
+
+.profile-chip-copy strong,
+.profile-chip-copy span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.portal-status-pill,
+.meta-pill,
+.profile-pill,
+.helpdesk-badge {
+  min-width: 120px;
+  white-space: nowrap;
+}
+
+.hero-meta,
+.profile-banner-pills,
+.helpdesk-banner-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, max-content));
+  align-items: stretch;
+}
+
+.helpdesk-banner-actions .quick-action-btn,
+.hero-meta .quick-action-btn {
+  min-width: 140px;
+}
+
+.stats-grid,
+.support-flow-grid,
+.support-insight-grid,
+.dashboard-columns,
+.profile-columns,
+.snapshot-grid,
+.ticket-form-grid,
+.ticket-meta-grid,
+.modal-ticket-grid {
+  align-items: stretch;
+}
+
+.stat-card,
+.support-flow-card,
+.support-insight-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 150px;
+}
+
+.stat-card {
+  justify-content: space-between;
+}
+
+.support-insight-card {
+  justify-content: flex-start;
+}
+
+.support-insight-card p {
+  margin-top: auto;
+}
+
+.stat-icon,
+.empty-icon {
+  line-height: 1;
+  overflow: hidden;
+}
+
+.quick-action-btn,
+.auth-submit-btn,
+.modal-btn,
+.segmented-tabs button,
+.ticket-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.quick-action-btn,
+.auth-submit-btn {
+  min-height: 46px;
+}
+
+.ticket-action-btn {
+  min-height: 38px;
+  padding: 0.45rem 0.85rem;
+  border: 1px solid rgba(220, 38, 38, 0.18);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.86);
+  text-decoration: none;
+}
+
+.ticket-action-btn:hover {
+  background: rgba(220, 38, 38, 0.08);
+  text-decoration: none;
+}
+
+.ticket-card,
+.latest-ticket-card {
+  overflow: hidden;
+}
+
+.ticket-header {
+  min-width: 0;
+}
+
+.ticket-date {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.status,
+.priority,
+.ticket-id {
+  max-width: 100%;
+  white-space: normal;
+  text-align: center;
+}
+
+.ticket-meta-cell {
+  min-width: 0;
+}
+
+.ticket-form-hint,
+.char-count,
+.attached-file-preview strong,
+.attached-file-preview span,
+.ticket-attachment-note p {
+  overflow-wrap: anywhere;
+}
+
+.segmented-tabs {
+  width: 100%;
+}
+
+.segmented-tabs button {
+  min-height: 42px;
+}
+
+@media (max-width: 768px) {
+  .hero-meta,
+  .profile-banner-pills,
+  .helpdesk-banner-actions {
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
+
+  .portal-topbar-actions {
+    align-items: stretch;
+  }
+
+  .topbar-icon-btn {
+    flex: 0 0 44px;
+  }
+
+  .profile-chip {
+    max-width: 100%;
+  }
+
+  .ticket-date {
+    white-space: normal;
+  }
+}
+
+/* =========================
+   IOS FONT
+========================= */
+
+.portal-main,
+.modal-overlay,
+.modal-box,
+.ticket-field,
+.quick-action-btn,
+.auth-submit-btn,
+.ticket-action-btn,
+.modal-btn {
+  font-family:
+    var(--font-ios),
+    -apple-system,
+    BlinkMacSystemFont,
+    'SF Pro Display',
+    'SF Pro Text',
+    'Helvetica Neue',
+    Helvetica,
+    Arial,
+    sans-serif;
 }

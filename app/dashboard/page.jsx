@@ -318,10 +318,10 @@ function DashboardView({ user, tickets, openTickets, onGoTo }) {
 
       <section className="stats-grid" aria-label="Key statistics">
         {[
-          { icon: '✓', label: 'Employee Status', value: user.status || 'Active', meta: 'Authorized employee' },
-          { icon: '🎫', label: 'My Tickets', value: tickets.length, meta: 'Submitted requests' },
-          { icon: '⏳', label: 'Pending Review', value: pendingCount, meta: 'Awaiting ICT action' },
-          { icon: '⚠️', label: 'Urgent Active', value: urgentCount, meta: `${resolvedCount} resolved` },
+          { icon: 'OK', label: 'Employee Status', value: user.status || 'Active', meta: 'Authorized employee' },
+          { icon: 'TK', label: 'My Tickets', value: tickets.length, meta: 'Submitted requests' },
+          { icon: 'PR', label: 'Pending Review', value: pendingCount, meta: 'Awaiting ICT action' },
+          { icon: 'UA', label: 'Urgent Active', value: urgentCount, meta: `${resolvedCount} resolved` },
         ].map((item) => (
           <article key={item.label} className="stat-card glass">
             <div className="stat-icon">{item.icon}</div>
@@ -415,7 +415,7 @@ function DashboardView({ user, tickets, openTickets, onGoTo }) {
               </article>
             ) : (
               <div className="empty-state compact">
-                <div className="empty-icon">🎫</div>
+                <div className="empty-icon">TK</div>
                 <h4>No ticket yet</h4>
                 <p>Create your first support ticket so ICT can review your concern.</p>
                 <button type="button" className="quick-action-btn primary" onClick={() => onGoTo('helpdesk', 'submit')}>
@@ -787,7 +787,7 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
           <div className="ticket-list">
             {tickets.length === 0 ? (
               <div className="empty-state">
-                <div className="empty-icon">🎫</div>
+                <div className="empty-icon">TK</div>
                 <h4>No tickets submitted yet</h4>
                 <p>Once you create a helpdesk request, it will appear here for tracking and ICT updates.</p>
                 <button type="button" className="quick-action-btn primary" onClick={switchToSubmit}>
@@ -1270,7 +1270,7 @@ export default function DashboardPage() {
         <main className="portal-main portal-app-main">
           <div className="portal-shell">
             <section className="panel-card glass empty-state">
-              <div className="empty-icon">🔐</div>
+              <div className="empty-icon">ID</div>
               <h4>Checking employee access...</h4>
               <p>Please wait while your employee session is verified.</p>
             </section>
