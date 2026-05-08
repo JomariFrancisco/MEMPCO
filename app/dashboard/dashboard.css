@@ -63,6 +63,8 @@ button {
 
 .portal-main {
   position: relative;
+  width: 100%;
+  max-width: 100%;
   min-height: 100vh;
   color: var(--text);
   background:
@@ -102,10 +104,12 @@ button {
 
 .portal-app-main {
   padding: clamp(5.5rem, 7vw, 6.2rem) 1.25rem 2.5rem;
+  max-width: 100%;
 }
 
 .portal-shell {
   width: min(1440px, 100%);
+  max-width: 100%;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
@@ -275,6 +279,9 @@ button {
   grid-template-columns: 250px minmax(0, 1fr);
   gap: 1rem;
   align-items: start;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: clip;
 }
 
 .portal-sidebar {

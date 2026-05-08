@@ -84,7 +84,7 @@
 .hero__backdrop--memorial {
   background-image: var(--hero-memorial-bg);
   background-position: center center;
-  filter: saturate(1.05) contrast(1.02) brightness(0.98);
+  filter: saturate(0.95) contrast(0.98) brightness(0.78);
   transform: translate3d(0, var(--hero-bg-shift), 0) scale(1.015);
 }
 
@@ -93,7 +93,7 @@
 }
 
 .hero__backdrop--memorial.is-active {
-  opacity: 0.98;
+  opacity: 0.88;
 }
 
 .hero__overlay {
@@ -118,10 +118,10 @@
   background:
     linear-gradient(
       90deg,
-      rgba(255, 250, 244, 0.52) 0%,
-      rgba(255, 248, 241, 0.38) 30%,
-      rgba(255, 247, 240, 0.18) 58%,
-      rgba(255, 247, 240, 0.08) 100%
+      rgba(255, 250, 244, 0.68) 0%,
+      rgba(255, 248, 241, 0.54) 30%,
+      rgba(255, 247, 240, 0.32) 58%,
+      rgba(255, 247, 240, 0.16) 100%
     );
 }
 
@@ -1196,20 +1196,20 @@
 
   .hero__backdrop--memorial {
     background-position: center center;
-    filter: saturate(1.04) contrast(1.02) brightness(0.96);
+    filter: saturate(0.95) contrast(0.98) brightness(0.78);
   }
 
   .hero__backdrop--memorial.is-active {
-    opacity: 0.99;
+    opacity: 0.88;
   }
 
   .hero--memorial .hero__overlay {
     background:
       linear-gradient(
         180deg,
-        rgba(255, 250, 244, 0.58) 0%,
-        rgba(255, 249, 243, 0.42) 40%,
-        rgba(255, 249, 243, 0.26) 100%
+        rgba(255, 250, 244, 0.72) 0%,
+        rgba(255, 249, 243, 0.56) 40%,
+        rgba(255, 249, 243, 0.38) 100%
       );
   }
 

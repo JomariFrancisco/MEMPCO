@@ -3,22 +3,19 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar/Navbar';
-import Footer from '@/components/Footer/Footer';
 import {
   BRANCHES,
   CATEGORY_TEMPLATES,
   CONCERN_TYPES,
   DEPARTMENTS,
   SUPPORT_CATEGORIES,
-  clearCurrentUser,
   createTicket,
-  getCurrentUser,
   getTickets,
   isUnresolved,
-  seedDemoData,
   slugify,
   updateTicket,
 } from '../portalStorage';
+import { getCurrentPortalUser, signOutPortal } from '@/lib/auth/portalAuth';
 import './dashboard.css';
 
 /* =========================
@@ -1201,19 +1198,35 @@ export default function DashboardPage() {
   };
 
   useEffect(() => {
-    seedDemoData();
+    let cancelled = false;
 
-    const activeUser = getCurrentUser();
+    const verifySession = async () => {
+      try {
+        const activeUser = await getCurrentPortalUser();
 
-    if (!activeUser || activeUser.role !== 'employee') {
-      clearCurrentUser();
-      router.replace(LOGIN_ROUTE);
-      return;
-    }
+        if (cancelled) return;
 
-    setUser(activeUser);
-    loadTickets(activeUser);
-    setAuthChecked(true);
+        if (!activeUser || activeUser.role !== 'employee') {
+          await signOutPortal().catch(() => {});
+          router.replace(LOGIN_ROUTE);
+          return;
+        }
+
+        setUser(activeUser);
+        loadTickets(activeUser);
+        setAuthChecked(true);
+      } catch {
+        if (!cancelled) {
+          router.replace(LOGIN_ROUTE);
+        }
+      }
+    };
+
+    verifySession();
+
+    return () => {
+      cancelled = true;
+    };
   }, [router]);
 
   useEffect(() => {
@@ -1245,8 +1258,8 @@ export default function DashboardPage() {
     loadTickets();
   };
 
-  const handleLogout = () => {
-    clearCurrentUser();
+  const handleLogout = async () => {
+    await signOutPortal().catch(() => {});
     router.replace(LOGIN_ROUTE);
   };
 
@@ -1357,7 +1370,6 @@ export default function DashboardPage() {
         </div>
       </main>
 
-      <Footer />
     </>
   );
 }

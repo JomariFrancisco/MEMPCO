@@ -4,85 +4,96 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar/Navbar';
 import {
-  findUserForLogin,
-  registerEmployee,
-  seedDemoData,
-  setCurrentUser,
-} from '../portalStorage';
+  getCurrentPortalUser,
+  isAdminRole,
+  sendPasswordResetEmail,
+  signInPortal,
+  updatePortalPassword,
+} from '@/lib/auth/portalAuth';
 import './login.css';
-
-const emptySignup = {
-  name: '',
-  employeeId: '',
-  department: '',
-  branch: '',
-  email: '',
-  phone: '',
-  password: '',
-  confirmPassword: '',
-};
 
 export default function LoginPage() {
   const router = useRouter();
 
   const [authMode, setAuthMode] = useState('signin');
   const [loginForm, setLoginForm] = useState({ email: '', password: '' });
-  const [signupForm, setSignupForm] = useState(emptySignup);
+  const [resetForm, setResetForm] = useState({ password: '', confirmPassword: '' });
   const [message, setMessage] = useState({ type: '', text: '' });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    seedDemoData();
+    const params = new URLSearchParams(window.location.search);
+
+    if (params.get('mode') === 'reset') {
+      setAuthMode('reset');
+      setMessage({
+        type: 'success',
+        text: 'Enter a new password for your portal account.',
+      });
+      return;
+    }
+
+    if (params.get('auth_error') === 'setup') {
+      setMessage({
+        type: 'error',
+        text: 'Supabase is not configured yet. Add your environment variables and run the schema SQL first.',
+      });
+    }
   }, []);
 
   const updateLogin = (field, value) => {
     setLoginForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  const updateSignup = (field, value) => {
-    setSignupForm((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    seedDemoData();
 
-    const employeeUser = findUserForLogin({
-      email: loginForm.email,
-      password: loginForm.password,
-      role: 'employee',
-    });
+    setIsSubmitting(true);
+    setMessage({ type: '', text: '' });
 
-    const adminUser = findUserForLogin({
-      email: loginForm.email,
-      password: loginForm.password,
-      role: 'admin',
-    });
+    try {
+      const user = await signInPortal(loginForm);
 
-    const user = employeeUser || adminUser;
+      setMessage({
+        type: 'success',
+        text: 'Login successful. Redirecting...',
+      });
 
-    if (!user) {
+      router.push(isAdminRole(user.role) ? '/admin-dashboard' : '/dashboard');
+    } catch (error) {
       setMessage({
         type: 'error',
-        text: 'Invalid email or password. Please check your login details.',
+        text: error.message || 'Unable to login. Please try again.',
       });
-      return;
+    } finally {
+      setIsSubmitting(false);
     }
-
-    setCurrentUser(user);
-
-    setMessage({
-      type: 'success',
-      text: 'Login successful. Redirecting...',
-    });
-
-    router.push(user.role === 'admin' ? '/admin-dashboard' : '/dashboard');
   };
 
-  const handleSignup = (e) => {
-    e.preventDefault();
-    seedDemoData();
+  const handleForgotPassword = async () => {
+    setIsSubmitting(true);
+    setMessage({ type: '', text: '' });
 
-    if (signupForm.password !== signupForm.confirmPassword) {
+    try {
+      await sendPasswordResetEmail(loginForm.email);
+      setMessage({
+        type: 'success',
+        text: 'Password reset email sent. Open the link from your inbox to set a new password.',
+      });
+    } catch (error) {
+      setMessage({
+        type: 'error',
+        text: error.message || 'Unable to send password reset email.',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleUpdatePassword = async (e) => {
+    e.preventDefault();
+
+    if (resetForm.password !== resetForm.confirmPassword) {
       setMessage({
         type: 'error',
         text: 'Password and confirm password do not match.',
@@ -90,23 +101,26 @@ export default function LoginPage() {
       return;
     }
 
-    try {
-      const employee = registerEmployee(signupForm);
+    setIsSubmitting(true);
+    setMessage({ type: '', text: '' });
 
-      setCurrentUser(employee);
-      setSignupForm(emptySignup);
+    try {
+      await updatePortalPassword(resetForm.password);
+      const user = await getCurrentPortalUser();
 
       setMessage({
         type: 'success',
-        text: 'Account created successfully. Redirecting...',
+        text: 'Password updated. Redirecting...',
       });
 
-      router.push('/dashboard');
+      router.push(isAdminRole(user?.role) ? '/admin-dashboard' : '/dashboard');
     } catch (error) {
       setMessage({
         type: 'error',
-        text: error.message || 'Unable to create account.',
+        text: error.message || 'Unable to update password.',
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -121,7 +135,7 @@ export default function LoginPage() {
 
       <main className="portal-main portal-auth-main">
         <section className="auth-section">
-          <div className={`auth-shell ${authMode === 'signup' ? 'signup-mode' : ''}`}>
+          <div className={`auth-shell ${authMode === 'reset' ? 'reset-mode' : ''}`}>
             <div className="auth-showcase" aria-hidden="true">
               <div className="auth-showcase-inner">
                 <img
@@ -142,26 +156,6 @@ export default function LoginPage() {
 
             <div className="auth-panel">
               <div className="auth-panel-inner">
-                <div className="auth-toggle">
-                  <span className="auth-toggle-indicator" />
-
-                  <button
-                    type="button"
-                    className={authMode === 'signin' ? 'active' : ''}
-                    onClick={() => switchMode('signin')}
-                  >
-                    Sign In
-                  </button>
-
-                  <button
-                    type="button"
-                    className={authMode === 'signup' ? 'active' : ''}
-                    onClick={() => switchMode('signup')}
-                  >
-                    Create Account
-                  </button>
-                </div>
-
                 {message.text && (
                   <div className={`auth-alert ${message.type}`}>
                     {message.text}
@@ -176,9 +170,7 @@ export default function LoginPage() {
                     <div className="auth-form-head">
                       <span className="auth-kicker">Employee / Admin Portal</span>
                       <h2>Secure dashboard access</h2>
-                      <p>
-                        Login using your saved employee or admin account.
-                      </p>
+                      <p>Login using your MEMPCO employee or admin account.</p>
                     </div>
 
                     <div className="form-grid single">
@@ -216,167 +208,84 @@ export default function LoginPage() {
                       <button
                         type="button"
                         className="text-link"
-                        onClick={() =>
-                          setMessage({
-                            type: 'success',
-                            text: 'Demo only: password reset is not connected to a backend yet.',
-                          })
-                        }
+                        onClick={handleForgotPassword}
+                        disabled={isSubmitting}
                       >
                         Forgot password?
                       </button>
                     </div>
 
-                    <button type="submit" className="auth-submit-btn">
-                      Login to Portal
+                    <button type="submit" className="auth-submit-btn" disabled={isSubmitting}>
+                      {isSubmitting ? 'Signing in...' : 'Login to Portal'}
                     </button>
 
                     <p className="auth-switch-text">
-                      No account yet?{' '}
-                      <button
-                        type="button"
-                        className="text-link"
-                        onClick={() => switchMode('signup')}
-                      >
-                        Create one
-                      </button>
+                      Need access? Request account creation from the MEMPCO admin office.
                     </p>
                   </form>
 
                   <form
-                    onSubmit={handleSignup}
-                    className={`auth-form signup-form ${authMode === 'signup' ? 'active' : ''}`}
+                    onSubmit={handleUpdatePassword}
+                    className={`auth-form reset-form ${authMode === 'reset' ? 'active' : ''}`}
                   >
                     <div className="auth-form-head">
-                      <span className="auth-kicker">Employee Registration</span>
-                      <h2>Create employee account</h2>
-                      <p>
-                        Register an employee demo account that can submit helpdesk tickets.
-                      </p>
+                      <span className="auth-kicker">Password Reset</span>
+                      <h2>Create a new password</h2>
+                      <p>Use at least 8 characters for your MEMPCO portal password.</p>
                     </div>
 
-                    <div className="form-grid">
+                    <div className="form-grid single">
                       <div className="form-group">
-                        <label htmlFor="signup-name">Full Name</label>
+                        <label htmlFor="reset-password">New Password</label>
                         <input
-                          id="signup-name"
-                          type="text"
-                          required
-                          placeholder="Enter full name"
-                          value={signupForm.name}
-                          onChange={(e) => updateSignup('name', e.target.value)}
-                        />
-                      </div>
-
-                      <div className="form-group">
-                        <label htmlFor="signup-employee-id">Employee ID</label>
-                        <input
-                          id="signup-employee-id"
-                          type="text"
-                          required
-                          placeholder="Enter employee ID"
-                          value={signupForm.employeeId}
-                          onChange={(e) => updateSignup('employeeId', e.target.value)}
-                        />
-                      </div>
-
-                      <div className="form-group">
-                        <label htmlFor="signup-department">Department</label>
-                        <input
-                          id="signup-department"
-                          type="text"
-                          required
-                          placeholder="Enter department"
-                          value={signupForm.department}
-                          onChange={(e) => updateSignup('department', e.target.value)}
-                        />
-                      </div>
-
-                      <div className="form-group">
-                        <label htmlFor="signup-branch">Branch / Office</label>
-                        <input
-                          id="signup-branch"
-                          type="text"
-                          required
-                          placeholder="Enter assigned office"
-                          value={signupForm.branch}
-                          onChange={(e) => updateSignup('branch', e.target.value)}
-                        />
-                      </div>
-
-                      <div className="form-group">
-                        <label htmlFor="signup-email">Email Address</label>
-                        <input
-                          id="signup-email"
-                          type="email"
-                          required
-                          placeholder="Enter employee email"
-                          value={signupForm.email}
-                          onChange={(e) => updateSignup('email', e.target.value)}
-                        />
-                      </div>
-
-                      <div className="form-group">
-                        <label htmlFor="signup-phone">Phone Number</label>
-                        <input
-                          id="signup-phone"
-                          type="text"
-                          required
-                          placeholder="Enter phone number"
-                          value={signupForm.phone}
-                          onChange={(e) => updateSignup('phone', e.target.value)}
-                        />
-                      </div>
-
-                      <div className="form-group">
-                        <label htmlFor="signup-password">Password</label>
-                        <input
-                          id="signup-password"
+                          id="reset-password"
                           type="password"
                           required
-                          placeholder="Create password"
-                          value={signupForm.password}
-                          onChange={(e) => updateSignup('password', e.target.value)}
+                          placeholder="Enter new password"
+                          value={resetForm.password}
+                          onChange={(e) =>
+                            setResetForm((prev) => ({ ...prev, password: e.target.value }))
+                          }
                         />
                       </div>
 
                       <div className="form-group">
-                        <label htmlFor="signup-confirm-password">Confirm Password</label>
+                        <label htmlFor="reset-confirm-password">Confirm Password</label>
                         <input
-                          id="signup-confirm-password"
+                          id="reset-confirm-password"
                           type="password"
                           required
-                          placeholder="Confirm password"
-                          value={signupForm.confirmPassword}
-                          onChange={(e) => updateSignup('confirmPassword', e.target.value)}
+                          placeholder="Confirm new password"
+                          value={resetForm.confirmPassword}
+                          onChange={(e) =>
+                            setResetForm((prev) => ({
+                              ...prev,
+                              confirmPassword: e.target.value,
+                            }))
+                          }
                         />
                       </div>
                     </div>
 
-                    <label className="remember-me auth-terms">
-                      <input type="checkbox" required />
-                      <span>I confirm that the information provided is correct.</span>
-                    </label>
-
-                    <button type="submit" className="auth-submit-btn">
-                      Create Account
+                    <button type="submit" className="auth-submit-btn" disabled={isSubmitting}>
+                      {isSubmitting ? 'Updating password...' : 'Update Password'}
                     </button>
 
                     <p className="auth-switch-text">
-                      Already registered?{' '}
+                      Return to{' '}
                       <button
                         type="button"
                         className="text-link"
                         onClick={() => switchMode('signin')}
                       >
-                        Sign in
+                        sign in
                       </button>
                     </p>
                   </form>
                 </div>
 
                 <p className="auth-bottom-note">
-                  Demo only — data is stored temporarily in this browser
+                  Accounts are created only by authorized MEMPCO administrators.
                 </p>
               </div>
             </div>

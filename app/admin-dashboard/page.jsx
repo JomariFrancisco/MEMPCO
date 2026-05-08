@@ -3,22 +3,26 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar/Navbar';
-import Footer from '@/components/Footer/Footer';
 import {
   BRANCHES,
   SLA_LEVELS,
   SUPPORT_CATEGORIES,
   TECHNICIANS,
   TICKET_STATUSES,
-  clearCurrentUser,
-  getCurrentUser,
   getTickets,
-  getUsers,
   isUnresolved,
-  seedDemoData,
   slugify,
   updateTicket,
 } from '../portalStorage';
+import {
+  createPortalUser,
+  deletePortalUser,
+  getCurrentPortalUser,
+  isAdminRole,
+  listPortalUsers,
+  signOutPortal,
+  updatePortalUser,
+} from '@/lib/auth/portalAuth';
 import './admin-dashboard.css';
 
 /* =========================
@@ -26,6 +30,32 @@ import './admin-dashboard.css';
 ========================= */
 
 const LOGIN_ROUTE = '/LogIn';
+
+const emptyCreateUserForm = {
+  name: '',
+  employeeId: '',
+  department: '',
+  branch: '',
+  email: '',
+  phone: '',
+  role: 'employee',
+  password: '',
+  confirmPassword: '',
+};
+
+const toUserEditForm = (user) => ({
+  id: user.id,
+  name: user.name || '',
+  employeeId: user.employeeId || '',
+  department: user.department || '',
+  branch: user.branch || user.office || '',
+  email: user.email || '',
+  phone: user.phone || '',
+  role: user.role || 'employee',
+  status: user.status || 'Active',
+  password: '',
+  confirmPassword: '',
+});
 
 /* =========================
    ICONS
@@ -55,6 +85,11 @@ const Icon = {
   Users: () => (
     <svg className="sidebar-nav-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
       <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v1h8v-1zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 16v-1a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v1h-3zM4.75 12.094A5.973 5.973 0 004 15v1H1v-1a3 3 0 013.75-2.906z" />
+    </svg>
+  ),
+  UserPlus: () => (
+    <svg className="sidebar-nav-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+      <path d="M8 9a3.5 3.5 0 100-7 3.5 3.5 0 000 7zM2 17a6 6 0 1112 0v1H2v-1zM15 5a1 1 0 112 0v2h2a1 1 0 110 2h-2v2a1 1 0 11-2 0V9h-2a1 1 0 110-2h2V5z" />
     </svg>
   ),
   Logout: () => (
@@ -172,7 +207,7 @@ const getTicketSearchText = (ticket) =>
    SIDEBAR
 ========================= */
 
-function Sidebar({ active, onNav, onLogout, open }) {
+function Sidebar({ active, onNav, onLogout, open, canCreateUsers }) {
   const items = [
     { key: 'dashboard', label: 'Dashboard', Icon: Icon.Dashboard },
     { key: 'tickets', label: 'All Tickets', Icon: Icon.Tickets },
@@ -180,6 +215,10 @@ function Sidebar({ active, onNav, onLogout, open }) {
     { key: 'reports', label: 'Reports', Icon: Icon.Reports },
     { key: 'users', label: 'Users', Icon: Icon.Users },
   ];
+
+  if (canCreateUsers) {
+    items.push({ key: 'create-user', label: 'Create User', Icon: Icon.UserPlus });
+  }
 
   return (
     <aside className={`portal-sidebar${open ? ' open' : ''}`}>
@@ -690,7 +729,79 @@ function ReportsView({ tickets, summary, categorySummary, statusSummary, branchS
    USERS VIEW
 ========================= */
 
-function UsersView({ users }) {
+function UsersView({ users, canManageUsers, currentUserId, onUsersChanged }) {
+  const [editingUser, setEditingUser] = useState(null);
+  const [editForm, setEditForm] = useState(null);
+  const [message, setMessage] = useState({ type: '', text: '' });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const beginEdit = (user) => {
+    setEditingUser(user);
+    setEditForm(toUserEditForm(user));
+    setMessage({ type: '', text: '' });
+  };
+
+  const updateEditForm = (field, value) => {
+    setEditForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const closeEdit = () => {
+    setEditingUser(null);
+    setEditForm(null);
+  };
+
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setMessage({ type: '', text: '' });
+
+    try {
+      await updatePortalUser(editForm);
+      await onUsersChanged();
+      setMessage({ type: 'success', text: 'User account updated.' });
+      closeEdit();
+    } catch (error) {
+      setMessage({
+        type: 'error',
+        text: error.message || 'Unable to update user account.',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (user) => {
+    if (user.id === currentUserId) {
+      setMessage({
+        type: 'error',
+        text: 'You cannot delete your own superadmin account.',
+      });
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Delete the portal account for ${user.name || user.email}?`
+    );
+
+    if (!confirmed) return;
+
+    setIsSubmitting(true);
+    setMessage({ type: '', text: '' });
+
+    try {
+      await deletePortalUser(user.id);
+      await onUsersChanged();
+      setMessage({ type: 'success', text: 'User account deleted.' });
+    } catch (error) {
+      setMessage({
+        type: 'error',
+        text: error.message || 'Unable to delete user account.',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="dashboard-view">
       <section className="panel-card glass hero-panel">
@@ -706,8 +817,14 @@ function UsersView({ users }) {
       </section>
 
       <section className="panel-card glass">
+        {message.text && (
+          <div className={`admin-alert users-alert ${message.type}`}>
+            {message.text}
+          </div>
+        )}
+
         <div className="admin-table-wrap">
-          <table className="admin-ticket-table">
+          <table className="admin-ticket-table users-table">
             <thead>
               <tr>
                 <th>Name</th>
@@ -717,6 +834,7 @@ function UsersView({ users }) {
                 <th>Department</th>
                 <th>Branch</th>
                 <th>Status</th>
+                {canManageUsers && <th>Actions</th>}
               </tr>
             </thead>
 
@@ -734,7 +852,33 @@ function UsersView({ users }) {
                   <td>{user.employeeId}</td>
                   <td>{user.department}</td>
                   <td>{user.branch || user.office}</td>
-                  <td><span className="status active">{user.status || 'Active'}</span></td>
+                  <td>
+                    <span className={`status ${(user.status || 'Active').toLowerCase()}`}>
+                      {user.status || 'Active'}
+                    </span>
+                  </td>
+                  {canManageUsers && (
+                    <td>
+                      <div className="user-action-group">
+                        <button
+                          type="button"
+                          className="user-action-btn"
+                          onClick={() => beginEdit(user)}
+                          disabled={isSubmitting}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          className="user-action-btn danger"
+                          onClick={() => handleDelete(user)}
+                          disabled={isSubmitting || user.id === currentUserId}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
@@ -748,6 +892,368 @@ function UsersView({ users }) {
             </div>
           )}
         </div>
+      </section>
+
+      {editingUser && editForm && (
+        <div className="modal-overlay" role="dialog" aria-modal="true" aria-label="Edit user account">
+          <form className="modal-box glass admin-modal-box user-edit-modal" onSubmit={handleEditSubmit}>
+            <div className="admin-modal-head">
+              <div>
+                <span className="section-kicker">Edit User</span>
+                <h3>{editingUser.name}</h3>
+                <p>Update profile details, role, status, or set a new password.</p>
+              </div>
+
+              <button type="button" className="admin-modal-close" onClick={closeEdit} aria-label="Close modal">
+                x
+              </button>
+            </div>
+
+            <div className="ticket-form-grid">
+              <div className="ticket-form-group">
+                <label htmlFor="edit-name">Full Name</label>
+                <input
+                  id="edit-name"
+                  className="ticket-field ticket-input"
+                  type="text"
+                  required
+                  value={editForm.name}
+                  onChange={(e) => updateEditForm('name', e.target.value)}
+                />
+              </div>
+
+              <div className="ticket-form-group">
+                <label htmlFor="edit-employee-id">Employee ID</label>
+                <input
+                  id="edit-employee-id"
+                  className="ticket-field ticket-input"
+                  type="text"
+                  required
+                  value={editForm.employeeId}
+                  onChange={(e) => updateEditForm('employeeId', e.target.value)}
+                />
+              </div>
+
+              <div className="ticket-form-group">
+                <label htmlFor="edit-department">Department</label>
+                <input
+                  id="edit-department"
+                  className="ticket-field ticket-input"
+                  type="text"
+                  required
+                  value={editForm.department}
+                  onChange={(e) => updateEditForm('department', e.target.value)}
+                />
+              </div>
+
+              <div className="ticket-form-group">
+                <label htmlFor="edit-branch">Branch / Office</label>
+                <input
+                  id="edit-branch"
+                  className="ticket-field ticket-input"
+                  type="text"
+                  required
+                  value={editForm.branch}
+                  onChange={(e) => updateEditForm('branch', e.target.value)}
+                />
+              </div>
+
+              <div className="ticket-form-group">
+                <label htmlFor="edit-email">Email Address</label>
+                <input
+                  id="edit-email"
+                  className="ticket-field ticket-input"
+                  type="email"
+                  required
+                  value={editForm.email}
+                  onChange={(e) => updateEditForm('email', e.target.value)}
+                />
+              </div>
+
+              <div className="ticket-form-group">
+                <label htmlFor="edit-phone">Phone Number</label>
+                <input
+                  id="edit-phone"
+                  className="ticket-field ticket-input"
+                  type="text"
+                  required
+                  value={editForm.phone}
+                  onChange={(e) => updateEditForm('phone', e.target.value)}
+                />
+              </div>
+
+              <div className="ticket-form-group">
+                <label htmlFor="edit-role">Portal Role</label>
+                <select
+                  id="edit-role"
+                  className="ticket-field ticket-select"
+                  value={editForm.role}
+                  onChange={(e) => updateEditForm('role', e.target.value)}
+                  disabled={editForm.id === currentUserId}
+                  required
+                >
+                  <option value="employee">Employee</option>
+                  <option value="admin">Admin</option>
+                  <option value="superadmin">Super Admin</option>
+                </select>
+              </div>
+
+              <div className="ticket-form-group">
+                <label htmlFor="edit-status">Status</label>
+                <select
+                  id="edit-status"
+                  className="ticket-field ticket-select"
+                  value={editForm.status}
+                  onChange={(e) => updateEditForm('status', e.target.value)}
+                  required
+                >
+                  <option value="Active">Active</option>
+                  <option value="Inactive">Inactive</option>
+                </select>
+              </div>
+
+              <div className="ticket-form-group">
+                <label htmlFor="edit-password">New Password</label>
+                <input
+                  id="edit-password"
+                  className="ticket-field ticket-input"
+                  type="password"
+                  minLength={8}
+                  value={editForm.password}
+                  onChange={(e) => updateEditForm('password', e.target.value)}
+                  placeholder="Optional"
+                />
+              </div>
+
+              <div className="ticket-form-group">
+                <label htmlFor="edit-confirm-password">Confirm Password</label>
+                <input
+                  id="edit-confirm-password"
+                  className="ticket-field ticket-input"
+                  type="password"
+                  minLength={8}
+                  value={editForm.confirmPassword}
+                  onChange={(e) => updateEditForm('confirmPassword', e.target.value)}
+                  placeholder="Optional"
+                />
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button type="button" className="modal-btn cancel" onClick={closeEdit} disabled={isSubmitting}>
+                Cancel
+              </button>
+              <button type="submit" className="modal-btn confirm" disabled={isSubmitting}>
+                {isSubmitting ? 'Saving...' : 'Save Changes'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CreateUserView({ onCreated, onGoToUsers }) {
+  const [form, setForm] = useState(emptyCreateUserForm);
+  const [message, setMessage] = useState({ type: '', text: '' });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const updateForm = (field, value) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setMessage({ type: '', text: '' });
+
+    try {
+      await createPortalUser(form);
+      setForm(emptyCreateUserForm);
+      setMessage({
+        type: 'success',
+        text: 'Account created. The user can now sign in using the issued password.',
+      });
+      await onCreated();
+    } catch (error) {
+      setMessage({
+        type: 'error',
+        text: error.message || 'Unable to create account.',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="dashboard-view">
+      <section className="panel-card glass hero-panel">
+        <div className="hero-copy">
+          <span className="section-kicker">Create User</span>
+          <h2>Issue an official portal account.</h2>
+          <p>Create employee and admin accounts from the protected admin console only.</p>
+        </div>
+
+        <div className="hero-meta">
+          <span className="meta-pill">Super Admin Only</span>
+        </div>
+      </section>
+
+      <section className="panel-card glass admin-account-panel">
+        <form className="admin-account-form" onSubmit={handleSubmit}>
+          <div className="admin-form-head">
+            <div>
+              <span className="section-kicker">Account Details</span>
+              <h3>Employee information</h3>
+              <p>The same profile fields are saved for dashboard access and user review.</p>
+            </div>
+          </div>
+
+          {message.text && (
+            <div className={`admin-alert ${message.type}`}>
+              {message.text}
+            </div>
+          )}
+
+          <div className="ticket-form-grid">
+            <div className="ticket-form-group">
+              <label htmlFor="create-name">Full Name</label>
+              <input
+                id="create-name"
+                className="ticket-field ticket-input"
+                type="text"
+                required
+                value={form.name}
+                onChange={(e) => updateForm('name', e.target.value)}
+                placeholder="Enter full name"
+              />
+            </div>
+
+            <div className="ticket-form-group">
+              <label htmlFor="create-employee-id">Employee ID</label>
+              <input
+                id="create-employee-id"
+                className="ticket-field ticket-input"
+                type="text"
+                required
+                value={form.employeeId}
+                onChange={(e) => updateForm('employeeId', e.target.value)}
+                placeholder="Enter employee ID"
+              />
+            </div>
+
+            <div className="ticket-form-group">
+              <label htmlFor="create-department">Department</label>
+              <input
+                id="create-department"
+                className="ticket-field ticket-input"
+                type="text"
+                required
+                value={form.department}
+                onChange={(e) => updateForm('department', e.target.value)}
+                placeholder="Enter department"
+              />
+            </div>
+
+            <div className="ticket-form-group">
+              <label htmlFor="create-branch">Branch / Office</label>
+              <input
+                id="create-branch"
+                className="ticket-field ticket-input"
+                type="text"
+                required
+                value={form.branch}
+                onChange={(e) => updateForm('branch', e.target.value)}
+                placeholder="Enter assigned office"
+              />
+            </div>
+
+            <div className="ticket-form-group">
+              <label htmlFor="create-email">Email Address</label>
+              <input
+                id="create-email"
+                className="ticket-field ticket-input"
+                type="email"
+                required
+                value={form.email}
+                onChange={(e) => updateForm('email', e.target.value)}
+                placeholder="Enter employee email"
+              />
+            </div>
+
+            <div className="ticket-form-group">
+              <label htmlFor="create-phone">Phone Number</label>
+              <input
+                id="create-phone"
+                className="ticket-field ticket-input"
+                type="text"
+                required
+                value={form.phone}
+                onChange={(e) => updateForm('phone', e.target.value)}
+                placeholder="Enter phone number"
+              />
+            </div>
+
+            <div className="ticket-form-group">
+              <label htmlFor="create-role">Portal Role</label>
+              <select
+                id="create-role"
+                className="ticket-field ticket-select"
+                value={form.role}
+                onChange={(e) => updateForm('role', e.target.value)}
+                required
+              >
+                <option value="employee">Employee</option>
+                <option value="admin">Admin</option>
+                <option value="superadmin">Super Admin</option>
+              </select>
+            </div>
+
+            <div className="ticket-form-group">
+              <label htmlFor="create-password">Temporary Password</label>
+              <input
+                id="create-password"
+                className="ticket-field ticket-input"
+                type="password"
+                required
+                minLength={8}
+                value={form.password}
+                onChange={(e) => updateForm('password', e.target.value)}
+                placeholder="Create password"
+              />
+            </div>
+
+            <div className="ticket-form-group">
+              <label htmlFor="create-confirm-password">Confirm Password</label>
+              <input
+                id="create-confirm-password"
+                className="ticket-field ticket-input"
+                type="password"
+                required
+                minLength={8}
+                value={form.confirmPassword}
+                onChange={(e) => updateForm('confirmPassword', e.target.value)}
+                placeholder="Confirm password"
+              />
+            </div>
+          </div>
+
+          <div className="admin-form-actions">
+            <button
+              type="button"
+              className="modal-btn cancel"
+              onClick={onGoToUsers}
+              disabled={isSubmitting}
+            >
+              View Users
+            </button>
+
+            <button type="submit" className="modal-btn confirm" disabled={isSubmitting}>
+              {isSubmitting ? 'Creating Account...' : 'Create Account'}
+            </button>
+          </div>
+        </form>
       </section>
     </div>
   );
@@ -957,9 +1463,15 @@ export default function AdminDashboardPage() {
     sla: 'All',
   });
 
-  const loadData = () => {
+  const loadData = async () => {
     const nextTickets = sortTickets(getTickets());
-    const nextUsers = getUsers();
+    let nextUsers = [];
+
+    try {
+      nextUsers = await listPortalUsers();
+    } catch {
+      nextUsers = [];
+    }
 
     setTickets(nextTickets);
     setUsers(nextUsers);
@@ -972,25 +1484,46 @@ export default function AdminDashboardPage() {
   };
 
   useEffect(() => {
-    seedDemoData();
+    let cancelled = false;
 
-    const activeUser = getCurrentUser();
+    const verifySession = async () => {
+      try {
+        const activeUser = await getCurrentPortalUser();
 
-    if (!activeUser || activeUser.role !== 'admin') {
-      clearCurrentUser();
-      router.replace(LOGIN_ROUTE);
-      return;
-    }
+        if (cancelled) return;
 
-    setAdmin(activeUser);
-    loadData();
-    setAuthChecked(true);
+        if (!activeUser || !isAdminRole(activeUser.role)) {
+          await signOutPortal().catch(() => {});
+          router.replace(LOGIN_ROUTE);
+          return;
+        }
+
+        setAdmin(activeUser);
+        await loadData();
+
+        if (!cancelled) {
+          setAuthChecked(true);
+        }
+      } catch {
+        if (!cancelled) {
+          router.replace(LOGIN_ROUTE);
+        }
+      }
+    };
+
+    verifySession();
+
+    return () => {
+      cancelled = true;
+    };
   }, [router]);
 
   useEffect(() => {
     if (!authChecked) return undefined;
 
-    const syncData = () => loadData();
+    const syncData = () => {
+      void loadData();
+    };
 
     const handleVisibility = () => {
       if (document.visibilityState === 'visible') {
@@ -1038,21 +1571,22 @@ export default function AdminDashboardPage() {
   const categorySummary = useMemo(() => breakdown(tickets, 'supportCategory', SUPPORT_CATEGORIES), [tickets]);
   const statusSummary = useMemo(() => breakdown(tickets, 'status', TICKET_STATUSES), [tickets]);
   const branchSummary = useMemo(() => breakdown(tickets, 'branch', BRANCHES), [tickets]);
+  const canCreateUsers = admin?.role === 'superadmin';
 
   const goTo = (section) => {
     setActiveSection(section);
     setSidebarOpen(false);
-    loadData();
+    void loadData();
   };
 
-  const handleLogout = () => {
-    clearCurrentUser();
+  const handleLogout = async () => {
+    await signOutPortal().catch(() => {});
     router.replace(LOGIN_ROUTE);
   };
 
   const handleSaveTicket = (ticketId, updates) => {
     updateTicket(ticketId, updates);
-    loadData();
+    void loadData();
     setSelectedTicket(null);
   };
 
@@ -1117,7 +1651,13 @@ export default function AdminDashboardPage() {
           </header>
 
           <div className="portal-layout">
-            <Sidebar active={activeSection} onNav={goTo} onLogout={handleLogout} open={sidebarOpen} />
+            <Sidebar
+              active={activeSection}
+              onNav={goTo}
+              onLogout={handleLogout}
+              open={sidebarOpen}
+              canCreateUsers={canCreateUsers}
+            />
 
             {sidebarOpen && <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />}
 
@@ -1171,7 +1711,21 @@ export default function AdminDashboardPage() {
                 />
               )}
 
-              {activeSection === 'users' && <UsersView users={users} />}
+              {activeSection === 'users' && (
+                <UsersView
+                  users={users}
+                  canManageUsers={canCreateUsers}
+                  currentUserId={admin.id}
+                  onUsersChanged={loadData}
+                />
+              )}
+
+              {activeSection === 'create-user' && canCreateUsers && (
+                <CreateUserView
+                  onCreated={loadData}
+                  onGoToUsers={() => goTo('users')}
+                />
+              )}
             </section>
           </div>
         </div>
@@ -1186,7 +1740,6 @@ export default function AdminDashboardPage() {
         />
       )}
 
-      <Footer />
     </>
   );
 }

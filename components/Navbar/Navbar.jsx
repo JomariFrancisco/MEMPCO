@@ -9,7 +9,6 @@ import './Navbar.css'
 export default function Navbar() {
   const CAREER_PATH = '/jobs'
   const MLC_PATH = '/services/mlc'
-  const LOGIN_PATH = '/LogIn'
 
   const [mounted, setMounted] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -102,7 +101,6 @@ export default function Navbar() {
     openServiceGroup === 'allied'
 
   const isCareerActive = isActive(CAREER_PATH)
-  const isLoginActive = isActive(LOGIN_PATH, true)
 
   const moveIndicatorToElement = (element) => {
     if (!element || !navMenuRef.current || window.innerWidth <= 900) {
@@ -618,17 +616,6 @@ export default function Navbar() {
                 className={`nav-link ${isCareerActive ? 'active' : ''}`}
               >
                 Career
-              </Link>
-            </li>
-
-            <li className="nav-item nav-item-login">
-              <Link
-                href={LOGIN_PATH}
-                onClick={handleNavigation}
-                onMouseEnter={(e) => moveIndicatorToElement(e.currentTarget)}
-                className={`nav-link nav-login ${isLoginActive ? 'active' : ''}`}
-              >
-                Log In
               </Link>
             </li>
 
