@@ -416,6 +416,10 @@ button {
   box-shadow:
     0 14px 28px rgba(220, 38, 38, 0.11),
     inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
   transition:
     transform 0.2s ease,
     box-shadow 0.2s ease,
@@ -456,6 +460,99 @@ button {
   text-transform: uppercase;
   letter-spacing: 0.08em;
   flex-shrink: 0;
+}
+
+/* =========================
+   PREMIUM AUTH LOADER
+========================= */
+
+.auth-button-icon {
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 1rem;
+  stroke-width: 1.9;
+}
+
+.auth-loading-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background:
+    radial-gradient(circle at center, rgba(255, 255, 255, 0.42), transparent 34%),
+    rgba(252, 251, 250, 0.36);
+  backdrop-filter: blur(20px) saturate(1.24);
+  -webkit-backdrop-filter: blur(20px) saturate(1.24);
+  animation: authLoaderFade 0.18s ease both;
+}
+
+.auth-loading-logo-wrap {
+  position: relative;
+  width: 118px;
+  height: 118px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.auth-loading-logo-wrap::after {
+  content: '';
+  position: absolute;
+  inset: -14px;
+  border-radius: 50%;
+  background:
+    conic-gradient(from 90deg, rgba(220, 38, 38, 0), rgba(220, 38, 38, 0.68), rgba(220, 38, 38, 0));
+  mask: radial-gradient(circle, transparent 64%, #000 66%);
+  -webkit-mask: radial-gradient(circle, transparent 64%, #000 66%);
+  animation: authLogoOrbit 1.15s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+  opacity: 0.82;
+}
+
+.auth-loading-logo-wrap img {
+  width: 86px;
+  height: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 20px 36px rgba(15, 23, 42, 0.14));
+  animation: authLogoFloat 1.8s ease-in-out infinite;
+}
+
+@keyframes authLoaderFade {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes authLogoOrbit {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes authLogoFloat {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+
+  50% {
+    transform: translateY(-4px) scale(1.025);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-loading-overlay,
+  .auth-loading-logo-wrap::after,
+  .auth-loading-logo-wrap img {
+    animation: none;
+  }
 }
 
 /* =========================

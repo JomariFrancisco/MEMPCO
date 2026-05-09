@@ -2,12 +2,42 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import {
+  BadgeCheck,
+  Bell,
+  BriefcaseBusiness,
+  Building2,
+  ChevronLeft,
+  ChevronRight,
+  CheckCircle2,
+  Clock3,
+  ExternalLink,
+  Eye,
+  FileText,
+  IdCard,
+  LayoutDashboard,
+  Link2,
+  LogOut,
+  Mail,
+  Menu,
+  MapPin,
+  PenLine,
+  Phone,
+  Send,
+  ShieldCheck,
+  Ticket,
+  UserRound,
+  UserRoundCheck,
+  UsersRound,
+  Wrench,
+} from 'lucide-react';
 import Navbar from '@/components/Navbar/Navbar';
 import {
   BRANCHES,
   CATEGORY_TEMPLATES,
   CONCERN_TYPES,
   DEPARTMENTS,
+  DEVICE_OPTIONS,
   SUPPORT_CATEGORIES,
   createTicket,
   getTickets,
@@ -24,6 +54,7 @@ import './dashboard.css';
 
 const LOGIN_ROUTE = '/LogIn';
 const HRMAX_ROUTE = '/HRMax';
+const TRANSITION_DURATION = 560;
 
 /* =========================
    STATIC DATA
@@ -36,7 +67,7 @@ const ANNOUNCEMENTS = [
     tag: 'Helpdesk',
     title: 'Centralized employee technical support',
     description:
-      'Submit ICT concerns with complete information, required attachments, and automatically assigned urgency level for faster routing.',
+      'Submit ICT concerns with complete information, required attachments, and automatically assigned SLA level for faster routing.',
     date: 'Active',
   },
   {
@@ -76,6 +107,44 @@ const SUPPORT_FLOW = [
   },
 ];
 
+const OPERATIONAL_IMPACTS = [
+  {
+    value: 'Single user affected',
+    title: 'Only me',
+    detail: 'One employee, device, account, or workstation is affected.',
+    level: 'Low',
+    icon: UserRound,
+  },
+  {
+    value: 'Multiple users affected',
+    title: 'A few teammates',
+    detail: 'Several employees are affected, but work can still continue.',
+    level: 'Medium',
+    icon: UsersRound,
+  },
+  {
+    value: 'Department affected',
+    title: 'My department',
+    detail: 'A department workflow is slowed down or partially blocked.',
+    level: 'Medium',
+    icon: Wrench,
+  },
+  {
+    value: 'Branch operation affected',
+    title: 'Branch operations',
+    detail: 'A branch service or daily operation is delayed or disrupted.',
+    level: 'High',
+    icon: Building2,
+  },
+  {
+    value: 'Core operation affected',
+    title: 'Service stopped',
+    detail: 'Transactions, member service, or critical systems cannot proceed.',
+    level: 'Critical',
+    icon: ShieldCheck,
+  },
+];
+
 const emptyForm = {
   branch: '',
   department: '',
@@ -87,6 +156,33 @@ const emptyForm = {
   description: '',
   saarAttachment: null,
 };
+
+const DEFAULT_DESCRIPTION_TEMPLATE =
+  'Anydesk Number:\nIssue Summary:\nExact Error Message:\nAction Already Tried:';
+
+const getTemplateLabels = (template = DEFAULT_DESCRIPTION_TEMPLATE) =>
+  template
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+const ensureDescriptionTemplate = (value = '', supportCategory = '') => {
+  const template = CATEGORY_TEMPLATES[supportCategory] || DEFAULT_DESCRIPTION_TEMPLATE;
+  const labels = getTemplateLabels(template);
+  const text = String(value || '').trim();
+  const lines = text ? text.split('\n') : [];
+  const missingLabels = labels.filter((label) => !lines.some((line) => line.trim().startsWith(label)));
+
+  return [...missingLabels, ...lines].join('\n').trim();
+};
+
+const getNewTicketForm = (user = {}) => ({
+  ...emptyForm,
+  branch: user.branch || user.office || '',
+  department: user.department || '',
+  contactNumber: user.phone || '',
+  description: DEFAULT_DESCRIPTION_TEMPLATE,
+});
 
 /* =========================
    HELPERS
@@ -147,11 +243,16 @@ const detectSla = (form) => {
   if (
     isMbwinRequest(form) ||
     concernType.includes('network connection') ||
+    concernType.includes('internet') ||
+    concernType.includes('wi-fi') ||
     concernType.includes('voucher') ||
-    concernType.includes('printer troubleshooting') ||
-    concernType.includes('laptop troubleshooting') ||
-    concernType.includes('hardware troubleshooting') ||
-    supportCategory.includes('user account management') ||
+    concernType.includes('printer') ||
+    concernType.includes('scanner') ||
+    concernType.includes('computer') ||
+    concernType.includes('laptop') ||
+    concernType.includes('hardware') ||
+    supportCategory.includes('account') ||
+    supportCategory.includes('access') ||
     impact.includes('multiple users') ||
     impact.includes('department affected')
   ) {
@@ -184,44 +285,36 @@ const getTicketOwnerMatch = (ticket, user) =>
    ICONS
 ========================= */
 
+const MonoIcon = ({ icon: IconComponent }) => (
+  <IconComponent className="admin-mono-icon" aria-hidden="true" />
+);
+
 const Icon = {
-  Dashboard: () => (
-    <svg className="sidebar-nav-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-      <path d="M3 3a1 1 0 011-1h4a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1V3zm8 0a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1h-4a1 1 0 01-1-1V3zM3 13a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H4a1 1 0 01-1-1v-4zm8-3a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1h-4a1 1 0 01-1-1v-7z" />
-    </svg>
-  ),
-  Profile: () => (
-    <svg className="sidebar-nav-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-      <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-    </svg>
-  ),
-  Helpdesk: () => (
-    <svg className="sidebar-nav-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-      <path d="M2 6a2 2 0 012-2h12a2 2 0 012 2v2a2 2 0 100 4v2a2 2 0 01-2 2H4a2 2 0 01-2-2v-2a2 2 0 100-4V6zm6-1v10h2V5H8z" />
-    </svg>
-  ),
-  HRMax: () => (
-    <svg className="sidebar-nav-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-      <path d="M9 2a1 1 0 00-1 1v1H5a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V6a2 2 0 00-2-2h-3V3a1 1 0 00-1-1H9zm1 2h0V3h0v1zM5 8h10v8H5V8zm2 2h2v2H7v-2zm4 0h2v2h-2v-2z" />
-    </svg>
-  ),
-  Connect: () => (
-    <svg className="sidebar-nav-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-      <path fillRule="evenodd" d="M12.586 4.586a2 2 0 112.828 2.828l-2.121 2.122a2 2 0 01-2.829 0 1 1 0 10-1.414 1.414 4 4 0 005.657 0l2.121-2.121a4 4 0 00-5.657-5.657L9.879 4.464a1 1 0 101.414 1.415l1.293-1.293zM7.414 15.414a2 2 0 01-2.828-2.828l2.121-2.122a2 2 0 012.829 0 1 1 0 101.414-1.414 4 4 0 00-5.657 0L3.172 11.172a4 4 0 105.657 5.657l1.292-1.293a1 1 0 10-1.414-1.414l-1.293 1.292z" clipRule="evenodd" />
-    </svg>
-  ),
-  Logout: () => (
-    <svg className="sidebar-nav-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-      <path fillRule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" clipRule="evenodd" />
-    </svg>
-  ),
-  Bell: () => (
-    <svg className="icon-bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M15 17h5l-1.4-1.4a2 2 0 01-.6-1.4V11a6 6 0 10-12 0v3.2a2 2 0 01-.6 1.4L4 17h5" />
-      <path d="M10 17a2 2 0 004 0" />
-    </svg>
-  ),
+  Dashboard: () => <LayoutDashboard className="sidebar-nav-icon" aria-hidden="true" />,
+  Profile: () => <UserRound className="sidebar-nav-icon" aria-hidden="true" />,
+  Helpdesk: () => <Ticket className="sidebar-nav-icon" aria-hidden="true" />,
+  HRMax: () => <BriefcaseBusiness className="sidebar-nav-icon" aria-hidden="true" />,
+  Connect: () => <Link2 className="sidebar-nav-icon" aria-hidden="true" />,
+  Logout: () => <LogOut className="sidebar-nav-icon" aria-hidden="true" />,
+  Bell: () => <Bell className="icon-bell" aria-hidden="true" />,
 };
+
+const employeeTransitionLabels = {
+  dashboard: 'Opening employee dashboard...',
+  profile: 'Loading employee profile...',
+  helpdesk: 'Preparing helpdesk workspace...',
+  logout: 'Signing out...',
+};
+
+function PortalTransitionLoader({ label }) {
+  return (
+    <div className="portal-transition-loader" role="status" aria-live="polite" aria-label={label}>
+      <div className="portal-transition-card">
+        <img src="/Logos/Logo.png" alt="" aria-hidden="true" />
+      </div>
+    </div>
+  );
+}
 
 /* =========================
    SIDEBAR
@@ -258,6 +351,7 @@ function Sidebar({ active, onNav, onLogout, open }) {
         <a className="sidebar-nav-btn sidebar-external-link" href={HRMAX_ROUTE}>
           <Icon.HRMax />
           HRMax
+          <ExternalLink className="sidebar-trailing-icon" aria-hidden="true" />
         </a>
 
         <a
@@ -269,6 +363,7 @@ function Sidebar({ active, onNav, onLogout, open }) {
         >
           <Icon.Connect />
           MEMPCOnnected
+          <ExternalLink className="sidebar-trailing-icon" aria-hidden="true" />
         </a>
 
         <div className="sidebar-logout">
@@ -279,6 +374,53 @@ function Sidebar({ active, onNav, onLogout, open }) {
         </div>
       </nav>
     </aside>
+  );
+}
+
+function TicketPagination({ page, totalPages, totalItems, pageSize, onPageChange }) {
+  if (totalPages <= 1) return null;
+
+  const start = (page - 1) * pageSize + 1;
+  const end = Math.min(page * pageSize, totalItems);
+
+  return (
+    <div className="ticket-pagination" aria-label="Ticket pagination">
+      <button
+        type="button"
+        className="pagination-arrow"
+        onClick={() => onPageChange(page - 1)}
+        disabled={page <= 1}
+        aria-label="Previous ticket page"
+      >
+        <MonoIcon icon={ChevronLeft} />
+      </button>
+
+      <div className="pagination-copy">
+        <strong>Page {page} of {totalPages}</strong>
+        <span>Showing {start}-{end} of {totalItems} tickets</span>
+      </div>
+
+      <button
+        type="button"
+        className="pagination-arrow"
+        onClick={() => onPageChange(page + 1)}
+        disabled={page >= totalPages}
+        aria-label="Next ticket page"
+      >
+        <MonoIcon icon={ChevronRight} />
+      </button>
+    </div>
+  );
+}
+
+function StatCard({ icon, label, value, meta }) {
+  return (
+    <article className="stat-card glass">
+      <div className="stat-icon"><MonoIcon icon={icon} /></div>
+      <span className="stat-label">{label}</span>
+      <p className="stat-value">{value}</p>
+      <span className="stat-meta">{meta}</span>
+    </article>
   );
 }
 
@@ -297,7 +439,7 @@ function DashboardView({ user, tickets, openTickets, onGoTo }) {
 
   return (
     <div className="dashboard-view">
-      <section className="panel-card glass hero-panel employee-hero-panel">
+      <section className="panel-card glass hero-panel employee-hero-panel admin-hero-panel">
         <div className="hero-copy">
           <span className="section-kicker">Employee IT Support</span>
           <h2>Your helpdesk workspace for faster ICT assistance.</h2>
@@ -307,29 +449,21 @@ function DashboardView({ user, tickets, openTickets, onGoTo }) {
           </p>
         </div>
 
+        <img className="employee-hero-logo admin-hero-logo" src="/Logos/Logo.png" alt="MEMPCO logo" />
+
         <div className="hero-meta">
           <span className="meta-pill">SLA Auto Detection</span>
           <span className="meta-pill">{openTickets} Active</span>
-          <button type="button" className="quick-action-btn primary" onClick={() => onGoTo('helpdesk', 'submit')}>
-            Submit Ticket
-          </button>
         </div>
       </section>
 
       <section className="stats-grid" aria-label="Key statistics">
         {[
-          { icon: 'OK', label: 'Employee Status', value: user.status || 'Active', meta: 'Authorized employee' },
-          { icon: 'TK', label: 'My Tickets', value: tickets.length, meta: 'Submitted requests' },
-          { icon: 'PR', label: 'Pending Review', value: pendingCount, meta: 'Awaiting ICT action' },
-          { icon: 'UA', label: 'Urgent Active', value: urgentCount, meta: `${resolvedCount} resolved` },
-        ].map((item) => (
-          <article key={item.label} className="stat-card glass">
-            <div className="stat-icon">{item.icon}</div>
-            <span className="stat-label">{item.label}</span>
-            <p className="stat-value">{item.value}</p>
-            <span className="stat-meta">{item.meta}</span>
-          </article>
-        ))}
+          { icon: ShieldCheck, label: 'Employee Status', value: user.status || 'Active', meta: 'Authorized employee' },
+          { icon: FileText, label: 'My Tickets', value: tickets.length, meta: 'Submitted requests' },
+          { icon: Clock3, label: 'Pending Review', value: pendingCount, meta: 'Awaiting ICT action' },
+          { icon: Wrench, label: 'Urgent Active', value: urgentCount, meta: `${resolvedCount} resolved` },
+        ].map((item) => <StatCard key={item.label} {...item} />)}
       </section>
 
       <section className="support-flow-grid">
@@ -342,9 +476,9 @@ function DashboardView({ user, tickets, openTickets, onGoTo }) {
         ))}
       </section>
 
-      <div className="dashboard-columns">
+      <div className="dashboard-columns equal-columns">
         <div className="dashboard-stack">
-          <section className="panel-card glass">
+          <section className="panel-card glass equal-panel">
             <div className="section-head">
               <div>
                 <span className="section-kicker">Internal Updates</span>
@@ -363,28 +497,10 @@ function DashboardView({ user, tickets, openTickets, onGoTo }) {
               ))}
             </div>
           </section>
-
-          <section className="panel-card glass">
-            <div className="section-head">
-              <div>
-                <span className="section-kicker">Submission Guide</span>
-                <h3>Before Creating a Ticket</h3>
-              </div>
-            </div>
-
-            <div className="guide-list">
-              {GUIDES.map((guide) => (
-                <div key={guide} className="guide-item">
-                  <span className="guide-dot" aria-hidden="true" />
-                  <p>{guide}</p>
-                </div>
-              ))}
-            </div>
-          </section>
         </div>
 
         <div className="dashboard-stack">
-          <section className="panel-card glass">
+          <section className="panel-card glass equal-panel">
             <div className="section-head">
               <div>
                 <span className="section-kicker">Latest Activity</span>
@@ -410,47 +526,32 @@ function DashboardView({ user, tickets, openTickets, onGoTo }) {
                 <p className="ticket-description">{latestTicket.description}</p>
 
                 <button type="button" className="quick-action-btn primary" onClick={() => onGoTo('helpdesk', 'tickets')}>
+                  <MonoIcon icon={Eye} />
                   View Ticket Details
                 </button>
               </article>
             ) : (
               <div className="empty-state compact">
-                <div className="empty-icon">TK</div>
+                <div className="empty-icon"><MonoIcon icon={Ticket} /></div>
                 <h4>No ticket yet</h4>
                 <p>Create your first support ticket so ICT can review your concern.</p>
-                <button type="button" className="quick-action-btn primary" onClick={() => onGoTo('helpdesk', 'submit')}>
-                  Create Ticket
-                </button>
               </div>
             )}
           </section>
 
-          <section className="panel-card glass">
+          <section className="panel-card glass equal-panel">
             <div className="section-head">
               <div>
-                <span className="section-kicker">Employee Summary</span>
-                <h3>Profile Snapshot</h3>
+                <span className="section-kicker">Submission Guide</span>
+                <h3>Before Creating a Ticket</h3>
               </div>
             </div>
 
-            <div className="snapshot-top">
-              <div className="snapshot-avatar">{user.initials}</div>
-              <div className="snapshot-top-copy">
-                <h4>{user.name}</h4>
-                <p>{user.department}</p>
-              </div>
-            </div>
-
-            <div className="snapshot-grid">
-              {[
-                { label: 'Employee ID', value: user.employeeId },
-                { label: 'Status', value: <span className="status active">{user.status || 'Active'}</span> },
-                { label: 'Email', value: user.email },
-                { label: 'Assigned Office', value: user.branch || user.office },
-              ].map((cell) => (
-                <div key={cell.label} className="snapshot-cell">
-                  <span>{cell.label}</span>
-                  <p>{cell.value}</p>
+            <div className="guide-list">
+              {GUIDES.map((guide) => (
+                <div key={guide} className="guide-item">
+                  <span className="guide-dot" aria-hidden="true" />
+                  <p>{guide}</p>
                 </div>
               ))}
             </div>
@@ -466,73 +567,104 @@ function DashboardView({ user, tickets, openTickets, onGoTo }) {
 ========================= */
 
 function ProfileView({ user, onGoTo }) {
-  const infoRows = [
-    { label: 'Employee ID', value: user.employeeId },
-    { label: 'Email Address', value: user.email },
-    { label: 'Department', value: user.department },
-    { label: 'Status', value: <span className="status active">{user.status || 'Active'}</span> },
-    { label: 'Assigned Office', value: user.branch || user.office },
-    { label: 'Phone Number', value: user.phone || 'N/A' },
+  const employeeStatus = user.status || 'Active';
+  const assignedOffice = user.branch || user.office || 'Not assigned';
+  const designation = user.designation || 'Employee';
+  const profileRows = [
+    { label: 'Employee ID', value: user.employeeId || 'Not provided', icon: IdCard },
+    { label: 'Designation', value: designation, icon: BriefcaseBusiness },
+    { label: 'Department', value: user.department || 'Not assigned', icon: Building2 },
+    { label: 'Assigned Office', value: assignedOffice, icon: MapPin },
+    { label: 'Email Address', value: user.email || 'Not provided', icon: Mail },
+    { label: 'Phone Number', value: user.phone || 'Not provided', icon: Phone },
   ];
 
   return (
     <div className="profile-view">
-      <section className="panel-card glass profile-banner">
-        <div className="profile-banner-main">
-          <div className="avatar large">{user.initials}</div>
-          <div className="profile-banner-copy">
-            <span className="section-kicker">Employee Profile</span>
+      <section className="panel-card glass profile-banner premium-profile-banner">
+        <div className="profile-banner-main premium-profile-main">
+          <div className="avatar large premium-profile-avatar">{user.initials}</div>
+          <div className="profile-banner-copy premium-profile-copy">
+            <span className="section-kicker">My Profile</span>
             <h2>{user.name}</h2>
-            <p>{user.department} &middot; {user.branch || user.office}</p>
+            <div className="profile-identity-line" aria-label="Employee identity summary">
+              <span><MonoIcon icon={BriefcaseBusiness} />{designation}</span>
+              <span><MonoIcon icon={Building2} />{user.department || 'Department not assigned'}</span>
+              <span><MonoIcon icon={MapPin} />{assignedOffice}</span>
+            </div>
           </div>
         </div>
 
-        <div className="profile-banner-pills">
-          <span className="profile-pill">{user.employeeId}</span>
-          <span className="profile-pill">{user.branch || user.office}</span>
-          <span className="profile-pill active">{user.status || 'Active'}</span>
+        <div className="profile-banner-pills premium-profile-pills">
+          <span className="profile-pill"><MonoIcon icon={IdCard} />{user.employeeId || 'No employee ID'}</span>
+          <span className="profile-pill active"><MonoIcon icon={UserRoundCheck} />{employeeStatus}</span>
         </div>
       </section>
 
-      <div className="profile-columns">
-        <section className="panel-card glass">
+      <div className="profile-columns premium-profile-columns">
+        <section className="panel-card glass profile-detail-panel">
           <div className="section-head">
             <div>
-              <span className="section-kicker">Employee Information</span>
+              <span className="section-kicker">Employee Record</span>
               <h3>Personal &amp; Work Details</h3>
             </div>
           </div>
 
-          <div className="snapshot-grid">
-            {infoRows.map((row) => (
-              <div key={row.label} className="snapshot-cell">
-                <span>{row.label}</span>
-                <p>{row.value}</p>
-              </div>
+          <div className="profile-detail-grid">
+            {profileRows.map((row) => (
+              <article key={row.label} className="profile-detail-card">
+                <span className="profile-detail-icon"><MonoIcon icon={row.icon} /></span>
+                <div>
+                  <span>{row.label}</span>
+                  <p>{row.value}</p>
+                </div>
+              </article>
             ))}
           </div>
         </section>
 
-        <section className="panel-card glass">
-          <div className="section-head">
-            <div>
-              <span className="section-kicker">Account Actions</span>
-              <h3>Shortcuts</h3>
+        <aside className="profile-side-panel-stack">
+          <section className="panel-card glass profile-status-panel">
+            <div className="profile-status-list">
+              <div>
+                <span>Branch</span>
+                <strong>{assignedOffice}</strong>
+              </div>
+              <div>
+                <span>Department</span>
+                <strong>{user.department || 'Not assigned'}</strong>
+              </div>
+              <div>
+                <span>Employee ID</span>
+                <strong>{user.employeeId || 'Not provided'}</strong>
+              </div>
             </div>
-          </div>
+          </section>
 
-          <div className="profile-side-stack">
-            <button type="button" className="quick-action-btn primary" onClick={() => onGoTo('helpdesk', 'submit')}>
-              Submit New Ticket
-            </button>
-            <button type="button" className="quick-action-btn" onClick={() => onGoTo('helpdesk', 'tickets')}>
-              Review My Tickets
-            </button>
-            <button type="button" className="quick-action-btn" onClick={() => onGoTo('dashboard')}>
-              Return to Dashboard
-            </button>
-          </div>
-        </section>
+          <section className="panel-card glass profile-action-panel">
+            <div className="section-head">
+              <div>
+                <span className="section-kicker">Account Actions</span>
+                <h3>Shortcuts</h3>
+              </div>
+            </div>
+
+            <div className="profile-side-stack">
+              <button type="button" className="quick-action-btn primary" onClick={() => onGoTo('helpdesk', 'submit')}>
+                <MonoIcon icon={Ticket} />
+                Submit Helpdesk Ticket
+              </button>
+              <button type="button" className="quick-action-btn" onClick={() => onGoTo('helpdesk', 'tickets')}>
+                <MonoIcon icon={Eye} />
+                Review My Tickets
+              </button>
+              <button type="button" className="quick-action-btn" onClick={() => onGoTo('dashboard')}>
+                <MonoIcon icon={LayoutDashboard} />
+                Return to Dashboard
+              </button>
+            </div>
+          </section>
+        </aside>
       </div>
     </div>
   );
@@ -544,16 +676,39 @@ function ProfileView({ user, onGoTo }) {
 
 function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
   const [tab, setTab] = useState(initialTab || 'tickets');
-  const [form, setForm] = useState(emptyForm);
+  const [form, setForm] = useState(() => getNewTicketForm(user));
   const [editingId, setEditingId] = useState(null);
   const [showConfirm, setShowConfirm] = useState(false);
   const [viewTicket, setViewTicket] = useState(null);
   const [formError, setFormError] = useState('');
+  const [ticketPage, setTicketPage] = useState(1);
 
   const activeCount = tickets.filter((ticket) => isUnresolved(ticket.status)).length;
   const resolvedCount = tickets.filter((ticket) => ticket.status === 'Resolved').length;
   const mbwinRequired = isMbwinRequest(form);
   const detectedSla = useMemo(() => detectSla(form), [form]);
+  const pageSize = 3;
+  const totalPages = Math.max(1, Math.ceil(tickets.length / pageSize));
+  const currentPage = Math.min(ticketPage, totalPages);
+  const pagedTickets = tickets.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const goToTicketPage = (page) => setTicketPage(Math.min(Math.max(page, 1), totalPages));
+
+  useEffect(() => {
+    if (ticketPage > totalPages) {
+      setTicketPage(totalPages);
+    }
+  }, [ticketPage, totalPages]);
+
+  useEffect(() => {
+    if (editingId) return;
+
+    setForm((current) => ({
+      ...current,
+      branch: current.branch || user.branch || user.office || '',
+      department: current.department || user.department || '',
+      contactNumber: current.contactNumber || user.phone || '',
+    }));
+  }, [editingId, user.branch, user.department, user.office, user.phone]);
 
   const handleFormChange = (field, value) => {
     setFormError('');
@@ -565,9 +720,19 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
         const currentTemplate = CATEGORY_TEMPLATES[prev.supportCategory] || '';
         const nextTemplate = CATEGORY_TEMPLATES[value] || '';
 
-        if (!prev.description || prev.description === currentTemplate) {
-          next.description = nextTemplate;
+        if (
+          !prev.description ||
+          prev.description === currentTemplate ||
+          prev.description === DEFAULT_DESCRIPTION_TEMPLATE
+        ) {
+          next.description = nextTemplate || DEFAULT_DESCRIPTION_TEMPLATE;
+        } else {
+          next.description = ensureDescriptionTemplate(prev.description, value);
         }
+      }
+
+      if (field === 'description') {
+        next.description = ensureDescriptionTemplate(value, prev.supportCategory);
       }
 
       return next;
@@ -686,7 +851,7 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
       }
     }
 
-    setForm(emptyForm);
+    setForm(getNewTicketForm(user));
     setFormError('');
     setShowConfirm(false);
     setTab('tickets');
@@ -703,7 +868,7 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
       deviceName: ticket.deviceName || '',
       contactNumber: ticket.contactNumber || '',
       impact: ticket.impact || '',
-      description: ticket.description || '',
+      description: ensureDescriptionTemplate(ticket.description, ticket.supportCategory),
       saarAttachment: ticket.saarAttachment || null,
     });
     setFormError('');
@@ -712,7 +877,7 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
 
   const switchToSubmit = () => {
     setEditingId(null);
-    setForm(emptyForm);
+    setForm(getNewTicketForm(user));
     setFormError('');
     setTab('submit');
   };
@@ -731,30 +896,27 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
         <div className="helpdesk-banner-actions">
           <span className="helpdesk-badge">{activeCount} Active</span>
           <span className="helpdesk-badge">{resolvedCount} Resolved</span>
-          <button type="button" className="quick-action-btn primary" onClick={switchToSubmit}>
-            + Create Ticket
-          </button>
         </div>
       </section>
 
       <section className="support-insight-grid" aria-label="Support insights">
         <article className="support-insight-card">
-          <span>Queue</span>
+          <span><MonoIcon icon={FileText} />Queue</span>
           <strong>{tickets.length}</strong>
           <p>Total requests submitted from your account.</p>
         </article>
         <article className="support-insight-card">
-          <span>Active</span>
+          <span><MonoIcon icon={Clock3} />Active</span>
           <strong>{activeCount}</strong>
           <p>Concerns currently awaiting action or resolution.</p>
         </article>
         <article className="support-insight-card">
-          <span>Resolved</span>
+          <span><MonoIcon icon={CheckCircle2} />Resolved</span>
           <strong>{resolvedCount}</strong>
           <p>Completed requests with recorded ICT resolution.</p>
         </article>
         <article className="support-insight-card">
-          <span>SAAR</span>
+          <span><MonoIcon icon={BadgeCheck} />SAAR</span>
           <strong>PDF</strong>
           <p>Required for all MBWIN-related service requests.</p>
         </article>
@@ -787,15 +949,13 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
           <div className="ticket-list">
             {tickets.length === 0 ? (
               <div className="empty-state">
-                <div className="empty-icon">TK</div>
+                <div className="empty-icon"><MonoIcon icon={Ticket} /></div>
                 <h4>No tickets submitted yet</h4>
                 <p>Once you create a helpdesk request, it will appear here for tracking and ICT updates.</p>
-                <button type="button" className="quick-action-btn primary" onClick={switchToSubmit}>
-                  Create Your First Ticket
-                </button>
               </div>
             ) : (
-              tickets.map((ticket) => (
+              <>
+              {pagedTickets.map((ticket) => (
                 <div key={ticket.id} className="ticket-card">
                   <div className="ticket-header">
                     <div className="ticket-header-left">
@@ -844,17 +1004,28 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
 
                   <div className="ticket-footer">
                     <button type="button" className="ticket-action-btn" onClick={() => setViewTicket(ticket)}>
+                      <MonoIcon icon={Eye} />
                       View Details
                     </button>
 
                     {ticket.status !== 'Resolved' && ticket.status !== 'Canceled' && (
                       <button type="button" className="ticket-action-btn" onClick={() => handleEdit(ticket)}>
+                        <MonoIcon icon={PenLine} />
                         Edit
                       </button>
                     )}
                   </div>
                 </div>
-              ))
+              ))}
+
+              <TicketPagination
+                page={currentPage}
+                totalPages={totalPages}
+                totalItems={tickets.length}
+                pageSize={pageSize}
+                onPageChange={goToTicketPage}
+              />
+              </>
             )}
           </div>
         )}
@@ -904,6 +1075,9 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
                   required
                 >
                   <option value="" disabled>Select support category</option>
+                  {form.supportCategory && !SUPPORT_CATEGORIES.includes(form.supportCategory) && (
+                    <option value={form.supportCategory}>{form.supportCategory}</option>
+                  )}
                   {SUPPORT_CATEGORIES.map((category) => (
                     <option key={category} value={category}>{category}</option>
                   ))}
@@ -920,6 +1094,9 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
                   required
                 >
                   <option value="" disabled>Select concern type</option>
+                  {form.concernType && !CONCERN_TYPES.includes(form.concernType) && (
+                    <option value={form.concernType}>{form.concernType}</option>
+                  )}
                   {CONCERN_TYPES.map((type) => (
                     <option key={type} value={type}>{type}</option>
                   ))}
@@ -928,15 +1105,21 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
 
               <div className="ticket-form-group">
                 <label htmlFor="ticket-device">Device / Workstation / System</label>
-                <input
+                <select
                   id="ticket-device"
-                  className="ticket-field ticket-input"
-                  type="text"
+                  className="ticket-field ticket-select"
                   value={form.deviceName}
                   onChange={(e) => handleFormChange('deviceName', e.target.value)}
-                  placeholder="Example: Teller PC 01, Printer L3210, MBWIN Account"
                   required
-                />
+                >
+                  <option value="" disabled>Select device or system</option>
+                  {form.deviceName && !DEVICE_OPTIONS.includes(form.deviceName) && (
+                    <option value={form.deviceName}>{form.deviceName}</option>
+                  )}
+                  {DEVICE_OPTIONS.map((device) => (
+                    <option key={device} value={device}>{device}</option>
+                  ))}
+                </select>
               </div>
 
               <div className="ticket-form-group">
@@ -953,21 +1136,39 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
               </div>
 
               <div className="ticket-form-group full">
-                <label htmlFor="ticket-impact">Operational Impact</label>
-                <select
-                  id="ticket-impact"
-                  className="ticket-field ticket-select"
-                  value={form.impact}
-                  onChange={(e) => handleFormChange('impact', e.target.value)}
-                  required
+                <label id="ticket-impact-label">Operational Impact</label>
+                <div
+                  className="impact-picker"
+                  role="radiogroup"
+                  aria-labelledby="ticket-impact-label"
                 >
-                  <option value="" disabled>Select operational impact</option>
-                  <option value="Single user affected">Single user affected</option>
-                  <option value="Multiple users affected">Multiple users affected</option>
-                  <option value="Department affected">Department affected</option>
-                  <option value="Branch operation affected">Branch operation affected</option>
-                  <option value="Core operation affected">Core operation affected</option>
-                </select>
+                  {OPERATIONAL_IMPACTS.map((impact) => {
+                    const selected = form.impact === impact.value;
+
+                    return (
+                      <button
+                        key={impact.value}
+                        type="button"
+                        className={`impact-option ${slugify(impact.level)}${selected ? ' selected' : ''}`}
+                        onClick={() => handleFormChange('impact', impact.value)}
+                        role="radio"
+                        aria-checked={selected}
+                      >
+                        <span className="impact-option-icon">
+                          <MonoIcon icon={impact.icon} />
+                        </span>
+                        <span className="impact-option-copy">
+                          <strong>{impact.title}</strong>
+                          <span>{impact.detail}</span>
+                        </span>
+                        <em>{impact.level}</em>
+                      </button>
+                    );
+                  })}
+                </div>
+                <span className="ticket-form-hint">
+                  Choose the option closest to the business impact. This helps ICT prioritize the ticket correctly.
+                </span>
               </div>
 
               <div className="ticket-form-group">
@@ -981,7 +1182,7 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
                   aria-readonly="true"
                 />
                 <span className="ticket-form-hint">
-                  SLA is detected from concern type, support category, description, and operational impact.
+                  SLA is detected from the selected support category, concern type, and operational impact.
                 </span>
               </div>
 
@@ -993,9 +1194,12 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
                   value={form.description}
                   onChange={(e) => handleFormChange('description', e.target.value)}
                   maxLength={1200}
-                  placeholder="Describe the issue, exact error message, affected system, and steps already taken."
+                  placeholder={DEFAULT_DESCRIPTION_TEMPLATE}
                   required
                 />
+                <span className="ticket-form-hint">
+                  Keep the labels in place and add details after each one. The Anydesk Number line is required for ICT remote support.
+                </span>
                 <div className="char-count">{form.description.length}/1200 characters</div>
               </div>
 
@@ -1036,6 +1240,7 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
             {formError && <div className="form-error">{formError}</div>}
 
             <button type="submit" className="auth-submit-btn">
+              <MonoIcon icon={editingId ? PenLine : Send} />
               {editingId ? 'Save Ticket Changes' : 'Submit Ticket'}
             </button>
           </form>
@@ -1064,6 +1269,7 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
                 Cancel
               </button>
               <button type="button" className="modal-btn confirm" onClick={confirmSubmit}>
+                <MonoIcon icon={editingId ? PenLine : Send} />
                 {editingId ? 'Save Changes' : 'Confirm Submission'}
               </button>
             </div>
@@ -1156,6 +1362,7 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
                     setViewTicket(null);
                   }}
                 >
+                  <MonoIcon icon={PenLine} />
                   Edit Ticket
                 </button>
               )}
@@ -1178,6 +1385,8 @@ export default function DashboardPage() {
   const [user, setUser] = useState(null);
   const [tickets, setTickets] = useState([]);
   const [authChecked, setAuthChecked] = useState(false);
+  const [isPageTransitioning, setIsPageTransitioning] = useState(false);
+  const [transitionLabel, setTransitionLabel] = useState(employeeTransitionLabels.dashboard);
   const router = useRouter();
 
   const loadTickets = (currentUser = user) => {
@@ -1242,12 +1451,29 @@ export default function DashboardPage() {
     };
   }, [user]);
 
+  useEffect(() => {
+    if (!isPageTransitioning) return undefined;
+
+    const timer = window.setTimeout(() => {
+      setIsPageTransitioning(false);
+    }, TRANSITION_DURATION);
+
+    return () => window.clearTimeout(timer);
+  }, [isPageTransitioning, transitionLabel]);
+
   const openTickets = useMemo(
     () => tickets.filter((ticket) => isUnresolved(ticket.status)).length,
     [tickets]
   );
 
   const goTo = (section, tab) => {
+    const isSameView = section === activeSection && (!tab || tab === helpdeskTab);
+
+    if (!isSameView) {
+      setTransitionLabel(employeeTransitionLabels[section] || employeeTransitionLabels.dashboard);
+      setIsPageTransitioning(true);
+    }
+
     setActiveSection(section);
 
     if (tab) {
@@ -1259,6 +1485,8 @@ export default function DashboardPage() {
   };
 
   const handleLogout = async () => {
+    setTransitionLabel(employeeTransitionLabels.logout);
+    setIsPageTransitioning(true);
     await signOutPortal().catch(() => {});
     router.replace(LOGIN_ROUTE);
   };
@@ -1268,14 +1496,9 @@ export default function DashboardPage() {
       <>
         <Navbar />
         <main className="portal-main portal-app-main">
-          <div className="portal-shell">
-            <section className="panel-card glass empty-state">
-              <div className="empty-icon">ID</div>
-              <h4>Checking employee access...</h4>
-              <p>Please wait while your employee session is verified.</p>
-            </section>
-          </div>
+          <div className="portal-shell" />
         </main>
+        <PortalTransitionLoader label="Verifying employee access..." />
       </>
     );
   }
@@ -1302,6 +1525,11 @@ export default function DashboardPage() {
               <span className="portal-status-pill alert">
                 <span className="dot" />
                 {openTickets} Active
+              </span>
+
+              <span className="portal-status-pill">
+                <span className="dot" />
+                Synced now
               </span>
 
               <button className="topbar-icon-btn" type="button" aria-label="Notifications">
@@ -1340,7 +1568,7 @@ export default function DashboardPage() {
                 aria-label="Open navigation"
                 onClick={() => setSidebarOpen((prev) => !prev)}
               >
-                ☰
+                <Menu className="admin-mono-icon" aria-hidden="true" />
               </button>
 
               {activeSection === 'dashboard' && (
@@ -1369,6 +1597,8 @@ export default function DashboardPage() {
           </div>
         </div>
       </main>
+
+      {isPageTransitioning && <PortalTransitionLoader label={transitionLabel} />}
 
     </>
   );

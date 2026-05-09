@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { CheckCircle2, LogIn } from 'lucide-react';
 import Navbar from '@/components/Navbar/Navbar';
 import {
   getCurrentPortalUser,
@@ -12,6 +13,26 @@ import {
 } from '@/lib/auth/portalAuth';
 import './login.css';
 
+const authLoadingCopy = {
+  signin: 'Securing portal access...',
+  forgot: 'Sending reset instructions...',
+  reset: 'Updating secure password...',
+};
+
+const AuthButtonIcon = ({ icon: IconComponent }) => (
+  <IconComponent className="auth-button-icon" aria-hidden="true" />
+);
+
+function AuthLoadingOverlay({ label }) {
+  return (
+    <div className="auth-loading-overlay" role="status" aria-live="polite" aria-label={label}>
+      <div className="auth-loading-logo-wrap" aria-hidden="true">
+        <img src="/Logos/Logo.png" alt="" />
+      </div>
+    </div>
+  );
+}
+
 export default function LoginPage() {
   const router = useRouter();
 
@@ -20,6 +41,7 @@ export default function LoginPage() {
   const [resetForm, setResetForm] = useState({ password: '', confirmPassword: '' });
   const [message, setMessage] = useState({ type: '', text: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loadingLabel, setLoadingLabel] = useState(authLoadingCopy.signin);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -49,6 +71,7 @@ export default function LoginPage() {
     e.preventDefault();
 
     setIsSubmitting(true);
+    setLoadingLabel(authLoadingCopy.signin);
     setMessage({ type: '', text: '' });
 
     try {
@@ -72,6 +95,7 @@ export default function LoginPage() {
 
   const handleForgotPassword = async () => {
     setIsSubmitting(true);
+    setLoadingLabel(authLoadingCopy.forgot);
     setMessage({ type: '', text: '' });
 
     try {
@@ -102,6 +126,7 @@ export default function LoginPage() {
     }
 
     setIsSubmitting(true);
+    setLoadingLabel(authLoadingCopy.reset);
     setMessage({ type: '', text: '' });
 
     try {
@@ -216,7 +241,8 @@ export default function LoginPage() {
                     </div>
 
                     <button type="submit" className="auth-submit-btn" disabled={isSubmitting}>
-                      {isSubmitting ? 'Signing in...' : 'Login to Portal'}
+                      <AuthButtonIcon icon={LogIn} />
+                      Login to Portal
                     </button>
 
                     <p className="auth-switch-text">
@@ -268,7 +294,8 @@ export default function LoginPage() {
                     </div>
 
                     <button type="submit" className="auth-submit-btn" disabled={isSubmitting}>
-                      {isSubmitting ? 'Updating password...' : 'Update Password'}
+                      <AuthButtonIcon icon={CheckCircle2} />
+                      Update Password
                     </button>
 
                     <p className="auth-switch-text">
@@ -292,6 +319,8 @@ export default function LoginPage() {
           </div>
         </section>
       </main>
+
+      {isSubmitting && <AuthLoadingOverlay label={loadingLabel} />}
     </>
   );
 }

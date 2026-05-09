@@ -18,12 +18,45 @@ create table if not exists public.profiles (
   department text,
   branch text,
   office text,
+  designation text,
   email text not null,
   phone text,
   status text not null default 'Active',
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.profiles
+add column if not exists role public.user_role not null default 'employee',
+add column if not exists full_name text not null default 'MEMPCO User',
+add column if not exists employee_id text,
+add column if not exists department text,
+add column if not exists branch text,
+add column if not exists office text,
+add column if not exists designation text,
+add column if not exists email text,
+add column if not exists phone text,
+add column if not exists status text not null default 'Active',
+add column if not exists created_at timestamptz not null default now(),
+add column if not exists updated_at timestamptz not null default now();
+
+update public.profiles
+set
+  role = coalesce(role, 'employee'::public.user_role),
+  full_name = coalesce(nullif(full_name, ''), email, 'MEMPCO User'),
+  email = coalesce(nullif(email, ''), 'missing-email-' || id::text || '@mempco.local'),
+  status = coalesce(nullif(status, ''), 'Active'),
+  created_at = coalesce(created_at, now()),
+  updated_at = coalesce(updated_at, now());
+
+alter table public.profiles
+alter column role set default 'employee',
+alter column role set not null,
+alter column full_name set not null,
+alter column email set not null,
+alter column status set not null,
+alter column created_at set not null,
+alter column updated_at set not null;
 
 create index if not exists profiles_email_idx on public.profiles (lower(email));
 create index if not exists profiles_role_idx on public.profiles (role);
@@ -58,6 +91,7 @@ begin
     department,
     branch,
     office,
+    designation,
     email,
     phone,
     status
@@ -70,6 +104,7 @@ begin
     new.raw_user_meta_data ->> 'department',
     new.raw_user_meta_data ->> 'branch',
     new.raw_user_meta_data ->> 'branch',
+    new.raw_user_meta_data ->> 'designation',
     new.email,
     new.raw_user_meta_data ->> 'phone',
     'Active'
@@ -81,6 +116,7 @@ begin
     department = excluded.department,
     branch = excluded.branch,
     office = excluded.office,
+    designation = excluded.designation,
     phone = excluded.phone;
 
   return new;

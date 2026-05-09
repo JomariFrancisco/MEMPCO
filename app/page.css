@@ -26,7 +26,13 @@ body {
 }
 
 body {
-  overflow-x: hidden;
+  overflow-x: clip;
+}
+
+@supports not (overflow: clip) {
+  body {
+    overflow-x: hidden;
+  }
 }
 
 body {

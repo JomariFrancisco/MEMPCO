@@ -28,6 +28,9 @@ Restart the Next.js dev server after adding this file.
 
 Open Supabase Dashboard > SQL Editor, paste the contents of `supabase/schema.sql`, and run it.
 
+You can rerun the same script after app updates. It also upgrades older `profiles`
+tables that were created before newer fields, such as `designation`, were added.
+
 That creates:
 
 - `public.profiles`

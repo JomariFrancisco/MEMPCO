@@ -1,4 +1,12 @@
 /** @type {import('next').NextConfig} */
+const privateNetworkDevOrigins = [
+  'localhost',
+  '*.localhost',
+  '10.*.*.*',
+  '192.168.*.*',
+  ...Array.from({ length: 16 }, (_, index) => `172.${16 + index}.*.*`),
+]
+
 const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
@@ -6,7 +14,7 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  allowedDevOrigins: ['192.168.1.131','192.168.1.114','172.16.0.146','192.168.254.106','192.168.254.117','192.168.254.101','192.168.1.129','192.168.254.105','192.168.1.162','192.168.1.162','192.168.1.111','192.168.1.35','192.168.254.142','192.168.1.92','192.168.254.100','192.168.254.42','192.168.254.102','192.168.254.110','192.168.1.240','192.168.254.103', '192.168.1.36', '192.168.1.10', '192.168.254.118', 'localhost'],
+  allowedDevOrigins: privateNetworkDevOrigins,
 }
 
 export default nextConfig

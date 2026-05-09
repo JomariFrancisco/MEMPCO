@@ -2,6 +2,7 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse } from 'next/server';
 
 const LOGIN_ROUTE = '/LogIn';
+const SUPABASE_PROXY_TIMEOUT_MS = 12000;
 
 const hasSupabaseConfig = () =>
   Boolean(
@@ -16,6 +17,20 @@ const getRequiredRole = (pathname) => {
 };
 
 const isAdminRole = (role) => ['admin', 'superadmin'].includes(role);
+
+const withTimeout = (promise) => {
+  let timeoutId;
+
+  const timeout = new Promise((_, reject) => {
+    timeoutId = setTimeout(() => {
+      reject(new Error('Supabase request timed out.'));
+    }, SUPABASE_PROXY_TIMEOUT_MS);
+  });
+
+  return Promise.race([promise, timeout]).finally(() => {
+    clearTimeout(timeoutId);
+  });
+};
 
 const redirectWithCookies = (request, response, pathname) => {
   const url = request.nextUrl.clone();
@@ -64,9 +79,14 @@ export async function proxy(request) {
     }
   );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  let user = null;
+
+  try {
+    const result = await withTimeout(supabase.auth.getUser());
+    user = result.data.user;
+  } catch {
+    return requiredRole ? redirectWithCookies(request, response, LOGIN_ROUTE) : response;
+  }
 
   if (requiredRole && !user) {
     return redirectWithCookies(request, response, LOGIN_ROUTE);
@@ -76,11 +96,20 @@ export async function proxy(request) {
     return response;
   }
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .maybeSingle();
+  let profile = null;
+
+  try {
+    const result = await withTimeout(
+      supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .maybeSingle()
+    );
+    profile = result.data;
+  } catch {
+    return requiredRole ? redirectWithCookies(request, response, LOGIN_ROUTE) : response;
+  }
 
   if (isLoginPage && profile?.role) {
     return redirectWithCookies(
