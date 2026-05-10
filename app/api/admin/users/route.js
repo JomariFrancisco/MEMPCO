@@ -8,8 +8,9 @@ import {
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 
-const PROFILE_COLUMNS =
+const BASE_PROFILE_COLUMNS =
   'id, role, full_name, employee_id, department, branch, office, email, phone, status, created_at';
+const PROFILE_COLUMNS = `${BASE_PROFILE_COLUMNS}, designation`;
 
 const normalizeCreateUserError = (error) => {
   const message = error?.message || '';
@@ -27,6 +28,37 @@ const parseRequestJson = async (request) => {
   } catch {
     return {};
   }
+};
+
+const isMissingDesignationColumnError = (error) =>
+  error?.code === '42703' ||
+  error?.code === 'PGRST204' ||
+  error?.message?.toLowerCase().includes('designation');
+
+const withoutDesignation = (profileRow) => {
+  const { designation, ...row } = profileRow;
+  return row;
+};
+
+const saveProfileRow = async (supabaseAdmin, profileRow, { mode, userId }) => {
+  const query =
+    mode === 'upsert'
+      ? supabaseAdmin.from('profiles').upsert(profileRow, { onConflict: 'id' })
+      : supabaseAdmin.from('profiles').update(profileRow).eq('id', userId);
+
+  const result = await query.select(PROFILE_COLUMNS).single();
+
+  if (!result.error || !isMissingDesignationColumnError(result.error)) {
+    return result;
+  }
+
+  const fallbackRow = withoutDesignation(profileRow);
+  const fallbackQuery =
+    mode === 'upsert'
+      ? supabaseAdmin.from('profiles').upsert(fallbackRow, { onConflict: 'id' })
+      : supabaseAdmin.from('profiles').update(fallbackRow).eq('id', userId);
+
+  return fallbackQuery.select(BASE_PROFILE_COLUMNS).single();
 };
 
 const authorizeSuperadmin = async () => {
@@ -82,11 +114,11 @@ export async function POST(request) {
     }
 
     const profileRow = toPortalProfileRow(account, created.user.id);
-    const { data: profile, error: upsertError } = await supabaseAdmin
-      .from('profiles')
-      .upsert(profileRow, { onConflict: 'id' })
-      .select(PROFILE_COLUMNS)
-      .single();
+    const { data: profile, error: upsertError } = await saveProfileRow(
+      supabaseAdmin,
+      profileRow,
+      { mode: 'upsert' }
+    );
 
     if (upsertError) {
       await supabaseAdmin.auth.admin.deleteUser(created.user.id).catch(() => {});
@@ -145,12 +177,11 @@ export async function PATCH(request) {
     }
 
     const profileRow = toPortalProfileRow(account, account.id);
-    const { data: profile, error: updateError } = await supabaseAdmin
-      .from('profiles')
-      .update(profileRow)
-      .eq('id', account.id)
-      .select(PROFILE_COLUMNS)
-      .single();
+    const { data: profile, error: updateError } = await saveProfileRow(
+      supabaseAdmin,
+      profileRow,
+      { mode: 'update', userId: account.id }
+    );
 
     if (updateError) {
       return NextResponse.json(

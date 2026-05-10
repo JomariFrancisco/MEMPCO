@@ -12,11 +12,30 @@ const hasSupabaseConfig = () =>
 
 const getRequiredRole = (pathname) => {
   if (pathname.startsWith('/admin-dashboard')) return 'admin';
+  if (pathname.startsWith('/marketing-admin')) return 'marketing_admin';
+  if (pathname.startsWith('/hr-admin')) return 'hr_admin';
   if (pathname.startsWith('/dashboard')) return 'employee';
   return null;
 };
 
 const isAdminRole = (role) => ['admin', 'superadmin'].includes(role);
+const isMarketingAdminRole = (role) => ['marketing_admin', 'superadmin'].includes(role);
+const isHrAdminRole = (role) => ['hr_admin', 'superadmin'].includes(role);
+
+const getPortalHomeRoute = (role) => {
+  if (isAdminRole(role)) return '/admin-dashboard';
+  if (role === 'marketing_admin') return '/marketing-admin';
+  if (role === 'hr_admin') return '/hr-admin';
+  return '/dashboard';
+};
+
+const hasRequiredRole = (role, requiredRole) => {
+  if (!requiredRole) return true;
+  if (requiredRole === 'admin') return isAdminRole(role);
+  if (requiredRole === 'marketing_admin') return isMarketingAdminRole(role);
+  if (requiredRole === 'hr_admin') return isHrAdminRole(role);
+  return role === requiredRole;
+};
 
 const withTimeout = (promise) => {
   let timeoutId;
@@ -111,25 +130,19 @@ export async function proxy(request) {
     return requiredRole ? redirectWithCookies(request, response, LOGIN_ROUTE) : response;
   }
 
-  if (isLoginPage && profile?.role) {
+  if (isLoginPage && profile?.role && request.nextUrl.searchParams.get('mode') !== 'reset') {
     return redirectWithCookies(
       request,
       response,
-      isAdminRole(profile.role) ? '/admin-dashboard' : '/dashboard'
+      getPortalHomeRoute(profile.role)
     );
   }
 
-  if (
-    requiredRole &&
-    !(
-      profile?.role === requiredRole ||
-      (requiredRole === 'admin' && isAdminRole(profile?.role))
-    )
-  ) {
+  if (requiredRole && !hasRequiredRole(profile?.role, requiredRole)) {
     return redirectWithCookies(
       request,
       response,
-      isAdminRole(profile?.role) ? '/admin-dashboard' : LOGIN_ROUTE
+      profile?.role ? getPortalHomeRoute(profile.role) : LOGIN_ROUTE
     );
   }
 
@@ -137,5 +150,5 @@ export async function proxy(request) {
 }
 
 export const config = {
-  matcher: ['/LogIn', '/dashboard/:path*', '/admin-dashboard/:path*'],
+  matcher: ['/LogIn', '/dashboard/:path*', '/admin-dashboard/:path*', '/marketing-admin/:path*', '/hr-admin/:path*'],
 };

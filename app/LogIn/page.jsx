@@ -6,9 +6,12 @@ import { CheckCircle2, LogIn } from 'lucide-react';
 import Navbar from '@/components/Navbar/Navbar';
 import {
   getCurrentPortalUser,
-  isAdminRole,
+  getPortalHomeRoute,
+  INACTIVE_ACCOUNT_MESSAGE,
+  isInactivePortalUser,
   sendPasswordResetEmail,
   signInPortal,
+  signOutPortal,
   updatePortalPassword,
 } from '@/lib/auth/portalAuth';
 import './login.css';
@@ -77,12 +80,24 @@ export default function LoginPage() {
     try {
       const user = await signInPortal(loginForm);
 
+      if (isInactivePortalUser(user)) {
+        await signOutPortal().catch(() => {});
+        setMessage({
+          type: 'error',
+          text: INACTIVE_ACCOUNT_MESSAGE,
+        });
+        window.setTimeout(() => {
+          router.replace('/');
+        }, 5000);
+        return;
+      }
+
       setMessage({
         type: 'success',
         text: 'Login successful. Redirecting...',
       });
 
-      router.push(isAdminRole(user.role) ? '/admin-dashboard' : '/dashboard');
+      router.push(getPortalHomeRoute(user.role));
     } catch (error) {
       setMessage({
         type: 'error',
@@ -133,12 +148,24 @@ export default function LoginPage() {
       await updatePortalPassword(resetForm.password);
       const user = await getCurrentPortalUser();
 
+      if (isInactivePortalUser(user)) {
+        await signOutPortal().catch(() => {});
+        setMessage({
+          type: 'error',
+          text: INACTIVE_ACCOUNT_MESSAGE,
+        });
+        window.setTimeout(() => {
+          router.replace('/');
+        }, 5000);
+        return;
+      }
+
       setMessage({
         type: 'success',
         text: 'Password updated. Redirecting...',
       });
 
-      router.push(isAdminRole(user?.role) ? '/admin-dashboard' : '/dashboard');
+      router.push(getPortalHomeRoute(user?.role));
     } catch (error) {
       setMessage({
         type: 'error',

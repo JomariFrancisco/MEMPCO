@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Navbar from '@/components/Navbar/Navbar';
 import Footer from '@/components/Footer/Footer';
+import { listPublishedMarketingPosts } from '@/lib/marketing/marketingPosts';
 import './news.css';
 
 const NEWS_ITEMS = [
@@ -214,18 +215,19 @@ export default function News() {
   const [isImageExpanded, setIsImageExpanded] = useState(false);
   const [pageReady, setPageReady] = useState(false);
   const [orbitRotation, setOrbitRotation] = useState(0);
+  const [newsItems, setNewsItems] = useState(NEWS_ITEMS);
 
   const getCategoryCount = (cat) =>
     cat === 'All'
-      ? NEWS_ITEMS.length
-      : NEWS_ITEMS.filter((item) => item.category === cat).length;
+      ? newsItems.length
+      : newsItems.filter((item) => item.category === cat).length;
 
   const filteredItems = useMemo(() => {
-    if (activeCategory === 'All') return NEWS_ITEMS;
-    return NEWS_ITEMS.filter((item) => item.category === activeCategory);
-  }, [activeCategory]);
+    if (activeCategory === 'All') return newsItems;
+    return newsItems.filter((item) => item.category === activeCategory);
+  }, [activeCategory, newsItems]);
 
-  const featured = filteredItems[0] ?? NEWS_ITEMS[0];
+  const featured = filteredItems[0] ?? newsItems[0];
   const latestStories = filteredItems.slice(1, 4);
   const moreStories = filteredItems.slice(4);
 
@@ -245,6 +247,30 @@ export default function News() {
     }, 90);
 
     return () => window.clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadPosts = async () => {
+      try {
+        const posts = await listPublishedMarketingPosts();
+
+        if (!cancelled && posts.length) {
+          setNewsItems(posts);
+        }
+      } catch {
+        if (!cancelled) {
+          setNewsItems(NEWS_ITEMS);
+        }
+      }
+    };
+
+    loadPosts();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -387,7 +413,7 @@ export default function News() {
 
               <div className="np-hero-stats">
                 <div className="np-hero-stat">
-                  <strong>{NEWS_ITEMS.length}</strong>
+                  <strong>{newsItems.length}</strong>
                   <span>Stories</span>
                 </div>
                 <div className="np-hero-stat-sep" aria-hidden="true" />

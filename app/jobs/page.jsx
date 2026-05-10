@@ -1,8 +1,9 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Navbar from '@/components/Navbar/Navbar';
 import Footer from '@/components/Footer/Footer';
+import { listOpenJobOpenings } from '@/lib/hr/hrContent';
 import '../jobs/jobs.css';
 
 const JOB_OPENINGS = [
@@ -79,10 +80,37 @@ const HIGHLIGHTS = [
 
 export default function Career() {
   const [selectedJob, setSelectedJob] = useState(JOB_OPENINGS[0]);
+  const [jobOpenings, setJobOpenings] = useState(JOB_OPENINGS);
 
   const showcaseAnchorRef = useRef(null);
   const showcaseStageRef = useRef(null);
   const applyAnchorRef = useRef(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadJobs = async () => {
+      try {
+        const openings = await listOpenJobOpenings();
+
+        if (!cancelled && openings.length) {
+          setJobOpenings(openings);
+          setSelectedJob(openings[0]);
+        }
+      } catch {
+        if (!cancelled) {
+          setJobOpenings(JOB_OPENINGS);
+          setSelectedJob(JOB_OPENINGS[0]);
+        }
+      }
+    };
+
+    loadJobs();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const getNavOffset = () => {
     if (typeof window === 'undefined') return 112;
@@ -162,7 +190,9 @@ export default function Career() {
               <div className="cp-hero-stats">
                 {HIGHLIGHTS.map((h) => (
                   <div key={h.label} className="cp-hero-stat-card">
-                    <span className="cp-hero-stat-value">{h.value}</span>
+                    <span className="cp-hero-stat-value">
+                      {h.label === 'Open Roles' ? String(jobOpenings.length).padStart(2, '0') : h.value}
+                    </span>
                     <span className="cp-hero-stat-label">{h.label}</span>
                   </div>
                 ))}
@@ -219,7 +249,7 @@ export default function Career() {
             <p className="cp-section-kicker">Open Positions</p>
 
             <nav className="cp-tab-nav" role="tablist" aria-label="Job openings">
-              {JOB_OPENINGS.map((job, i) => {
+              {jobOpenings.map((job, i) => {
                 const isActive = selectedJob.title === job.title;
                 return (
                   <button
@@ -247,7 +277,7 @@ export default function Career() {
             <div className="cp-showcase-head">
               <p className="cp-section-kicker">Role Details</p>
               <p className="cp-showcase-sub">
-                {JOB_OPENINGS.length} positions · {selectedJob.department} · {selectedJob.location}
+                {jobOpenings.length} positions · {selectedJob.department} · {selectedJob.location}
               </p>
             </div>
 

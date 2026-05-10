@@ -1,0 +1,54 @@
+.hr-admin-main {
+  min-height: 100vh;
+  padding: 8rem 1rem 3rem;
+  background: linear-gradient(180deg, #fff 0%, #f8fafc 100%);
+}
+
+.hr-admin-shell {
+  width: min(920px, 100%);
+  margin: 0 auto;
+  padding: 1.4rem;
+  border: 1px solid rgba(226, 232, 240, 0.82);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.08);
+}
+
+.hr-admin-kicker,
+.hr-admin-user span {
+  color: #dc2626;
+  font-size: 0.72rem;
+  font-weight: 900;
+  line-height: 1.2;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.hr-admin-shell h1 {
+  margin: 0.3rem 0 0.55rem;
+  color: #111827;
+  font-size: clamp(1.8rem, 4vw, 3rem);
+  font-weight: 900;
+  line-height: 1;
+}
+
+.hr-admin-shell p {
+  max-width: 680px;
+  margin: 0;
+  color: #64748b;
+  font-size: 0.98rem;
+  line-height: 1.6;
+}
+
+.hr-admin-user {
+  display: grid;
+  gap: 0.18rem;
+  margin-top: 1.2rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(226, 232, 240, 0.82);
+}
+
+.hr-admin-user strong {
+  color: #111827;
+  font-size: 1rem;
+}

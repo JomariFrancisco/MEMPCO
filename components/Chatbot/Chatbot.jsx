@@ -740,7 +740,7 @@ export default function Chatbot() {
         const user = await getCurrentPortalUser();
 
         if (!cancelled) {
-          const loggedIn = ['employee', 'admin', 'superadmin'].includes(user?.role);
+          const loggedIn = ['employee', 'admin', 'marketing_admin', 'hr_admin', 'superadmin'].includes(user?.role);
           setHasPortalSession(loggedIn);
 
           if (loggedIn) {

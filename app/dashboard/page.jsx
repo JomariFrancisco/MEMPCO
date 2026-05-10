@@ -39,13 +39,16 @@ import {
   DEPARTMENTS,
   DEVICE_OPTIONS,
   SUPPORT_CATEGORIES,
-  createTicket,
-  getTickets,
   isUnresolved,
   slugify,
-  updateTicket,
 } from '../portalStorage';
-import { getCurrentPortalUser, signOutPortal } from '@/lib/auth/portalAuth';
+import {
+  getCurrentPortalUser,
+  INACTIVE_ACCOUNT_MESSAGE,
+  isInactivePortalUser,
+  signOutPortal,
+} from '@/lib/auth/portalAuth';
+import { createTicket, getTickets, updateTicket } from '@/lib/tickets/portalTickets';
 import './dashboard.css';
 
 /* =========================
@@ -316,6 +319,25 @@ function PortalTransitionLoader({ label }) {
   );
 }
 
+function InactiveAccountNotice() {
+  return (
+    <>
+      <Navbar />
+      <main className="portal-main portal-app-main">
+        <div className="portal-shell">
+          <section className="panel-card glass profile-status-panel">
+            <div className="section-heading">
+              <span className="section-kicker">Access Restricted</span>
+              <h2>{INACTIVE_ACCOUNT_MESSAGE}</h2>
+              <p>You will be redirected to the home page in 5 seconds.</p>
+            </div>
+          </section>
+        </div>
+      </main>
+    </>
+  );
+}
+
 /* =========================
    SIDEBAR
 ========================= */
@@ -569,10 +591,10 @@ function DashboardView({ user, tickets, openTickets, onGoTo }) {
 function ProfileView({ user, onGoTo }) {
   const employeeStatus = user.status || 'Active';
   const assignedOffice = user.branch || user.office || 'Not assigned';
-  const designation = user.designation || 'Employee';
+  const designation = user.designation || 'Job title not provided';
   const profileRows = [
     { label: 'Employee ID', value: user.employeeId || 'Not provided', icon: IdCard },
-    { label: 'Designation', value: designation, icon: BriefcaseBusiness },
+    { label: 'Job Title', value: designation, icon: BriefcaseBusiness },
     { label: 'Department', value: user.department || 'Not assigned', icon: Building2 },
     { label: 'Assigned Office', value: assignedOffice, icon: MapPin },
     { label: 'Email Address', value: user.email || 'Not provided', icon: Mail },
@@ -822,7 +844,7 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
     setShowConfirm(true);
   };
 
-  const confirmSubmit = () => {
+  const confirmSubmit = async () => {
     const payload = {
       ...form,
       sla: detectedSla,
@@ -830,32 +852,27 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
       lastEmployeeUpdate: new Date().toLocaleString(),
     };
 
-    if (editingId) {
-      updateTicket(editingId, {
-        ...payload,
-        status: 'Modified',
-      });
+    try {
+      if (editingId) {
+        await updateTicket(editingId, {
+          ...payload,
+          status: 'Modified',
+        });
 
-      setEditingId(null);
-    } else {
-      const beforeIds = new Set(getTickets().map((ticket) => ticket.id));
-
-      createTicket({ user, form: payload });
-
-      const createdTicket = getTickets().find(
-        (ticket) => !beforeIds.has(ticket.id) && getTicketOwnerMatch(ticket, user)
-      );
-
-      if (createdTicket?.id) {
-        updateTicket(createdTicket.id, payload);
+        setEditingId(null);
+      } else {
+        await createTicket({ user, form: payload });
       }
-    }
 
-    setForm(getNewTicketForm(user));
-    setFormError('');
-    setShowConfirm(false);
-    setTab('tickets');
-    reloadTickets();
+      setForm(getNewTicketForm(user));
+      setFormError('');
+      setShowConfirm(false);
+      setTab('tickets');
+      await reloadTickets();
+    } catch (error) {
+      setFormError(error.message || 'Unable to save ticket. Please try again.');
+      setShowConfirm(false);
+    }
   };
 
   const handleEdit = (ticket) => {
@@ -1385,25 +1402,30 @@ export default function DashboardPage() {
   const [user, setUser] = useState(null);
   const [tickets, setTickets] = useState([]);
   const [authChecked, setAuthChecked] = useState(false);
+  const [isInactiveBlocked, setIsInactiveBlocked] = useState(false);
   const [isPageTransitioning, setIsPageTransitioning] = useState(false);
   const [transitionLabel, setTransitionLabel] = useState(employeeTransitionLabels.dashboard);
   const router = useRouter();
 
-  const loadTickets = (currentUser = user) => {
+  const loadTickets = async (currentUser = user) => {
     if (!currentUser) return;
 
-    const allTickets = getTickets();
+    try {
+      const allTickets = await getTickets();
 
-    setTickets(
-      allTickets
-        .filter((ticket) => getTicketOwnerMatch(ticket, currentUser))
-        .sort((a, b) => {
-          const aTime = new Date(a.lastUpdated || a.createdAt || a.date || 0).getTime();
-          const bTime = new Date(b.lastUpdated || b.createdAt || b.date || 0).getTime();
+      setTickets(
+        allTickets
+          .filter((ticket) => getTicketOwnerMatch(ticket, currentUser))
+          .sort((a, b) => {
+            const aTime = new Date(a.lastUpdated || a.createdAt || a.date || 0).getTime();
+            const bTime = new Date(b.lastUpdated || b.createdAt || b.date || 0).getTime();
 
-          return bTime - aTime;
-        })
-    );
+            return bTime - aTime;
+          })
+      );
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   useEffect(() => {
@@ -1421,8 +1443,18 @@ export default function DashboardPage() {
           return;
         }
 
+        if (isInactivePortalUser(activeUser)) {
+          setIsInactiveBlocked(true);
+          setAuthChecked(true);
+          await signOutPortal().catch(() => {});
+          window.setTimeout(() => {
+            router.replace('/');
+          }, 5000);
+          return;
+        }
+
         setUser(activeUser);
-        loadTickets(activeUser);
+        await loadTickets(activeUser);
         setAuthChecked(true);
       } catch {
         if (!cancelled) {
@@ -1439,8 +1471,8 @@ export default function DashboardPage() {
   }, [router]);
 
   useEffect(() => {
-    const handleStorage = () => loadTickets();
-    const handleFocus = () => loadTickets();
+    const handleStorage = () => void loadTickets();
+    const handleFocus = () => void loadTickets();
 
     window.addEventListener('storage', handleStorage);
     window.addEventListener('focus', handleFocus);
@@ -1481,7 +1513,7 @@ export default function DashboardPage() {
     }
 
     setSidebarOpen(false);
-    loadTickets();
+    void loadTickets();
   };
 
   const handleLogout = async () => {
@@ -1492,6 +1524,10 @@ export default function DashboardPage() {
   };
 
   if (!authChecked || !user) {
+    if (isInactiveBlocked) {
+      return <InactiveAccountNotice />;
+    }
+
     return (
       <>
         <Navbar />

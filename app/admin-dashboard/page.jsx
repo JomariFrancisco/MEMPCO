@@ -30,21 +30,27 @@ import {
   SUPPORT_CATEGORIES,
   TECHNICIANS,
   TICKET_STATUSES,
-  deleteTicket,
-  getTickets,
   isUnresolved,
   slugify,
-  updateTicket,
 } from '../portalStorage';
 import {
   createPortalUser,
   deletePortalUser,
   getCurrentPortalUser,
+  INACTIVE_ACCOUNT_MESSAGE,
   isAdminRole,
+  isInactivePortalUser,
   listPortalUsers,
   signOutPortal,
   updatePortalUser,
 } from '@/lib/auth/portalAuth';
+import {
+  claimTicketLock,
+  deleteTicket,
+  getTickets,
+  releaseTicketLock,
+  updateTicket,
+} from '@/lib/tickets/portalTickets';
 import './admin-dashboard.css';
 
 /* =========================
@@ -58,6 +64,7 @@ const REPORT_PERIOD_OPTIONS = [
   { key: 'week', label: 'Week', title: 'Tickets by Week', meta: 'Weekly volume' },
   { key: 'month', label: 'Month', title: 'Tickets by Month', meta: 'Monthly trend' },
 ];
+const SELECTED_DAY_TICKET_PAGE_SIZE = 2;
 
 const MonoIcon = ({ icon: IconComponent }) => (
   <IconComponent className="admin-mono-icon" aria-hidden="true" />
@@ -80,6 +87,25 @@ function PortalTransitionLoader({ label }) {
         <img src="/Logos/Logo.png" alt="" aria-hidden="true" />
       </div>
     </div>
+  );
+}
+
+function InactiveAccountNotice() {
+  return (
+    <>
+      <Navbar />
+      <main className="portal-main portal-app-main">
+        <div className="portal-shell">
+          <section className="panel-card glass admin-hero-panel">
+            <div>
+              <span className="section-kicker">Access Restricted</span>
+              <h2>{INACTIVE_ACCOUNT_MESSAGE}</h2>
+              <p>You will be redirected to the home page in 5 seconds.</p>
+            </div>
+          </section>
+        </div>
+      </main>
+    </>
   );
 }
 
@@ -388,6 +414,7 @@ const getPrintLetterhead = () => `
       <img src="/Logos/Logo.png" alt="MEMPCO logo" />
     </div>
     <div class="coop-copy">
+      <h1>Micro-Entrepreneurs Multi-Purpose Cooperative</h1>
       <p>3D3E HC Mktng. Bldg., Veterans Avenue, Zamboanga City, Philippines 7000</p>
       <p>CDA Registration No. 9520-09004207 &nbsp;&nbsp; TIN 005-848-165 NV</p>
       <div class="coop-contact">
@@ -453,6 +480,15 @@ const openPrintDocument = (title, body) => {
           .coop-copy {
             grid-column: 2;
             text-align: center;
+          }
+          .coop-copy h1 {
+            margin: 0;
+            color: #dc2626;
+            font-size: 20px;
+            line-height: 1.05;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
           }
           .coop-copy p {
             margin: 1px 0;
@@ -640,12 +676,6 @@ const printMonthlyConsolidatedReport = (tickets, monthDate) => {
   const statusItems = breakdown(monthlyTickets, 'status', TICKET_STATUSES).slice(0, 6);
   const categoryItems = breakdown(monthlyTickets, 'supportCategory', SUPPORT_CATEGORIES).slice(0, 6);
   const branchItems = breakdown(monthlyTickets, 'branch', BRANCHES).slice(0, 6);
-  const ictRows = technicianItems.length
-    ? technicianItems.map((item) => row(item)).join('')
-    : '<div class="report-row"><span>No ICT assignments</span><strong>0</strong><em>0%</em></div>';
-  const escalationRows = escalationItems.length
-    ? escalationItems.map((item) => row(item)).join('')
-    : '<div class="report-row"><span>No third-party escalation</span><strong>0</strong><em>0%</em></div>';
   const row = (item, total = monthlyTickets.length) => {
     const percent = total ? Math.round((item.count / total) * 100) : 0;
     return `
@@ -656,6 +686,12 @@ const printMonthlyConsolidatedReport = (tickets, monthDate) => {
       </div>
     `;
   };
+  const ictRows = technicianItems.length
+    ? technicianItems.map((item) => row(item)).join('')
+    : '<div class="report-row"><span>No ICT assignments</span><strong>0</strong><em>0%</em></div>';
+  const escalationRows = escalationItems.length
+    ? escalationItems.map((item) => row(item)).join('')
+    : '<div class="report-row"><span>No third-party escalation</span><strong>0</strong><em>0%</em></div>';
   const body = `
     <main class="print-page">
       ${getPrintLetterhead()}
@@ -749,6 +785,16 @@ const getTicketWorkStartedAt = (ticket) =>
   ticket.workStartedAt || (ticket.status === 'In Progress' ? ticket.adminUpdatedAt || ticket.lastUpdated : '');
 
 const getTicketWorkEndedAt = (ticket) => ticket.workEndedAt || '';
+
+const isTicketLockActive = (ticket) => {
+  if (!ticket?.lockedBy) return false;
+
+  const expiresAt = new Date(ticket.lockExpiresAt || '').getTime();
+  return !Number.isNaN(expiresAt) && expiresAt > Date.now();
+};
+
+const isTicketLockedByOther = (ticket, userId) =>
+  isTicketLockActive(ticket) && ticket.lockedBy && ticket.lockedBy !== userId;
 
 const getTimeValue = (value) => {
   const parsed = new Date(value || '').getTime();
@@ -1069,6 +1115,15 @@ function ReportCalendar({
 }) {
   const calendar = buildCalendarMonth(tickets, monthDate);
   const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const [selectedTicketPage, setSelectedTicketPage] = useState(1);
+  const selectedTicketTotalPages = Math.max(
+    1,
+    Math.ceil(selectedDateTickets.length / SELECTED_DAY_TICKET_PAGE_SIZE)
+  );
+  const selectedDatePagedTickets = selectedDateTickets.slice(
+    (selectedTicketPage - 1) * SELECTED_DAY_TICKET_PAGE_SIZE,
+    selectedTicketPage * SELECTED_DAY_TICKET_PAGE_SIZE
+  );
   const busiestLabel = calendar.busiestDay?.count
     ? formatReportDate(new Date(`${calendar.busiestDay.key}T00:00:00`), { month: 'short', day: 'numeric' })
     : 'No activity';
@@ -1083,6 +1138,14 @@ function ReportCalendar({
     if (ratio >= 0.4) return 'medium';
     return 'low';
   };
+
+  useEffect(() => {
+    setSelectedTicketPage(1);
+  }, [selectedDateKey]);
+
+  useEffect(() => {
+    setSelectedTicketPage((currentPage) => Math.min(currentPage, selectedTicketTotalPages));
+  }, [selectedTicketTotalPages]);
 
   return (
     <section className="report-calendar-layout" aria-label="Calendar report">
@@ -1113,7 +1176,12 @@ function ReportCalendar({
 
         <div className="report-calendar-grid" aria-label={`Ticket calendar for ${calendar.title}`}>
           {weekdays.map((day) => (
-            <span key={day} className="report-calendar-weekday">{day}</span>
+            <span
+              key={day}
+              className={`report-calendar-weekday ${day === 'Sun' || day === 'Sat' ? 'weekend' : ''}`}
+            >
+              {day}
+            </span>
           ))}
 
           {calendar.cells.map((cell) => (
@@ -1176,20 +1244,42 @@ function ReportCalendar({
 
           {selectedDateKey ? (
             selectedDateTickets.length > 0 ? (
-              <div className="report-selected-ticket-list">
-                {selectedDateTickets.slice(0, 4).map((ticket) => (
+              <>
+                <div className="report-selected-ticket-list">
+                  {selectedDatePagedTickets.map((ticket) => (
+                    <button
+                      type="button"
+                      key={ticket.id}
+                      className="report-selected-ticket"
+                      onClick={() => onOpenTicket(ticket)}
+                    >
+                      <span>{ticket.id}</span>
+                      <strong>{ticket.concernType || ticket.supportCategory || 'Ticket concern'}</strong>
+                      <em>{ticket.status} / {ticket.sla}</em>
+                    </button>
+                  ))}
+                </div>
+
+                <div className="report-selected-ticket-pager" aria-label="Selected day ticket pages">
                   <button
                     type="button"
-                    key={ticket.id}
-                    className="report-selected-ticket"
-                    onClick={() => onOpenTicket(ticket)}
+                    onClick={() => setSelectedTicketPage((page) => Math.max(1, page - 1))}
+                    disabled={selectedTicketPage === 1}
+                    aria-label="Previous selected day ticket page"
                   >
-                    <span>{ticket.id}</span>
-                    <strong>{ticket.concernType || ticket.supportCategory || 'Ticket concern'}</strong>
-                    <em>{ticket.status} / {ticket.sla}</em>
+                    <ChevronLeft aria-hidden="true" />
                   </button>
-                ))}
-              </div>
+                  <span>Page {selectedTicketPage}</span>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedTicketPage((page) => Math.min(selectedTicketTotalPages, page + 1))}
+                    disabled={selectedTicketPage === selectedTicketTotalPages}
+                    aria-label="Next selected day ticket page"
+                  >
+                    <ChevronRight aria-hidden="true" />
+                  </button>
+                </div>
+              </>
             ) : (
               <p className="report-selected-empty">No tickets were submitted on this date.</p>
             )
@@ -1940,7 +2030,7 @@ function UsersView({ users, canManageUsers, currentUserId, onUsersChanged }) {
               </div>
 
               <div className="ticket-form-group">
-                <label htmlFor="edit-designation">Designation</label>
+                <label htmlFor="edit-designation">Job Title</label>
                 <input
                   id="edit-designation"
                   className="ticket-field ticket-input"
@@ -1948,7 +2038,7 @@ function UsersView({ users, canManageUsers, currentUserId, onUsersChanged }) {
                   required
                   value={editForm.designation}
                   onChange={(e) => updateEditForm('designation', e.target.value)}
-                  placeholder="Enter designation"
+                  placeholder="Enter job title"
                 />
               </div>
 
@@ -1963,7 +2053,9 @@ function UsersView({ users, canManageUsers, currentUserId, onUsersChanged }) {
                   required
                 >
                   <option value="employee">Employee</option>
-                  <option value="admin">Admin</option>
+                  <option value="admin">ICT Admin</option>
+                  <option value="marketing_admin">Marketing Admin</option>
+                  <option value="hr_admin">HR Admin</option>
                   <option value="superadmin">Super Admin</option>
                 </select>
               </div>
@@ -2258,7 +2350,7 @@ function CreateUserView({ onCreated }) {
             </div>
 
             <div className="ticket-form-group create-designation-field">
-              <label htmlFor="create-designation">Designation</label>
+              <label htmlFor="create-designation">Job Title</label>
               <input
                 id="create-designation"
                 className="ticket-field ticket-input"
@@ -2266,7 +2358,7 @@ function CreateUserView({ onCreated }) {
                 required
                 value={form.designation}
                 onChange={(e) => updateForm('designation', e.target.value)}
-                placeholder="Enter designation"
+                placeholder="Enter job title"
               />
             </div>
 
@@ -2280,7 +2372,9 @@ function CreateUserView({ onCreated }) {
                 required
               >
                 <option value="employee">Employee</option>
-                <option value="admin">Admin</option>
+                <option value="admin">ICT Admin</option>
+                <option value="marketing_admin">Marketing Admin</option>
+                <option value="hr_admin">HR Admin</option>
                 <option value="superadmin">Super Admin</option>
               </select>
             </div>
@@ -2301,7 +2395,7 @@ function CreateUserView({ onCreated }) {
    TICKET ACTION MODAL
 ========================= */
 
-function TicketActionModal({ ticket, onClose, onSave, onDelete, canDelete, now }) {
+function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, canDelete, now }) {
   useBodyScrollLock(true);
 
   const hasWorkStarted = Boolean(getTicketWorkStartedAt(ticket));
@@ -2312,18 +2406,25 @@ function TicketActionModal({ ticket, onClose, onSave, onDelete, canDelete, now }
     : TICKET_STATUSES.filter((status) => status !== 'Created');
   const [formError, setFormError] = useState('');
 
+  const currentStaffName = currentUser?.name || 'Unassigned';
+  const assignedStaff = ticket.technician && ticket.technician !== 'Unassigned'
+    ? ticket.technician
+    : currentStaffName;
   const [draft, setDraft] = useState({
     status: isStartMode ? 'In Progress' : ticket.status || 'Pending',
     sla: ticket.sla || 'Low',
-    technician: ticket.technician || 'Unassigned',
+    technician: assignedStaff,
     actionTaken: ticket.actionTaken || '',
     adminRemarks: ticket.adminRemarks || '',
     resolution: ticket.resolution || '',
   });
   const isEscalationStatus = draft.status === 'Escalated';
+  const staffOptions = Array.from(
+    new Set([currentStaffName, assignedStaff, ...TECHNICIANS].filter((name) => name && name !== 'Unassigned'))
+  );
   const technicianOptions = isEscalationStatus
-    ? [...TECHNICIANS, ...ESCALATION_PARTNERS]
-    : TECHNICIANS;
+    ? [...staffOptions, ...ESCALATION_PARTNERS]
+    : staffOptions;
   const visibleTechnician = technicianOptions.includes(draft.technician) ? draft.technician : 'Unassigned';
   const canEditOutcomeFields = !isResolvedLocked && draft.status !== 'In Progress';
   const lockedOutcomePlaceholder = 'Available once the ticket is updated away from In Progress.';
@@ -2335,7 +2436,7 @@ function TicketActionModal({ ticket, onClose, onSave, onDelete, canDelete, now }
         return {
           ...prev,
           status: value,
-          technician: ESCALATION_PARTNERS.includes(prev.technician) ? 'Unassigned' : prev.technician,
+          technician: ESCALATION_PARTNERS.includes(prev.technician) ? currentStaffName : prev.technician,
           actionTaken: ticket.actionTaken || '',
           adminRemarks: ticket.adminRemarks || '',
           resolution: ticket.resolution || '',
@@ -2343,7 +2444,7 @@ function TicketActionModal({ ticket, onClose, onSave, onDelete, canDelete, now }
       }
 
       if (field === 'status' && value !== 'Escalated' && ESCALATION_PARTNERS.includes(prev.technician)) {
-        return { ...prev, status: value, technician: 'Unassigned' };
+        return { ...prev, status: value, technician: currentStaffName };
       }
 
       return { ...prev, [field]: value };
@@ -2367,7 +2468,7 @@ function TicketActionModal({ ticket, onClose, onSave, onDelete, canDelete, now }
     const sanitizedDraft = outcomeLocked
       ? {
           ...draft,
-          technician: ESCALATION_PARTNERS.includes(draft.technician) ? 'Unassigned' : draft.technician,
+          technician: ESCALATION_PARTNERS.includes(draft.technician) ? currentStaffName : draft.technician,
           actionTaken: ticket.actionTaken || '',
           adminRemarks: ticket.adminRemarks || '',
           resolution: ticket.resolution || '',
@@ -2382,6 +2483,7 @@ function TicketActionModal({ ticket, onClose, onSave, onDelete, canDelete, now }
 
     onSave(ticket.id, {
       ...sanitizedDraft,
+      technician: sanitizedDraft.technician || currentStaffName,
       adminUpdatedAt: new Date().toLocaleString(),
       lastUpdated: new Date().toLocaleString(),
     });
@@ -2602,6 +2704,7 @@ export default function AdminDashboardPage() {
   const [users, setUsers] = useState([]);
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [authChecked, setAuthChecked] = useState(false);
+  const [isInactiveBlocked, setIsInactiveBlocked] = useState(false);
   const [lastSynced, setLastSynced] = useState('');
   const [isPageTransitioning, setIsPageTransitioning] = useState(false);
   const [transitionLabel, setTransitionLabel] = useState(adminTransitionLabels.dashboard);
@@ -2615,7 +2718,7 @@ export default function AdminDashboardPage() {
   });
 
   const loadData = async () => {
-    const nextTickets = sortTickets(getTickets());
+    const nextTickets = sortTickets(await getTickets());
     let nextUsers = [];
 
     try {
@@ -2646,6 +2749,16 @@ export default function AdminDashboardPage() {
         if (!activeUser || !isAdminRole(activeUser.role)) {
           await signOutPortal().catch(() => {});
           router.replace(LOGIN_ROUTE);
+          return;
+        }
+
+        if (isInactivePortalUser(activeUser)) {
+          setIsInactiveBlocked(true);
+          setAuthChecked(true);
+          await signOutPortal().catch(() => {});
+          window.setTimeout(() => {
+            router.replace('/');
+          }, 5000);
           return;
         }
 
@@ -2756,13 +2869,65 @@ export default function AdminDashboardPage() {
   };
 
   const handleLogout = async () => {
+    if (selectedTicket?.lockedBy === admin?.id) {
+      await releaseTicketLock(selectedTicket.id, admin.id).catch(() => {});
+    }
+
     setTransitionLabel(adminTransitionLabels.logout);
     setIsPageTransitioning(true);
     await signOutPortal().catch(() => {});
     router.replace(LOGIN_ROUTE);
   };
 
-  const handleSaveTicket = (ticketId, updates) => {
+  const handleOpenTicket = async (ticket) => {
+    if (!ticket?.id || !admin?.id) return;
+
+    try {
+      const lockedTicket = await claimTicketLock(ticket.id, admin);
+
+      if (!lockedTicket?.id) {
+        window.alert('Unable to find this ticket. Please refresh the queue and try again.');
+        await loadData();
+        return;
+      }
+
+      if (isTicketLockedByOther(lockedTicket, admin.id)) {
+        window.alert(
+          `Ticket ${ticket.id} is already being worked on by ${lockedTicket.lockedByName || 'another IT staff'}.`
+        );
+        await loadData();
+        return;
+      }
+
+      setTickets((currentTickets) =>
+        sortTickets(currentTickets.map((item) => (item.id === lockedTicket.id ? lockedTicket : item)))
+      );
+      setSelectedTicket(lockedTicket);
+    } catch (error) {
+      window.alert(error.message || 'Unable to open this ticket right now.');
+    }
+  };
+
+  const handleCloseTicket = async () => {
+    const ticketToClose = selectedTicket;
+    setSelectedTicket(null);
+
+    if (ticketToClose?.lockedBy === admin?.id) {
+      try {
+        const releasedTicket = await releaseTicketLock(ticketToClose.id, admin.id);
+
+        if (releasedTicket?.id) {
+          setTickets((currentTickets) =>
+            sortTickets(currentTickets.map((item) => (item.id === releasedTicket.id ? releasedTicket : item)))
+          );
+        }
+      } catch {
+        await loadData();
+      }
+    }
+  };
+
+  const handleSaveTicket = async (ticketId, updates) => {
     const currentTicket = tickets.find((ticket) => ticket.id === ticketId);
 
     if (currentTicket?.status === 'Resolved') {
@@ -2774,6 +2939,11 @@ export default function AdminDashboardPage() {
 
     const timestamp = updates.adminUpdatedAt || new Date().toLocaleString();
     const nextUpdates = { ...updates, adminUpdatedAt: timestamp };
+    const currentStaffName = admin?.name || 'Unassigned';
+
+    if (!nextUpdates.technician || nextUpdates.technician === 'Unassigned') {
+      nextUpdates.technician = currentStaffName;
+    }
 
     if (updates.status === 'In Progress') {
       if (!currentTicket?.workStartedAt || currentTicket?.workEndedAt) {
@@ -2785,12 +2955,22 @@ export default function AdminDashboardPage() {
       nextUpdates.workEndedAt = timestamp;
     }
 
-    updateTicket(ticketId, nextUpdates);
-    void loadData();
-    setSelectedTicket(null);
+    try {
+      await updateTicket(ticketId, {
+        ...nextUpdates,
+        lockedBy: null,
+        lockedByName: null,
+        lockedAt: null,
+        lockExpiresAt: null,
+      });
+      await loadData();
+      setSelectedTicket(null);
+    } catch (error) {
+      window.alert(error.message || 'Unable to save ticket update.');
+    }
   };
 
-  const handleDeleteTicket = (ticket) => {
+  const handleDeleteTicket = async (ticket) => {
     if (!ticket?.id) return;
 
     if (!isSuperAdmin) {
@@ -2804,12 +2984,20 @@ export default function AdminDashboardPage() {
 
     if (!confirmed) return;
 
-    deleteTicket(ticket.id);
-    setSelectedTicket(null);
-    void loadData();
+    try {
+      await deleteTicket(ticket.id);
+      setSelectedTicket(null);
+      await loadData();
+    } catch (error) {
+      window.alert(error.message || 'Unable to delete ticket.');
+    }
   };
 
   if (!authChecked || !admin) {
+    if (isInactiveBlocked) {
+      return <InactiveAccountNotice />;
+    }
+
     return (
       <>
         <Navbar />
@@ -2891,7 +3079,7 @@ export default function AdminDashboardPage() {
                   summary={summary}
                   categorySummary={categorySummary}
                   onGoTo={goTo}
-                  onOpenTicket={setSelectedTicket}
+                  onOpenTicket={handleOpenTicket}
                   onDeleteTicket={handleDeleteTicket}
                   canDeleteTickets={canDeleteTickets}
                   now={timerNow}
@@ -2904,7 +3092,7 @@ export default function AdminDashboardPage() {
                   filteredTickets={filteredTickets}
                   filters={filters}
                   setFilters={setFilters}
-                  onOpenTicket={setSelectedTicket}
+                  onOpenTicket={handleOpenTicket}
                   onDeleteTicket={handleDeleteTicket}
                   canDeleteTickets={canDeleteTickets}
                   now={timerNow}
@@ -2915,7 +3103,7 @@ export default function AdminDashboardPage() {
                 <BranchesView
                   branchSummary={branchSummary}
                   tickets={tickets}
-                  onOpenTicket={setSelectedTicket}
+                  onOpenTicket={handleOpenTicket}
                   onDeleteTicket={handleDeleteTicket}
                   canDeleteTickets={canDeleteTickets}
                   now={timerNow}
@@ -2929,7 +3117,7 @@ export default function AdminDashboardPage() {
                   categorySummary={categorySummary}
                   statusSummary={statusSummary}
                   branchSummary={branchSummary}
-                  onOpenTicket={setSelectedTicket}
+                  onOpenTicket={handleOpenTicket}
                 />
               )}
 
@@ -2956,7 +3144,8 @@ export default function AdminDashboardPage() {
         <TicketActionModal
           key={`${selectedTicket.id}-${selectedTicket.lastUpdated || selectedTicket.adminUpdatedAt || ''}`}
           ticket={selectedTicket}
-          onClose={() => setSelectedTicket(null)}
+          currentUser={admin}
+          onClose={handleCloseTicket}
           onSave={handleSaveTicket}
           onDelete={handleDeleteTicket}
           canDelete={canDeleteTickets}
