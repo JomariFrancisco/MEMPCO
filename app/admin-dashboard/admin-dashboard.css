@@ -160,14 +160,14 @@ button {
   position: relative;
   width: 100%;
   min-height: 100dvh;
-  padding: clamp(5.5rem, 7vw, 6.2rem) 1.25rem 2.5rem;
+  padding: clamp(1.25rem, 2.5vw, 2rem) 1.25rem 2.5rem;
   max-width: 100%;
 }
 
 .portal-shell {
   width: min(1440px, 100%);
   max-width: 100%;
-  min-height: calc(100dvh - clamp(5.5rem, 7vw, 6.2rem) - 2.5rem);
+  min-height: calc(100dvh - clamp(1.25rem, 2.5vw, 2rem) - 2.5rem);
   margin: 0 auto;
   display: flex;
   flex-direction: column;
@@ -237,6 +237,34 @@ button {
   font-size: 0.8rem;
   font-weight: 750;
   box-shadow: var(--shadow-soft);
+}
+
+.portal-hrmax-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  padding: 0 1rem;
+  border: 1px solid rgba(220, 38, 38, 0.18);
+  border-radius: var(--radius-pill);
+  background: var(--grad-red);
+  color: #fff;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  box-shadow: 0 12px 28px rgba(220, 38, 38, 0.22);
+  cursor: pointer;
+  transition:
+    transform var(--transition-fast),
+    box-shadow var(--transition-fast),
+    filter var(--transition-fast);
+}
+
+.portal-hrmax-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.03);
+  box-shadow: 0 16px 34px rgba(220, 38, 38, 0.28);
 }
 
 .portal-status-pill.alert {
@@ -417,6 +445,14 @@ button {
     inset 0 1px 0 rgba(255, 255, 255, 0.16);
 }
 
+.sidebar-external-link {
+  margin-top: 0.15rem;
+}
+
+.sidebar-external-link:hover {
+  background: rgba(220, 38, 38, 0.16);
+}
+
 .sidebar-nav-icon {
   width: 16px;
   height: 16px;
@@ -424,8 +460,17 @@ button {
   flex-shrink: 0;
 }
 
+.sidebar-trailing-icon {
+  width: 0.82rem;
+  height: 0.82rem;
+  margin-left: auto;
+  opacity: 0.58;
+  stroke-width: 1.9;
+}
+
 .sidebar-nav-btn.active .sidebar-nav-icon,
-.sidebar-nav-btn:hover .sidebar-nav-icon {
+.sidebar-nav-btn:hover .sidebar-nav-icon,
+.sidebar-nav-btn:hover .sidebar-trailing-icon {
   opacity: 1;
 }
 
@@ -3606,17 +3651,17 @@ button {
   }
 }
 
-/* Keep dashboard modals above the fixed site navbar and within the visible viewport. */
+/* Keep dashboard modals within the visible viewport. */
 .modal-overlay {
   z-index: 10050;
   align-items: flex-start;
-  padding: calc(var(--navbar-height, 70px) + 1.1rem) 1rem 1.25rem;
+  padding: 1.1rem 1rem 1.25rem;
 }
 
 .modal-box,
 .admin-modal-box,
 .user-edit-modal {
-  max-height: calc(100dvh - var(--navbar-height, 70px) - 2.35rem);
+  max-height: calc(100dvh - 2.35rem);
   overflow-y: auto;
 }
 
@@ -3636,13 +3681,13 @@ button {
 
 @media (max-width: 640px) {
   .modal-overlay {
-    padding: calc(var(--navbar-height-mobile, 58px) + 0.85rem) 0.75rem 1rem;
+    padding: 0.85rem 0.75rem 1rem;
   }
 
   .modal-box,
   .admin-modal-box,
   .user-edit-modal {
-    max-height: calc(100dvh - var(--navbar-height-mobile, 58px) - 1.85rem);
+    max-height: calc(100dvh - 1.85rem);
     width: min(100%, calc(100vw - 1.5rem));
     padding: 1.15rem;
   }
@@ -3656,7 +3701,7 @@ button {
   z-index: 10050;
   align-items: flex-start;
   justify-content: center;
-  padding: calc(var(--navbar-height, 70px) + 0.9rem) 1rem 1.25rem;
+  padding: 0.9rem 1rem 1.25rem;
   overflow-y: auto;
   overflow-x: hidden;
   overscroll-behavior: contain;
@@ -3851,7 +3896,7 @@ button {
 
 @media (max-width: 720px) {
   .modal-overlay {
-    padding: calc(var(--navbar-height-mobile, 58px) + 0.75rem) 0.75rem 1rem;
+    padding: 0.75rem 0.75rem 1rem;
   }
 
   .modal-box,
@@ -3889,7 +3934,7 @@ button {
 ========================= */
 
 .modal-overlay {
-  padding: calc(var(--navbar-height, 70px) + 0.65rem) 0.8rem 0.9rem;
+  padding: 0.65rem 0.8rem 0.9rem;
 }
 
 .modal-box,
@@ -4042,7 +4087,7 @@ button {
 
 @media (max-width: 720px) {
   .modal-overlay {
-    padding: calc(var(--navbar-height-mobile, 58px) + 0.55rem) 0.65rem 0.85rem;
+    padding: 0.55rem 0.65rem 0.85rem;
   }
 
   .modal-box,

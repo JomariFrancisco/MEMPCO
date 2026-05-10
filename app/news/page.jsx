@@ -3,7 +3,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Navbar from '@/components/Navbar/Navbar';
 import Footer from '@/components/Footer/Footer';
-import { listPublishedMarketingPosts } from '@/lib/marketing/marketingPosts';
+import {
+  getMarketingPostBuckets,
+  listPublishedMarketingPosts,
+} from '@/lib/marketing/marketingPosts';
 import './news.css';
 
 const NEWS_ITEMS = [
@@ -227,9 +230,10 @@ export default function News() {
     return newsItems.filter((item) => item.category === activeCategory);
   }, [activeCategory, newsItems]);
 
-  const featured = filteredItems[0] ?? newsItems[0];
-  const latestStories = filteredItems.slice(1, 4);
-  const moreStories = filteredItems.slice(4);
+  const storyBuckets = useMemo(() => getMarketingPostBuckets(filteredItems), [filteredItems]);
+  const featured = storyBuckets.featured ?? newsItems[0];
+  const latestStories = storyBuckets.latest;
+  const moreStories = storyBuckets.more;
 
   const openArticle = (article) => {
     setSelectedArticle(article);
@@ -267,9 +271,22 @@ export default function News() {
     };
 
     loadPosts();
+    window.addEventListener('focus', loadPosts);
+    window.addEventListener('pageshow', loadPosts);
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        void loadPosts();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
       cancelled = true;
+      window.removeEventListener('focus', loadPosts);
+      window.removeEventListener('pageshow', loadPosts);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, []);
 

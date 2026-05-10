@@ -4,11 +4,15 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Archive,
+  BriefcaseBusiness,
+  CalendarDays,
   Clock3,
+  ExternalLink,
   FileText,
   ImagePlus,
   LayoutDashboard,
   LogOut,
+  Megaphone,
   Newspaper,
   Plus,
   Save,
@@ -17,9 +21,9 @@ import {
   ShieldCheck,
   Trash2,
   UploadCloud,
+  UsersRound,
   X,
 } from 'lucide-react';
-import Navbar from '@/components/Navbar/Navbar';
 import {
   getCurrentPortalUser,
   isInactivePortalUser,
@@ -27,14 +31,43 @@ import {
   signOutPortal,
 } from '@/lib/auth/portalAuth';
 import {
+  MARKETING_PLACEMENTS,
+  MARKETING_PLACEMENT_LABELS,
   deleteMarketingPost,
   listMarketingPosts,
   saveMarketingPost,
+  sortMarketingPosts,
 } from '@/lib/marketing/marketingPosts';
 import '../admin-dashboard/admin-dashboard.css';
 import './marketing-admin.css';
 
-const CATEGORIES = ['All', 'News', 'Events', 'Announcement'];
+const EDITOR_CATEGORIES = ['News', 'Events', 'Announcement', 'Member Stories'];
+const HRMAX_ROUTE = '/HRMax';
+const POSTS_PER_PAGE = 2;
+const SORT_OPTIONS = [
+  { value: 'website_order', label: 'Website Order' },
+  { value: 'updated_desc', label: 'Recently Updated' },
+  { value: 'published_desc', label: 'Newest Published' },
+  { value: 'title_asc', label: 'Title A-Z' },
+  { value: 'category_asc', label: 'Category A-Z' },
+  { value: 'status_asc', label: 'Status A-Z' },
+];
+const CONTENT_NAV_ITEMS = [
+  { label: 'News', category: 'News', icon: Newspaper },
+  { label: 'Events', category: 'Events', icon: CalendarDays },
+  { label: 'Announcements', category: 'Announcement', icon: Megaphone },
+  { label: 'Stories', category: 'Member Stories', icon: UsersRound },
+];
+const CATEGORY_TO_TYPE = {
+  News: 'news',
+  Events: 'event',
+  Announcement: 'announcement',
+  'Member Stories': 'member_story',
+};
+const TYPE_TO_CATEGORY = Object.entries(CATEGORY_TO_TYPE).reduce(
+  (categories, [category, type]) => ({ ...categories, [type]: category }),
+  {}
+);
 
 const blankPost = {
   id: '',
@@ -44,10 +77,18 @@ const blankPost = {
   type: 'news',
   excerpt: '',
   bodyText: '',
+  externalUrl: '',
+  storyRole: '',
+  storyLocation: '',
+  tagsText: '',
   image: '',
   status: 'draft',
   featured: false,
+  placement: 'more',
+  displayOrder: 0,
   publishedAt: '',
+  republishedAt: '',
+  editedAt: '',
   createdBy: '',
 };
 
@@ -64,17 +105,33 @@ const toEditablePost = (post) => ({
   ...blankPost,
   ...post,
   bodyText: toBodyText(post),
+  tagsText: (post.tags || []).join(', '),
 });
 
-const toSavePayload = (post, status = post.status) => ({
-  ...post,
-  status,
-  fullArticle: post.bodyText
-    .split(/\n{2,}/)
-    .map((paragraph) => paragraph.trim())
-    .filter(Boolean),
-  publishedAt: status === 'published' ? post.publishedAt || new Date().toISOString() : post.publishedAt || null,
-});
+const toSavePayload = (post, status = post.status, options = {}) => {
+  const activityTimestamp = options.republish ? options.activityDate || new Date().toISOString() : '';
+  const editedTimestamp = options.markEdited ? options.activityDate || new Date().toISOString() : '';
+
+  return {
+    ...post,
+    status,
+    featured: post.placement === 'featured',
+    tags: post.tagsText
+      .split(/[,\n]+/)
+      .map((tag) => tag.trim())
+      .filter(Boolean),
+    fullArticle: post.bodyText
+      .split(/\n{2,}/)
+      .map((paragraph) => paragraph.trim())
+      .filter(Boolean),
+    publishedAt:
+      status === 'published'
+        ? activityTimestamp || post.publishedAt || new Date().toISOString()
+        : post.publishedAt || null,
+    republishedAt: activityTimestamp || post.republishedAt || '',
+    editedAt: editedTimestamp || post.editedAt || '',
+  };
+};
 
 const fileToDataUrl = (file) =>
   new Promise((resolve, reject) => {
@@ -141,6 +198,62 @@ const formatUpdatedAt = (value) => {
   }).format(date);
 };
 
+const getPostActivity = (post) => {
+  const editedTime = getTime(post.editedAt);
+  const publishedTime = getTime(post.publishedAt);
+  const republishedTime = getTime(post.republishedAt);
+
+  if (republishedTime && republishedTime >= editedTime) {
+    return {
+      className: 'republished',
+      label: 'Republished',
+      date: formatUpdatedAt(post.republishedAt),
+      meta: editedTime ? `Edited ${formatUpdatedAt(post.editedAt)}` : '',
+    };
+  }
+
+  if (editedTime) {
+    return {
+      className: 'edited',
+      label: 'Edited',
+      date: formatUpdatedAt(post.editedAt),
+      meta: republishedTime
+        ? `Republished ${formatUpdatedAt(post.republishedAt)}`
+        : publishedTime
+          ? `Published ${formatUpdatedAt(post.publishedAt)}`
+          : '',
+    };
+  }
+
+  if (publishedTime && post.status === 'published') {
+    return {
+      className: 'published',
+      label: 'Published',
+      date: formatUpdatedAt(post.publishedAt),
+      meta: '',
+    };
+  }
+
+  return {
+    className: 'created',
+    label: 'Created',
+    date: formatUpdatedAt(post.createdAt),
+    meta: '',
+  };
+};
+
+function ActivityIndicator({ post }) {
+  const activity = getPostActivity(post);
+
+  return (
+    <div className="marketing-activity">
+      <span className={`activity-badge ${activity.className}`}>{activity.label}</span>
+      <strong>{activity.date}</strong>
+      {activity.meta && <small>{activity.meta}</small>}
+    </div>
+  );
+}
+
 const getTypeLabel = (type) => {
   if (type === 'event') return 'Event';
   if (type === 'announcement') return 'Announcement';
@@ -167,6 +280,16 @@ const getPostSearchText = (post) =>
     post.category,
     post.type,
     post.status,
+    post.placement,
+    post.externalUrl,
+    post.storyRole,
+    post.storyLocation,
+    post.tagsText,
+    post.publishedAt,
+    post.republishedAt,
+    post.editedAt,
+    post.updatedAt,
+    ...(post.tags || []),
     post.excerpt,
   ]
     .join(' ')
@@ -177,6 +300,57 @@ const toStatusClass = (value = '') =>
     .toLowerCase()
     .trim()
     .replace(/[^a-z0-9]+/g, '-');
+
+const getTime = (value) => {
+  const time = new Date(value || '').getTime();
+  return Number.isNaN(time) ? 0 : time;
+};
+
+const compareText = (a = '', b = '') => String(a).localeCompare(String(b), undefined, { sensitivity: 'base' });
+
+const sortConsolePosts = (posts = [], sortMode = 'website_order') => {
+  if (sortMode === 'website_order') return sortMarketingPosts(posts);
+
+  return [...posts].sort((a, b) => {
+    if (sortMode === 'updated_desc') {
+      return getTime(b.updatedAt || b.createdAt) - getTime(a.updatedAt || a.createdAt);
+    }
+
+    if (sortMode === 'published_desc') {
+      return getTime(b.publishedAt || b.updatedAt) - getTime(a.publishedAt || a.updatedAt);
+    }
+
+    if (sortMode === 'title_asc') {
+      return compareText(a.title, b.title);
+    }
+
+    if (sortMode === 'category_asc') {
+      return compareText(a.category, b.category) || compareText(a.title, b.title);
+    }
+
+    if (sortMode === 'status_asc') {
+      return compareText(a.status, b.status) || compareText(a.title, b.title);
+    }
+
+    return 0;
+  });
+};
+
+const getLibraryTitle = (statusFilter, activeCategory) => {
+  if (activeCategory !== 'All') return activeCategory;
+  if (statusFilter === 'published') return 'Published Posts';
+  if (statusFilter === 'draft') return 'Draft Posts';
+  if (statusFilter === 'archived') return 'Archived Posts';
+  return 'Website Publishing';
+};
+
+const getSaveSuccessMessage = ({ nextStatus, wasExisting, shouldRepublish }) => {
+  if (shouldRepublish) return 'Post republished.';
+  if (nextStatus === 'published') return 'Post published.';
+  if (nextStatus === 'archived') return 'Post archived.';
+  if (wasExisting) return 'Post edited.';
+  return 'Saved as draft.';
+};
 
 function StatCard({ icon: IconComponent, label, value, meta }) {
   return (
@@ -202,28 +376,44 @@ export default function MarketingAdminPage() {
   const [imageFileLabel, setImageFileLabel] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [activeCategory, setActiveCategory] = useState('All');
+  const [placementFilter, setPlacementFilter] = useState('all');
+  const [sortMode, setSortMode] = useState('website_order');
+  const [currentPage, setCurrentPage] = useState(1);
   const [search, setSearch] = useState('');
   const [message, setMessage] = useState({ type: '', text: '' });
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [lastSynced, setLastSynced] = useState('');
+  const isContentView = activeCategory !== 'All';
+  const libraryTitle = getLibraryTitle(statusFilter, activeCategory);
 
   const statusFilteredPosts = useMemo(() => {
     const query = search.trim().toLowerCase();
 
     return posts.filter((post) => {
       const matchesStatus = statusFilter === 'all' || post.status === statusFilter;
+      const matchesPlacement = placementFilter === 'all' || post.placement === placementFilter;
       const matchesSearch = !query || getPostSearchText(post).includes(query);
 
-      return matchesStatus && matchesSearch;
+      return matchesStatus && matchesPlacement && matchesSearch;
     });
-  }, [posts, search, statusFilter]);
+  }, [posts, placementFilter, search, statusFilter]);
 
   const visiblePosts = useMemo(() => {
-    if (activeCategory === 'All') return statusFilteredPosts;
-    return statusFilteredPosts.filter((post) => post.category === activeCategory);
-  }, [activeCategory, statusFilteredPosts]);
+    const categoryPosts =
+      activeCategory === 'All'
+        ? statusFilteredPosts
+        : statusFilteredPosts.filter((post) => post.category === activeCategory);
+
+    return sortConsolePosts(categoryPosts, sortMode);
+  }, [activeCategory, sortMode, statusFilteredPosts]);
+
+  const totalPages = Math.max(1, Math.ceil(visiblePosts.length / POSTS_PER_PAGE));
+  const paginatedPosts = useMemo(() => {
+    const startIndex = (currentPage - 1) * POSTS_PER_PAGE;
+    return visiblePosts.slice(startIndex, startIndex + POSTS_PER_PAGE);
+  }, [currentPage, visiblePosts]);
 
   const counts = useMemo(
     () => ({
@@ -231,16 +421,12 @@ export default function MarketingAdminPage() {
       published: posts.filter((post) => post.status === 'published').length,
       draft: posts.filter((post) => post.status === 'draft').length,
       archived: posts.filter((post) => post.status === 'archived').length,
+      featured: posts.filter((post) => post.placement === 'featured').length,
+      latest: posts.filter((post) => post.placement === 'latest').length,
+      more: posts.filter((post) => post.placement === 'more').length,
     }),
     [posts]
   );
-
-  const getCategoryCount = (category) =>
-    category === 'All'
-      ? statusFilteredPosts.length
-      : statusFilteredPosts.filter((post) => post.category === category).length;
-
-  const featuredCount = posts.filter((post) => post.featured).length;
 
   const loadPosts = async () => {
     setIsLoading(true);
@@ -287,9 +473,35 @@ export default function MarketingAdminPage() {
     }
   }, [checked, user]);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeCategory, placementFilter, search, sortMode, statusFilter]);
+
+  useEffect(() => {
+    setCurrentPage((page) => Math.min(page, totalPages));
+  }, [totalPages]);
+
   const updatePost = (field, value) => {
     setMessage({ type: '', text: '' });
-    setActivePost((current) => ({ ...current, [field]: value }));
+    setActivePost((current) => {
+      const nextPost = { ...current, [field]: value };
+      const nextType = field === 'category' ? CATEGORY_TO_TYPE[value] : field === 'type' ? value : nextPost.type;
+      const nextCategory = field === 'type' ? TYPE_TO_CATEGORY[value] : field === 'category' ? value : nextPost.category;
+
+      if (field === 'category' && CATEGORY_TO_TYPE[value]) {
+        nextPost.type = CATEGORY_TO_TYPE[value];
+      }
+
+      if (field === 'type' && TYPE_TO_CATEGORY[value]) {
+        nextPost.category = TYPE_TO_CATEGORY[value];
+      }
+
+      if (nextType === 'member_story' || nextCategory === 'Member Stories') {
+        nextPost.placement = 'more';
+      }
+
+      return nextPost;
+    });
   };
 
   const startNewPost = () => {
@@ -355,18 +567,39 @@ export default function MarketingAdminPage() {
     setIsSaving(true);
 
     try {
-      const savedPost = await saveMarketingPost(toSavePayload(activePost, nextStatus), user);
+      const wasExisting = Boolean(activePost.id);
+      const shouldRepublish = nextStatus === 'published' && Boolean(activePost.id && activePost.publishedAt);
+      const shouldMarkEdited = wasExisting && !shouldRepublish && nextStatus !== 'archived';
+      const savedPost = await saveMarketingPost(
+        toSavePayload(activePost, nextStatus, {
+          markEdited: shouldMarkEdited,
+          republish: shouldRepublish,
+        }),
+        user
+      );
       setPosts((current) => {
         const exists = current.some((post) => post.id === savedPost.id);
-        const nextPosts = exists
+        let nextPosts = exists
           ? current.map((post) => (post.id === savedPost.id ? savedPost : post))
           : [savedPost, ...current];
 
-        return nextPosts.sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0));
+        if (savedPost.placement === 'featured' && savedPost.type !== 'member_story') {
+          nextPosts = nextPosts.map((post) =>
+            post.id !== savedPost.id && post.type !== 'member_story' && post.placement === 'featured'
+              ? { ...post, featured: false, placement: 'more' }
+              : post
+          );
+        }
+
+        return sortMarketingPosts(nextPosts);
       });
       setActivePost(toEditablePost(savedPost));
       setImageFileLabel('');
-      setMessage({ type: 'success', text: `${statusLabels[savedPost.status] || 'Post'} saved.` });
+      setMessage({
+        type: 'success',
+        text: getSaveSuccessMessage({ nextStatus: savedPost.status, wasExisting, shouldRepublish }),
+      });
+      setEditorOpen(false);
       setLastSynced(new Date().toLocaleTimeString());
     } catch (error) {
       setMessage({ type: 'error', text: error.message || 'Unable to save post.' });
@@ -389,6 +622,7 @@ export default function MarketingAdminPage() {
       }
 
       setMessage({ type: 'success', text: 'Post deleted.' });
+      setEditorOpen(false);
       setLastSynced(new Date().toLocaleTimeString());
     } catch (error) {
       setMessage({ type: 'error', text: error.message || 'Unable to delete post.' });
@@ -396,7 +630,14 @@ export default function MarketingAdminPage() {
   };
 
   const changeStatusFilter = (nextFilter) => {
+    setActiveCategory('All');
     setStatusFilter(nextFilter);
+  };
+
+  const changeCategoryFilter = (nextCategory) => {
+    setActiveCategory((currentCategory) => (currentCategory === nextCategory ? 'All' : nextCategory));
+    setStatusFilter('all');
+    setPlacementFilter('all');
   };
 
   const handleLogout = async () => {
@@ -404,10 +645,11 @@ export default function MarketingAdminPage() {
     router.replace('/LogIn');
   };
 
+  const isEditingMemberStory = activePost.type === 'member_story' || activePost.category === 'Member Stories';
+
   if (!checked || !user) {
     return (
       <>
-        <Navbar />
         <main className="portal-main portal-app-main" />
       </>
     );
@@ -415,14 +657,13 @@ export default function MarketingAdminPage() {
 
   return (
     <>
-      <Navbar />
       <main className="portal-main portal-app-main marketing-admin-main">
         <div className="portal-shell">
           <header className="portal-topbar glass">
             <div className="portal-topbar-copy">
               <span className="portal-eyebrow">Marketing Admin</span>
-              <h1>News & Events Console</h1>
-              <p>Manage public stories, announcements, event posts, featured content, and publishing status.</p>
+              <h1>Marketing Content Console</h1>
+              <p>Publish news, events, announcements, and member stories across the public website.</p>
             </div>
 
             <div className="portal-topbar-actions">
@@ -452,29 +693,52 @@ export default function MarketingAdminPage() {
             <aside className="portal-sidebar">
               <div className="sidebar-brand">
                 <span className="sidebar-eyebrow">Console</span>
-                <div className="sidebar-title">Marketing Desk</div>
+                <div className="sidebar-title">Publishing Desk</div>
               </div>
 
-              <nav className="sidebar-nav" aria-label="Marketing admin filters">
-                <button type="button" className={`sidebar-nav-btn ${statusFilter === 'all' ? 'active' : ''}`} onClick={() => changeStatusFilter('all')}>
+              <nav className="sidebar-nav marketing-sidebar-nav" aria-label="Marketing admin status filters">
+                <button type="button" className={`sidebar-nav-btn ${!isContentView && statusFilter === 'all' ? 'active' : ''}`} onClick={() => changeStatusFilter('all')}>
                   <LayoutDashboard className="sidebar-nav-icon" aria-hidden="true" />
                   Overview
                 </button>
-                <button type="button" className={`sidebar-nav-btn ${statusFilter === 'published' ? 'active' : ''}`} onClick={() => changeStatusFilter('published')}>
+                <button type="button" className={`sidebar-nav-btn ${!isContentView && statusFilter === 'published' ? 'active' : ''}`} onClick={() => changeStatusFilter('published')}>
                   <Send className="sidebar-nav-icon" aria-hidden="true" />
                   Published
                 </button>
-                <button type="button" className={`sidebar-nav-btn ${statusFilter === 'draft' ? 'active' : ''}`} onClick={() => changeStatusFilter('draft')}>
+                <button type="button" className={`sidebar-nav-btn ${!isContentView && statusFilter === 'draft' ? 'active' : ''}`} onClick={() => changeStatusFilter('draft')}>
                   <FileText className="sidebar-nav-icon" aria-hidden="true" />
                   Drafts
                 </button>
-                <button type="button" className={`sidebar-nav-btn ${statusFilter === 'archived' ? 'active' : ''}`} onClick={() => changeStatusFilter('archived')}>
+                <button type="button" className={`sidebar-nav-btn ${!isContentView && statusFilter === 'archived' ? 'active' : ''}`} onClick={() => changeStatusFilter('archived')}>
                   <Archive className="sidebar-nav-icon" aria-hidden="true" />
                   Archived
                 </button>
               </nav>
 
+              <div className="marketing-sidebar-group">
+                <span className="marketing-sidebar-label">Content</span>
+                <nav className="sidebar-nav marketing-sidebar-nav" aria-label="Marketing admin content filters">
+                  {CONTENT_NAV_ITEMS.map(({ label, category, icon: IconComponent }) => (
+                    <button
+                      type="button"
+                      className={`sidebar-nav-btn ${activeCategory === category ? 'active' : ''}`}
+                      onClick={() => changeCategoryFilter(category)}
+                      key={category}
+                    >
+                      <IconComponent className="sidebar-nav-icon" aria-hidden="true" />
+                      {label}
+                    </button>
+                  ))}
+                </nav>
+              </div>
+
               <div className="sidebar-logout">
+                <a className="sidebar-nav-btn sidebar-external-link" href={HRMAX_ROUTE}>
+                  <BriefcaseBusiness className="sidebar-nav-icon" aria-hidden="true" />
+                  HRMax
+                  <ExternalLink className="sidebar-trailing-icon" aria-hidden="true" />
+                </a>
+
                 <button type="button" className="sidebar-nav-btn" onClick={handleLogout}>
                   <LogOut className="sidebar-nav-icon" aria-hidden="true" />
                   Logout
@@ -483,20 +747,15 @@ export default function MarketingAdminPage() {
             </aside>
 
             <section className="portal-view marketing-admin-view">
-              <section className="panel-card glass helpdesk-banner admin-hero-panel marketing-hero-panel">
+              <section className="panel-card glass marketing-publisher-hero">
                 <img src="/Logos/Logo.png" alt="" className="admin-hero-logo" aria-hidden="true" />
-                <div className="helpdesk-banner-copy hero-copy">
+                <div className="hero-copy">
                   <span className="section-kicker">Publishing Center</span>
-                  <h2>Admin queue for MEMPCO news, events, and announcements.</h2>
-                  <p>Create posts, upload images from computer files, choose featured stories, and publish updates to the public site.</p>
+                  <h2>Public website backend for marketing content.</h2>
+                  <p>Choose News & Events placement or publish Member Stories with YouTube links for the public story section.</p>
                 </div>
 
-                <div className="helpdesk-banner-actions">
-                  <button type="button" className="quick-action-btn primary" onClick={startNewPost}>
-                    New Post
-                  </button>
-                  <span className="helpdesk-badge">{visiblePosts.length} Showing</span>
-                </div>
+                <span className="marketing-sync-badge">{visiblePosts.length} Showing</span>
               </section>
 
               {message.text && (
@@ -509,14 +768,14 @@ export default function MarketingAdminPage() {
                 <StatCard icon={Newspaper} label="Total Posts" value={counts.total} meta="All marketing entries" />
                 <StatCard icon={Send} label="Published" value={counts.published} meta="Visible on public pages" />
                 <StatCard icon={Clock3} label="Drafts" value={counts.draft} meta="Needs review or copy" />
-                <StatCard icon={ShieldCheck} label="Featured" value={featuredCount} meta="Spotlight candidates" />
+                <StatCard icon={ShieldCheck} label="Featured" value={counts.featured} meta="Homepage and page spotlight" />
               </section>
 
               <section className="panel-card glass marketing-post-panel">
                 <div className="section-head">
                   <div>
-                    <span className="section-kicker">Post Queue</span>
-                    <h3>Marketing Content</h3>
+                    <span className="section-kicker">Content Library</span>
+                    <h3>{libraryTitle}</h3>
                   </div>
                   <button type="button" className="quick-action-btn primary marketing-new-btn" onClick={startNewPost}>
                     <Plus aria-hidden="true" />
@@ -524,38 +783,35 @@ export default function MarketingAdminPage() {
                   </button>
                 </div>
 
-                <div className="admin-filter-grid marketing-filter-grid">
-                  <div className="ticket-form-group full search-field-group">
-                    <label htmlFor="marketing-search">Search Post</label>
-                    <span className="field-leading-icon" aria-hidden="true">
-                      <Search className="admin-mono-icon" aria-hidden="true" />
-                    </span>
+                <div className="marketing-library-tools">
+                  <label className="marketing-search">
+                    <Search className="admin-mono-icon" aria-hidden="true" />
+                    <span className="sr-only">Search post</span>
                     <input
                       id="marketing-search"
-                      className="ticket-field ticket-input"
                       type="search"
                       value={search}
                       onChange={(event) => setSearch(event.target.value)}
-                      placeholder="Search title, category, status, excerpt..."
+                      placeholder="Search posts..."
                     />
-                  </div>
+                  </label>
 
-                  <div className="ticket-form-group">
-                    <label>Status</label>
-                    <select className="ticket-field ticket-select" value={statusFilter} onChange={(event) => changeStatusFilter(event.target.value)}>
-                      <option value="all">All Status</option>
-                      <option value="published">Published</option>
-                      <option value="draft">Draft</option>
-                      <option value="archived">Archived</option>
-                    </select>
-                  </div>
+                  <div className="marketing-filter-pills" aria-label="Filter posts">
+                    {!isContentView && (
+                      <select value={placementFilter} onChange={(event) => setPlacementFilter(event.target.value)} aria-label="Placement">
+                        <option value="all">All Placements</option>
+                        {MARKETING_PLACEMENTS.map((placement) => (
+                          <option value={placement.value} key={placement.value}>
+                            {placement.label}
+                          </option>
+                        ))}
+                      </select>
+                    )}
 
-                  <div className="ticket-form-group">
-                    <label>Category</label>
-                    <select className="ticket-field ticket-select" value={activeCategory} onChange={(event) => setActiveCategory(event.target.value)}>
-                      {CATEGORIES.map((category) => (
-                        <option value={category} key={category}>
-                          {category} ({getCategoryCount(category)})
+                    <select value={sortMode} onChange={(event) => setSortMode(event.target.value)} aria-label="Sort posts">
+                      {SORT_OPTIONS.map((option) => (
+                        <option value={option.value} key={option.value}>
+                          Sort: {option.label}
                         </option>
                       ))}
                     </select>
@@ -567,43 +823,43 @@ export default function MarketingAdminPage() {
                     <thead>
                       <tr>
                         <th>Story</th>
-                        <th>Category</th>
-                        <th>Status</th>
-                        <th>Feature</th>
-                        <th>Updated</th>
+                        <th>Visibility</th>
+                        <th>Activity</th>
                         <th>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
                       {isLoading ? (
                         <tr>
-                          <td colSpan={6}>
+                          <td colSpan={4}>
                             <div className="admin-table-main">
                               <strong>Loading posts...</strong>
-                              <span>Please wait while the marketing queue syncs.</span>
+                              <span>Please wait while the publishing library syncs.</span>
                             </div>
                           </td>
                         </tr>
                       ) : visiblePosts.length ? (
-                        visiblePosts.map((post) => (
+                        paginatedPosts.map((post) => (
                           <tr key={post.id}>
                             <td>
                               <div className="admin-table-main marketing-story-cell">
                                 {post.image && <img src={post.image} alt="" className="marketing-story-thumb" />}
                                 <div>
                                   <strong>{post.title}</strong>
-                                  <span>{post.excerpt || 'No excerpt yet.'}</span>
+                                  <span>
+                                    {post.category} / {post.type === 'member_story'
+                                      ? post.storyRole || 'Member Story'
+                                      : MARKETING_PLACEMENT_LABELS[post.placement] || 'More Stories'}
+                                  </span>
                                 </div>
                               </div>
                             </td>
-                            <td>{post.category}</td>
                             <td>
                               <span className={`status ${toStatusClass(post.status)}`}>{statusLabels[post.status] || 'Draft'}</span>
                             </td>
                             <td>
-                              <span className={`status ${post.featured ? 'active' : 'inactive'}`}>{post.featured ? 'Featured' : 'Standard'}</span>
+                              <ActivityIndicator post={post} />
                             </td>
-                            <td>{post.date || formatUpdatedAt(post.updatedAt)}</td>
                             <td>
                               <div className="user-action-group">
                                 <button type="button" className="user-action-btn" onClick={() => editPost(post)}>
@@ -618,7 +874,7 @@ export default function MarketingAdminPage() {
                         ))
                       ) : (
                         <tr>
-                          <td colSpan={6}>
+                          <td colSpan={4}>
                             <div className="admin-table-main">
                               <strong>No posts found.</strong>
                               <span>Use New Post to create the first marketing story.</span>
@@ -629,6 +885,30 @@ export default function MarketingAdminPage() {
                     </tbody>
                   </table>
                 </div>
+
+                {!isLoading && visiblePosts.length > 0 && (
+                  <div className="marketing-pagination" aria-label="Content library pagination">
+                    <button
+                      type="button"
+                      onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                      disabled={currentPage === 1}
+                      aria-label="Previous page"
+                    >
+                      &lt;
+                    </button>
+                    <span>
+                      Page {currentPage} of {totalPages}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+                      disabled={currentPage === totalPages}
+                      aria-label="Next page"
+                    >
+                      &gt;
+                    </button>
+                  </div>
+                )}
               </section>
             </section>
           </div>
@@ -643,7 +923,7 @@ export default function MarketingAdminPage() {
                 <div>
                   <span className="section-kicker">{activePost.id ? 'Edit Post' : 'New Post'}</span>
                   <h2>{activePost.title || 'Untitled story'}</h2>
-                  <p>{statusLabels[activePost.status]}</p>
+                  <p>{MARKETING_PLACEMENT_LABELS[activePost.placement]} / {statusLabels[activePost.status]}</p>
                 </div>
                 <button type="button" className="ma-drawer-close" onClick={() => setEditorOpen(false)} aria-label="Close editor">
                   <X aria-hidden="true" />
@@ -663,9 +943,11 @@ export default function MarketingAdminPage() {
                   <label className="ma-field">
                     <span>Category</span>
                     <select value={activePost.category} onChange={(event) => updatePost('category', event.target.value)}>
-                      <option value="News">News</option>
-                      <option value="Events">Events</option>
-                      <option value="Announcement">Announcement</option>
+                      {EDITOR_CATEGORIES.map((category) => (
+                        <option value={category} key={category}>
+                          {category}
+                        </option>
+                      ))}
                     </select>
                   </label>
 
@@ -675,7 +957,33 @@ export default function MarketingAdminPage() {
                       <option value="news">News</option>
                       <option value="event">Event</option>
                       <option value="announcement">Announcement</option>
+                      <option value="member_story">Member Story</option>
                     </select>
+                  </label>
+                </div>
+
+                <div className="ma-field-grid">
+                  <label className="ma-field">
+                    <span>Website Placement</span>
+                    <select value={activePost.placement} onChange={(event) => updatePost('placement', event.target.value)}>
+                      {MARKETING_PLACEMENTS.map((placement) => (
+                        <option value={placement.value} key={placement.value}>
+                          {placement.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label className="ma-field">
+                    <span>Display Order</span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={activePost.displayOrder}
+                      onChange={(event) => updatePost('displayOrder', event.target.value)}
+                      placeholder="0"
+                    />
                   </label>
                 </div>
 
@@ -706,6 +1014,48 @@ export default function MarketingAdminPage() {
                   />
                 </label>
 
+                {isEditingMemberStory && (
+                  <>
+                    <div className="ma-field-grid">
+                      <label className="ma-field">
+                        <span>Member Role</span>
+                        <input
+                          value={activePost.storyRole}
+                          onChange={(event) => updatePost('storyRole', event.target.value)}
+                          placeholder="Bakery Shop Owner"
+                        />
+                      </label>
+
+                      <label className="ma-field">
+                        <span>Location</span>
+                        <input
+                          value={activePost.storyLocation}
+                          onChange={(event) => updatePost('storyLocation', event.target.value)}
+                          placeholder="Zamboanga City"
+                        />
+                      </label>
+                    </div>
+
+                    <label className="ma-field full">
+                      <span>YouTube / Button Link</span>
+                      <input
+                        value={activePost.externalUrl}
+                        onChange={(event) => updatePost('externalUrl', event.target.value)}
+                        placeholder="https://www.youtube.com/@mempcoph3541"
+                      />
+                    </label>
+
+                    <label className="ma-field full">
+                      <span>Tags</span>
+                      <input
+                        value={activePost.tagsText}
+                        onChange={(event) => updatePost('tagsText', event.target.value)}
+                        placeholder="#MEMPCOStories, #CooperativePride"
+                      />
+                    </label>
+                  </>
+                )}
+
                 {activePost.image && (
                   <div className="ma-image-preview">
                     <img src={activePost.image} alt="" />
@@ -725,11 +1075,6 @@ export default function MarketingAdminPage() {
                   <textarea value={activePost.bodyText} onChange={(event) => updatePost('bodyText', event.target.value)} placeholder="Write article paragraphs. Separate paragraphs with a blank line." rows={7} />
                 </label>
 
-                <label className="ma-check">
-                  <input type="checkbox" checked={activePost.featured} onChange={(event) => updatePost('featured', event.target.checked)} />
-                  <span>Feature this story</span>
-                </label>
-
                 <div className="ma-editor-actions">
                   <button type="submit" className="ma-command save" disabled={isSaving}>
                     <Save aria-hidden="true" />
@@ -739,19 +1084,17 @@ export default function MarketingAdminPage() {
                     <Send aria-hidden="true" />
                     Publish
                   </button>
-                  <button type="button" className="ma-command archive" onClick={() => handleSave('archived')} disabled={isSaving || !activePost.id}>
-                    <Archive aria-hidden="true" />
-                    Archive
-                  </button>
-                  <button type="button" className="ma-command neutral" onClick={startNewPost}>
-                    <Plus aria-hidden="true" />
-                    New
-                  </button>
                   {activePost.id && (
-                    <button type="button" className="ma-command delete" onClick={() => handleDelete(activePost)}>
-                      <Trash2 aria-hidden="true" />
-                      Delete
-                    </button>
+                    <>
+                      <button type="button" className="ma-command archive" onClick={() => handleSave('archived')} disabled={isSaving}>
+                        <Archive aria-hidden="true" />
+                        Archive
+                      </button>
+                      <button type="button" className="ma-command delete" onClick={() => handleDelete(activePost)}>
+                        <Trash2 aria-hidden="true" />
+                        Delete
+                      </button>
+                    </>
                   )}
                 </div>
               </form>

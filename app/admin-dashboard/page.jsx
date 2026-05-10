@@ -3,11 +3,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
+  BriefcaseBusiness,
   Building2,
   CalendarDays,
   ChevronLeft,
   ChevronRight,
   Clock3,
+  ExternalLink,
   Eye,
   EyeOff,
   FileText,
@@ -21,7 +23,6 @@ import {
   UserRound,
   Wrench,
 } from 'lucide-react';
-import Navbar from '@/components/Navbar/Navbar';
 import {
   BRANCHES,
   DEPARTMENTS,
@@ -58,6 +59,7 @@ import './admin-dashboard.css';
 ========================= */
 
 const LOGIN_ROUTE = '/LogIn';
+const HRMAX_ROUTE = '/HRMax';
 const TRANSITION_DURATION = 560;
 const REPORT_PERIOD_OPTIONS = [
   { key: 'day', label: 'Day', title: 'Tickets by Day', meta: 'Daily submissions' },
@@ -93,7 +95,6 @@ function PortalTransitionLoader({ label }) {
 function InactiveAccountNotice() {
   return (
     <>
-      <Navbar />
       <main className="portal-main portal-app-main">
         <div className="portal-shell">
           <section className="panel-card glass admin-hero-panel">
@@ -858,6 +859,12 @@ function Sidebar({ active, onNav, onLogout, open, canCreateUsers }) {
             {label}
           </button>
         ))}
+
+        <a className="sidebar-nav-btn sidebar-external-link" href={HRMAX_ROUTE}>
+          <BriefcaseBusiness className="sidebar-nav-icon" aria-hidden="true" />
+          HRMax
+          <ExternalLink className="sidebar-trailing-icon" aria-hidden="true" />
+        </a>
 
         <div className="sidebar-logout">
           <button type="button" className="sidebar-nav-btn" onClick={onLogout}>
@@ -3000,7 +3007,6 @@ export default function AdminDashboardPage() {
 
     return (
       <>
-        <Navbar />
         <main className="portal-main portal-app-main">
           <div className="portal-shell" />
         </main>
@@ -3011,8 +3017,6 @@ export default function AdminDashboardPage() {
 
   return (
     <>
-      <Navbar />
-
       <main className="portal-main portal-app-main">
         <div className="portal-shell">
           <header className="portal-topbar glass">

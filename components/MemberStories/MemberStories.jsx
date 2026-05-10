@@ -2,7 +2,10 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
+import { listPublishedMemberStories } from '@/lib/marketing/marketingPosts';
 import './MemberStories.css';
+
+const COMPANY_YOUTUBE_URL = 'https://www.youtube.com/@mempcoph3541';
 
 const STORIES = [
   {
@@ -52,6 +55,18 @@ const STORIES = [
   },
 ];
 
+const toMemberStory = (post) => ({
+  text: post.excerpt || '',
+  name: post.title || 'MEMPCO Member',
+  role: post.storyRole || 'MEMPCO Member',
+  location: post.storyLocation || 'MEMPCO Community',
+  image: post.image || '/Logos/Logo.png',
+  emoji: '',
+  fullStory: post.fullArticle?.length ? post.fullArticle : [post.excerpt || ''],
+  tags: post.tags?.length ? post.tags : ['#MEMPCOStories'],
+  videoUrl: post.externalUrl || COMPANY_YOUTUBE_URL,
+});
+
 /* ── Icons ── */
 function StarIcon() {
   return (
@@ -94,10 +109,10 @@ function ReadMoreIcon() {
   );
 }
 
-function FacebookIcon() {
+function YouTubeIcon() {
   return (
     <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <path d="M22 12.06C22 6.5 17.52 2 12 2S2 6.5 2 12.06c0 5.02 3.66 9.18 8.44 9.94v-7.03H7.9v-2.91h2.54V9.84c0-2.52 1.49-3.91 3.77-3.91 1.09 0 2.24.2 2.24.2v2.47h-1.26c-1.24 0-1.63.78-1.63 1.57v1.89h2.78l-.44 2.91h-2.34V22C18.34 21.24 22 17.08 22 12.06z" />
+      <path d="M21.58 7.2a2.72 2.72 0 0 0-1.91-1.93C17.98 4.82 12 4.82 12 4.82s-5.98 0-7.67.45A2.72 2.72 0 0 0 2.42 7.2 28.36 28.36 0 0 0 2 12a28.36 28.36 0 0 0 .42 4.8 2.72 2.72 0 0 0 1.91 1.93c1.69.45 7.67.45 7.67.45s5.98 0 7.67-.45a2.72 2.72 0 0 0 1.91-1.93A28.36 28.36 0 0 0 22 12a28.36 28.36 0 0 0-.42-4.8ZM10 15.18V8.82L15.5 12 10 15.18Z" />
     </svg>
   );
 }
@@ -234,7 +249,7 @@ function StoryModal({ story, onClose }) {
 
           <div className="ms-modal__actions">
             <a
-              href={story.videoUrl}
+              href={story.videoUrl || COMPANY_YOUTUBE_URL}
               target="_blank"
               rel="noopener noreferrer"
               className="ms-modal__btn ms-modal__btn--primary"
@@ -330,6 +345,7 @@ function MobileCarousel({ stories, onOpenModal }) {
 export default function MemberStories() {
   const sectionRef = useRef(null);
   const [isVisible, setIsVisible] = useState(false);
+  const [stories, setStories] = useState(STORIES);
   const [activeStory, setActiveStory] = useState(null);
 
   useEffect(() => {
@@ -371,6 +387,31 @@ export default function MemberStories() {
       io.disconnect();
       sio.disconnect();
     };
+  }, [stories.length]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadStories = async () => {
+      try {
+        const posts = await listPublishedMemberStories();
+        const nextStories = posts.map(toMemberStory);
+
+        if (!cancelled && nextStories.length) {
+          setStories(nextStories);
+        }
+      } catch {
+        if (!cancelled) {
+          setStories(STORIES);
+        }
+      }
+    };
+
+    void loadStories();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const openModal = useCallback((story) => setActiveStory(story), []);
@@ -399,25 +440,25 @@ export default function MemberStories() {
           </header>
 
           <div className="ms-cards">
-            {STORIES.map((story) => (
+            {stories.map((story) => (
               <div className="ms-reveal ms-reveal--up" data-reveal key={story.name}>
                 <StoryCard story={story} onOpenModal={openModal} />
               </div>
             ))}
           </div>
 
-          <MobileCarousel stories={STORIES} onOpenModal={openModal} />
+          <MobileCarousel stories={stories} onOpenModal={openModal} />
         </div>
 
         <a
-          href="https://www.facebook.com/groups/mempcopreneurs"
+          href={COMPANY_YOUTUBE_URL}
           target="_blank"
           rel="noopener noreferrer"
           className="ms-fb-cta"
-          aria-label="Visit MEMPCOpreneurs on Facebook"
+          aria-label="Visit MEMPCO on YouTube"
         >
-          <FacebookIcon />
-          <span>Visit MEMPCOpreneurs</span>
+          <YouTubeIcon />
+          <span>Visit MEMPCO YouTube</span>
           <ReadMoreIcon />
         </a>
       </section>

@@ -1,7 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  getMarketingPostBuckets,
+  listPublishedMarketingPosts,
+} from '@/lib/marketing/marketingPosts';
 import './NewsEvents.css';
 
 const FEATURED = {
@@ -13,6 +17,9 @@ const FEATURED = {
   image: '/About/40th NATCCO GA.png',
   imageAlt: 'MEMPCO receives Share Capital Build-Up Award at NATCCO Congress',
   href: '/news',
+  category: 'News',
+  type: 'news',
+  placement: 'featured',
 };
 
 const STORIES = [
@@ -25,6 +32,9 @@ const STORIES = [
     image: '/About/Labor Day.png',
     imageAlt: 'MEMPCO participates in the 124th Labor Day Job Fair',
     href: '/news',
+    category: 'Events',
+    type: 'event',
+    placement: 'latest',
   },
   {
     kicker: 'Partnership',
@@ -35,6 +45,9 @@ const STORIES = [
     image: '/About/CareerCon.png',
     imageAlt: 'MEMPCO participates in WMSU CareerCon and Job Fair 2026',
     href: '/news',
+    category: 'Events',
+    type: 'event',
+    placement: 'latest',
   },
   {
     kicker: 'Sustainability',
@@ -45,6 +58,9 @@ const STORIES = [
     image: '/About/54th Climbs Annual General Assembly.png',
     imageAlt: 'MEMPCO receives CLIMBS recognition',
     href: '/news',
+    category: 'News',
+    type: 'news',
+    placement: 'latest',
   },
 ];
 
@@ -66,6 +82,20 @@ const UPDATES = [
   },
 ];
 
+const FALLBACK_POSTS = [FEATURED, ...STORIES].map((story, index) => ({
+  id: `fallback-${index}`,
+  title: story.title,
+  date: story.date,
+  excerpt: story.excerpt,
+  image: story.image,
+  imageAlt: story.imageAlt,
+  category: story.category || story.kicker || 'News',
+  type: story.type || 'news',
+  placement: story.placement || (index === 0 ? 'featured' : 'latest'),
+  displayOrder: index,
+  href: '/news',
+}));
+
 function ArrowIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
@@ -82,6 +112,12 @@ function ArrowIcon() {
 
 export default function NewsEvents() {
   const ref = useRef(null);
+  const [posts, setPosts] = useState(FALLBACK_POSTS);
+
+  const { featured, latest, more } = useMemo(() => getMarketingPostBuckets(posts), [posts]);
+  const storyCards = latest.slice(0, 3);
+  const quickUpdates = (more.length ? more : posts.filter((post) => post.id !== featured?.id).slice(3, 6))
+    .slice(0, 3);
 
   useEffect(() => {
     const section = ref.current;
@@ -112,6 +148,43 @@ export default function NewsEvents() {
     return () => io.disconnect();
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadPosts = async () => {
+      try {
+        const publishedPosts = await listPublishedMarketingPosts();
+
+        if (!cancelled && publishedPosts.length) {
+          setPosts(publishedPosts);
+        }
+      } catch {
+        if (!cancelled) {
+          setPosts(FALLBACK_POSTS);
+        }
+      }
+    };
+
+    loadPosts();
+    window.addEventListener('focus', loadPosts);
+    window.addEventListener('pageshow', loadPosts);
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        void loadPosts();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      cancelled = true;
+      window.removeEventListener('focus', loadPosts);
+      window.removeEventListener('pageshow', loadPosts);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
+
   return (
     <section className="ne" ref={ref}>
       <div className="ne-glow ne-glow--a" aria-hidden="true" />
@@ -135,11 +208,12 @@ export default function NewsEvents() {
           </Link>
         </header>
 
+        {featured && (
         <article className="ne-featured ne-reveal ne-reveal--up" data-reveal>
-          <Link href={FEATURED.href} className="ne-featured__visual" aria-label={FEATURED.title}>
+          <Link href="/news" className="ne-featured__visual" aria-label={featured.title}>
             <img
-              src={FEATURED.image}
-              alt={FEATURED.imageAlt}
+              src={featured.image}
+              alt={featured.imageAlt || featured.title}
               className="ne-featured__image"
             />
             <div className="ne-featured__overlay" aria-hidden="true" />
@@ -148,17 +222,17 @@ export default function NewsEvents() {
 
           <div className="ne-featured__body">
             <div className="ne-featured__meta">
-              <span className="ne-kicker">{FEATURED.kicker}</span>
+              <span className="ne-kicker">{featured.category}</span>
               <span className="ne-dot" aria-hidden="true" />
-              <time className="ne-date">{FEATURED.date}</time>
+              <time className="ne-date">{featured.date}</time>
             </div>
 
-            <h3 className="ne-featured__title">{FEATURED.title}</h3>
+            <h3 className="ne-featured__title">{featured.title}</h3>
 
-            <p className="ne-featured__excerpt">{FEATURED.excerpt}</p>
+            <p className="ne-featured__excerpt">{featured.excerpt}</p>
 
             <div className="ne-featured__actions">
-              <Link href={FEATURED.href} className="ne-cta-btn">
+              <Link href="/news" className="ne-cta-btn">
                 <span>Read full story</span>
                 <span className="ne-cta-btn__icon" aria-hidden="true">
                   <ArrowIcon />
@@ -171,21 +245,22 @@ export default function NewsEvents() {
             </div>
           </div>
         </article>
+        )}
 
         <div className="ne-grid">
-          {STORIES.map((story) => (
+          {storyCards.map((story) => (
             <article className="ne-card ne-reveal ne-reveal--up" data-reveal key={story.title}>
-              <Link href={story.href} className="ne-card__image-wrap" aria-label={story.title}>
+              <Link href="/news" className="ne-card__image-wrap" aria-label={story.title}>
                 <img
                   src={story.image}
-                  alt={story.imageAlt}
+                  alt={story.imageAlt || story.title}
                   className="ne-card__image"
                 />
               </Link>
 
               <div className="ne-card__content">
                 <div className="ne-card__top">
-                  <span className="ne-kicker">{story.kicker}</span>
+                  <span className="ne-kicker">{story.category}</span>
                   <time className="ne-date">{story.date}</time>
                 </div>
 
@@ -193,7 +268,7 @@ export default function NewsEvents() {
 
                 <p className="ne-card__excerpt">{story.excerpt}</p>
 
-                <Link href={story.href} className="ne-link">
+                <Link href="/news" className="ne-link">
                   Read more <ArrowIcon />
                 </Link>
               </div>
@@ -210,10 +285,10 @@ export default function NewsEvents() {
           </div>
 
           <div className="ne-updates__list">
-            {UPDATES.map((update, index) => (
-              <Link href={update.href} className="ne-update-item" key={index}>
-                <span className="ne-update-item__tag">{update.tag}</span>
-                <span className="ne-update-item__text">{update.text}</span>
+            {(quickUpdates.length ? quickUpdates : UPDATES).map((update, index) => (
+              <Link href="/news" className="ne-update-item" key={update.id || update.title || index}>
+                <span className="ne-update-item__tag">{update.category || update.tag}</span>
+                <span className="ne-update-item__text">{update.title || update.text}</span>
                 <span className="ne-update-item__arrow" aria-hidden="true">
                   <ArrowIcon />
                 </span>

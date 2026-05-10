@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Navbar from '@/components/Navbar/Navbar';
 import {
   getCurrentPortalUser,
   isHrAdminRole,
@@ -10,6 +9,8 @@ import {
   signOutPortal,
 } from '@/lib/auth/portalAuth';
 import './hr-admin.css';
+
+const HRMAX_ROUTE = '/HRMax';
 
 export default function HrAdminPage() {
   const router = useRouter();
@@ -44,7 +45,6 @@ export default function HrAdminPage() {
   if (!checked || !user) {
     return (
       <>
-        <Navbar />
         <main className="portal-main hr-admin-main" />
       </>
     );
@@ -52,10 +52,14 @@ export default function HrAdminPage() {
 
   return (
     <>
-      <Navbar />
       <main className="portal-main hr-admin-main">
         <section className="hr-admin-shell">
-          <span className="hr-admin-kicker">HR Admin</span>
+          <div className="hr-admin-head">
+            <span className="hr-admin-kicker">HR Admin</span>
+            <a className="hrmax-btn" href={HRMAX_ROUTE}>
+              HRMax
+            </a>
+          </div>
           <h1>Careers and Applications Backend</h1>
           <p>
             Supabase is ready for HR content management. The next UI layer can

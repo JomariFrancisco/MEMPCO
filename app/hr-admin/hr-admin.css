@@ -1,6 +1,6 @@
 .hr-admin-main {
   min-height: 100vh;
-  padding: 8rem 1rem 3rem;
+  padding: clamp(1.25rem, 2.5vw, 2rem) 1rem 3rem;
   background: linear-gradient(180deg, #fff 0%, #f8fafc 100%);
 }
 
@@ -12,6 +12,42 @@
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.92);
   box-shadow: 0 20px 45px rgba(15, 23, 42, 0.08);
+}
+
+.hr-admin-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.3rem;
+}
+
+.hrmax-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 1rem;
+  border: 1px solid rgba(220, 38, 38, 0.18);
+  border-radius: 999px;
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 52%, #b91c1c 100%);
+  color: #fff;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  box-shadow: 0 12px 28px rgba(220, 38, 38, 0.22);
+  cursor: pointer;
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease,
+    filter 160ms ease;
+}
+
+.hrmax-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.03);
+  box-shadow: 0 16px 34px rgba(220, 38, 38, 0.28);
 }
 
 .hr-admin-kicker,
