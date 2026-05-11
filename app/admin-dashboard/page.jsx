@@ -9,6 +9,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock3,
+  Download,
   ExternalLink,
   Eye,
   EyeOff,
@@ -454,8 +455,8 @@ const openPrintDocument = (title, body) => {
           }
           .print-page {
             width: 100%;
-            height: 196mm;
-            overflow: hidden;
+            min-height: 196mm;
+            overflow: visible;
           }
           .coop-letterhead {
             display: grid;
@@ -541,10 +542,28 @@ const openPrintDocument = (title, body) => {
           .report-row strong { min-width: 28px; text-align: right; color: #dc2626; }
           .report-row em { min-width: 32px; color: #64748b; font-style: normal; font-weight: 800; text-align: right; }
           .consolidated-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 2px; }
+          .ticket-detail-section { margin-top: 9px; page-break-inside: auto; }
+          .detail-table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 8.5px; line-height: 1.25; }
+          .detail-table th, .detail-table td { border: 1px solid #d1d5db; padding: 4px 5px; text-align: left; vertical-align: top; overflow-wrap: anywhere; }
+          .detail-table th { background: #111827; color: #fff; font-size: 7.5px; text-transform: uppercase; letter-spacing: 0.04em; }
+          .detail-table tr { page-break-inside: avoid; }
+          .detail-table th:nth-child(1), .detail-table td:nth-child(1) { width: 9%; }
+          .detail-table th:nth-child(2), .detail-table td:nth-child(2) { width: 10%; }
+          .detail-table th:nth-child(3), .detail-table td:nth-child(3) { width: 11%; }
+          .detail-table th:nth-child(4), .detail-table td:nth-child(4) { width: 8%; }
+          .detail-table th:nth-child(5), .detail-table td:nth-child(5) { width: 10%; }
+          .detail-table th:nth-child(6), .detail-table td:nth-child(6) { width: 10%; }
+          .detail-table th:nth-child(7), .detail-table td:nth-child(7) { width: 10%; }
+          .detail-table th:nth-child(8), .detail-table td:nth-child(8) { width: 12%; }
+          .detail-table th:nth-child(9), .detail-table td:nth-child(9) { width: 7%; }
+          .detail-table th:nth-child(10), .detail-table td:nth-child(10) { width: 5%; }
+          .detail-table th:nth-child(11), .detail-table td:nth-child(11) { width: 8%; }
           .print-note { margin-top: 7px; color: #64748b; font-size: 9.5px; font-weight: 700; }
           @media print {
             body { padding: 0; }
             .print-page { max-width: none; }
+            .detail-table thead { display: table-header-group; }
+            .detail-table tfoot { display: table-footer-group; }
           }
         </style>
       </head>
@@ -649,7 +668,7 @@ const printReportSummary = ({ mode, title, items, total }) => {
   openPrintDocument(`${periodLabel} Ticket Report`, body);
 };
 
-const printMonthlyConsolidatedReport = (tickets, monthDate) => {
+const getMonthlyReportData = (tickets, monthDate) => {
   const target = new Date(monthDate);
   const year = target.getFullYear();
   const month = target.getMonth();
@@ -660,7 +679,47 @@ const printMonthlyConsolidatedReport = (tickets, monthDate) => {
 
     const submittedDate = new Date(submittedTime);
     return submittedDate.getFullYear() === year && submittedDate.getMonth() === month;
-  });
+  }).sort((a, b) => getSubmittedTime(a) - getSubmittedTime(b) || a.id.localeCompare(b.id));
+
+  return { monthTitle, monthlyTickets };
+};
+
+const getTicketField = (value, fallback = 'Not provided') => {
+  const normalized = String(value ?? '').trim();
+  return normalized || fallback;
+};
+
+const monthlyTicketColumns = [
+  ['Ticket ID', (ticket) => ticket.id],
+  ['Submitted', (ticket) => getTicketField(ticket.createdAt || ticket.date)],
+  ['Name', (ticket) => getTicketField(ticket.requester || ticket.ownerEmail, 'Employee')],
+  ['Employee ID', (ticket) => getTicketField(ticket.employeeId)],
+  ['Branch', (ticket) => getTicketField(ticket.branch, 'Unspecified')],
+  ['Department', (ticket) => getTicketField(ticket.department, 'Unspecified')],
+  ['Category', (ticket) => getTicketField(ticket.supportCategory, 'Unspecified')],
+  ['Concern', (ticket) => getTicketField(ticket.concernType, 'Unspecified')],
+  ['Status', (ticket) => getTicketField(ticket.status, 'Created')],
+  ['SLA', (ticket) => getTicketField(ticket.sla, 'Low')],
+  ['Technician', (ticket) => getTicketField(ticket.technician, 'Unassigned')],
+  ['Description', (ticket) => getTicketField(ticket.description, '')],
+  ['Action Taken', (ticket) => getTicketField(ticket.actionTaken, '')],
+  ['Resolution', (ticket) => getTicketField(ticket.resolution, '')],
+  ['Admin Remarks', (ticket) => getTicketField(ticket.adminRemarks, '')],
+];
+
+const monthlyPrintColumns = monthlyTicketColumns.slice(0, 11);
+
+const buildMonthlyTicketTableRows = (tickets, columns) =>
+  tickets.length
+    ? tickets.map((ticket) => `
+        <tr>
+          ${columns.map(([, getValue]) => `<td>${escapePrintHtml(getValue(ticket))}</td>`).join('')}
+        </tr>
+      `).join('')
+    : `<tr><td colspan="${columns.length}">No tickets submitted for this month.</td></tr>`;
+
+const printMonthlyConsolidatedReport = (tickets, monthDate) => {
+  const { monthTitle, monthlyTickets } = getMonthlyReportData(tickets, monthDate);
   const monthlySummary = buildSummary(monthlyTickets);
   const technicianItems = TECHNICIANS
     .map((name) => ({
@@ -693,6 +752,12 @@ const printMonthlyConsolidatedReport = (tickets, monthDate) => {
   const escalationRows = escalationItems.length
     ? escalationItems.map((item) => row(item)).join('')
     : '<div class="report-row"><span>No third-party escalation</span><strong>0</strong><em>0%</em></div>';
+  const categoryRows = categoryItems.length
+    ? categoryItems.map((item) => row(item)).join('')
+    : '<div class="report-row"><span>No support category data</span><strong>0</strong><em>0%</em></div>';
+  const branchRows = branchItems.length
+    ? branchItems.map((item) => row(item)).join('')
+    : '<div class="report-row"><span>No branch data</span><strong>0</strong><em>0%</em></div>';
   const body = `
     <main class="print-page">
       ${getPrintLetterhead()}
@@ -717,18 +782,71 @@ const printMonthlyConsolidatedReport = (tickets, monthDate) => {
         </div>
         <div>
           <h3 class="section-title">Support Category</h3>
-          <div class="report-list single">${categoryItems.map((item) => row(item)).join('')}</div>
+          <div class="report-list single">${categoryRows}</div>
         </div>
         <div>
           <h3 class="section-title">Branch Volume</h3>
-          <div class="report-list single">${branchItems.map((item) => row(item)).join('')}</div>
+          <div class="report-list single">${branchRows}</div>
         </div>
+      </section>
+      <section class="ticket-detail-section">
+        <h3 class="section-title">Ticket Details</h3>
+        <table class="detail-table">
+          <thead>
+            <tr>
+              ${monthlyPrintColumns.map(([label]) => `<th>${escapePrintHtml(label)}</th>`).join('')}
+            </tr>
+          </thead>
+          <tbody>
+            ${buildMonthlyTicketTableRows(monthlyTickets, monthlyPrintColumns)}
+          </tbody>
+        </table>
       </section>
       <p class="print-note">Consolidated monthly report prepared for the ICT Department team workload review.</p>
     </main>
   `;
 
   openPrintDocument(`Monthly ICT Consolidated Report - ${monthTitle}`, body);
+};
+
+const escapeCsvCell = (value) => {
+  const normalized = String(value ?? '').replace(/\r?\n/g, ' ').trim();
+  return `"${normalized.replaceAll('"', '""')}"`;
+};
+
+const exportMonthlyConsolidatedReportCsv = (tickets, monthDate) => {
+  if (typeof window === 'undefined') return;
+
+  const { monthTitle, monthlyTickets } = getMonthlyReportData(tickets, monthDate);
+  const monthlySummary = buildSummary(monthlyTickets);
+  const summaryRows = [
+    ['Report', 'Monthly ICT Consolidated Report'],
+    ['Period', monthTitle],
+    ['Total Tickets', monthlySummary.total],
+    ['Resolved', monthlySummary.resolved],
+    ['Active', monthlySummary.active],
+    ['High / Critical', monthlySummary.critical],
+    ['Exported', new Date().toLocaleString()],
+  ];
+  const csvRows = [
+    ['Monthly ICT Consolidated Report'],
+    ...summaryRows,
+    [],
+    monthlyTicketColumns.map(([label]) => label),
+    ...monthlyTickets.map((ticket) => monthlyTicketColumns.map(([, getValue]) => getValue(ticket))),
+  ];
+  const csv = `\uFEFF${csvRows.map((row) => row.map(escapeCsvCell).join(',')).join('\r\n')}`;
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const fileName = `monthly-ict-consolidated-${monthTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.csv`;
+  const link = document.createElement('a');
+
+  link.href = url;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
 };
 
 const getStatusRank = (status) => {
@@ -1691,6 +1809,9 @@ function ReportsView({ tickets, summary, categorySummary, statusSummary, branchS
       total: tickets.length,
     });
   };
+  const handleExportMonthly = () => {
+    exportMonthlyConsolidatedReportCsv(tickets, activeCalendarMonth);
+  };
 
   return (
     <div className="dashboard-view reports-compact-view">
@@ -1721,6 +1842,13 @@ function ReportsView({ tickets, summary, categorySummary, statusSummary, branchS
               <MonoIcon icon={Printer} />
               {selectedPeriod.key === 'month' ? 'Print Consolidated' : `Print ${selectedPeriod.label}`}
             </button>
+
+            {selectedPeriod.key === 'month' && (
+              <button type="button" className="report-print-btn" onClick={handleExportMonthly}>
+                <MonoIcon icon={Download} />
+                Export CSV
+              </button>
+            )}
 
             <div className="report-period-tabs" role="tablist" aria-label="Report period">
               {REPORT_PERIOD_OPTIONS.map((option) => (

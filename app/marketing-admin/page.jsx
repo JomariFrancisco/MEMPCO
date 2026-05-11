@@ -52,6 +52,12 @@ const SORT_OPTIONS = [
   { value: 'category_asc', label: 'Category A-Z' },
   { value: 'status_asc', label: 'Status A-Z' },
 ];
+const POSITION_OPTIONS = [
+  { value: 0, label: 'Top of section' },
+  { value: 1, label: 'Second' },
+  { value: 2, label: 'Third' },
+  { value: 3, label: 'Later' },
+];
 const CONTENT_NAV_ITEMS = [
   { label: 'News', category: 'News', icon: Newspaper },
   { label: 'Events', category: 'Events', icon: CalendarDays },
@@ -257,7 +263,20 @@ function ActivityIndicator({ post }) {
 const getTypeLabel = (type) => {
   if (type === 'event') return 'Event';
   if (type === 'announcement') return 'Announcement';
+  if (type === 'member_story') return 'Member Story';
   return 'News';
+};
+
+const getPlacementHint = (placement) => {
+  if (placement === 'featured') return 'Shows in the large Featured Story / Spotlight area. Only one post should use this.';
+  if (placement === 'latest') return 'Shows in the Latest Stories card grid below the featured area.';
+  return 'Shows in the More Stories / Quick Updates list.';
+};
+
+const getPositionLabel = (value) => {
+  const order = Number(value || 0);
+  const option = POSITION_OPTIONS.find((item) => item.value === order);
+  return option?.label || `Position ${order + 1}`;
 };
 
 function ArrowIcon() {
@@ -496,6 +515,10 @@ export default function MarketingAdminPage() {
         nextPost.category = TYPE_TO_CATEGORY[value];
       }
 
+      if (field === 'placement' && value === 'featured') {
+        nextPost.displayOrder = 0;
+      }
+
       if (nextType === 'member_story' || nextCategory === 'Member Stories') {
         nextPost.placement = 'more';
       }
@@ -553,13 +576,15 @@ export default function MarketingAdminPage() {
     setMessage({ type: '', text: '' });
   };
 
-  const handleSave = async (nextStatus = activePost.status) => {
-    if (!activePost.title.trim()) {
+  const handleSave = async (nextStatus = activePost.status, overrides = {}) => {
+    const postToSave = { ...activePost, ...overrides };
+
+    if (!postToSave.title.trim()) {
       setMessage({ type: 'error', text: 'Title is required.' });
       return;
     }
 
-    if (!activePost.excerpt.trim()) {
+    if (!postToSave.excerpt.trim()) {
       setMessage({ type: 'error', text: 'Excerpt is required.' });
       return;
     }
@@ -567,11 +592,11 @@ export default function MarketingAdminPage() {
     setIsSaving(true);
 
     try {
-      const wasExisting = Boolean(activePost.id);
-      const shouldRepublish = nextStatus === 'published' && Boolean(activePost.id && activePost.publishedAt);
+      const wasExisting = Boolean(postToSave.id);
+      const shouldRepublish = nextStatus === 'published' && Boolean(postToSave.id && postToSave.publishedAt);
       const shouldMarkEdited = wasExisting && !shouldRepublish && nextStatus !== 'archived';
       const savedPost = await saveMarketingPost(
-        toSavePayload(activePost, nextStatus, {
+        toSavePayload(postToSave, nextStatus, {
           markEdited: shouldMarkEdited,
           republish: shouldRepublish,
         }),
@@ -646,6 +671,7 @@ export default function MarketingAdminPage() {
   };
 
   const isEditingMemberStory = activePost.type === 'member_story' || activePost.category === 'Member Stories';
+  const canFeatureActivePost = !isEditingMemberStory && activePost.placement !== 'featured';
 
   if (!checked || !user) {
     return (
@@ -849,7 +875,7 @@ export default function MarketingAdminPage() {
                                   <span>
                                     {post.category} / {post.type === 'member_story'
                                       ? post.storyRole || 'Member Story'
-                                      : MARKETING_PLACEMENT_LABELS[post.placement] || 'More Stories'}
+                                      : `${MARKETING_PLACEMENT_LABELS[post.placement] || 'More Updates List'} · ${getPositionLabel(post.displayOrder)}`}
                                   </span>
                                 </div>
                               </div>
@@ -939,28 +965,17 @@ export default function MarketingAdminPage() {
                   <input value={activePost.title} onChange={(event) => updatePost('title', event.target.value)} placeholder="Story title" />
                 </label>
 
-                <div className="ma-field-grid">
-                  <label className="ma-field">
-                    <span>Category</span>
-                    <select value={activePost.category} onChange={(event) => updatePost('category', event.target.value)}>
-                      {EDITOR_CATEGORIES.map((category) => (
-                        <option value={category} key={category}>
-                          {category}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-
-                  <label className="ma-field">
-                    <span>Type</span>
-                    <select value={activePost.type} onChange={(event) => updatePost('type', event.target.value)}>
-                      <option value="news">News</option>
-                      <option value="event">Event</option>
-                      <option value="announcement">Announcement</option>
-                      <option value="member_story">Member Story</option>
-                    </select>
-                  </label>
-                </div>
+                <label className="ma-field full">
+                  <span>Category</span>
+                  <select value={activePost.category} onChange={(event) => updatePost('category', event.target.value)}>
+                    {EDITOR_CATEGORIES.map((category) => (
+                      <option value={category} key={category}>
+                        {category}
+                      </option>
+                    ))}
+                  </select>
+                  <small>This controls how the post is grouped and displayed on the website.</small>
+                </label>
 
                 <div className="ma-field-grid">
                   <label className="ma-field">
@@ -972,18 +987,27 @@ export default function MarketingAdminPage() {
                         </option>
                       ))}
                     </select>
+                    <small>{getPlacementHint(activePost.placement)}</small>
                   </label>
 
                   <label className="ma-field">
-                    <span>Display Order</span>
-                    <input
-                      type="number"
-                      min="0"
-                      step="1"
-                      value={activePost.displayOrder}
-                      onChange={(event) => updatePost('displayOrder', event.target.value)}
-                      placeholder="0"
-                    />
+                    <span>Position in Section</span>
+                    <select
+                      value={Number(activePost.displayOrder || 0)}
+                      onChange={(event) => updatePost('displayOrder', Number(event.target.value))}
+                      disabled={activePost.placement === 'featured'}
+                    >
+                      {POSITION_OPTIONS.map((option) => (
+                        <option value={option.value} key={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                    <small>
+                      {activePost.placement === 'featured'
+                        ? 'Featured posts always stay in the spotlight area.'
+                        : 'Lower positions appear first inside the selected section.'}
+                    </small>
                   </label>
                 </div>
 
@@ -1084,6 +1108,17 @@ export default function MarketingAdminPage() {
                     <Send aria-hidden="true" />
                     Publish
                   </button>
+                  {canFeatureActivePost && (
+                    <button
+                      type="button"
+                      className="ma-command feature"
+                      onClick={() => handleSave('published', { placement: 'featured', featured: true, displayOrder: 0 })}
+                      disabled={isSaving}
+                    >
+                      <ShieldCheck aria-hidden="true" />
+                      Feature &amp; Publish
+                    </button>
+                  )}
                   {activePost.id && (
                     <>
                       <button type="button" className="ma-command archive" onClick={() => handleSave('archived')} disabled={isSaving}>

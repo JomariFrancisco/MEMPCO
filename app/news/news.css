@@ -73,10 +73,22 @@ img {
   visibility: visible;
 }
 
+.np:not(.np--ready) .np-page-transition {
+  animation: np-transition-autohide 1.05s ease forwards;
+}
+
 .np--ready .np-page-transition {
   opacity: 0;
   transform: scale(1.025);
   visibility: hidden;
+}
+
+@keyframes np-transition-autohide {
+  to {
+    opacity: 0;
+    transform: scale(1.025);
+    visibility: hidden;
+  }
 }
 
 .np-wrap {
@@ -229,14 +241,15 @@ img {
 }
 
 /* Page refresh entrance */
-.np .np-hero-badge,
-.np .np-hero-title,
-.np .np-hero-sub,
-.np .np-hero-stats,
-.np .np-tabs {
+.np:not(.np--ready) .np-hero-badge,
+.np:not(.np--ready) .np-hero-title,
+.np:not(.np--ready) .np-hero-sub,
+.np:not(.np--ready) .np-hero-stats,
+.np:not(.np--ready) .np-tabs {
   opacity: 0;
   transform: translateY(26px);
   filter: blur(8px);
+  animation: np-hero-autoshow 0.72s var(--ease-out) 0.2s forwards;
 }
 
 .np--ready .np-hero-badge,
@@ -269,6 +282,14 @@ img {
   transition: opacity 0.72s ease 0.24s, transform 0.72s var(--ease-out) 0.24s, filter 0.72s ease 0.24s;
 }
 
+@keyframes np-hero-autoshow {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
 /* Scroll reveal */
 .np-reveal .np-section-head,
 .np-reveal .np-spotlight,
@@ -277,6 +298,7 @@ img {
   opacity: 0;
   transform: translateY(34px);
   filter: blur(8px);
+  animation: np-reveal-autoshow 0.72s var(--ease-out) 0.35s forwards;
 }
 
 .np-reveal--visible .np-section-head,
@@ -333,6 +355,14 @@ img {
 
 .np-reveal--visible .np-more-card:nth-child(5) {
   transition-delay: 0.4s;
+}
+
+@keyframes np-reveal-autoshow {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
 }
 
 /* Hero */
@@ -1715,4 +1745,45 @@ img {
   .np-modal-panel {
     animation: none;
   }
+}
+
+.np-image-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  min-height: 220px;
+  background:
+    linear-gradient(135deg, rgba(220, 38, 38, 0.08), rgba(255, 255, 255, 0.92)),
+    #f8fafc;
+  color: #991b1b;
+  font-weight: 850;
+  letter-spacing: -0.02em;
+  text-align: center;
+}
+
+.np-image-placeholder span {
+  padding: 0.85rem 1rem;
+}
+
+.np-spotlight-image.np-image-placeholder {
+  min-height: 430px;
+}
+
+.np-news-card-image.np-image-placeholder {
+  min-height: 240px;
+}
+
+.np-more-card-image.np-image-placeholder {
+  min-height: 180px;
+}
+
+.np-modal-image.np-image-placeholder {
+  min-height: 520px;
+}
+
+.np-lightbox-image.np-image-placeholder {
+  width: min(760px, calc(100vw - 3rem));
+  height: min(460px, calc(100vh - 3rem));
 }

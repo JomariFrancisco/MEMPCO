@@ -604,6 +604,12 @@
   background: #111827;
 }
 
+.ma-command.feature {
+  color: #fff;
+  border-color: #b91c1c;
+  background: linear-gradient(180deg, #ef4444, #b91c1c);
+}
+
 .ma-command.archive {
   color: #475569;
   background: #f1f5f9;

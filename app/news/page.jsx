@@ -3,140 +3,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Navbar from '@/components/Navbar/Navbar';
 import Footer from '@/components/Footer/Footer';
+import { createClient } from '@/lib/supabase/client';
 import {
   getMarketingPostBuckets,
   listPublishedMarketingPosts,
 } from '@/lib/marketing/marketingPosts';
 import './news.css';
-
-const NEWS_ITEMS = [
-  {
-    title: 'MEMPCO Receives Share Capital Build-Up Award at NATCCO Congress',
-    date: 'May 2, 2026',
-    excerpt:
-      'MEMPCO was honored with the Share Capital Build-Up Award during the 40th NATCCO General Assembly and 24th Leaders’ Congress held in Iloilo City, reflecting the trust, commitment, and collective effort of its members, officers, and stakeholders.',
-    fullArticle: [
-      'MEMPCO is deeply honored to receive the Share Capital Build-Up Award during the 40th NATCCO General Assembly and 24th Leaders’ Congress held in Iloilo City.',
-      'With the theme “One Year to Gold,” this recognition reflects the unwavering trust, commitment, and collective effort of our members, officers, and stakeholders in strengthening our cooperative and building a more empowered community.',
-      'We extend our sincere appreciation to NATCCO for this recognition. This milestone inspires us even more to stay committed to our mission and continue creating meaningful impact as we move forward together.',
-    ],
-    type: 'news',
-    category: 'News',
-    image: '/About/40th NATCCO GA.png',
-  },
-  {
-    title: 'MEMPCO Joins the 124th Labor Day Job Fair',
-    date: 'May 3, 2026',
-    excerpt:
-      'MEMPCO proudly took part in the 124th Labor Day Job Fair at KCC Mall de Zamboanga, supporting employment opportunities and empowering individuals toward a better and more inclusive future.',
-    fullArticle: [
-      'MEMPCO proudly took part in the 124th Labor Day Job Fair, embracing this year’s theme: “Disenteng Trabaho Para sa Lahat: Iisang Hangarin, Bagong Pilipinas Sama-samang Mararating.”',
-      'The event was held on May 1, 2026 at KCC Mall de Zamboanga and was led by the Department of Labor and Employment.',
-      'MEMPCO remains committed to supporting employment opportunities and empowering individuals toward a better and more inclusive future.',
-    ],
-    type: 'event',
-    category: 'Events',
-    image: '/About/Labor Day.png',
-  },
-  {
-    title: 'MEMPCO Participates in WMSU CareerCon and Job Fair 2026',
-    date: 'May 1, 2026',
-    excerpt:
-      'MEMPCO joined CareerCon and Job Fair 2026 at the WMSU Gymnasium, supporting an initiative that connects students and graduates to future career opportunities.',
-    fullArticle: [
-      'MEMPCO is grateful to be part of CareerCon and Job Fair 2026, held at the Western Mindanao State University Gymnasium on April 30, 2026.',
-      'We thank Western Mindanao State University for the invitation and for organizing a successful event that connects students and graduates to future opportunities.',
-      'MEMPCO is honored to support this meaningful initiative for alumni and graduating students.',
-    ],
-    type: 'event',
-    category: 'Events',
-    image: '/About/CareerCon.png',
-  },
-  {
-    title: 'MEMPCO Recognized by CLIMBS for Service and Climate Action',
-    date: 'April 29, 2026',
-    excerpt:
-      'During the 54th Annual General Assembly of CLIMBS Life and General Insurance Cooperative, MEMPCO was recognized as Top Premium Producer Regional and Champion for Climate Action.',
-    fullArticle: [
-      'With humble hearts, MEMPCO shares this meaningful milestone. During the 54th Annual General Assembly of CLIMBS Life and General Insurance Cooperative in Cebu City, MEMPCO was honored to receive recognitions as Top Premium Producer Regional and Champion for Climate Action.',
-      'We accept these honors with gratitude, recognizing that these achievements reflect the trust of our member-owners and the dedication of our team.',
-      'MEMPCO remains committed to serving with integrity and contributing to a more sustainable and progressive community.',
-    ],
-    type: 'news',
-    category: 'News',
-    image: '/About/54th Climbs Annual General Assembly.png',
-  },
-  {
-    title: 'Empowering Communities Through Financial Wellness',
-    date: 'April 23, 2026',
-    excerpt:
-      'MEMPCO joined the DSWD Convergence Caravan with 4Ps beneficiaries in Zamboanga City, sharing financial wellness discussions on PMES, savings, loans, insurance, and financial literacy.',
-    fullArticle: [
-      'MEMPCO is grateful to the Department of Social Welfare and Development for inviting us to be part of their Convergence Caravan with 4Ps beneficiaries from different barangays in Zamboanga City.',
-      'During the activity, MEMPCO shared discussions on PMES, financial wellness and management, loans, savings, and insurance services.',
-      'We sincerely hope that the learnings shared will be applied and become a guide toward a more secure future. Helping people help themselves remains at the heart of this initiative.',
-    ],
-    type: 'event',
-    category: 'Events',
-    image: '/About/Financial Literacy Seminar.png',
-  },
-  {
-    title: 'Fire Drill Seminar Strengthens Preparedness at Central Office',
-    date: 'April 23, 2026',
-    excerpt:
-      'MEMPCO Central Office conducted a Fire Drill Seminar in partnership with the Bureau of Fire Protection – Zamboanga City Fire District to strengthen fire prevention, safety protocols, and emergency response.',
-    fullArticle: [
-      'MEMPCO Central Office successfully conducted a Fire Drill Seminar in partnership with the Bureau of Fire Protection – Zamboanga City Fire District.',
-      'The activity equipped participants with essential knowledge on fire prevention, safety protocols, and proper emergency response, reinforcing the importance of readiness in ensuring workplace safety.',
-      'MEMPCO extends its sincere gratitude to the Bureau of Fire Protection for their continuous efforts in promoting fire safety awareness and preparedness within the community.',
-    ],
-    type: 'event',
-    category: 'Events',
-    image: '/About/Central Office Fire Drill.png',
-  },
-  {
-    title: 'Fire Drill Seminar Conducted at Culianan Branch',
-    date: 'April 24, 2026',
-    excerpt:
-      'MEMPCO Culianan Branch participated in a Fire Drill Seminar with the Bureau of Fire Protection, helping participants gain practical knowledge and confidence in responding to emergency situations.',
-    fullArticle: [
-      'MEMPCO Culianan Branch successfully participated in a Fire Drill Seminar in partnership with the Bureau of Fire Protection – Zamboanga City Fire District.',
-      'The seminar strengthened awareness on fire prevention, emergency response, and workplace safety. Participants were provided with valuable knowledge and practical guidance to ensure readiness during emergency situations.',
-      'Through activities like these, participants are empowered with both knowledge and confidence in responding effectively during fire-related incidents.',
-    ],
-    type: 'event',
-    category: 'Events',
-    image: '/About/Culianan Fire Drill.png',
-  },
-  {
-    title: 'Earth Day, Everyday: MEMPCO Promotes Sustainable Living',
-    date: 'May 1, 2026',
-    excerpt:
-      'MEMPCO encourages members and communities to practice simple daily actions such as conserving water, using natural light, choosing reusable items, and proper waste segregation.',
-    fullArticle: [
-      'At MEMPCO, we believe that meaningful change begins with simple everyday actions.',
-      'From conserving water and using natural light, to choosing reusable items and practicing proper waste segregation, each small step contributes to a healthier and more sustainable future for our communities.',
-      'Let us continue working together as responsible stewards of our environment. By making mindful choices today, we help build a better tomorrow for the next generation.',
-    ],
-    type: 'announcement',
-    category: 'Announcement',
-    image: '/About/Earth Day.png',
-  },
-  {
-    title: 'Let’s Go Green with MEMPCO Hour Level Up',
-    date: 'April 28, 2026',
-    excerpt:
-      'In celebration of Earth Month, MEMPCO continues to encourage green habits and responsible actions through the MEMPCO Hour Level Up initiative.',
-    fullArticle: [
-      'In celebration of Earth Month, MEMPCO continues to encourage members, employees, and communities to take part in meaningful actions for the environment.',
-      'The MEMPCO Hour Level Up initiative promotes simple but impactful habits that support sustainability and environmental responsibility.',
-      'Through collective participation, MEMPCO hopes to strengthen awareness and inspire everyone to contribute to a cleaner, greener, and more sustainable future.',
-    ],
-    type: 'announcement',
-    category: 'Announcement',
-    image: '/About/MEMPCO Hour.png',
-  },
-];
 
 const CATEGORIES = ['All', 'News', 'Events', 'Announcement'];
 
@@ -162,6 +34,45 @@ const ORBIT_CATEGORIES = [
     className: 'np-hero-float-item--community',
   },
 ];
+
+const getSafeImageSrc = (value) => {
+  if (typeof value !== 'string') return null;
+
+  const trimmedValue = value.trim();
+
+  return trimmedValue ? trimmedValue : null;
+};
+
+function StoryImage({
+  src,
+  alt,
+  className,
+  loading = 'lazy',
+}) {
+  const safeSrc = getSafeImageSrc(src);
+
+  if (!safeSrc) {
+    return (
+      <div
+        className={`${className} np-image-placeholder`}
+        role="img"
+        aria-label={alt || 'Story image not available'}
+      >
+        <span>No image available</span>
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={safeSrc}
+      alt={alt || 'Story image'}
+      className={className}
+      loading={loading}
+      decoding="async"
+    />
+  );
+}
 
 function ArrowIcon() {
   return (
@@ -218,7 +129,8 @@ export default function News() {
   const [isImageExpanded, setIsImageExpanded] = useState(false);
   const [pageReady, setPageReady] = useState(false);
   const [orbitRotation, setOrbitRotation] = useState(0);
-  const [newsItems, setNewsItems] = useState(NEWS_ITEMS);
+  const [newsItems, setNewsItems] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const getCategoryCount = (cat) =>
     cat === 'All'
@@ -230,8 +142,12 @@ export default function News() {
     return newsItems.filter((item) => item.category === activeCategory);
   }, [activeCategory, newsItems]);
 
-  const storyBuckets = useMemo(() => getMarketingPostBuckets(filteredItems), [filteredItems]);
-  const featured = storyBuckets.featured ?? newsItems[0];
+  const storyBuckets = useMemo(
+    () => getMarketingPostBuckets(filteredItems),
+    [filteredItems]
+  );
+
+  const featured = storyBuckets.featured;
   const latestStories = storyBuckets.latest;
   const moreStories = storyBuckets.more;
 
@@ -260,19 +176,25 @@ export default function News() {
       try {
         const posts = await listPublishedMarketingPosts();
 
-        if (!cancelled && posts.length) {
+        if (!cancelled) {
           setNewsItems(posts);
         }
       } catch {
         if (!cancelled) {
-          setNewsItems(NEWS_ITEMS);
+          setNewsItems([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
         }
       }
     };
 
-    loadPosts();
-    window.addEventListener('focus', loadPosts);
-    window.addEventListener('pageshow', loadPosts);
+    void loadPosts();
+
+    const handleReload = () => {
+      void loadPosts();
+    };
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
@@ -280,13 +202,33 @@ export default function News() {
       }
     };
 
+    window.addEventListener('focus', handleReload);
+    window.addEventListener('pageshow', handleReload);
     document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    const supabase = createClient();
+
+    const channel = supabase
+      .channel('news-page-marketing-posts-sync')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'marketing_posts',
+        },
+        () => {
+          void loadPosts();
+        }
+      )
+      .subscribe();
 
     return () => {
       cancelled = true;
-      window.removeEventListener('focus', loadPosts);
-      window.removeEventListener('pageshow', loadPosts);
+      window.removeEventListener('focus', handleReload);
+      window.removeEventListener('pageshow', handleReload);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      supabase.removeChannel(channel);
     };
   }, []);
 
@@ -351,7 +293,7 @@ export default function News() {
     revealItems.forEach((item) => observer.observe(item));
 
     return () => observer.disconnect();
-  }, [activeCategory]);
+  }, [activeCategory, newsItems]);
 
   useEffect(() => {
     if (!selectedArticle) return;
@@ -430,12 +372,12 @@ export default function News() {
 
               <div className="np-hero-stats">
                 <div className="np-hero-stat">
-                  <strong>{newsItems.length}</strong>
+                  <strong>{loading ? '...' : newsItems.length}</strong>
                   <span>Stories</span>
                 </div>
                 <div className="np-hero-stat-sep" aria-hidden="true" />
                 <div className="np-hero-stat">
-                  <strong>2026</strong>
+                  <strong>{new Date().getFullYear()}</strong>
                   <span>Latest</span>
                 </div>
                 <div className="np-hero-stat-sep" aria-hidden="true" />
@@ -454,7 +396,9 @@ export default function News() {
                     onClick={() => setActiveCategory(cat)}
                   >
                     {cat}
-                    <span className="np-tab-count">{getCategoryCount(cat)}</span>
+                    <span className="np-tab-count">
+                      {loading ? '...' : getCategoryCount(cat)}
+                    </span>
                   </button>
                 ))}
               </nav>
@@ -466,7 +410,33 @@ export default function News() {
           </div>
         </section>
 
-        {featured && (
+        {loading && (
+          <section className="np-latest-section np-reveal np-reveal--visible">
+            <div className="np-wrap">
+              <div className="np-empty">Loading News & Events...</div>
+            </div>
+          </section>
+        )}
+
+        {!loading && newsItems.length === 0 && (
+          <section className="np-latest-section np-reveal np-reveal--visible">
+            <div className="np-wrap">
+              <header className="np-section-head">
+                <div>
+                  <span className="np-label">Content Library</span>
+                  <h2 className="np-section-title">No published stories yet</h2>
+                </div>
+              </header>
+
+              <p className="np-empty">
+                Add a published post from the Marketing Admin. Once published, it will
+                automatically appear on this News & Events page and the homepage section.
+              </p>
+            </div>
+          </section>
+        )}
+
+        {!loading && featured && (
           <section className="np-spotlight-section np-reveal">
             <div className="np-wrap">
               <header className="np-section-head">
@@ -487,12 +457,11 @@ export default function News() {
                   onClick={() => openArticle(featured)}
                   aria-label={`Open article: ${featured.title}`}
                 >
-                  <img
+                  <StoryImage
                     src={featured.image}
                     alt={featured.title}
                     className="np-spotlight-image"
                     loading="eager"
-                    decoding="async"
                   />
 
                   <div className="np-spotlight-overlay">
@@ -525,73 +494,73 @@ export default function News() {
           </section>
         )}
 
-        <section className="np-latest-section np-reveal">
-          <div className="np-wrap">
-            <header className="np-section-head">
-              <div>
-                <span className="np-label">Latest Stories</span>
-                <h2 className="np-section-title">
-                  {activeCategory === 'All' ? 'Latest News & Events' : activeCategory}
-                </h2>
-              </div>
+        {!loading && newsItems.length > 0 && (
+          <section className="np-latest-section np-reveal">
+            <div className="np-wrap">
+              <header className="np-section-head">
+                <div>
+                  <span className="np-label">Latest Stories</span>
+                  <h2 className="np-section-title">
+                    {activeCategory === 'All' ? 'Latest News & Events' : activeCategory}
+                  </h2>
+                </div>
 
-              <button
-                type="button"
-                className="np-view-all"
-                onClick={() => setActiveCategory('All')}
-              >
-                View all
-              </button>
-            </header>
+                <button
+                  type="button"
+                  className="np-view-all"
+                  onClick={() => setActiveCategory('All')}
+                >
+                  View all
+                </button>
+              </header>
 
-            {latestStories.length > 0 ? (
-              <div className="np-news-grid">
-                {latestStories.map((item) => (
-                  <article className="np-news-card" key={item.title}>
-                    <button
-                      type="button"
-                      className="np-news-card-image-wrap np-image-button"
-                      onClick={() => openArticle(item)}
-                      aria-label={`Open article: ${item.title}`}
-                    >
-                      <img
-                        src={item.image}
-                        alt={item.title}
-                        className="np-news-card-image"
-                        loading="lazy"
-                        decoding="async"
-                      />
-
-                      <div className="np-news-card-overlay">
-                        <div className="np-news-card-overlay-meta">
-                          <span className="np-news-card-kicker">{item.category}</span>
-                          <time className="np-news-card-date">{item.date}</time>
-                        </div>
-                      </div>
-                    </button>
-
-                    <div className="np-news-card-body">
-                      <h3 className="np-news-card-title">{item.title}</h3>
-                      <p className="np-news-card-excerpt">{item.excerpt}</p>
-
+              {latestStories.length > 0 ? (
+                <div className="np-news-grid">
+                  {latestStories.map((item) => (
+                    <article className="np-news-card" key={item.id || item.title}>
                       <button
                         type="button"
-                        className="np-link np-link-button np-news-card-link"
+                        className="np-news-card-image-wrap np-image-button"
                         onClick={() => openArticle(item)}
+                        aria-label={`Open article: ${item.title}`}
                       >
-                        Read post <ArrowIcon />
-                      </button>
-                    </div>
-                  </article>
-                ))}
-              </div>
-            ) : (
-              <p className="np-empty">No latest stories in this category yet.</p>
-            )}
-          </div>
-        </section>
+                        <StoryImage
+                          src={item.image}
+                          alt={item.title}
+                          className="np-news-card-image"
+                        />
 
-        {moreStories.length > 0 && (
+                        <div className="np-news-card-overlay">
+                          <div className="np-news-card-overlay-meta">
+                            <span className="np-news-card-kicker">{item.category}</span>
+                            <time className="np-news-card-date">{item.date}</time>
+                          </div>
+                        </div>
+                      </button>
+
+                      <div className="np-news-card-body">
+                        <h3 className="np-news-card-title">{item.title}</h3>
+                        <p className="np-news-card-excerpt">{item.excerpt}</p>
+
+                        <button
+                          type="button"
+                          className="np-link np-link-button np-news-card-link"
+                          onClick={() => openArticle(item)}
+                        >
+                          Read post <ArrowIcon />
+                        </button>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              ) : (
+                <p className="np-empty">No latest stories in this category yet.</p>
+              )}
+            </div>
+          </section>
+        )}
+
+        {!loading && moreStories.length > 0 && (
           <section className="np-more-section np-reveal">
             <div className="np-wrap">
               <header className="np-section-head">
@@ -607,19 +576,17 @@ export default function News() {
 
               <div className="np-more-grid">
                 {moreStories.map((item) => (
-                  <article className="np-more-card" key={item.title}>
+                  <article className="np-more-card" key={item.id || item.title}>
                     <button
                       type="button"
                       className="np-more-card-image-wrap np-image-button"
                       onClick={() => openArticle(item)}
                       aria-label={`Open article: ${item.title}`}
                     >
-                      <img
+                      <StoryImage
                         src={item.image}
                         alt={item.title}
                         className="np-more-card-image"
-                        loading="lazy"
-                        decoding="async"
                       />
 
                       <div className="np-more-card-overlay">
@@ -685,7 +652,7 @@ export default function News() {
                 onClick={() => setIsImageExpanded(true)}
                 aria-label="View full image"
               >
-                <img
+                <StoryImage
                   src={selectedArticle.image}
                   alt={selectedArticle.title}
                   className="np-modal-image"
@@ -710,9 +677,14 @@ export default function News() {
               <p className="np-modal-lead">{selectedArticle.excerpt}</p>
 
               <div className="np-modal-article">
-                {selectedArticle.fullArticle.map((paragraph, index) => (
-                  <p key={index}>{paragraph}</p>
-                ))}
+                {Array.isArray(selectedArticle.fullArticle) &&
+                selectedArticle.fullArticle.length > 0 ? (
+                  selectedArticle.fullArticle.map((paragraph, index) => (
+                    <p key={index}>{paragraph}</p>
+                  ))
+                ) : (
+                  <p>No full article content has been added yet.</p>
+                )}
               </div>
             </div>
           </article>
@@ -743,7 +715,7 @@ export default function News() {
               <CloseIcon />
             </button>
 
-            <img
+            <StoryImage
               src={selectedArticle.image}
               alt={selectedArticle.title}
               className="np-lightbox-image"

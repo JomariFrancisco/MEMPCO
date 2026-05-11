@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { createClient } from '@/lib/supabase/client';
 import {
   getMarketingPostBuckets,
   listPublishedMarketingPosts,
@@ -96,6 +97,47 @@ const FALLBACK_POSTS = [FEATURED, ...STORIES].map((story, index) => ({
   href: '/news',
 }));
 
+const getSafeImageSrc = (value) => {
+  if (typeof value !== 'string') return null;
+
+  const trimmedValue = value.trim();
+
+  return trimmedValue ? trimmedValue : null;
+};
+
+const getPostHref = (post) => post?.href || '/news';
+
+function StoryImage({
+  src,
+  alt,
+  className,
+  featured = false,
+}) {
+  const safeSrc = getSafeImageSrc(src);
+
+  if (!safeSrc) {
+    return (
+      <div
+        className={`${className} ne-image-placeholder`}
+        role="img"
+        aria-label={alt || 'Story image not available'}
+      >
+        <span>No image available</span>
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={safeSrc}
+      alt={alt || 'Story image'}
+      className={className}
+      loading={featured ? 'eager' : 'lazy'}
+      decoding="async"
+    />
+  );
+}
+
 function ArrowIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
@@ -112,12 +154,32 @@ function ArrowIcon() {
 
 export default function NewsEvents() {
   const ref = useRef(null);
-  const [posts, setPosts] = useState(FALLBACK_POSTS);
 
-  const { featured, latest, more } = useMemo(() => getMarketingPostBuckets(posts), [posts]);
+  /*
+    Important:
+    Do not start with FALLBACK_POSTS here.
+    Starting with FALLBACK_POSTS causes the old featured story to appear first,
+    then it changes after Supabase finishes loading.
+  */
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const displayPosts = posts.length ? posts : loading ? [] : FALLBACK_POSTS;
+
+  const { featured, latest, more } = useMemo(
+    () => getMarketingPostBuckets(displayPosts),
+    [displayPosts]
+  );
+
   const storyCards = latest.slice(0, 3);
-  const quickUpdates = (more.length ? more : posts.filter((post) => post.id !== featured?.id).slice(3, 6))
-    .slice(0, 3);
+
+  const quickUpdates = (
+    more.length
+      ? more
+      : displayPosts
+          .filter((post) => post.id !== featured?.id)
+          .slice(3, 6)
+  ).slice(0, 3);
 
   useEffect(() => {
     const section = ref.current;
@@ -146,28 +208,38 @@ export default function NewsEvents() {
     });
 
     return () => io.disconnect();
-  }, []);
+  }, [displayPosts]);
 
   useEffect(() => {
     let cancelled = false;
 
-    const loadPosts = async () => {
+    const loadPosts = async ({ showLoading = false } = {}) => {
       try {
+        if (showLoading && !cancelled) {
+          setLoading(true);
+        }
+
         const publishedPosts = await listPublishedMarketingPosts();
 
-        if (!cancelled && publishedPosts.length) {
-          setPosts(publishedPosts);
+        if (!cancelled) {
+          setPosts(publishedPosts.length ? publishedPosts : FALLBACK_POSTS);
         }
       } catch {
         if (!cancelled) {
           setPosts(FALLBACK_POSTS);
         }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     };
 
-    loadPosts();
-    window.addEventListener('focus', loadPosts);
-    window.addEventListener('pageshow', loadPosts);
+    void loadPosts({ showLoading: true });
+
+    const handleReload = () => {
+      void loadPosts();
+    };
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
@@ -175,13 +247,33 @@ export default function NewsEvents() {
       }
     };
 
+    window.addEventListener('focus', handleReload);
+    window.addEventListener('pageshow', handleReload);
     document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    const supabase = createClient();
+
+    const channel = supabase
+      .channel('news-events-marketing-posts-sync')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'marketing_posts',
+        },
+        () => {
+          void loadPosts();
+        }
+      )
+      .subscribe();
 
     return () => {
       cancelled = true;
-      window.removeEventListener('focus', loadPosts);
-      window.removeEventListener('pageshow', loadPosts);
+      window.removeEventListener('focus', handleReload);
+      window.removeEventListener('pageshow', handleReload);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      supabase.removeChannel(channel);
     };
   }, []);
 
@@ -208,50 +300,88 @@ export default function NewsEvents() {
           </Link>
         </header>
 
-        {featured && (
-        <article className="ne-featured ne-reveal ne-reveal--up" data-reveal>
-          <Link href="/news" className="ne-featured__visual" aria-label={featured.title}>
-            <img
-              src={featured.image}
-              alt={featured.imageAlt || featured.title}
-              className="ne-featured__image"
-            />
-            <div className="ne-featured__overlay" aria-hidden="true" />
-            <span className="ne-featured__visual-label">Featured Story</span>
-          </Link>
-
-          <div className="ne-featured__body">
-            <div className="ne-featured__meta">
-              <span className="ne-kicker">{featured.category}</span>
-              <span className="ne-dot" aria-hidden="true" />
-              <time className="ne-date">{featured.date}</time>
+        {loading && !featured && (
+          <article className="ne-featured ne-featured--loading ne-reveal ne-reveal--up" data-reveal>
+            <div className="ne-featured__visual ne-featured__visual--loading" aria-hidden="true" />
+            <div className="ne-featured__body">
+              <div className="ne-loading-line ne-loading-line--small" />
+              <div className="ne-loading-line ne-loading-line--title" />
+              <div className="ne-loading-line" />
+              <div className="ne-loading-line ne-loading-line--short" />
             </div>
+          </article>
+        )}
 
-            <h3 className="ne-featured__title">{featured.title}</h3>
+        {!loading && featured && (
+          <article className="ne-featured ne-reveal ne-reveal--up" data-reveal>
+            <Link
+              href={getPostHref(featured)}
+              className="ne-featured__visual"
+              aria-label={featured.title}
+            >
+              <StoryImage
+                src={featured.image}
+                alt={featured.imageAlt || featured.title}
+                className="ne-featured__image"
+                featured
+              />
 
-            <p className="ne-featured__excerpt">{featured.excerpt}</p>
+              <div className="ne-featured__overlay" aria-hidden="true" />
+              <span className="ne-featured__visual-label">Featured Story</span>
+            </Link>
 
-            <div className="ne-featured__actions">
-              <Link href="/news" className="ne-cta-btn">
-                <span>Read full story</span>
-                <span className="ne-cta-btn__icon" aria-hidden="true">
-                  <ArrowIcon />
-                </span>
-              </Link>
+            <div className="ne-featured__body">
+              <div className="ne-featured__meta">
+                <span className="ne-kicker">{featured.category}</span>
+                <span className="ne-dot" aria-hidden="true" />
+                <time className="ne-date">{featured.date}</time>
+              </div>
 
-              <Link href="/news" className="ne-ghost-btn">
-                View events
-              </Link>
+              <h3 className="ne-featured__title">{featured.title}</h3>
+
+              <p className="ne-featured__excerpt">{featured.excerpt}</p>
+
+              <div className="ne-featured__actions">
+                <Link href={getPostHref(featured)} className="ne-cta-btn">
+                  <span>Read full story</span>
+                  <span className="ne-cta-btn__icon" aria-hidden="true">
+                    <ArrowIcon />
+                  </span>
+                </Link>
+
+                <Link href="/news" className="ne-ghost-btn">
+                  View events
+                </Link>
+              </div>
             </div>
-          </div>
-        </article>
+          </article>
+        )}
+
+        {!loading && !featured && (
+          <article className="ne-featured ne-featured--empty ne-reveal ne-reveal--up" data-reveal>
+            <div className="ne-featured__body">
+              <div className="ne-featured__meta">
+                <span className="ne-kicker">News</span>
+              </div>
+
+              <h3 className="ne-featured__title">No published featured story yet.</h3>
+
+              <p className="ne-featured__excerpt">
+                Published stories from the Marketing Admin will appear here once available.
+              </p>
+            </div>
+          </article>
         )}
 
         <div className="ne-grid">
           {storyCards.map((story) => (
-            <article className="ne-card ne-reveal ne-reveal--up" data-reveal key={story.title}>
-              <Link href="/news" className="ne-card__image-wrap" aria-label={story.title}>
-                <img
+            <article
+              className="ne-card ne-reveal ne-reveal--up"
+              data-reveal
+              key={story.id || story.title}
+            >
+              <Link href={getPostHref(story)} className="ne-card__image-wrap" aria-label={story.title}>
+                <StoryImage
                   src={story.image}
                   alt={story.imageAlt || story.title}
                   className="ne-card__image"
@@ -268,7 +398,7 @@ export default function NewsEvents() {
 
                 <p className="ne-card__excerpt">{story.excerpt}</p>
 
-                <Link href="/news" className="ne-link">
+                <Link href={getPostHref(story)} className="ne-link">
                   Read more <ArrowIcon />
                 </Link>
               </div>
@@ -286,9 +416,19 @@ export default function NewsEvents() {
 
           <div className="ne-updates__list">
             {(quickUpdates.length ? quickUpdates : UPDATES).map((update, index) => (
-              <Link href="/news" className="ne-update-item" key={update.id || update.title || index}>
-                <span className="ne-update-item__tag">{update.category || update.tag}</span>
-                <span className="ne-update-item__text">{update.title || update.text}</span>
+              <Link
+                href={getPostHref(update)}
+                className="ne-update-item"
+                key={update.id || update.title || update.text || index}
+              >
+                <span className="ne-update-item__tag">
+                  {update.category || update.tag || 'Update'}
+                </span>
+
+                <span className="ne-update-item__text">
+                  {update.title || update.text}
+                </span>
+
                 <span className="ne-update-item__arrow" aria-hidden="true">
                   <ArrowIcon />
                 </span>
