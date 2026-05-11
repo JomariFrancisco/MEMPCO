@@ -241,20 +241,91 @@ const countBy = (items, key) =>
     return acc;
   }, {});
 
+const normalizeTicketStatus = (status) =>
+  String(status || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[-_]+/g, ' ')
+    .replace(/\s+/g, ' ');
+
+const isTicketStatus = (ticket, status) =>
+  normalizeTicketStatus(ticket?.status) === normalizeTicketStatus(status);
+
+const isMovedDateTicket = (ticket) => isTicketStatus(ticket, 'Moved Date');
+
+const isTicketResolved = (ticket) => isTicketStatus(ticket, 'Resolved');
+
+const isTicketInProgress = (ticket) => isTicketStatus(ticket, 'In Progress');
+
+const hasAssignedTechnician = (ticket) => {
+  const technician = String(ticket?.technician || '').trim().toLowerCase();
+
+  return Boolean(technician && technician !== 'unassigned');
+};
+
+const EMPLOYEE_LOCKED_STATUSES = [
+  'pending',
+  'critical',
+  'moved date',
+  'in progress',
+  'escalated',
+  'resolved',
+  'canceled',
+];
+
+const getEmployeeTicketLockReason = (ticket) => {
+  const status = normalizeTicketStatus(ticket?.status);
+
+  if (status === 'moved date') return 'Moved date was already set by ICT/Admin.';
+  if (status === 'in progress') return 'Ticket is already in progress.';
+  if (status === 'escalated') return 'Ticket was already escalated.';
+  if (status === 'resolved') return 'Ticket was already resolved.';
+  if (status === 'canceled') return 'Ticket was already canceled.';
+  if (status === 'pending') return 'Ticket was already reviewed by ICT/Admin.';
+  if (status === 'critical') return 'Ticket was already prioritized by ICT/Admin.';
+
+  if (hasAssignedTechnician(ticket)) {
+    return `Ticket is already assigned to ${ticket.technician}.`;
+  }
+
+  if (ticket?.workStartedAt) return 'ICT/Admin already started working on this ticket.';
+
+  if (ticket?.employeeEditLockReason) return ticket.employeeEditLockReason;
+
+  return 'Ticket is not yet catered and can still be edited by the employee.';
+};
+
+const isEmployeeLockedTicket = (ticket) => {
+  const status = normalizeTicketStatus(ticket?.status);
+
+  return (
+    Boolean(ticket?.employeeEditLocked) ||
+    EMPLOYEE_LOCKED_STATUSES.includes(status) ||
+    hasAssignedTechnician(ticket) ||
+    Boolean(ticket?.workStartedAt)
+  );
+};
+
+const isHighOrCriticalSla = (sla) => ['high', 'critical'].includes(String(sla || '').trim().toLowerCase());
+
+const isSlaWatchTicket = (ticket) =>
+  isHighOrCriticalSla(ticket.sla) &&
+  isUnresolved(ticket.status) &&
+  !isMovedDateTicket(ticket);
+
 const buildSummary = (tickets) => {
   const total = tickets.length;
   const active = tickets.filter((ticket) => isUnresolved(ticket.status)).length;
-  const created = tickets.filter((ticket) => ticket.status === 'Created').length;
-  const pending = tickets.filter((ticket) => ticket.status === 'Pending').length;
-  const modified = tickets.filter((ticket) => ticket.status === 'Modified').length;
-  const inProgress = tickets.filter((ticket) => ticket.status === 'In Progress').length;
-  const resolved = tickets.filter((ticket) => ticket.status === 'Resolved').length;
-  const critical = tickets.filter(
-    (ticket) => ['High', 'Critical'].includes(ticket.sla) && isUnresolved(ticket.status)
-  ).length;
+  const created = tickets.filter((ticket) => isTicketStatus(ticket, 'Created')).length;
+  const pending = tickets.filter((ticket) => isTicketStatus(ticket, 'Pending')).length;
+  const modified = tickets.filter((ticket) => isTicketStatus(ticket, 'Modified')).length;
+  const movedDate = tickets.filter(isMovedDateTicket).length;
+  const inProgress = tickets.filter(isTicketInProgress).length;
+  const resolved = tickets.filter(isTicketResolved).length;
+  const critical = tickets.filter(isSlaWatchTicket).length;
   const saar = tickets.filter((ticket) => ticket.saarRequired || ticket.saarAttachment?.name).length;
 
-  return { total, active, created, pending, modified, inProgress, resolved, critical, saar };
+  return { total, active, created, pending, modified, movedDate, inProgress, resolved, critical, saar };
 };
 
 const breakdown = (tickets, key, source = []) => {
@@ -444,18 +515,28 @@ const openPrintDocument = (title, body) => {
       <head>
         <title>${escapePrintHtml(title)}</title>
         <style>
-          @page { size: A4 landscape; margin: 7mm; }
+          @page { size: 11in 8.5in; margin: 0.28in; }
           * { box-sizing: border-box; }
+          html,
           body {
+            width: 100%;
             margin: 0;
             padding: 0;
             color: #111827;
             font-family: Arial, Helvetica, sans-serif;
             background: #fff;
           }
+          body {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+          }
           .print-page {
-            width: 100%;
-            min-height: 196mm;
+            width: 10.44in;
+            max-width: 100%;
+            min-height: 7.94in;
+            margin: 0 auto;
+            padding: 0;
             overflow: visible;
           }
           .coop-letterhead {
@@ -543,7 +624,7 @@ const openPrintDocument = (title, body) => {
           .report-row em { min-width: 32px; color: #64748b; font-style: normal; font-weight: 800; text-align: right; }
           .consolidated-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 2px; }
           .ticket-detail-section { margin-top: 9px; page-break-inside: auto; }
-          .detail-table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 8.5px; line-height: 1.25; }
+          .detail-table { width: 100%; margin: 0 auto; border-collapse: collapse; table-layout: fixed; font-size: 8.5px; line-height: 1.25; }
           .detail-table th, .detail-table td { border: 1px solid #d1d5db; padding: 4px 5px; text-align: left; vertical-align: top; overflow-wrap: anywhere; }
           .detail-table th { background: #111827; color: #fff; font-size: 7.5px; text-transform: uppercase; letter-spacing: 0.04em; }
           .detail-table tr { page-break-inside: avoid; }
@@ -560,8 +641,18 @@ const openPrintDocument = (title, body) => {
           .detail-table th:nth-child(11), .detail-table td:nth-child(11) { width: 8%; }
           .print-note { margin-top: 7px; color: #64748b; font-size: 9.5px; font-weight: 700; }
           @media print {
-            body { padding: 0; }
-            .print-page { max-width: none; }
+            body {
+              padding: 0;
+              display: flex;
+              justify-content: center;
+              align-items: flex-start;
+            }
+            .print-page {
+              width: 10.44in;
+              max-width: 100%;
+              margin-left: auto;
+              margin-right: auto;
+            }
             .detail-table thead { display: table-header-group; }
             .detail-table tfoot { display: table-footer-group; }
           }
@@ -802,7 +893,7 @@ const printMonthlyConsolidatedReport = (tickets, monthDate) => {
           </tbody>
         </table>
       </section>
-      <p class="print-note">Consolidated monthly report prepared for the ICT Department team workload review.</p>
+      <p class="print-note">Consolidated monthly report prepared by the ICT Department team workload review.</p>
     </main>
   `;
 
@@ -937,8 +1028,11 @@ const formatElapsedTime = (startedAt, endedAt, now = Date.now()) => {
   return `${minutes}m ${String(seconds).padStart(2, '0')}s`;
 };
 
-const getActionButtonLabel = (ticket) =>
-  getTicketWorkStartedAt(ticket) ? 'Update Ticket' : 'Take Action';
+const getActionButtonLabel = (ticket) => {
+  if (isTicketResolved(ticket)) return 'View Ticket';
+
+  return getTicketWorkStartedAt(ticket) ? 'Update Ticket' : 'Take Action';
+};
 
 /* =========================
    SIDEBAR
@@ -1020,13 +1114,26 @@ function TicketBadges({ ticket }) {
   );
 }
 
+function PreservedText({ value, fallback = 'No description provided.', className = '' }) {
+  const text = value === null || value === undefined || value === '' ? fallback : String(value);
+
+  return (
+    <p
+      className={className}
+      style={{ whiteSpace: 'pre-wrap', overflowWrap: 'break-word', wordBreak: 'normal' }}
+    >
+      {text}
+    </p>
+  );
+}
+
 function TicketWorkTimer({ ticket, now, compact = false }) {
   const startedAt = getTicketWorkStartedAt(ticket);
   const endedAt = getTicketWorkEndedAt(ticket);
 
   if (!startedAt) return null;
 
-  const isRunning = ticket.status === 'In Progress' && !endedAt;
+  const isRunning = isUnresolved(ticket.status) && !endedAt;
 
   return (
     <div className={`ticket-work-timer${compact ? ' compact' : ''}${isRunning ? ' running' : ' ended'}`}>
@@ -1143,9 +1250,10 @@ function TicketTable({
                 </div>
 
                 {!compact && (
-                  <p className="admin-ticket-card-description">
-                    {ticket.description || 'No description provided.'}
-                  </p>
+                  <PreservedText
+                    className="admin-ticket-card-description"
+                    value={ticket.description}
+                  />
                 )}
 
                 <TicketWorkTimer ticket={ticket} now={now} compact={compact} />
@@ -1155,6 +1263,18 @@ function TicketTable({
                     <MonoIcon icon={Wrench} />
                     {getActionButtonLabel(ticket)}
                   </button>
+
+                  {canDelete && (
+                    <button
+                      type="button"
+                      className="ticket-action-btn danger"
+                      onClick={() => onDeleteTicket(ticket)}
+                      aria-label={`Delete ticket ${ticket.id}`}
+                    >
+                      <MonoIcon icon={Trash2} />
+                      Delete
+                    </button>
+                  )}
                 </div>
               </article>
             ))}
@@ -1425,8 +1545,12 @@ function DashboardView({ tickets, summary, categorySummary, onGoTo, onOpenTicket
   const pageSize = 1;
   const [ticketPage, setTicketPage] = useState(1);
   const urgentTickets = tickets
-    .filter((ticket) => ['High', 'Critical'].includes(ticket.sla) && isUnresolved(ticket.status))
+    .filter(isSlaWatchTicket)
     .sort((a, b) => getSlaRank(a.sla) - getSlaRank(b.sla) || normalizeDate(b) - normalizeDate(a))
+    .slice(0, 5);
+  const movedDateTickets = tickets
+    .filter(isMovedDateTicket)
+    .sort((a, b) => normalizeDate(b) - normalizeDate(a))
     .slice(0, 5);
   const totalPages = Math.max(1, Math.ceil(tickets.length / pageSize));
   const currentPage = Math.min(ticketPage, totalPages);
@@ -1522,8 +1646,8 @@ function DashboardView({ tickets, summary, categorySummary, onGoTo, onOpenTicket
                   <article key={ticket.id} className="admin-watch-card">
                     <div>
                       <span className="ticket-id">{ticket.id}</span>
-                      <h4>{ticket.concernType}</h4>
-                      <p>{ticket.branch} · {ticket.requester || ticket.ownerEmail}</p>
+                      <h4>{ticket.concernType || 'Unspecified concern'}</h4>
+                      <p>{ticket.branch || 'No branch'} · {ticket.requester || ticket.ownerEmail || 'Employee'}</p>
                     </div>
 
                     <TicketBadges ticket={ticket} />
@@ -1538,6 +1662,41 @@ function DashboardView({ tickets, summary, categorySummary, onGoTo, onOpenTicket
             </div>
           </section>
 
+          <section className="panel-card glass equal-panel">
+            <div className="section-head">
+              <div>
+                <span className="section-kicker">Moved Date</span>
+                <h3>Moved Date Concerns</h3>
+              </div>
+            </div>
+
+            <div className="admin-watchlist">
+              {movedDateTickets.length === 0 ? (
+                <div className="empty-state small">
+                  <h4>No moved-date tickets.</h4>
+                  <p>Concerns moved to another date will appear here for follow-up.</p>
+                </div>
+              ) : (
+                movedDateTickets.map((ticket) => (
+                  <article key={ticket.id} className="admin-watch-card">
+                    <div>
+                      <span className="ticket-id">{ticket.id}</span>
+                      <h4>{ticket.concernType || 'Unspecified concern'}</h4>
+                      <p>{ticket.branch || 'No branch'} · {ticket.requester || ticket.ownerEmail || 'Employee'}</p>
+                      <p>Moved / Updated: {ticket.adminUpdatedAt || ticket.lastUpdated || 'No moved date recorded'}</p>
+                    </div>
+
+                    <TicketBadges ticket={ticket} />
+                    <TicketWorkTimer ticket={ticket} now={now} compact />
+
+                    <button type="button" className="ticket-action-btn" onClick={() => onOpenTicket(ticket)}>
+                      {getActionButtonLabel(ticket)}
+                    </button>
+                  </article>
+                ))
+              )}
+            </div>
+          </section>
         </div>
       </div>
     </div>
@@ -1712,9 +1871,7 @@ function BranchesView({ branchSummary, tickets, onOpenTicket, onDeleteTicket, ca
           branchSummary.map((branch) => {
             const branchTickets = tickets.filter((ticket) => ticket.branch === branch.name);
             const unresolved = branchTickets.filter((ticket) => isUnresolved(ticket.status)).length;
-            const urgent = branchTickets.filter(
-              (ticket) => ['High', 'Critical'].includes(ticket.sla) && isUnresolved(ticket.status)
-            ).length;
+            const urgent = branchTickets.filter(isSlaWatchTicket).length;
 
             return (
               <article key={branch.name} className="stat-card glass admin-branch-card">
@@ -2534,8 +2691,8 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
   useBodyScrollLock(true);
 
   const hasWorkStarted = Boolean(getTicketWorkStartedAt(ticket));
-  const isResolvedLocked = ticket.status === 'Resolved';
-  const isStartMode = !hasWorkStarted && !isResolvedLocked;
+  const isResolvedLocked = isTicketResolved(ticket);
+  const isStartMode = !hasWorkStarted && !isResolvedLocked && !isMovedDateTicket(ticket);
   const statusOptions = isStartMode
     ? ['In Progress']
     : TICKET_STATUSES.filter((status) => status !== 'Created');
@@ -2553,7 +2710,7 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
     adminRemarks: ticket.adminRemarks || '',
     resolution: ticket.resolution || '',
   });
-  const isEscalationStatus = draft.status === 'Escalated';
+  const isEscalationStatus = normalizeTicketStatus(draft.status) === 'escalated';
   const staffOptions = Array.from(
     new Set([currentStaffName, assignedStaff, ...TECHNICIANS].filter((name) => name && name !== 'Unassigned'))
   );
@@ -2561,7 +2718,7 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
     ? [...staffOptions, ...ESCALATION_PARTNERS]
     : staffOptions;
   const visibleTechnician = technicianOptions.includes(draft.technician) ? draft.technician : 'Unassigned';
-  const canEditOutcomeFields = !isResolvedLocked && draft.status !== 'In Progress';
+  const canEditOutcomeFields = !isResolvedLocked && normalizeTicketStatus(draft.status) !== 'in progress';
   const lockedOutcomePlaceholder = 'Available once the ticket is updated away from In Progress.';
 
   const updateDraft = (field, value) => {
@@ -2594,12 +2751,14 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
       return;
     }
 
-    if (isStartMode && draft.status !== 'In Progress') {
+    const draftStatus = normalizeTicketStatus(draft.status);
+
+    if (isStartMode && draftStatus !== 'in progress') {
       setFormError('Start the ticket by setting the status to In Progress first.');
       return;
     }
 
-    const outcomeLocked = draft.status === 'In Progress';
+    const outcomeLocked = draftStatus === 'in progress';
     const sanitizedDraft = outcomeLocked
       ? {
           ...draft,
@@ -2616,11 +2775,25 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
               : 'Unassigned',
         };
 
+    const timestamp = new Date().toLocaleString();
+    const nextTicketSnapshot = {
+      ...ticket,
+      ...sanitizedDraft,
+      technician: sanitizedDraft.technician || currentStaffName,
+      adminUpdatedAt: timestamp,
+      lastUpdated: timestamp,
+    };
+
     onSave(ticket.id, {
       ...sanitizedDraft,
       technician: sanitizedDraft.technician || currentStaffName,
-      adminUpdatedAt: new Date().toLocaleString(),
-      lastUpdated: new Date().toLocaleString(),
+      adminUpdatedAt: timestamp,
+      lastUpdated: timestamp,
+      employeeEditLocked: isEmployeeLockedTicket(nextTicketSnapshot),
+      employeeEditLockedAt: timestamp,
+      employeeEditLockedBy: currentUser?.id || null,
+      employeeEditLockedByName: currentStaffName,
+      employeeEditLockReason: getEmployeeTicketLockReason(nextTicketSnapshot),
     });
   };
 
@@ -2651,10 +2824,10 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
             </h4>
             <p>
               {isResolvedLocked
-                ? 'Resolved tickets are read-only. Changes and deletion are disabled to preserve the final record.'
+                ? 'Resolved tickets are read-only for editing. Super admin emergency deletion remains available when required.'
                 : isStartMode
                   ? 'Saving as In Progress starts the work timer and changes this action to Update Ticket.'
-                  : 'The timer ends when this ticket is saved with a status other than In Progress.'}
+                  : 'The timer ends when this ticket is resolved or canceled.'}
             </p>
           </div>
           <TicketWorkTimer ticket={ticket} now={now} compact={!getTicketWorkStartedAt(ticket)} />
@@ -2709,7 +2882,7 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
 
         <div className="admin-description-box ticket-action-description">
           <span>Description of Problem</span>
-          <p>{ticket.description}</p>
+          <PreservedText value={ticket.description} />
         </div>
 
         <div className="ticket-form-grid ticket-action-update-grid">
@@ -3065,29 +3238,79 @@ export default function AdminDashboardPage() {
   const handleSaveTicket = async (ticketId, updates) => {
     const currentTicket = tickets.find((ticket) => ticket.id === ticketId);
 
-    if (currentTicket?.status === 'Resolved') {
+    if (isTicketResolved(currentTicket)) {
       window.alert(`Ticket ${ticketId} is resolved and cannot be changed.`);
       setSelectedTicket(null);
       void loadData();
       return;
     }
 
-    const timestamp = updates.adminUpdatedAt || new Date().toLocaleString();
-    const nextUpdates = { ...updates, adminUpdatedAt: timestamp };
+    const timestamp = new Date().toLocaleString();
+    const nextUpdates = {
+      ...updates,
+      adminUpdatedAt: timestamp,
+      lastUpdated: timestamp,
+    };
     const currentStaffName = admin?.name || 'Unassigned';
+    const nextStatus = normalizeTicketStatus(updates.status);
 
     if (!nextUpdates.technician || nextUpdates.technician === 'Unassigned') {
       nextUpdates.technician = currentStaffName;
     }
 
-    if (updates.status === 'In Progress') {
+    if (nextStatus === 'in progress') {
       if (!currentTicket?.workStartedAt || currentTicket?.workEndedAt) {
         nextUpdates.workStartedAt = timestamp;
       }
 
       nextUpdates.workEndedAt = '';
-    } else if (currentTicket?.workStartedAt && !currentTicket?.workEndedAt) {
+    }
+
+    if (nextStatus === 'moved date') {
+      if (!currentTicket?.workStartedAt) {
+        nextUpdates.workStartedAt = timestamp;
+      }
+
+      nextUpdates.workEndedAt = currentTicket?.workEndedAt || '';
+    }
+
+    if (nextStatus === 'resolved') {
+      if (!currentTicket?.workStartedAt) {
+        nextUpdates.workStartedAt = currentTicket?.createdAt || currentTicket?.date || timestamp;
+      }
+
       nextUpdates.workEndedAt = timestamp;
+      nextUpdates.adminUpdatedAt = timestamp;
+      nextUpdates.lastUpdated = timestamp;
+    }
+
+    if (nextStatus === 'canceled') {
+      if (currentTicket?.workStartedAt) {
+        nextUpdates.workEndedAt = timestamp;
+      }
+
+      nextUpdates.adminUpdatedAt = timestamp;
+      nextUpdates.lastUpdated = timestamp;
+    }
+
+    const nextTicketSnapshot = {
+      ...(currentTicket || {}),
+      ...nextUpdates,
+    };
+    const shouldLockEmployeeEdit = isEmployeeLockedTicket(nextTicketSnapshot);
+
+    nextUpdates.employeeEditLocked = shouldLockEmployeeEdit;
+
+    if (shouldLockEmployeeEdit) {
+      nextUpdates.employeeEditLockedAt = currentTicket?.employeeEditLockedAt || timestamp;
+      nextUpdates.employeeEditLockedBy = currentTicket?.employeeEditLockedBy || admin?.id || null;
+      nextUpdates.employeeEditLockedByName = currentTicket?.employeeEditLockedByName || currentStaffName;
+      nextUpdates.employeeEditLockReason = getEmployeeTicketLockReason(nextTicketSnapshot);
+    } else {
+      nextUpdates.employeeEditLockedAt = '';
+      nextUpdates.employeeEditLockedBy = null;
+      nextUpdates.employeeEditLockedByName = '';
+      nextUpdates.employeeEditLockReason = '';
     }
 
     try {
@@ -3114,13 +3337,18 @@ export default function AdminDashboardPage() {
     }
 
     const confirmed = window.confirm(
-      `Emergency delete ticket ${ticket.id}? This is restricted to super admin and cannot be undone.`
+      `SUPER ADMIN DELETE: Delete ticket ${ticket.id}? This can be resolved, moved, in progress, or any status. This action cannot be undone.`
     );
 
     if (!confirmed) return;
 
     try {
-      await deleteTicket(ticket.id);
+      await deleteTicket(ticket.id, {
+        force: true,
+        requestedBy: admin?.id,
+        requestedByRole: admin?.role,
+        bypassStatusLock: true,
+      });
       setSelectedTicket(null);
       await loadData();
     } catch (error) {
