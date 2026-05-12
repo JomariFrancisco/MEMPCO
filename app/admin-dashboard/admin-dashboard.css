@@ -4741,3 +4741,383 @@ button {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* =========================
+   HELPDESK MEDIA + CONVERSATION UPGRADES
+========================= */
+
+.admin-photo-attachment-box {
+  display: grid;
+  grid-template-columns: minmax(0, 230px) minmax(0, 1fr);
+  align-items: start;
+  gap: 1rem;
+}
+
+.attached-photo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+  gap: 0.72rem;
+  width: 100%;
+}
+
+.attached-photo-card {
+  min-width: 0;
+  padding: 0.55rem;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(226, 232, 240, 0.76);
+  background: rgba(255, 255, 255, 0.86);
+  color: var(--text);
+  text-decoration: none;
+  box-shadow: var(--shadow-soft);
+  transition: transform var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.attached-photo-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(220, 38, 38, 0.22);
+  box-shadow: 0 16px 28px rgba(15, 23, 42, 0.075);
+}
+
+.attached-photo-card img,
+.attached-photo-placeholder {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: calc(var(--radius-md) - 2px);
+  object-fit: cover;
+  background: rgba(241, 245, 249, 0.94);
+  margin-bottom: 0.55rem;
+}
+
+.attached-photo-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+}
+
+.attached-photo-card span,
+.attached-photo-card em {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.attached-photo-card span {
+  color: var(--text);
+  font-size: 0.78rem;
+  font-weight: 850;
+}
+
+.attached-photo-card em {
+  margin-top: 0.12rem;
+  color: var(--softer);
+  font-size: 0.68rem;
+  font-style: normal;
+  font-weight: 750;
+}
+
+.ticket-conversation-section {
+  display: grid;
+  gap: 0.85rem;
+  margin-top: 1rem;
+  padding: 1rem;
+  border-radius: var(--radius-lg);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(248, 250, 252, 0.76));
+  border: 1px solid rgba(226, 232, 240, 0.76);
+}
+
+.ticket-conversation-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.ticket-conversation-head h4 {
+  margin-top: 0.16rem;
+  color: var(--text);
+  font-size: 0.98rem;
+  letter-spacing: -0.03em;
+}
+
+.ticket-conversation-head .section-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.ticket-conversation-count {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0.25rem 0.62rem;
+  border-radius: var(--radius-pill);
+  background: var(--red-50);
+  color: var(--red-500);
+  font-size: 0.72rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.ticket-message-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.68rem;
+  max-height: 380px;
+  overflow-y: auto;
+  padding-right: 0.15rem;
+}
+
+.ticket-message-bubble {
+  width: min(86%, 620px);
+  padding: 0.82rem 0.9rem;
+  border-radius: 16px 16px 16px 6px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(226, 232, 240, 0.78);
+  box-shadow: var(--shadow-soft);
+}
+
+.ticket-message-bubble.mine {
+  align-self: flex-end;
+  border-radius: 16px 16px 6px 16px;
+  background:
+    radial-gradient(circle at top right, rgba(220, 38, 38, 0.1), transparent 40%),
+    rgba(255, 247, 247, 0.94);
+  border-color: rgba(220, 38, 38, 0.14);
+}
+
+.ticket-message-meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.8rem;
+  margin-bottom: 0.36rem;
+}
+
+.ticket-message-meta strong {
+  color: var(--text);
+  font-size: 0.8rem;
+}
+
+.ticket-message-meta span {
+  color: var(--softer);
+  font-size: 0.68rem;
+  font-weight: 750;
+  text-transform: capitalize;
+}
+
+.ticket-message-bubble p,
+.ticket-message-empty p {
+  color: var(--text-soft);
+  font-size: 0.84rem;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.ticket-message-bubble .attached-photo-grid {
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  margin-top: 0.55rem;
+}
+
+.ticket-message-empty {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.9rem;
+  border-radius: var(--radius-md);
+  background: rgba(241, 245, 249, 0.62);
+  color: var(--muted);
+}
+
+.ticket-message-composer {
+  display: grid;
+  gap: 0.65rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(226, 232, 240, 0.72);
+}
+
+.ticket-message-textarea {
+  min-height: 92px;
+}
+
+.ticket-message-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.message-attach-btn {
+  min-height: 40px;
+  padding: 0.52rem 0.82rem;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(226, 232, 240, 0.76);
+  background: rgba(255, 255, 255, 0.88);
+  color: var(--text-soft);
+  font-size: 0.78rem;
+  font-weight: 850;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.42rem;
+  cursor: pointer;
+}
+
+.message-attach-btn input {
+  display: none;
+}
+
+.message-photo-preview-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.52rem;
+}
+
+.message-photo-preview {
+  position: relative;
+  width: 74px;
+  height: 58px;
+  border: 1px solid rgba(226, 232, 240, 0.76);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: rgba(248, 250, 252, 0.9);
+}
+
+.message-photo-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.message-photo-preview span {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.72);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (max-width: 760px) {
+  .admin-photo-attachment-box {
+    grid-template-columns: 1fr;
+  }
+
+  .attached-photo-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ticket-message-bubble {
+    width: 100%;
+  }
+
+  .ticket-conversation-head,
+  .ticket-message-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+
+/* =========================
+   USER SEARCH + PAGINATION FIX
+========================= */
+
+.users-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.admin-users-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1rem;
+  align-items: end;
+  margin-bottom: 1rem;
+}
+
+.admin-user-search {
+  margin: 0;
+}
+
+.admin-users-toolbar-meta {
+  min-height: 52px;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(226, 232, 240, 0.82);
+  background: rgba(255, 255, 255, 0.78);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  box-shadow: var(--shadow-soft);
+}
+
+.admin-users-toolbar-meta strong {
+  color: var(--red-500);
+  font-size: 1.05rem;
+  line-height: 1;
+}
+
+.admin-users-toolbar-meta span {
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 750;
+}
+
+.users-pagination {
+  margin-top: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.8rem;
+}
+
+.attached-photo-card-wrap {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.attached-photo-save {
+  width: 100%;
+  min-height: 34px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(220, 38, 38, 0.18);
+  background: rgba(254, 242, 242, 0.82);
+  color: var(--red-600);
+  font-size: 0.73rem;
+  font-weight: 900;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+}
+
+.attached-photo-save:hover {
+  background: rgba(254, 226, 226, 0.95);
+}
+
+@media (max-width: 760px) {
+  .admin-users-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-users-toolbar-meta {
+    align-items: flex-start;
+  }
+
+  .users-pagination {
+    justify-content: space-between;
+  }
+}

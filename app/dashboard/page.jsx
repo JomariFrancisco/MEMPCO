@@ -15,12 +15,15 @@ import {
   Eye,
   FileText,
   IdCard,
+  ImageIcon,
   LayoutDashboard,
   Link2,
   LogOut,
   Mail,
   Menu,
+  MessageCircle,
   MapPin,
+  Paperclip,
   PenLine,
   Phone,
   Send,
@@ -28,8 +31,8 @@ import {
   Ticket,
   UserRound,
   UserRoundCheck,
-  UsersRound,
   Wrench,
+  X,
 } from 'lucide-react';
 import Navbar from '@/components/Navbar/Navbar';
 import {
@@ -39,6 +42,7 @@ import {
   DEPARTMENTS,
   DEVICE_OPTIONS,
   SUPPORT_CATEGORIES,
+  SLA_LEVELS,
   isUnresolved,
   slugify,
 } from '../portalStorage';
@@ -48,7 +52,16 @@ import {
   isInactivePortalUser,
   signOutPortal,
 } from '@/lib/auth/portalAuth';
-import { createTicket, getTickets, updateTicket } from '@/lib/tickets/portalTickets';
+import {
+  createTicket,
+  createTicketMessage,
+  getTicket,
+  getTicketMessages,
+  getTicketsForUser,
+  subscribeToTicket,
+  subscribeToTicketMessages,
+  updateTicket,
+} from '@/lib/tickets/portalTickets';
 import './dashboard.css';
 
 /* =========================
@@ -64,13 +77,17 @@ const TRANSITION_DURATION = 560;
 ========================= */
 
 const SAAR_MAX_SIZE = 4 * 1024 * 1024;
+const PHOTO_MAX_SIZE = 4 * 1024 * 1024;
+const PHOTO_MAX_COUNT = 5;
+const PHOTO_ACCEPT = 'image/jpeg,image/jpg,image/png,image/webp';
+const PHOTO_ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
 const ANNOUNCEMENTS = [
   {
     tag: 'Helpdesk',
     title: 'Centralized employee technical support',
     description:
-      'Submit ICT concerns with complete information, required attachments, and automatically assigned SLA level for faster routing.',
+      'Submit ICT concerns with complete information, required attachments, and manually selected SLA level for proper ICT routing.',
     date: 'Active',
   },
   {
@@ -95,6 +112,44 @@ const GUIDES = [
   'Use the ticket details view to monitor technician action, remarks, and resolution notes.',
 ];
 
+const SLA_PICKER_OPTIONS = [
+  {
+    level: 'Low',
+    icon: ShieldCheck,
+    title: 'Low',
+    impact: 'Single user affected',
+    text: 'Minor request or single-employee concern that does not stop daily operations.',
+    meta: 'Standard response',
+  },
+  {
+    level: 'Medium',
+    icon: Clock3,
+    title: 'Medium',
+    impact: 'Multiple users or department affected',
+    text: 'Concern affects work efficiency, a shared device, system function, or several users.',
+    meta: 'Priority review',
+  },
+  {
+    level: 'High',
+    icon: Wrench,
+    title: 'High',
+    impact: 'Branch operation affected',
+    text: 'Major concern affecting branch service, network access, system availability, or important transactions.',
+    meta: 'Urgent handling',
+  },
+  {
+    level: 'Critical',
+    icon: BadgeCheck,
+    title: 'Critical',
+    impact: 'Core operation affected',
+    text: 'Severe concern involving stopped operations, security incident, data loss, or critical system failure.',
+    meta: 'Immediate action',
+  },
+];
+
+const getSelectedSlaOption = (sla = 'Low') =>
+  SLA_PICKER_OPTIONS.find((option) => option.level === sla) || SLA_PICKER_OPTIONS[0];
+
 const SUPPORT_FLOW = [
   {
     title: 'Submit request',
@@ -102,49 +157,11 @@ const SUPPORT_FLOW = [
   },
   {
     title: 'ICT review',
-    text: 'The system assigns SLA automatically and ICT validates the concern.',
+    text: 'Employee selects the SLA level and ICT validates the concern.',
   },
   {
     title: 'Action & resolution',
     text: 'Technician updates action taken, remarks, and final resolution.',
-  },
-];
-
-const OPERATIONAL_IMPACTS = [
-  {
-    value: 'Single user affected',
-    title: 'Only me',
-    detail: 'One employee, device, account, or workstation is affected.',
-    level: 'Low',
-    icon: UserRound,
-  },
-  {
-    value: 'Multiple users affected',
-    title: 'A few teammates',
-    detail: 'Several employees are affected, but work can still continue.',
-    level: 'Medium',
-    icon: UsersRound,
-  },
-  {
-    value: 'Department affected',
-    title: 'My department',
-    detail: 'A department workflow is slowed down or partially blocked.',
-    level: 'Medium',
-    icon: Wrench,
-  },
-  {
-    value: 'Branch operation affected',
-    title: 'Branch operations',
-    detail: 'A branch service or daily operation is delayed or disrupted.',
-    level: 'High',
-    icon: Building2,
-  },
-  {
-    value: 'Core operation affected',
-    title: 'Service stopped',
-    detail: 'Transactions, member service, or critical systems cannot proceed.',
-    level: 'Critical',
-    icon: ShieldCheck,
   },
 ];
 
@@ -158,10 +175,100 @@ const emptyForm = {
   impact: '',
   description: '',
   saarAttachment: null,
+  photoAttachments: [],
+  sla: 'Low',
 };
 
-const DEFAULT_DESCRIPTION_TEMPLATE =
-  'Anydesk Number:\nIssue Summary:\nExact Error Message:\nAction Already Tried:';
+/* =========================
+   CLEAN ISSUE DESCRIPTION TEMPLATES
+   Removed redundant Device Type, Device Name, and Tried.
+========================= */
+
+const DEFAULT_DESCRIPTION_TEMPLATE = [
+  'AnyDesk:',
+  'System/App:',
+  'Summary:',
+  'Error:',
+].join('\n');
+
+const CONCERN_DESCRIPTION_TEMPLATES = {
+  mbwin: [
+    'AnyDesk:',
+    'MBWIN Account:',
+    'Requested Access:',
+    'Module:',
+    'Error:',
+    'SAAR Ref:',
+  ].join('\n'),
+
+  network: [
+    'AnyDesk:',
+    'Connection:',
+    'Affected Area:',
+    'Users Affected:',
+    'Summary:',
+    'Status/Error:',
+  ].join('\n'),
+
+  printer: [
+    'AnyDesk:',
+    'Printer Model:',
+    'Connection:',
+    'Affected User:',
+    'Summary:',
+    'Error:',
+  ].join('\n'),
+
+  hardware: [
+    'AnyDesk:',
+    'Summary:',
+    'Started:',
+    'Error/Signal:',
+  ].join('\n'),
+
+  account: [
+    'AnyDesk:',
+    'System/App:',
+    'Username:',
+    'Access Needed:',
+    'Error:',
+    'Approver:',
+  ].join('\n'),
+
+  email: [
+    'AnyDesk:',
+    'Email Account:',
+    'Client:',
+    'Summary:',
+    'Error:',
+  ].join('\n'),
+
+  security: [
+    'AnyDesk:',
+    'Affected Account:',
+    'Concern Type:',
+    'Suspicious Source:',
+    'Summary:',
+    'Warning/Error:',
+  ].join('\n'),
+
+  server: [
+    'AnyDesk:',
+    'Server/System:',
+    'Service Affected:',
+    'Users Affected:',
+    'Summary:',
+    'Error:',
+  ].join('\n'),
+
+  software: [
+    'AnyDesk:',
+    'System/App:',
+    'Module:',
+    'Summary:',
+    'Error:',
+  ].join('\n'),
+};
 
 const getTemplateLabels = (template = DEFAULT_DESCRIPTION_TEMPLATE) =>
   template
@@ -169,14 +276,310 @@ const getTemplateLabels = (template = DEFAULT_DESCRIPTION_TEMPLATE) =>
     .map((line) => line.trim())
     .filter(Boolean);
 
-const ensureDescriptionTemplate = (value = '', supportCategory = '') => {
-  const template = CATEGORY_TEMPLATES[supportCategory] || DEFAULT_DESCRIPTION_TEMPLATE;
-  const labels = getTemplateLabels(template);
-  const text = String(value || '').trim();
-  const lines = text ? text.split('\n') : [];
-  const missingLabels = labels.filter((label) => !lines.some((line) => line.trim().startsWith(label)));
+const normalizeTextareaValue = (value = '') => String(value || '').replace(/\r\n/g, '\n');
 
-  return [...missingLabels, ...lines].join('\n').trim();
+const normalize = (value) => String(value || '').trim().toLowerCase();
+
+const normalizePortalRole = (role = '') =>
+  String(role || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[-_\s]+/g, '');
+
+const hasAnyKeyword = (text, keywords = []) => keywords.some((keyword) => text.includes(keyword));
+
+const getIssueContextText = (formOrTicket = {}) =>
+  [
+    formOrTicket.supportCategory,
+    formOrTicket.concernType,
+    formOrTicket.deviceName,
+    formOrTicket.description,
+  ]
+    .map(normalize)
+    .join(' ');
+
+const isMbwinRequest = (formOrTicket) => {
+  const haystack = getIssueContextText(formOrTicket);
+
+  return (
+    haystack.includes('mbwin') ||
+    haystack.includes('mb win') ||
+    haystack.includes('mbwim') ||
+    haystack.includes('mb wim')
+  );
+};
+
+const getIssueDescriptionTemplate = (context = {}) => {
+  const supportCategory = typeof context === 'string' ? context : context.supportCategory;
+  const concernType = typeof context === 'string' ? '' : context.concernType;
+  const deviceName = typeof context === 'string' ? '' : context.deviceName;
+
+  const combined = [supportCategory, concernType, deviceName].map(normalize).join(' ');
+
+  if (hasAnyKeyword(combined, ['mbwin', 'mb win', 'mbwim', 'mb wim', 'teller', 'treasury', 'saar'])) {
+    return CONCERN_DESCRIPTION_TEMPLATES.mbwin;
+  }
+
+  if (
+    hasAnyKeyword(combined, [
+      'network',
+      'internet',
+      'wi-fi',
+      'wifi',
+      'voucher',
+      'router',
+      'modem',
+      'lan',
+      'connection',
+      'no connection',
+      'no internet',
+    ])
+  ) {
+    return CONCERN_DESCRIPTION_TEMPLATES.network;
+  }
+
+  if (hasAnyKeyword(combined, ['printer', 'scanner', 'print', 'scan'])) {
+    return CONCERN_DESCRIPTION_TEMPLATES.printer;
+  }
+
+  if (
+    hasAnyKeyword(combined, [
+      'computer',
+      'desktop',
+      'laptop',
+      'hardware',
+      'monitor',
+      'keyboard',
+      'mouse',
+      'ups',
+      'avr',
+      'power supply',
+      'no power',
+    ])
+  ) {
+    return CONCERN_DESCRIPTION_TEMPLATES.hardware;
+  }
+
+  if (
+    hasAnyKeyword(combined, [
+      'account',
+      'access',
+      'password',
+      'login',
+      'user',
+      'permission',
+      'role',
+      'reset',
+      'locked',
+      'unlock',
+    ])
+  ) {
+    return CONCERN_DESCRIPTION_TEMPLATES.account;
+  }
+
+  if (hasAnyKeyword(combined, ['email', 'outlook', 'mail', 'webmail'])) {
+    return CONCERN_DESCRIPTION_TEMPLATES.email;
+  }
+
+  if (
+    hasAnyKeyword(combined, [
+      'virus',
+      'malware',
+      'ransomware',
+      'phishing',
+      'security',
+      'breach',
+      'suspicious',
+      'data loss',
+    ])
+  ) {
+    return CONCERN_DESCRIPTION_TEMPLATES.security;
+  }
+
+  if (
+    hasAnyKeyword(combined, [
+      'server',
+      'database',
+      'backup',
+      'domain',
+      'active directory',
+      'nas',
+      'storage',
+    ])
+  ) {
+    return CONCERN_DESCRIPTION_TEMPLATES.server;
+  }
+
+  if (
+    hasAnyKeyword(combined, [
+      'application',
+      'software',
+      'system',
+      'program',
+      'module',
+      'error',
+    ])
+  ) {
+    return CONCERN_DESCRIPTION_TEMPLATES.software;
+  }
+
+  return CATEGORY_TEMPLATES[supportCategory] || DEFAULT_DESCRIPTION_TEMPLATE;
+};
+
+const isGeneratedDescriptionOnly = (value = '') => {
+  const text = normalizeTextareaValue(value).trim();
+
+  if (!text) return true;
+
+  const lines = text
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  if (!lines.length) return true;
+
+  return lines.every((line) => line.endsWith(':'));
+};
+
+const ensureDescriptionTemplate = (value = '', context = {}) => {
+  const template = getIssueDescriptionTemplate(context);
+  const labels = getTemplateLabels(template);
+  const rawText = normalizeTextareaValue(value);
+  const lines = rawText.length ? rawText.split('\n') : [];
+
+  const missingLabels = labels.filter(
+    (label) => !lines.some((line) => line.trimStart().startsWith(label))
+  );
+
+  if (!missingLabels.length) {
+    return rawText;
+  }
+
+  return [...missingLabels, ...lines].join('\n');
+};
+
+const parseDescriptionValues = (value = '', context = {}) => {
+  const labels = getTemplateLabels(getIssueDescriptionTemplate(context));
+  const lines = normalizeTextareaValue(value).split('\n');
+
+  return labels.reduce((values, label) => {
+    const matchedLine = lines.find((line) => line.trimStart().startsWith(label));
+    values[label] = matchedLine ? matchedLine.trimStart().slice(label.length).trimStart() : '';
+    return values;
+  }, {});
+};
+
+const buildDescriptionFromValues = (values = {}, context = {}) => {
+  const labels = getTemplateLabels(getIssueDescriptionTemplate(context));
+
+  return labels
+    .map((label) => `${label}${values[label] ? ` ${values[label]}` : ''}`)
+    .join('\n');
+};
+
+const updateDescriptionLabelValue = (value = '', context = {}, label = '', nextValue = '') => {
+  const currentValues = parseDescriptionValues(value, context);
+
+  return buildDescriptionFromValues(
+    {
+      ...currentValues,
+      [label]: normalizeTextareaValue(nextValue).replace(/\n/g, ' ').slice(0, 320),
+    },
+    context
+  );
+};
+
+/*
+  No auto-prefill from device name.
+  This prevents duplicate details because device/system is already selected
+  in the main Device / Workstation / System field.
+*/
+const getContextPrefillForLabel = () => '';
+
+const applyDescriptionContextPrefills = (value = '', context = {}, previousContext = {}) => {
+  const labels = getTemplateLabels(getIssueDescriptionTemplate(context));
+  const values = parseDescriptionValues(value, context);
+
+  labels.forEach((label) => {
+    const nextPrefill = getContextPrefillForLabel(label, context);
+    const previousPrefill = getContextPrefillForLabel(label, previousContext);
+
+    if (!nextPrefill) return;
+
+    if (!values[label] || values[label] === previousPrefill) {
+      values[label] = nextPrefill;
+    }
+  });
+
+  return buildDescriptionFromValues(values, context);
+};
+
+const getDescriptionInputPlaceholder = (label = '') => {
+  const lowerLabel = normalize(label);
+
+  if (lowerLabel.includes('anydesk')) return 'Enter AnyDesk number';
+  if (lowerLabel.includes('summary')) return 'Briefly describe the issue';
+  if (lowerLabel.includes('error') || lowerLabel.includes('warning') || lowerLabel.includes('signal')) {
+    return 'Type the exact error, warning, or indicator';
+  }
+  if (lowerLabel.includes('started')) return 'When did the issue start?';
+  if (lowerLabel.includes('connection')) return 'Example: LAN, Wi-Fi, USB, or network';
+  if (lowerLabel.includes('affected')) return 'Type the affected user, area, or number of users';
+  if (lowerLabel.includes('module')) return 'Type the affected module or transaction';
+  if (lowerLabel.includes('account') || lowerLabel.includes('username')) return 'Type the affected account or username';
+  if (lowerLabel.includes('access')) return 'Type the requested access or role';
+  if (lowerLabel.includes('saar')) return 'Type the SAAR reference or approval detail';
+  if (lowerLabel.includes('approver')) return 'Type the approver or request reference';
+
+  return 'Type details here';
+};
+
+const sanitizeDescriptionForSubmit = (value = '', context = {}) =>
+  ensureDescriptionTemplate(value, context).trim();
+
+const hasMeaningfulDescriptionDetails = (value = '', context = {}) => {
+  const template = getIssueDescriptionTemplate(context);
+  const labels = getTemplateLabels(template);
+  const lines = normalizeTextareaValue(value)
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  const detailLines = lines.map((line) => {
+    const matchedLabel = labels.find((label) => line.startsWith(label));
+
+    if (!matchedLabel) return line;
+
+    return line.replace(matchedLabel, '').trim();
+  });
+
+  return detailLines.some((line) => line.length >= 3);
+};
+
+const getIssueDescriptionHint = (form = {}) => {
+  const combined = getIssueContextText(form);
+
+  if (isMbwinRequest(form)) {
+    return 'For MBWIN concerns, include the account, requested access, affected module, error, and SAAR reference.';
+  }
+
+  if (hasAnyKeyword(combined, ['network', 'internet', 'wi-fi', 'wifi', 'voucher', 'router', 'modem'])) {
+    return 'For network concerns, include the connection type, affected area, number of users, and status/error.';
+  }
+
+  if (hasAnyKeyword(combined, ['printer', 'scanner', 'print', 'scan'])) {
+    return 'For printer or scanner concerns, include the model, connection type, affected user, and error.';
+  }
+
+  if (hasAnyKeyword(combined, ['computer', 'desktop', 'laptop', 'hardware', 'monitor', 'ups', 'no power'])) {
+    return 'For hardware concerns, describe the problem, when it started, and any error or indicator.';
+  }
+
+  if (hasAnyKeyword(combined, ['account', 'access', 'password', 'login', 'permission', 'role'])) {
+    return 'For account concerns, include the affected system, username, access needed, error, and approver if applicable.';
+  }
+
+  return 'Complete the short issue description fields so ICT can review the concern faster.';
 };
 
 const getNewTicketForm = (user = {}) => ({
@@ -185,85 +588,114 @@ const getNewTicketForm = (user = {}) => ({
   department: user.department || '',
   contactNumber: user.phone || '',
   description: DEFAULT_DESCRIPTION_TEMPLATE,
+  photoAttachments: [],
+  saarAttachment: null,
+  sla: 'Low',
+  impact: getSelectedSlaOption('Low').impact,
 });
 
 /* =========================
-   HELPERS
+   IMPACT DETECTION
 ========================= */
 
-const normalize = (value) => String(value || '').trim().toLowerCase();
-
-const isMbwinRequest = (formOrTicket) => {
-  const haystack = [
-    formOrTicket.supportCategory,
-    formOrTicket.concernType,
-    formOrTicket.description,
+const detectOperationalImpact = (form = {}) => {
+  const combined = [
+    form.supportCategory,
+    form.concernType,
+    form.deviceName,
+    form.description,
   ]
     .map(normalize)
     .join(' ');
 
-  return haystack.includes('mbwin') || haystack.includes('mb win');
+  if (
+    hasAnyKeyword(combined, [
+      'ransomware',
+      'data breach',
+      'breach',
+      'security incident',
+      'data loss',
+      'database down',
+      'server down',
+      'system down',
+      'core system down',
+      'all branch down',
+      'entire branch down',
+      'no operation',
+      'cannot operate',
+      'cannot transact',
+      'transaction stopped',
+      'service stopped',
+      'production stopped',
+    ])
+  ) {
+    return 'Core operation affected';
+  }
+
+  if (
+    hasAnyKeyword(combined, [
+      'branch operation',
+      'branch affected',
+      'all users',
+      'whole branch',
+      'no internet',
+      'internet outage',
+      'network outage',
+      'router down',
+      'modem down',
+      'main printer down',
+      'power supply',
+      'server',
+      'backup failed',
+    ])
+  ) {
+    return 'Branch operation affected';
+  }
+
+  if (
+    hasAnyKeyword(combined, [
+      'department affected',
+      'department',
+      'multiple users',
+      'several users',
+      'team affected',
+      'shared printer',
+      'shared scanner',
+      'common area',
+    ])
+  ) {
+    return 'Department affected';
+  }
+
+  if (
+    hasAnyKeyword(combined, [
+      'mbwin',
+      'mb win',
+      'printer',
+      'scanner',
+      'network connection',
+      'wi-fi',
+      'wifi',
+      'voucher',
+      'account',
+      'access',
+      'password',
+      'login',
+      'email',
+      'outlook',
+      'application error',
+      'software error',
+    ])
+  ) {
+    return 'Multiple users affected';
+  }
+
+  return 'Single user affected';
 };
 
-const detectSla = (form) => {
-  const supportCategory = normalize(form.supportCategory);
-  const concernType = normalize(form.concernType);
-  const impact = normalize(form.impact);
-  const description = normalize(form.description);
-  const combined = `${supportCategory} ${concernType} ${impact} ${description}`;
-
-  if (
-    combined.includes('ransomware') ||
-    combined.includes('data loss') ||
-    combined.includes('breach') ||
-    combined.includes('security incident') ||
-    combined.includes('all branch down') ||
-    combined.includes('entire branch down') ||
-    combined.includes('no operation') ||
-    combined.includes('cannot operate') ||
-    combined.includes('system down') ||
-    combined.includes('server down') ||
-    combined.includes('server no power')
-  ) {
-    return 'Critical';
-  }
-
-  if (
-    concernType.includes('server') ||
-    combined.includes('core operation affected') ||
-    combined.includes('branch operation affected') ||
-    combined.includes('network outage') ||
-    combined.includes('internet outage') ||
-    combined.includes('no internet') ||
-    combined.includes('power supply') ||
-    combined.includes('account creation to re-assigned') ||
-    combined.includes('re-assigned treasury') ||
-    combined.includes('urgent approval')
-  ) {
-    return 'High';
-  }
-
-  if (
-    isMbwinRequest(form) ||
-    concernType.includes('network connection') ||
-    concernType.includes('internet') ||
-    concernType.includes('wi-fi') ||
-    concernType.includes('voucher') ||
-    concernType.includes('printer') ||
-    concernType.includes('scanner') ||
-    concernType.includes('computer') ||
-    concernType.includes('laptop') ||
-    concernType.includes('hardware') ||
-    supportCategory.includes('account') ||
-    supportCategory.includes('access') ||
-    impact.includes('multiple users') ||
-    impact.includes('department affected')
-  ) {
-    return 'Medium';
-  }
-
-  return 'Low';
-};
+/* =========================
+   HELPERS
+========================= */
 
 const formatFileSize = (bytes = 0) => {
   if (!bytes) return '0 KB';
@@ -281,8 +713,242 @@ const fileToDataUrl = (file) =>
     reader.readAsDataURL(file);
   });
 
+const isPhotoFile = (file) =>
+  Boolean(
+    file &&
+      (PHOTO_ALLOWED_TYPES.includes(file.type) || /\.(jpe?g|png|webp)$/i.test(file.name || ''))
+  );
+
+const filesToPhotoAttachments = async (files = [], existingCount = 0) => {
+  const selectedFiles = Array.from(files || []);
+
+  if (!selectedFiles.length) return [];
+
+  if (existingCount + selectedFiles.length > PHOTO_MAX_COUNT) {
+    throw new Error(`You can attach up to ${PHOTO_MAX_COUNT} photos only.`);
+  }
+
+  const invalidFile = selectedFiles.find((file) => !isPhotoFile(file));
+
+  if (invalidFile) {
+    throw new Error('Photo attachments must be JPG, JPEG, PNG, or WEBP files.');
+  }
+
+  const oversizedFile = selectedFiles.find((file) => file.size > PHOTO_MAX_SIZE);
+
+  if (oversizedFile) {
+    throw new Error('Each photo must not exceed 4 MB.');
+  }
+
+  return Promise.all(
+    selectedFiles.map(async (file) => ({
+      id: globalThis.crypto?.randomUUID?.() || `${Date.now()}-${file.name}`,
+      name: file.name,
+      type: file.type || 'image/jpeg',
+      size: file.size,
+      sizeLabel: formatFileSize(file.size),
+      uploadedAt: new Date().toLocaleString(),
+      dataUrl: await fileToDataUrl(file),
+    }))
+  );
+};
+
 const getTicketOwnerMatch = (ticket, user) =>
   ticket.ownerId === user.id || ticket.ownerEmail === user.email;
+
+const canEmployeeEditTicket = (ticket = {}) => {
+  if (ticket.employeeEditLocked) return false;
+
+  const status = normalize(ticket.status);
+  const editableStatuses = ['created', 'pending', 'modified'];
+  const hasTechnician = Boolean(String(ticket.technician || '').trim()) && ticket.technician !== 'Unassigned';
+  const hasStarted = Boolean(ticket.workStartedAt);
+  const hasAction = Boolean(
+    String(ticket.actionTaken || '').trim() ||
+      String(ticket.adminRemarks || '').trim() ||
+      String(ticket.resolution || '').trim()
+  );
+
+  return editableStatuses.includes(status) && !hasTechnician && !hasStarted && !hasAction;
+};
+
+function PhotoAttachmentGallery({ photos = [], emptyText = 'No photo attachments.' }) {
+  const validPhotos = Array.isArray(photos)
+    ? photos.filter((photo) => photo?.dataUrl || photo?.url || photo?.publicUrl || photo?.path || photo?.name)
+    : [];
+
+  if (!validPhotos.length) {
+    return <span className="ticket-form-hint">{emptyText}</span>;
+  }
+
+  return (
+    <div className="attached-photo-grid">
+      {validPhotos.map((photo, index) => {
+        const source = photo.dataUrl || photo.url || photo.publicUrl || '';
+        const fileName = photo.name || `Photo ${index + 1}`;
+
+        return (
+          <div key={photo.id || photo.path || `${fileName}-${index}`} className="attached-photo-card-wrap">
+            <a
+              className="attached-photo-card"
+              href={source || '#'}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`Open ${fileName}`}
+            >
+              {source ? (
+                <img src={source} alt={fileName} />
+              ) : (
+                <span className="attached-photo-placeholder"><MonoIcon icon={ImageIcon} /></span>
+              )}
+              <span>{fileName}</span>
+              <em>{photo.sizeLabel || 'Image file'}</em>
+            </a>
+
+            {source && (
+              <a className="attached-photo-save" href={source} download={fileName}>
+                Save Image
+              </a>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function IssueDescriptionBuilder({ form, onChange }) {
+  const labels = getTemplateLabels(getIssueDescriptionTemplate(form));
+  const values = parseDescriptionValues(form.description, form);
+  const totalLength = normalizeTextareaValue(form.description).length;
+
+  return (
+    <div className="issue-description-composer" id="ticket-desc-builder" aria-label="Issue description fields">
+      <div className="issue-description-paper">
+        {labels.map((label) => {
+          const value = values[label] || '';
+          const fieldId = `issue-field-${slugify(label)}`;
+          const isLongField = label.toLowerCase().includes('summary') || label.toLowerCase().includes('problem');
+
+          return (
+            <div key={label} className="issue-description-line">
+              <label className="issue-description-label" htmlFor={fieldId}>
+                {label}
+              </label>
+
+              <textarea
+                id={fieldId}
+                className="issue-description-answer"
+                value={value}
+                rows={isLongField ? 2 : 1}
+                onChange={(e) => onChange(label, e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === ' ' || e.code === 'Space') {
+                    e.stopPropagation();
+                  }
+                }}
+                placeholder={getDescriptionInputPlaceholder(label)}
+                maxLength={320}
+              />
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="char-count">{totalLength}/1200 characters</div>
+    </div>
+  );
+}
+
+function TicketConversationPanel({
+  currentUser,
+  messages,
+  messageDraft,
+  messagePhotos,
+  messageError,
+  isSending,
+  onMessageChange,
+  onPhotoChange,
+  onRemovePhoto,
+  onSend,
+}) {
+  return (
+    <section className="ticket-conversation-section">
+      <div className="ticket-conversation-head">
+        <div>
+          <span className="section-kicker"><MonoIcon icon={MessageCircle} /> Conversation</span>
+          <h4>Employee and ICT communication</h4>
+        </div>
+        <span className="ticket-conversation-count">{messages.length} message{messages.length === 1 ? '' : 's'}</span>
+      </div>
+
+      <div className="ticket-message-list">
+        {messages.length ? (
+          messages.map((item) => {
+            const isMine = item.senderId === currentUser?.id;
+
+            return (
+              <article key={item.id} className={`ticket-message-bubble${isMine ? ' mine' : ''}`}>
+                <div className="ticket-message-meta">
+                  <strong>{item.senderName}</strong>
+                  <span>{item.senderRole} · {item.createdAt}</span>
+                </div>
+                {item.message && <p>{item.message}</p>}
+                <PhotoAttachmentGallery photos={item.attachments} emptyText="" />
+              </article>
+            );
+          })
+        ) : (
+          <div className="ticket-message-empty">
+            <MonoIcon icon={MessageCircle} />
+            <p>No conversation yet. Send a reply if ICT needs more details or screenshots.</p>
+          </div>
+        )}
+      </div>
+
+      <div className="ticket-message-composer">
+        <textarea
+          className="ticket-field ticket-textarea ticket-message-textarea"
+          value={messageDraft}
+          onChange={(e) => onMessageChange(e.target.value)}
+          placeholder="Write a reply or update for ICT..."
+          maxLength={800}
+        />
+
+        {messagePhotos.length > 0 && (
+          <div className="message-photo-preview-row">
+            {messagePhotos.map((photo) => (
+              <button
+                key={photo.id || photo.name}
+                type="button"
+                className="message-photo-preview"
+                onClick={() => onRemovePhoto(photo.id)}
+                title="Remove photo"
+              >
+                <img src={photo.dataUrl} alt={photo.name} />
+                <span><MonoIcon icon={X} /></span>
+              </button>
+            ))}
+          </div>
+        )}
+
+        <div className="ticket-message-actions">
+          <label className="message-attach-btn">
+            <MonoIcon icon={Paperclip} />
+            Attach photos
+            <input type="file" accept={PHOTO_ACCEPT} multiple onChange={onPhotoChange} />
+          </label>
+          <button type="button" className="modal-btn confirm" onClick={onSend} disabled={isSending}>
+            <MonoIcon icon={Send} />
+            {isSending ? 'Sending...' : 'Send Reply'}
+          </button>
+        </div>
+
+        {messageError && <div className="form-error">{messageError}</div>}
+      </div>
+    </section>
+  );
+}
 
 /* =========================
    ICONS
@@ -474,7 +1140,7 @@ function DashboardView({ user, tickets, openTickets, onGoTo }) {
         <img className="employee-hero-logo admin-hero-logo" src="/Logos/Logo.png" alt="MEMPCO logo" />
 
         <div className="hero-meta">
-          <span className="meta-pill">SLA Auto Detection</span>
+          <span className="meta-pill">Manual SLA Selection</span>
           <span className="meta-pill">{openTickets} Active</span>
         </div>
       </section>
@@ -704,11 +1370,18 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
   const [viewTicket, setViewTicket] = useState(null);
   const [formError, setFormError] = useState('');
   const [ticketPage, setTicketPage] = useState(1);
+  const [ticketMessages, setTicketMessages] = useState([]);
+  const [messageDraft, setMessageDraft] = useState('');
+  const [messagePhotos, setMessagePhotos] = useState([]);
+  const [messageError, setMessageError] = useState('');
+  const [isSendingMessage, setIsSendingMessage] = useState(false);
+  const [isLoadingTicketDetails, setIsLoadingTicketDetails] = useState(false);
 
   const activeCount = tickets.filter((ticket) => isUnresolved(ticket.status)).length;
   const resolvedCount = tickets.filter((ticket) => ticket.status === 'Resolved').length;
   const mbwinRequired = isMbwinRequest(form);
-  const detectedSla = useMemo(() => detectSla(form), [form]);
+  const selectedSlaOption = useMemo(() => getSelectedSlaOption(form.sla), [form.sla]);
+  const issueDescriptionHint = useMemo(() => getIssueDescriptionHint(form), [form]);
   const pageSize = 3;
   const totalPages = Math.max(1, Math.ceil(tickets.length / pageSize));
   const currentPage = Math.min(ticketPage, totalPages);
@@ -720,6 +1393,55 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
       setTicketPage(totalPages);
     }
   }, [ticketPage, totalPages]);
+
+  useEffect(() => {
+    if (!viewTicket?.id) {
+      setTicketMessages([]);
+      setMessageDraft('');
+      setMessagePhotos([]);
+      setMessageError('');
+      return undefined;
+    }
+
+    let cancelled = false;
+
+    const loadMessages = async () => {
+      try {
+        const messages = await getTicketMessages(viewTicket.id);
+
+        if (!cancelled) {
+          setTicketMessages(messages);
+          setMessageError('');
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setTicketMessages([]);
+          setMessageError(error.message || 'Unable to load the ticket conversation.');
+        }
+      }
+    };
+
+    void loadMessages();
+
+    const unsubscribeMessages = subscribeToTicketMessages(viewTicket.id, (newMessage) => {
+      setTicketMessages((current) => {
+        const exists = current.some((message) => message.id === newMessage.id);
+        return exists ? current : [...current, newMessage];
+      });
+    });
+
+    const unsubscribeTicket = subscribeToTicket(viewTicket.id, (updatedTicket) => {
+      if (!cancelled) {
+        setViewTicket(updatedTicket);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+      unsubscribeMessages();
+      unsubscribeTicket();
+    };
+  }, [viewTicket?.id]);
 
   useEffect(() => {
     if (editingId) return;
@@ -738,27 +1460,57 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
     setForm((prev) => {
       const next = { ...prev, [field]: value };
 
-      if (field === 'supportCategory') {
-        const currentTemplate = CATEGORY_TEMPLATES[prev.supportCategory] || '';
-        const nextTemplate = CATEGORY_TEMPLATES[value] || '';
+      if (['supportCategory', 'concernType', 'deviceName'].includes(field)) {
+        const nextTemplate = getIssueDescriptionTemplate(next);
+        const baseDescription = isGeneratedDescriptionOnly(prev.description)
+          ? nextTemplate
+          : ensureDescriptionTemplate(prev.description, next);
 
-        if (
-          !prev.description ||
-          prev.description === currentTemplate ||
-          prev.description === DEFAULT_DESCRIPTION_TEMPLATE
-        ) {
-          next.description = nextTemplate || DEFAULT_DESCRIPTION_TEMPLATE;
-        } else {
-          next.description = ensureDescriptionTemplate(prev.description, value);
-        }
+        next.description = applyDescriptionContextPrefills(baseDescription, next, prev);
       }
 
       if (field === 'description') {
-        next.description = ensureDescriptionTemplate(value, prev.supportCategory);
+        next.description = normalizeTextareaValue(value);
       }
 
       return next;
     });
+  };
+
+  const handleDescriptionDetailChange = (label, value) => {
+    setFormError('');
+
+    setForm((prev) => ({
+      ...prev,
+      description: updateDescriptionLabelValue(prev.description, prev, label, value),
+    }));
+  };
+
+  const handleSlaChange = (option) => {
+    setFormError('');
+
+    setForm((prev) => ({
+      ...prev,
+      sla: option.level,
+      impact: option.impact,
+    }));
+  };
+
+  const openTicketDetails = async (ticket) => {
+    if (!ticket?.id) return;
+
+    setIsLoadingTicketDetails(true);
+    setFormError('');
+
+    try {
+      const fullTicket = await getTicket(ticket.id);
+      setViewTicket(fullTicket || ticket);
+    } catch (error) {
+      setViewTicket(ticket);
+      setFormError(error.message || 'Unable to load full ticket details. Showing available details only.');
+    } finally {
+      setIsLoadingTicketDetails(false);
+    }
   };
 
   const handleSaarFileChange = async (e) => {
@@ -809,6 +1561,78 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
     }
   };
 
+  const handlePhotoFilesChange = async (e) => {
+    const files = e.target.files;
+    setFormError('');
+
+    try {
+      const nextPhotos = await filesToPhotoAttachments(files, form.photoAttachments.length);
+
+      setForm((prev) => ({
+        ...prev,
+        photoAttachments: [...prev.photoAttachments, ...nextPhotos],
+      }));
+    } catch (error) {
+      setFormError(error.message || 'Unable to attach selected photos.');
+    } finally {
+      e.target.value = '';
+    }
+  };
+
+  const removePhotoAttachment = (photoId) => {
+    setForm((prev) => ({
+      ...prev,
+      photoAttachments: prev.photoAttachments.filter((photo) => photo.id !== photoId),
+    }));
+  };
+
+  const handleConversationPhotoChange = async (e) => {
+    const files = e.target.files;
+    setMessageError('');
+
+    try {
+      const nextPhotos = await filesToPhotoAttachments(files, messagePhotos.length);
+      setMessagePhotos((current) => [...current, ...nextPhotos]);
+    } catch (error) {
+      setMessageError(error.message || 'Unable to attach selected photos.');
+    } finally {
+      e.target.value = '';
+    }
+  };
+
+  const sendTicketMessage = async () => {
+    if (!viewTicket?.id) return;
+
+    const cleanMessage = messageDraft.trim();
+
+    if (!cleanMessage && !messagePhotos.length) {
+      setMessageError('Please type a message or attach a photo before sending.');
+      return;
+    }
+
+    setIsSendingMessage(true);
+    setMessageError('');
+
+    try {
+      const sentMessage = await createTicketMessage(viewTicket.id, {
+        sender: user,
+        message: cleanMessage,
+        attachments: messagePhotos,
+      });
+
+      setTicketMessages((current) => {
+        const exists = current.some((message) => message.id === sentMessage.id);
+        return exists ? current : [...current, sentMessage];
+      });
+      setMessageDraft('');
+      setMessagePhotos([]);
+    } catch (error) {
+      setMessageError(error.message || 'Unable to send reply.');
+    } finally {
+      setIsSendingMessage(false);
+    }
+  };
+
   const validateForm = () => {
     const requiredFields = [
       ['branch', 'Branch / Location'],
@@ -817,7 +1641,7 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
       ['concernType', 'Concern Type'],
       ['deviceName', 'Device / Workstation'],
       ['contactNumber', 'Contact Number'],
-      ['impact', 'Operational Impact'],
+      ['sla', 'SLA Level'],
       ['description', 'Issue Description'],
     ];
 
@@ -825,6 +1649,11 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
 
     if (missing) {
       setFormError(`${missing[1]} is required.`);
+      return false;
+    }
+
+    if (!hasMeaningfulDescriptionDetails(form.description, form)) {
+      setFormError('Please add complete issue details after the issue description labels.');
       return false;
     }
 
@@ -845,19 +1674,30 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
   };
 
   const confirmSubmit = async () => {
+    const cleanDescription = sanitizeDescriptionForSubmit(form.description, form);
+    const finalSla = form.sla || 'Low';
+    const finalSlaOption = getSelectedSlaOption(finalSla);
+
     const payload = {
       ...form,
-      sla: detectedSla,
+      impact: finalSlaOption.impact,
+      description: cleanDescription,
+      sla: finalSla,
+      priority: finalSla,
       saarRequired: mbwinRequired,
       lastEmployeeUpdate: new Date().toLocaleString(),
     };
 
     try {
       if (editingId) {
-        await updateTicket(editingId, {
-          ...payload,
-          status: 'Modified',
-        });
+        await updateTicket(
+          editingId,
+          {
+            ...payload,
+            status: 'Modified',
+          },
+          { requestedByRole: 'employee' }
+        );
 
         setEditingId(null);
       } else {
@@ -875,21 +1715,46 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
     }
   };
 
-  const handleEdit = (ticket) => {
-    setEditingId(ticket.id);
-    setForm({
-      branch: ticket.branch || '',
-      department: ticket.department || '',
-      supportCategory: ticket.supportCategory || '',
-      concernType: ticket.concernType || '',
-      deviceName: ticket.deviceName || '',
-      contactNumber: ticket.contactNumber || '',
-      impact: ticket.impact || '',
-      description: ensureDescriptionTemplate(ticket.description, ticket.supportCategory),
-      saarAttachment: ticket.saarAttachment || null,
-    });
+  const handleEdit = async (ticket) => {
+    if (!canEmployeeEditTicket(ticket)) {
+      setFormError(ticket.employeeLockReason || 'This ticket is already in progress and can no longer be edited.');
+      return;
+    }
+
     setFormError('');
-    setTab('submit');
+
+    try {
+      const fullTicket = await getTicket(ticket.id);
+      const editableTicket = fullTicket || ticket;
+
+      if (!canEmployeeEditTicket(editableTicket)) {
+        setFormError(editableTicket.employeeLockReason || 'This ticket is already in progress and can no longer be edited.');
+        return;
+      }
+
+      const ticketForm = {
+        branch: editableTicket.branch || '',
+        department: editableTicket.department || '',
+        supportCategory: editableTicket.supportCategory || '',
+        concernType: editableTicket.concernType || '',
+        deviceName: editableTicket.deviceName || '',
+        contactNumber: editableTicket.contactNumber || '',
+        impact: editableTicket.impact || '',
+        description: editableTicket.description || '',
+        saarAttachment: editableTicket.saarAttachment || null,
+        sla: editableTicket.sla || 'Low',
+        photoAttachments: Array.isArray(editableTicket.photoAttachments) ? editableTicket.photoAttachments : [],
+      };
+
+      setEditingId(editableTicket.id);
+      setForm({
+        ...ticketForm,
+        description: ensureDescriptionTemplate(editableTicket.description, ticketForm),
+      });
+      setTab('submit');
+    } catch (error) {
+      setFormError(error.message || 'Unable to load the ticket for editing. Please try again.');
+    }
   };
 
   const switchToSubmit = () => {
@@ -972,76 +1837,85 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
               </div>
             ) : (
               <>
-              {pagedTickets.map((ticket) => (
-                <div key={ticket.id} className="ticket-card">
-                  <div className="ticket-header">
-                    <div className="ticket-header-left">
-                      <h4>{ticket.concernType}</h4>
-                      <span className="ticket-id">{ticket.id}</span>
+                {pagedTickets.map((ticket) => (
+                  <div key={ticket.id} className="ticket-card">
+                    <div className="ticket-header">
+                      <div className="ticket-header-left">
+                        <h4>{ticket.concernType}</h4>
+                        <span className="ticket-id">{ticket.id}</span>
+                      </div>
+                      <span className="ticket-date">{ticket.date}</span>
                     </div>
-                    <span className="ticket-date">{ticket.date}</span>
-                  </div>
 
-                  <div className="ticket-badges">
-                    <span className={`status ${slugify(ticket.status)}`}>{ticket.status}</span>
-                    <span className={`priority ${slugify(ticket.sla)}`}>{ticket.sla}</span>
-                    {isMbwinRequest(ticket) && <span className="status saar">SAAR Required</span>}
-                  </div>
-
-                  <div className="ticket-meta-grid">
-                    <div className="ticket-meta-cell">
-                      <span>Branch</span>
-                      <p>{ticket.branch}</p>
+                    <div className="ticket-badges">
+                      <span className={`status ${slugify(ticket.status)}`}>{ticket.status}</span>
+                      <span className={`priority ${slugify(ticket.sla)}`}>{ticket.sla}</span>
+                      {isMbwinRequest(ticket) && <span className="status saar">SAAR Required</span>}
                     </div>
-                    <div className="ticket-meta-cell">
-                      <span>Department</span>
-                      <p>{ticket.department}</p>
+
+                    <div className="ticket-meta-grid">
+                      <div className="ticket-meta-cell">
+                        <span>Branch</span>
+                        <p>{ticket.branch}</p>
+                      </div>
+                      <div className="ticket-meta-cell">
+                        <span>Department</span>
+                        <p>{ticket.department}</p>
+                      </div>
+                      <div className="ticket-meta-cell">
+                        <span>Technician</span>
+                        <p>{ticket.technician || 'Unassigned'}</p>
+                      </div>
                     </div>
-                    <div className="ticket-meta-cell">
-                      <span>Technician</span>
-                      <p>{ticket.technician || 'Unassigned'}</p>
-                    </div>
-                  </div>
 
-                  <p className="ticket-description">{ticket.description}</p>
+                    <p className="ticket-description">{ticket.description}</p>
 
-                  {ticket.saarAttachment?.name && (
-                    <div className="ticket-attachment-note">
-                      <strong>SAAR PDF Attached</strong>
-                      <p>{ticket.saarAttachment.name} · {ticket.saarAttachment.sizeLabel}</p>
-                    </div>
-                  )}
-
-                  {ticket.actionTaken && (
-                    <div className="ticket-admin-note">
-                      <strong>ICT Action Taken</strong>
-                      <p>{ticket.actionTaken}</p>
-                    </div>
-                  )}
-
-                  <div className="ticket-footer">
-                    <button type="button" className="ticket-action-btn" onClick={() => setViewTicket(ticket)}>
-                      <MonoIcon icon={Eye} />
-                      View Details
-                    </button>
-
-                    {ticket.status !== 'Resolved' && ticket.status !== 'Canceled' && (
-                      <button type="button" className="ticket-action-btn" onClick={() => handleEdit(ticket)}>
-                        <MonoIcon icon={PenLine} />
-                        Edit
-                      </button>
+                    {ticket.saarAttachment?.name && (
+                      <div className="ticket-attachment-note">
+                        <strong>SAAR PDF Attached</strong>
+                        <p>{ticket.saarAttachment.name} · {ticket.saarAttachment.sizeLabel}</p>
+                      </div>
                     )}
-                  </div>
-                </div>
-              ))}
 
-              <TicketPagination
-                page={currentPage}
-                totalPages={totalPages}
-                totalItems={tickets.length}
-                pageSize={pageSize}
-                onPageChange={goToTicketPage}
-              />
+                    {ticket.photoAttachments?.length > 0 && (
+                      <div className="ticket-attachment-note">
+                        <strong>Photo Attachments</strong>
+                        <p>{ticket.photoAttachments.length} photo{ticket.photoAttachments.length === 1 ? '' : 's'} attached for ICT review.</p>
+                      </div>
+                    )}
+
+                    {ticket.actionTaken && (
+                      <div className="ticket-admin-note">
+                        <strong>ICT Action Taken</strong>
+                        <p>{ticket.actionTaken}</p>
+                      </div>
+                    )}
+
+                    <div className="ticket-footer">
+                      <button type="button" className="ticket-action-btn" onClick={() => openTicketDetails(ticket)}>
+                        <MonoIcon icon={Eye} />
+                        View Details
+                      </button>
+
+                      {canEmployeeEditTicket(ticket) ? (
+                        <button type="button" className="ticket-action-btn" onClick={() => handleEdit(ticket)}>
+                          <MonoIcon icon={PenLine} />
+                          Edit
+                        </button>
+                      ) : (
+                        <span className="ticket-locked-pill">Locked</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+
+                <TicketPagination
+                  page={currentPage}
+                  totalPages={totalPages}
+                  totalItems={tickets.length}
+                  pageSize={pageSize}
+                  onPageChange={goToTicketPage}
+                />
               </>
             )}
           </div>
@@ -1152,104 +2026,111 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
                 />
               </div>
 
-              <div className="ticket-form-group full">
-                <label id="ticket-impact-label">Operational Impact</label>
+              <div className="ticket-form-group full sla-level-section">
+                <label id="ticket-sla-label">SLA Level &amp; Operational Impact</label>
                 <div
-                  className="impact-picker"
+                  className="sla-picker-modern"
                   role="radiogroup"
-                  aria-labelledby="ticket-impact-label"
+                  aria-labelledby="ticket-sla-label"
                 >
-                  {OPERATIONAL_IMPACTS.map((impact) => {
-                    const selected = form.impact === impact.value;
+                  {SLA_PICKER_OPTIONS.filter(
+                    (option) => !SLA_LEVELS?.length || SLA_LEVELS.includes(option.level)
+                  ).map((option) => {
+                    const isSelected = (form.sla || 'Low') === option.level;
 
                     return (
                       <button
-                        key={impact.value}
+                        key={option.level}
                         type="button"
-                        className={`impact-option ${slugify(impact.level)}${selected ? ' selected' : ''}`}
-                        onClick={() => handleFormChange('impact', impact.value)}
                         role="radio"
-                        aria-checked={selected}
+                        aria-checked={isSelected}
+                        className={[
+                          'sla-card',
+                          slugify(option.level),
+                          isSelected ? 'selected' : '',
+                        ].filter(Boolean).join(' ')}
+                        onClick={() => handleSlaChange(option)}
                       >
-                        <span className="impact-option-icon">
-                          <MonoIcon icon={impact.icon} />
+                        <span className="sla-card-icon"><MonoIcon icon={option.icon} /></span>
+                        <span className="sla-card-copy">
+                          <strong>{option.title}</strong>
+                          <em>{option.impact}</em>
+                          <span>{option.text}</span>
                         </span>
-                        <span className="impact-option-copy">
-                          <strong>{impact.title}</strong>
-                          <span>{impact.detail}</span>
-                        </span>
-                        <em>{impact.level}</em>
+                        <small>{option.meta}</small>
                       </button>
                     );
                   })}
                 </div>
-                <span className="ticket-form-hint">
-                  Choose the option closest to the business impact. This helps ICT prioritize the ticket correctly.
-                </span>
-              </div>
-
-              <div className="ticket-form-group">
-                <label htmlFor="ticket-sla">Auto-Detected SLA</label>
-                <input
-                  id="ticket-sla"
-                  className={`ticket-field ticket-input readonly-field priority-${slugify(detectedSla)}`}
-                  type="text"
-                  value={detectedSla}
-                  readOnly
-                  aria-readonly="true"
-                />
-                <span className="ticket-form-hint">
-                  SLA is detected from the selected support category, concern type, and operational impact.
-                </span>
               </div>
 
               <div className="ticket-form-group full">
-                <label htmlFor="ticket-desc">Issue Description</label>
-                <textarea
-                  id="ticket-desc"
-                  className="ticket-field ticket-textarea"
-                  value={form.description}
-                  onChange={(e) => handleFormChange('description', e.target.value)}
-                  maxLength={1200}
-                  placeholder={DEFAULT_DESCRIPTION_TEMPLATE}
-                  required
+                <label htmlFor="ticket-desc-builder">Issue Description</label>
+                <IssueDescriptionBuilder
+                  form={form}
+                  onChange={handleDescriptionDetailChange}
                 />
-                <span className="ticket-form-hint">
-                  Keep the labels in place and add details after each one. The Anydesk Number line is required for ICT remote support.
-                </span>
-                <div className="char-count">{form.description.length}/1200 characters</div>
+                <span className="ticket-form-hint">{issueDescriptionHint}</span>
               </div>
 
-              <div className={`ticket-form-group full saar-upload-card${mbwinRequired ? ' required' : ''}`}>
-                <label htmlFor="ticket-saar">
-                  SAAR PDF Attachment {mbwinRequired ? '(Required for MBWIN)' : '(Required only for MBWIN)'}
-                </label>
+              {mbwinRequired && (
+                <div className="ticket-form-group full saar-upload-card required">
+                  <label htmlFor="ticket-saar">SAAR PDF Attachment (Required for MBWIN / MBWIM)</label>
 
+                  <input
+                    id="ticket-saar"
+                    className="ticket-field ticket-file"
+                    type="file"
+                    accept="application/pdf,.pdf"
+                    onChange={handleSaarFileChange}
+                    required={!form.saarAttachment?.dataUrl}
+                  />
+
+                  {form.saarAttachment?.name ? (
+                    <div className="attached-file-preview">
+                      <div>
+                        <strong>{form.saarAttachment.name}</strong>
+                        <span>{form.saarAttachment.sizeLabel} · Attached {form.saarAttachment.uploadedAt}</span>
+                      </div>
+                      {form.saarAttachment.dataUrl && (
+                        <a href={form.saarAttachment.dataUrl} target="_blank" rel="noopener noreferrer">
+                          View PDF
+                        </a>
+                      )}
+                    </div>
+                  ) : (
+                    <span className="ticket-form-hint">
+                      Attach an approved SAAR PDF for MBWIN / MBWIM account, teller, role, or function requests.
+                    </span>
+                  )}
+                </div>
+              )}
+
+              <div className="ticket-form-group full photo-upload-card">
+                <label htmlFor="ticket-photos">Photo / Screenshot Attachments (Optional)</label>
                 <input
-                  id="ticket-saar"
+                  id="ticket-photos"
                   className="ticket-field ticket-file"
                   type="file"
-                  accept="application/pdf,.pdf"
-                  onChange={handleSaarFileChange}
-                  required={mbwinRequired && !form.saarAttachment?.dataUrl}
+                  accept={PHOTO_ACCEPT}
+                  multiple
+                  onChange={handlePhotoFilesChange}
                 />
+                <span className="ticket-form-hint">
+                  Attach up to {PHOTO_MAX_COUNT} JPG, PNG, or WEBP photos. Use this for screenshots, printer errors, router lights, damaged cables, or hardware issues.
+                </span>
 
-                {form.saarAttachment?.name ? (
-                  <div className="attached-file-preview">
-                    <div>
-                      <strong>{form.saarAttachment.name}</strong>
-                      <span>{form.saarAttachment.sizeLabel} · Attached {form.saarAttachment.uploadedAt}</span>
+                {form.photoAttachments.length > 0 && (
+                  <div className="photo-preview-shell">
+                    <PhotoAttachmentGallery photos={form.photoAttachments} />
+                    <div className="photo-remove-row">
+                      {form.photoAttachments.map((photo) => (
+                        <button key={photo.id || photo.name} type="button" onClick={() => removePhotoAttachment(photo.id)}>
+                          Remove {photo.name}
+                        </button>
+                      ))}
                     </div>
-                    {form.saarAttachment.dataUrl && (
-                      <a href={form.saarAttachment.dataUrl} target="_blank" rel="noopener noreferrer">
-                        View PDF
-                      </a>
-                    )}
                   </div>
-                ) : (
-                  <span className="ticket-form-hint">
-                    Attach an approved SAAR PDF for MBWIN account, teller, role, or function requests.
-                  </span>
                 )}
               </div>
             </div>
@@ -1272,12 +2153,12 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
             <p>
               {editingId
                 ? 'Your updated ticket details will be sent for ICT review.'
-                : 'Your helpdesk request will be submitted to ICT with the detected SLA level.'}
+                : 'Your helpdesk request will be submitted to ICT with your selected SLA level.'}
             </p>
 
             <div className="modal-ticket-summary">
-              <span className={`priority ${slugify(detectedSla)}`}>{detectedSla}</span>
-              <span>{form.supportCategory}</span>
+              <span className={`priority ${slugify(form.sla || 'Low')}`}>{form.sla || 'Low'}</span>
+              <span>{selectedSlaOption.impact}</span>
               <span>{form.concernType}</span>
             </div>
 
@@ -1325,7 +2206,7 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
                 <p>{viewTicket.contactNumber || 'Not specified'}</p>
               </div>
               <div className="ticket-meta-cell">
-                <span>Impact</span>
+                <span>Detected Impact</span>
                 <p>{viewTicket.impact || 'Not specified'}</p>
               </div>
               <div className="ticket-meta-cell">
@@ -1348,6 +2229,11 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
               </div>
             )}
 
+            <div className="ticket-attachment-note modal-attachment-note">
+              <strong>Photo / Screenshot Attachments</strong>
+              <PhotoAttachmentGallery photos={viewTicket.photoAttachments} emptyText="No photos attached to this ticket." />
+            </div>
+
             <div className="ticket-meta-grid modal-ticket-grid">
               <div className="ticket-meta-cell">
                 <span>ICT Action</span>
@@ -1365,12 +2251,25 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
 
             <p className="modal-date-note">Last updated: {viewTicket.lastUpdated || viewTicket.lastEmployeeUpdate || viewTicket.date}</p>
 
+            <TicketConversationPanel
+              currentUser={user}
+              messages={ticketMessages}
+              messageDraft={messageDraft}
+              messagePhotos={messagePhotos}
+              messageError={messageError}
+              isSending={isSendingMessage}
+              onMessageChange={setMessageDraft}
+              onPhotoChange={handleConversationPhotoChange}
+              onRemovePhoto={(photoId) => setMessagePhotos((current) => current.filter((photo) => photo.id !== photoId))}
+              onSend={sendTicketMessage}
+            />
+
             <div className="modal-footer">
               <button type="button" className="modal-btn cancel" onClick={() => setViewTicket(null)}>
                 Close
               </button>
 
-              {viewTicket.status !== 'Resolved' && viewTicket.status !== 'Canceled' && (
+              {canEmployeeEditTicket(viewTicket) ? (
                 <button
                   type="button"
                   className="modal-btn confirm"
@@ -1382,6 +2281,10 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
                   <MonoIcon icon={PenLine} />
                   Edit Ticket
                 </button>
+              ) : (
+                <span className="ticket-locked-pill modal-locked-pill">
+                  {viewTicket.employeeLockReason || 'Locked because ICT is already handling this ticket.'}
+                </span>
               )}
             </div>
           </div>
@@ -1408,20 +2311,18 @@ export default function DashboardPage() {
   const router = useRouter();
 
   const loadTickets = async (currentUser = user) => {
-    if (!currentUser) return;
+    if (!currentUser?.id) return;
 
     try {
-      const allTickets = await getTickets();
+      const employeeTickets = await getTicketsForUser(currentUser.id);
 
       setTickets(
-        allTickets
-          .filter((ticket) => getTicketOwnerMatch(ticket, currentUser))
-          .sort((a, b) => {
-            const aTime = new Date(a.lastUpdated || a.createdAt || a.date || 0).getTime();
-            const bTime = new Date(b.lastUpdated || b.createdAt || b.date || 0).getTime();
+        employeeTickets.sort((a, b) => {
+          const aTime = new Date(a.lastUpdated || a.createdAt || a.date || 0).getTime();
+          const bTime = new Date(b.lastUpdated || b.createdAt || b.date || 0).getTime();
 
-            return bTime - aTime;
-          })
+          return bTime - aTime;
+        })
       );
     } catch (error) {
       console.error(error);
@@ -1437,7 +2338,7 @@ export default function DashboardPage() {
 
         if (cancelled) return;
 
-        if (!activeUser || activeUser.role !== 'employee') {
+        if (!activeUser || normalizePortalRole(activeUser.role) !== 'employee') {
           await signOutPortal().catch(() => {});
           router.replace(LOGIN_ROUTE);
           return;
@@ -1513,7 +2414,10 @@ export default function DashboardPage() {
     }
 
     setSidebarOpen(false);
-    void loadTickets();
+
+    if (section === 'helpdesk') {
+      void loadTickets();
+    }
   };
 
   const handleLogout = async () => {
@@ -1635,7 +2539,6 @@ export default function DashboardPage() {
       </main>
 
       {isPageTransitioning && <PortalTransitionLoader label={transitionLabel} />}
-
     </>
   );
 }

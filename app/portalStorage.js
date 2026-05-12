@@ -40,7 +40,7 @@ export const DEPARTMENTS = [
   'Legal Department',
   'Allied and Services Department',
   'Executive Department',
-  'ICT Network Operation & Administrator Unit',
+  'ICT Department',
 ];
 
 export const SLA_LEVELS = ['Low', 'Medium', 'High', 'Critical'];

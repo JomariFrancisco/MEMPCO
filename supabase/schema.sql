@@ -489,6 +489,8 @@ begin
 end;
 $$;
 
+
+
 -- Marketing-admin managed public news, events, and announcements.
 create table if not exists public.marketing_posts (
   id uuid primary key default gen_random_uuid(),
@@ -1072,3 +1074,170 @@ drop policy if exists "HR admins can delete job applications" on public.job_appl
 create policy "HR admins can delete job applications"
 on public.job_applications for delete
 using (public.is_hr_admin());
+
+-- =====================================================
+-- Helpdesk media attachments and end-to-end conversation upgrade
+-- =====================================================
+
+alter table public.tickets
+add column if not exists photo_attachments jsonb not null default '[]'::jsonb;
+
+update public.tickets
+set photo_attachments = coalesce(photo_attachments, '[]'::jsonb);
+
+alter table public.tickets
+alter column photo_attachments set default '[]'::jsonb,
+alter column photo_attachments set not null;
+
+create table if not exists public.ticket_messages (
+  id uuid primary key default gen_random_uuid(),
+  ticket_id text not null references public.tickets(id) on delete cascade,
+  sender_id uuid not null references public.profiles(id) on delete cascade,
+  sender_name text not null,
+  sender_email text,
+  sender_role text not null default 'employee',
+  message text not null default '',
+  attachments jsonb not null default '[]'::jsonb,
+  created_at timestamptz not null default now()
+);
+
+alter table public.ticket_messages
+add column if not exists ticket_id text references public.tickets(id) on delete cascade,
+add column if not exists sender_id uuid references public.profiles(id) on delete cascade,
+add column if not exists sender_name text,
+add column if not exists sender_email text,
+add column if not exists sender_role text not null default 'employee',
+add column if not exists message text not null default '',
+add column if not exists attachments jsonb not null default '[]'::jsonb,
+add column if not exists created_at timestamptz not null default now();
+
+update public.ticket_messages
+set
+  sender_name = coalesce(nullif(sender_name, ''), 'MEMPCO User'),
+  sender_role = coalesce(nullif(sender_role, ''), 'employee'),
+  message = coalesce(message, ''),
+  attachments = coalesce(attachments, '[]'::jsonb),
+  created_at = coalesce(created_at, now());
+
+alter table public.ticket_messages
+alter column ticket_id set not null,
+alter column sender_id set not null,
+alter column sender_name set not null,
+alter column sender_role set not null,
+alter column message set not null,
+alter column attachments set default '[]'::jsonb,
+alter column attachments set not null,
+alter column created_at set not null;
+
+create index if not exists ticket_messages_ticket_id_created_at_idx
+on public.ticket_messages (ticket_id, created_at);
+
+create index if not exists ticket_messages_sender_id_idx
+on public.ticket_messages (sender_id);
+
+alter table public.ticket_messages enable row level security;
+
+drop policy if exists "Ticket participants can read ticket messages" on public.ticket_messages;
+create policy "Ticket participants can read ticket messages"
+on public.ticket_messages for select
+using (
+  public.is_admin()
+  or exists (
+    select 1
+    from public.tickets t
+    where t.id = ticket_messages.ticket_id
+      and t.owner_id = auth.uid()
+  )
+);
+
+drop policy if exists "Ticket participants can create ticket messages" on public.ticket_messages;
+create policy "Ticket participants can create ticket messages"
+on public.ticket_messages for insert
+with check (
+  sender_id = auth.uid()
+  and (
+    public.is_admin()
+    or exists (
+      select 1
+      from public.tickets t
+      where t.id = ticket_messages.ticket_id
+        and t.owner_id = auth.uid()
+    )
+  )
+);
+
+drop policy if exists "Superadmins can delete ticket messages" on public.ticket_messages;
+create policy "Superadmins can delete ticket messages"
+on public.ticket_messages for delete
+using (public.is_superadmin());
+
+
+
+-- =====================================================
+-- Reliable superadmin helpdesk deletion and conversation cascade
+-- =====================================================
+
+do $$
+declare
+  fk_name text;
+begin
+  select conname into fk_name
+  from pg_constraint
+  where conrelid = 'public.ticket_messages'::regclass
+    and contype = 'f'
+    and pg_get_constraintdef(oid) ilike '%tickets%';
+
+  if fk_name is not null then
+    execute format('alter table public.ticket_messages drop constraint %I', fk_name);
+  end if;
+
+  alter table public.ticket_messages
+  add constraint ticket_messages_ticket_id_fkey
+  foreign key (ticket_id)
+  references public.tickets(id)
+  on delete cascade;
+end $$;
+
+create or replace function public.delete_helpdesk_ticket(target_ticket_id text)
+returns boolean
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not public.is_superadmin() then
+    raise exception 'Only the super admin can delete tickets.';
+  end if;
+
+  delete from public.ticket_messages
+  where ticket_id = target_ticket_id;
+
+  delete from public.tickets
+  where id = target_ticket_id;
+
+  return true;
+end;
+$$;
+
+grant execute on function public.delete_helpdesk_ticket(text) to authenticated;
+
+-- =====================================================
+-- Realtime support for helpdesk tickets and conversation
+-- =====================================================
+
+alter table public.tickets replica identity full;
+alter table public.ticket_messages replica identity full;
+
+do $$
+begin
+  alter publication supabase_realtime add table public.tickets;
+exception
+  when duplicate_object then null;
+end $$;
+
+do $$
+begin
+  alter publication supabase_realtime add table public.ticket_messages;
+exception
+  when duplicate_object then null;
+end $$;

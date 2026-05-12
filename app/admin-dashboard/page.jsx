@@ -14,15 +14,20 @@ import {
   Eye,
   EyeOff,
   FileText,
+  ImageIcon,
   Menu,
+  MessageCircle,
   Monitor,
+  Paperclip,
   Printer,
   Search,
+  Send,
   ShieldCheck,
   SlidersHorizontal,
   Trash2,
   UserRound,
   Wrench,
+  X,
 } from 'lucide-react';
 import {
   BRANCHES,
@@ -48,9 +53,13 @@ import {
 } from '@/lib/auth/portalAuth';
 import {
   claimTicketLock,
+  createTicketMessage,
   deleteTicket,
+  getTicketMessages,
   getTickets,
   releaseTicketLock,
+  subscribeToTicket,
+  subscribeToTicketMessages,
   updateTicket,
 } from '@/lib/tickets/portalTickets';
 import './admin-dashboard.css';
@@ -68,6 +77,10 @@ const REPORT_PERIOD_OPTIONS = [
   { key: 'month', label: 'Month', title: 'Tickets by Month', meta: 'Monthly trend' },
 ];
 const SELECTED_DAY_TICKET_PAGE_SIZE = 2;
+const PHOTO_MAX_SIZE = 4 * 1024 * 1024;
+const PHOTO_MAX_COUNT = 5;
+const PHOTO_ACCEPT = 'image/jpeg,image/jpg,image/png,image/webp';
+const PHOTO_ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
 const MonoIcon = ({ icon: IconComponent }) => (
   <IconComponent className="admin-mono-icon" aria-hidden="true" />
@@ -172,6 +185,62 @@ const formatPhoneNumber = (value) => {
   return [first, second, third].filter(Boolean).join(' ');
 };
 
+const formatFileSize = (bytes = 0) => {
+  if (!bytes) return '0 KB';
+  const kb = bytes / 1024;
+  if (kb < 1024) return `${kb.toFixed(1)} KB`;
+  return `${(kb / 1024).toFixed(2)} MB`;
+};
+
+const fileToDataUrl = (file) =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error('Unable to read file.'));
+    reader.readAsDataURL(file);
+  });
+
+const isPhotoFile = (file) =>
+  Boolean(
+    file &&
+      (PHOTO_ALLOWED_TYPES.includes(file.type) || /\.(jpe?g|png|webp)$/i.test(file.name || ''))
+  );
+
+const filesToPhotoAttachments = async (files = [], existingCount = 0) => {
+  const selectedFiles = Array.from(files || []);
+
+  if (!selectedFiles.length) return [];
+
+  if (existingCount + selectedFiles.length > PHOTO_MAX_COUNT) {
+    throw new Error(`You can attach up to ${PHOTO_MAX_COUNT} photos only.`);
+  }
+
+  const invalidFile = selectedFiles.find((file) => !isPhotoFile(file));
+
+  if (invalidFile) {
+    throw new Error('Photo attachments must be JPG, JPEG, PNG, or WEBP files.');
+  }
+
+  const oversizedFile = selectedFiles.find((file) => file.size > PHOTO_MAX_SIZE);
+
+  if (oversizedFile) {
+    throw new Error('Each photo must not exceed 4 MB.');
+  }
+
+  return Promise.all(
+    selectedFiles.map(async (file) => ({
+      id: globalThis.crypto?.randomUUID?.() || `${Date.now()}-${file.name}`,
+      name: file.name,
+      type: file.type || 'image/jpeg',
+      size: file.size,
+      sizeLabel: formatFileSize(file.size),
+      uploadedAt: new Date().toLocaleString(),
+      dataUrl: await fileToDataUrl(file),
+    }))
+  );
+};
+
 /* =========================
    ICONS
 ========================= */
@@ -248,6 +317,12 @@ const normalizeTicketStatus = (status) =>
     .replace(/[-_]+/g, ' ')
     .replace(/\s+/g, ' ');
 
+const normalizePortalRole = (role = '') =>
+  String(role || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[-_\s]+/g, '');
+
 const isTicketStatus = (ticket, status) =>
   normalizeTicketStatus(ticket?.status) === normalizeTicketStatus(status);
 
@@ -264,8 +339,6 @@ const hasAssignedTechnician = (ticket) => {
 };
 
 const EMPLOYEE_LOCKED_STATUSES = [
-  'pending',
-  'critical',
   'moved date',
   'in progress',
   'escalated',
@@ -281,9 +354,6 @@ const getEmployeeTicketLockReason = (ticket) => {
   if (status === 'escalated') return 'Ticket was already escalated.';
   if (status === 'resolved') return 'Ticket was already resolved.';
   if (status === 'canceled') return 'Ticket was already canceled.';
-  if (status === 'pending') return 'Ticket was already reviewed by ICT/Admin.';
-  if (status === 'critical') return 'Ticket was already prioritized by ICT/Admin.';
-
   if (hasAssignedTechnician(ticket)) {
     return `Ticket is already assigned to ${ticket.technician}.`;
   }
@@ -992,9 +1062,12 @@ const getTicketSearchText = (ticket) =>
     .toLowerCase();
 
 const getTicketWorkStartedAt = (ticket) =>
-  ticket.workStartedAt || (ticket.status === 'In Progress' ? ticket.adminUpdatedAt || ticket.lastUpdated : '');
+  ticket?.workStartedAt ||
+  (normalizeTicketStatus(ticket?.status) === 'in progress'
+    ? ticket?.adminUpdatedAt || ticket?.lastUpdated || ''
+    : '');
 
-const getTicketWorkEndedAt = (ticket) => ticket.workEndedAt || '';
+const getTicketWorkEndedAt = (ticket) => ticket?.workEndedAt || '';
 
 const isTicketLockActive = (ticket) => {
   if (!ticket?.lockedBy) return false;
@@ -1020,12 +1093,14 @@ const formatElapsedTime = (startedAt, endedAt, now = Date.now()) => {
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
   const seconds = totalSeconds % 60;
+  const paddedMinutes = String(minutes).padStart(2, '0');
+  const paddedSeconds = String(seconds).padStart(2, '0');
 
   if (hours > 0) {
-    return `${hours}h ${String(minutes).padStart(2, '0')}m`;
+    return `${hours}h ${paddedMinutes}m ${paddedSeconds}s`;
   }
 
-  return `${minutes}m ${String(seconds).padStart(2, '0')}s`;
+  return `${minutes}m ${paddedSeconds}s`;
 };
 
 const getActionButtonLabel = (ticket) => {
@@ -1124,6 +1199,142 @@ function PreservedText({ value, fallback = 'No description provided.', className
     >
       {text}
     </p>
+  );
+}
+
+function PhotoAttachmentGallery({ photos = [], emptyText = 'No photo attachments.' }) {
+  const validPhotos = Array.isArray(photos)
+    ? photos.filter((photo) => photo?.dataUrl || photo?.url || photo?.publicUrl || photo?.path || photo?.name)
+    : [];
+
+  if (!validPhotos.length) {
+    return <span className="ticket-form-hint">{emptyText}</span>;
+  }
+
+  return (
+    <div className="attached-photo-grid">
+      {validPhotos.map((photo, index) => {
+        const source = photo.dataUrl || photo.url || photo.publicUrl || '';
+        const fileName = photo.name || `Photo ${index + 1}`;
+
+        return (
+          <div key={photo.id || photo.path || `${fileName}-${index}`} className="attached-photo-card-wrap">
+            <a
+              className="attached-photo-card"
+              href={source || '#'}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`Open ${fileName}`}
+            >
+              {source ? (
+                <img src={source} alt={fileName} />
+              ) : (
+                <span className="attached-photo-placeholder"><MonoIcon icon={ImageIcon} /></span>
+              )}
+              <span>{fileName}</span>
+              <em>{photo.sizeLabel || 'Image file'}</em>
+            </a>
+
+            {source && (
+              <a className="attached-photo-save" href={source} download={fileName}>
+                <MonoIcon icon={Download} />
+                Save Image
+              </a>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function TicketConversationPanel({
+  currentUser,
+  messages,
+  messageDraft,
+  messagePhotos,
+  messageError,
+  isSending,
+  onMessageChange,
+  onPhotoChange,
+  onRemovePhoto,
+  onSend,
+}) {
+  return (
+    <section className="ticket-conversation-section">
+      <div className="ticket-conversation-head">
+        <div>
+          <span className="section-kicker"><MonoIcon icon={MessageCircle} /> Conversation</span>
+          <h4>Admin and employee communication</h4>
+        </div>
+        <span className="ticket-conversation-count">{messages.length} message{messages.length === 1 ? '' : 's'}</span>
+      </div>
+
+      <div className="ticket-message-list">
+        {messages.length ? (
+          messages.map((item) => {
+            const isMine = item.senderId === currentUser?.id;
+
+            return (
+              <article key={item.id} className={`ticket-message-bubble${isMine ? ' mine' : ''}`}>
+                <div className="ticket-message-meta">
+                  <strong>{item.senderName}</strong>
+                  <span>{item.senderRole} · {item.createdAt}</span>
+                </div>
+                {item.message && <p>{item.message}</p>}
+                <PhotoAttachmentGallery photos={item.attachments} emptyText="" />
+              </article>
+            );
+          })
+        ) : (
+          <div className="ticket-message-empty">
+            <MonoIcon icon={MessageCircle} />
+            <p>No conversation yet. Send a message if you need more details from the employee.</p>
+          </div>
+        )}
+      </div>
+
+      <div className="ticket-message-composer">
+        <textarea
+          className="ticket-field ticket-textarea ticket-message-textarea"
+          value={messageDraft}
+          onChange={(e) => onMessageChange(e.target.value)}
+          placeholder="Write a reply or ask for more details..."
+          maxLength={800}
+        />
+
+        {messagePhotos.length > 0 && (
+          <div className="message-photo-preview-row">
+            {messagePhotos.map((photo) => (
+              <button
+                key={photo.id || photo.name}
+                type="button"
+                className="message-photo-preview"
+                onClick={() => onRemovePhoto(photo.id)}
+                title="Remove photo"
+              >
+                <img src={photo.dataUrl} alt={photo.name} />
+                <span><MonoIcon icon={X} /></span>
+              </button>
+            ))}
+          </div>
+        )}
+
+        <div className="ticket-message-actions">
+          <label className="message-attach-btn">
+            <MonoIcon icon={Paperclip} />
+            Attach photos
+            <input type="file" accept={PHOTO_ACCEPT} multiple onChange={onPhotoChange} />
+          </label>
+          <button type="button" className="modal-btn confirm" onClick={onSend} disabled={isSending}>
+            <MonoIcon icon={Send} />
+            {isSending ? 'Sending...' : 'Send Reply'}
+          </button>
+        </div>
+
+        {messageError && <div className="form-error">{messageError}</div>}
+      </div>
+    </section>
   );
 }
 
@@ -2053,12 +2264,62 @@ function ReportsView({ tickets, summary, categorySummary, statusSummary, branchS
 ========================= */
 
 function UsersView({ users, canManageUsers, currentUserId, onUsersChanged }) {
+  const USERS_PAGE_SIZE = 5;
   const [editingUser, setEditingUser] = useState(null);
   const [editForm, setEditForm] = useState(null);
   const [message, setMessage] = useState({ type: '', text: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showEditPassword, setShowEditPassword] = useState(false);
+  const [userSearch, setUserSearch] = useState('');
+  const [userPage, setUserPage] = useState(1);
   useBodyScrollLock(Boolean(editingUser));
+
+  const filteredUsers = useMemo(() => {
+    const keyword = userSearch.trim().toLowerCase();
+
+    if (!keyword) return users;
+
+    return users.filter((user) => {
+      const searchable = [
+        user.name,
+        user.email,
+        user.role,
+        user.employeeId,
+        user.department,
+        user.branch,
+        user.office,
+        user.designation,
+        user.phone,
+        user.status || 'Active',
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+
+      return searchable.includes(keyword);
+    });
+  }, [users, userSearch]);
+
+  const userTotalPages = Math.max(1, Math.ceil(filteredUsers.length / USERS_PAGE_SIZE));
+  const safeUserPage = Math.min(userPage, userTotalPages);
+  const userPageStartIndex = (safeUserPage - 1) * USERS_PAGE_SIZE;
+  const pagedUsers = filteredUsers.slice(userPageStartIndex, userPageStartIndex + USERS_PAGE_SIZE);
+  const visibleStart = filteredUsers.length ? userPageStartIndex + 1 : 0;
+  const visibleEnd = Math.min(userPageStartIndex + USERS_PAGE_SIZE, filteredUsers.length);
+
+  useEffect(() => {
+    setUserPage(1);
+  }, [userSearch, users.length]);
+
+  useEffect(() => {
+    if (userPage > userTotalPages) {
+      setUserPage(userTotalPages);
+    }
+  }, [userPage, userTotalPages]);
+
+  const goToUserPage = (page) => {
+    setUserPage(Math.min(Math.max(page, 1), userTotalPages));
+  };
 
   const beginEdit = (user) => {
     setEditingUser(user);
@@ -2134,20 +2395,40 @@ function UsersView({ users, canManageUsers, currentUserId, onUsersChanged }) {
         <div className="hero-copy">
           <span className="section-kicker">Users</span>
           <h2>Registered portal accounts.</h2>
-          <p>Review employee and admin accounts currently available in the portal.</p>
+          <p>Search, review, and manage employee and admin accounts currently available in the portal.</p>
         </div>
 
         <div className="hero-meta">
           <span className="meta-pill">{users.length} Accounts</span>
+          <span className="meta-pill">{filteredUsers.length} Visible</span>
         </div>
       </section>
 
-      <section className="panel-card glass">
+      <section className="panel-card glass users-panel">
         {message.text && (
           <div className={`admin-alert users-alert ${message.type}`}>
             {message.text}
           </div>
         )}
+
+        <div className="admin-users-toolbar">
+          <label className="ticket-form-group admin-user-search" htmlFor="admin-user-search">
+            <span>Search portal accounts</span>
+            <div className="search-field-group">
+              <span className="field-leading-icon"><MonoIcon icon={Search} /></span>
+              <input
+                id="admin-user-search"
+                className="ticket-field ticket-input"
+                type="search"
+                value={userSearch}
+                onChange={(e) => setUserSearch(e.target.value)}
+                placeholder="Search by name, email, role, ID, department, branch, or status"
+              />
+            </div>
+          </label>
+
+          
+        </div>
 
         <div className="admin-table-wrap users-table-wrap">
           <table className="admin-ticket-table users-table">
@@ -2165,11 +2446,11 @@ function UsersView({ users, canManageUsers, currentUserId, onUsersChanged }) {
             </thead>
 
             <tbody>
-              {users.map((user) => (
+              {pagedUsers.map((user) => (
                 <tr key={user.id}>
                   <td>
                     <div className="admin-table-main">
-                      <strong>{user.name}</strong>
+                      <strong>{user.name || 'Unnamed account'}</strong>
                       <span>{user.createdAt || 'Registered'}</span>
                     </div>
                   </td>
@@ -2210,14 +2491,43 @@ function UsersView({ users, canManageUsers, currentUserId, onUsersChanged }) {
             </tbody>
           </table>
 
-          {users.length === 0 && (
+          {filteredUsers.length === 0 && (
             <div className="empty-state">
               <div className="empty-icon"><MonoIcon icon={UserRound} /></div>
               <h4>No users found</h4>
-              <p>Registered accounts will appear here.</p>
+              <p>Try another name, email, department, branch, or role.</p>
             </div>
           )}
         </div>
+
+        {filteredUsers.length > USERS_PAGE_SIZE && (
+          <div className="users-pagination" aria-label="User account pagination">
+            <button
+              type="button"
+              className="pagination-arrow"
+              onClick={() => goToUserPage(safeUserPage - 1)}
+              disabled={safeUserPage <= 1}
+              aria-label="Previous user page"
+            >
+              <MonoIcon icon={ChevronLeft} />
+            </button>
+
+            <div className="pagination-copy">
+              <strong>Page {safeUserPage} - {userTotalPages}</strong>
+              <span>Showing {visibleStart}-{visibleEnd} of {filteredUsers.length} accounts</span>
+            </div>
+
+            <button
+              type="button"
+              className="pagination-arrow"
+              onClick={() => goToUserPage(safeUserPage + 1)}
+              disabled={safeUserPage >= userTotalPages}
+              aria-label="Next user page"
+            >
+              <MonoIcon icon={ChevronRight} />
+            </button>
+          </div>
+        )}
       </section>
 
       {editingUser && editForm && (
@@ -2687,7 +2997,7 @@ function CreateUserView({ onCreated }) {
    TICKET ACTION MODAL
 ========================= */
 
-function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, canDelete, now }) {
+function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, canDelete, now, onTicketRealtimeUpdate }) {
   useBodyScrollLock(true);
 
   const hasWorkStarted = Boolean(getTicketWorkStartedAt(ticket));
@@ -2697,6 +3007,11 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
     ? ['In Progress']
     : TICKET_STATUSES.filter((status) => status !== 'Created');
   const [formError, setFormError] = useState('');
+  const [ticketMessages, setTicketMessages] = useState([]);
+  const [messageDraft, setMessageDraft] = useState('');
+  const [messagePhotos, setMessagePhotos] = useState([]);
+  const [messageError, setMessageError] = useState('');
+  const [isSendingMessage, setIsSendingMessage] = useState(false);
 
   const currentStaffName = currentUser?.name || 'Unassigned';
   const assignedStaff = ticket.technician && ticket.technician !== 'Unassigned'
@@ -2720,6 +3035,94 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
   const visibleTechnician = technicianOptions.includes(draft.technician) ? draft.technician : 'Unassigned';
   const canEditOutcomeFields = !isResolvedLocked && normalizeTicketStatus(draft.status) !== 'in progress';
   const lockedOutcomePlaceholder = 'Available once the ticket is updated away from In Progress.';
+
+  useEffect(() => {
+    if (!ticket?.id) return undefined;
+
+    let cancelled = false;
+
+    const loadMessages = async () => {
+      try {
+        const messages = await getTicketMessages(ticket.id);
+
+        if (!cancelled) {
+          setTicketMessages(messages);
+          setMessageError('');
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setTicketMessages([]);
+          setMessageError(error.message || 'Unable to load ticket conversation.');
+        }
+      }
+    };
+
+    void loadMessages();
+
+    const unsubscribeMessages = subscribeToTicketMessages(ticket.id, (newMessage) => {
+      setTicketMessages((current) => {
+        const exists = current.some((message) => message.id === newMessage.id);
+        return exists ? current : [...current, newMessage];
+      });
+    });
+
+    const unsubscribeTicket = subscribeToTicket(ticket.id, (updatedTicket) => {
+      if (!cancelled) {
+        onTicketRealtimeUpdate?.(updatedTicket);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+      unsubscribeMessages();
+      unsubscribeTicket();
+    };
+  }, [ticket?.id, onTicketRealtimeUpdate]);
+
+  const handleConversationPhotoChange = async (e) => {
+    const files = e.target.files;
+    setMessageError('');
+
+    try {
+      const nextPhotos = await filesToPhotoAttachments(files, messagePhotos.length);
+      setMessagePhotos((current) => [...current, ...nextPhotos]);
+    } catch (error) {
+      setMessageError(error.message || 'Unable to attach selected photos.');
+    } finally {
+      e.target.value = '';
+    }
+  };
+
+  const sendTicketMessage = async () => {
+    const cleanMessage = messageDraft.trim();
+
+    if (!cleanMessage && !messagePhotos.length) {
+      setMessageError('Please type a message or attach a photo before sending.');
+      return;
+    }
+
+    setIsSendingMessage(true);
+    setMessageError('');
+
+    try {
+      const sentMessage = await createTicketMessage(ticket.id, {
+        sender: currentUser,
+        message: cleanMessage,
+        attachments: messagePhotos,
+      });
+
+      setTicketMessages((current) => {
+        const exists = current.some((message) => message.id === sentMessage.id);
+        return exists ? current : [...current, sentMessage];
+      });
+      setMessageDraft('');
+      setMessagePhotos([]);
+    } catch (error) {
+      setMessageError(error.message || 'Unable to send reply.');
+    } finally {
+      setIsSendingMessage(false);
+    }
+  };
 
   const updateDraft = (field, value) => {
     setFormError('');
@@ -2880,6 +3283,14 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
           </div>
         )}
 
+        <div className="admin-attachment-box admin-photo-attachment-box">
+          <div>
+            <strong>Photo / Screenshot Attachments</strong>
+            <p>{ticket.photoAttachments?.length || 0} photo{ticket.photoAttachments?.length === 1 ? '' : 's'} attached by the employee</p>
+          </div>
+          <PhotoAttachmentGallery photos={ticket.photoAttachments} emptyText="No photos attached to this ticket." />
+        </div>
+
         <div className="admin-description-box ticket-action-description">
           <span>Description of Problem</span>
           <PreservedText value={ticket.description} />
@@ -2966,6 +3377,19 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
           </div>
         </div>
 
+        <TicketConversationPanel
+          currentUser={currentUser}
+          messages={ticketMessages}
+          messageDraft={messageDraft}
+          messagePhotos={messagePhotos}
+          messageError={messageError}
+          isSending={isSendingMessage}
+          onMessageChange={setMessageDraft}
+          onPhotoChange={handleConversationPhotoChange}
+          onRemovePhoto={(photoId) => setMessagePhotos((current) => current.filter((photo) => photo.id !== photoId))}
+          onSend={sendTicketMessage}
+        />
+
         {formError && <div className="form-error">{formError}</div>}
 
         <div className="modal-footer">
@@ -3025,24 +3449,30 @@ export default function AdminDashboardPage() {
     sla: 'All',
   });
 
-  const loadData = async () => {
-    const nextTickets = sortTickets(await getTickets());
-    let nextUsers = [];
-
+  const loadData = async ({ includeUsers = false } = {}) => {
     try {
-      nextUsers = await listPortalUsers();
-    } catch {
-      nextUsers = [];
+      const [nextTicketsRaw, nextUsers] = await Promise.all([
+        getTickets(),
+        includeUsers ? listPortalUsers().catch(() => []) : Promise.resolve(null),
+      ]);
+
+      const nextTickets = sortTickets(nextTicketsRaw);
+
+      setTickets(nextTickets);
+
+      if (Array.isArray(nextUsers)) {
+        setUsers(nextUsers);
+      }
+
+      setLastSynced(new Date().toLocaleTimeString());
+
+      setSelectedTicket((current) => {
+        if (!current) return null;
+        return nextTickets.find((ticket) => ticket.id === current.id) || null;
+      });
+    } catch (error) {
+      window.alert(error.message || 'Unable to load dashboard data.');
     }
-
-    setTickets(nextTickets);
-    setUsers(nextUsers);
-    setLastSynced(new Date().toLocaleTimeString());
-
-    setSelectedTicket((current) => {
-      if (!current) return null;
-      return nextTickets.find((ticket) => ticket.id === current.id) || null;
-    });
   };
 
   useEffect(() => {
@@ -3094,7 +3524,9 @@ export default function AdminDashboardPage() {
     if (!authChecked) return undefined;
 
     const syncData = () => {
-      void loadData();
+      void loadData({
+        includeUsers: activeSection === 'users' || activeSection === 'create-user',
+      });
     };
 
     const handleVisibility = () => {
@@ -3107,7 +3539,7 @@ export default function AdminDashboardPage() {
     window.addEventListener('focus', syncData);
     document.addEventListener('visibilitychange', handleVisibility);
 
-    const intervalId = window.setInterval(syncData, 2500);
+    const intervalId = window.setInterval(syncData, 60000);
 
     return () => {
       window.removeEventListener('storage', syncData);
@@ -3115,7 +3547,7 @@ export default function AdminDashboardPage() {
       document.removeEventListener('visibilitychange', handleVisibility);
       window.clearInterval(intervalId);
     };
-  }, [authChecked]);
+  }, [authChecked, activeSection]);
 
   useEffect(() => {
     if (!isPageTransitioning) return undefined;
@@ -3128,12 +3560,23 @@ export default function AdminDashboardPage() {
   }, [isPageTransitioning, transitionLabel]);
 
   useEffect(() => {
+    const hasRunningWorkTimer = tickets.some((ticket) => {
+      const startedAt = getTicketWorkStartedAt(ticket);
+      const endedAt = getTicketWorkEndedAt(ticket);
+
+      return Boolean(startedAt) && !endedAt && isUnresolved(ticket.status);
+    });
+
+    if (!selectedTicket && !hasRunningWorkTimer) return undefined;
+
+    setTimerNow(Date.now());
+
     const intervalId = window.setInterval(() => {
       setTimerNow(Date.now());
     }, 1000);
 
     return () => window.clearInterval(intervalId);
-  }, []);
+  }, [tickets, selectedTicket]);
 
   const summary = useMemo(() => buildSummary(tickets), [tickets]);
 
@@ -3161,7 +3604,7 @@ export default function AdminDashboardPage() {
   const categorySummary = useMemo(() => breakdown(tickets, 'supportCategory', SUPPORT_CATEGORIES), [tickets]);
   const statusSummary = useMemo(() => breakdown(tickets, 'status', TICKET_STATUSES), [tickets]);
   const branchSummary = useMemo(() => breakdown(tickets, 'branch', BRANCHES), [tickets]);
-  const isSuperAdmin = admin?.role === 'superadmin';
+  const isSuperAdmin = normalizePortalRole(admin?.role) === 'superadmin';
   const canCreateUsers = isSuperAdmin;
   const canDeleteTickets = isSuperAdmin;
 
@@ -3173,7 +3616,9 @@ export default function AdminDashboardPage() {
 
     setActiveSection(section);
     setSidebarOpen(false);
-    void loadData();
+    void loadData({
+      includeUsers: section === 'users' || section === 'create-user',
+    });
   };
 
   const handleLogout = async () => {
@@ -3321,6 +3766,8 @@ export default function AdminDashboardPage() {
         lockedAt: null,
         lockExpiresAt: null,
       });
+
+      setTimerNow(Date.now());
       await loadData();
       setSelectedTicket(null);
     } catch (error) {
@@ -3350,7 +3797,10 @@ export default function AdminDashboardPage() {
         bypassStatusLock: true,
       });
       setSelectedTicket(null);
-      await loadData();
+      setTickets((currentTickets) => currentTickets.filter((item) => item.id !== ticket.id));
+      await loadData({
+        includeUsers: activeSection === 'users' || activeSection === 'create-user',
+      });
     } catch (error) {
       window.alert(error.message || 'Unable to delete ticket.');
     }
@@ -3398,7 +3848,7 @@ export default function AdminDashboardPage() {
                 Synced {lastSynced || 'now'}
               </span>
 
-              <button className="topbar-icon-btn" type="button" aria-label="Notifications" onClick={loadData}>
+              <button className="topbar-icon-btn" type="button" aria-label="Notifications" onClick={() => loadData({ includeUsers: activeSection === 'users' || activeSection === 'create-user' })}>
                 <Icon.Bell />
               </button>
 
@@ -3492,7 +3942,7 @@ export default function AdminDashboardPage() {
 
               {activeSection === 'create-user' && canCreateUsers && (
                 <CreateUserView
-                  onCreated={loadData}
+                  onCreated={() => loadData({ includeUsers: true })}
                 />
               )}
             </section>
@@ -3502,7 +3952,7 @@ export default function AdminDashboardPage() {
 
       {selectedTicket && (
         <TicketActionModal
-          key={`${selectedTicket.id}-${selectedTicket.lastUpdated || selectedTicket.adminUpdatedAt || ''}`}
+          key={selectedTicket.id}
           ticket={selectedTicket}
           currentUser={admin}
           onClose={handleCloseTicket}
@@ -3510,6 +3960,17 @@ export default function AdminDashboardPage() {
           onDelete={handleDeleteTicket}
           canDelete={canDeleteTickets}
           now={timerNow}
+          onTicketRealtimeUpdate={(updatedTicket) => {
+            setTimerNow(Date.now());
+
+            setTickets((current) =>
+              current.map((ticket) => (ticket.id === updatedTicket.id ? updatedTicket : ticket))
+            );
+
+            setSelectedTicket((current) =>
+              current?.id === updatedTicket.id ? { ...current, ...updatedTicket } : current
+            );
+          }}
         />
       )}
 
