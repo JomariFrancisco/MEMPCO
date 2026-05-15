@@ -1052,6 +1052,163 @@ html {
   display: flex;
 }
 
+.cp-application-form {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.cp-application-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.cp-application-field {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.cp-application-field span {
+  color: var(--ink);
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.cp-application-field input,
+.cp-application-field textarea {
+  width: 100%;
+  border: 1px solid rgba(220, 38, 38, 0.16);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.94);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.9rem;
+  outline: 0;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.76);
+}
+
+.cp-application-field input {
+  min-height: 44px;
+  padding: 0 0.85rem;
+}
+
+.cp-application-field input[type="file"] {
+  display: flex;
+  align-items: center;
+  padding: 0.62rem 0.85rem;
+}
+
+.cp-application-file-hint {
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.cp-application-field textarea {
+  min-height: 118px;
+  padding: 0.8rem 0.85rem;
+  resize: vertical;
+  line-height: 1.55;
+}
+
+.cp-application-field input:focus,
+.cp-application-field textarea:focus {
+  border-color: rgba(220, 38, 38, 0.48);
+  box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.08);
+}
+
+.cp-application-alert {
+  padding: 0.8rem 0.9rem;
+  border-radius: 12px;
+  font-size: 0.86rem;
+  font-weight: 800;
+  line-height: 1.45;
+}
+
+.cp-application-alert--success {
+  border: 1px solid rgba(22, 101, 52, 0.18);
+  background: #dcfce7;
+  color: #166534;
+}
+
+.cp-application-alert--error {
+  border: 1px solid rgba(220, 38, 38, 0.22);
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.cp-application-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 1.25rem;
+  background: rgba(15, 23, 42, 0.48);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.cp-application-dialog {
+  display: grid;
+  gap: 0.85rem;
+  width: min(680px, 100%);
+  max-height: min(760px, calc(100vh - 2.5rem));
+  overflow: auto;
+  padding: 1.4rem;
+  border: 1px solid rgba(220, 38, 38, 0.16);
+  border-radius: 20px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(255,247,247,0.98) 100%);
+  box-shadow:
+    0 30px 70px rgba(15, 23, 42, 0.26),
+    0 10px 24px rgba(220, 38, 38, 0.12);
+}
+
+.cp-application-dialog-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid rgba(220, 38, 38, 0.1);
+}
+
+.cp-application-dialog-head h3 {
+  margin: 0.25rem 0 0.2rem;
+  color: var(--ink);
+  font-size: clamp(1.35rem, 3vw, 2rem);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+
+.cp-application-dialog-head span {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.cp-application-close {
+  display: inline-grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border: 1px solid rgba(220, 38, 38, 0.14);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.cp-application-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  padding-top: 0.25rem;
+}
+
 /* ═══════════════════════════════════════
    RESPONSIVE
 ═══════════════════════════════════════ */
@@ -1282,6 +1439,10 @@ html {
   .cp-apply-actions .cp-btn {
     width: 100%;
     flex: none;
+  }
+
+  .cp-application-row {
+    grid-template-columns: 1fr;
   }
 }
 

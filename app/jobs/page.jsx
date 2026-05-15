@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Navbar from '@/components/Navbar/Navbar';
 import Footer from '@/components/Footer/Footer';
-import { listOpenJobOpenings } from '@/lib/hr/hrContent';
+import { createJobApplication, listOpenJobOpenings } from '@/lib/hr/hrContent';
 import '../jobs/jobs.css';
 
 const JOB_OPENINGS = [
@@ -81,10 +81,22 @@ const HIGHLIGHTS = [
 export default function Career() {
   const [selectedJob, setSelectedJob] = useState(JOB_OPENINGS[0]);
   const [jobOpenings, setJobOpenings] = useState(JOB_OPENINGS);
+  const [applicationForm, setApplicationForm] = useState({
+    applicantName: '',
+    email: '',
+    phone: '',
+    resumeFile: null,
+    resumeFileName: '',
+    coverLetter: '',
+  });
+  const [applicationStatus, setApplicationStatus] = useState({ type: '', text: '' });
+  const [isApplicationModalOpen, setIsApplicationModalOpen] = useState(false);
+  const [isSubmittingApplication, setIsSubmittingApplication] = useState(false);
 
   const showcaseAnchorRef = useRef(null);
   const showcaseStageRef = useRef(null);
   const applyAnchorRef = useRef(null);
+  const resumeInputRef = useRef(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -128,14 +140,77 @@ export default function Career() {
 
   const handleSelectJob = (job) => {
     setSelectedJob(job);
+    setApplicationStatus({ type: '', text: '' });
     if (typeof window !== 'undefined' && window.innerWidth <= 920) {
       requestAnimationFrame(() => scrollToAnchor(showcaseAnchorRef));
     }
   };
 
+  const updateApplicationForm = (field, value) => {
+    setApplicationForm((current) => ({ ...current, [field]: value }));
+    setApplicationStatus({ type: '', text: '' });
+  };
+
+  const handleResumeChange = (event) => {
+    const file = event.target.files?.[0] || null;
+    setApplicationStatus({ type: '', text: '' });
+
+    if (!file) {
+      setApplicationForm((current) => ({
+        ...current,
+        resumeFile: null,
+        resumeFileName: '',
+      }));
+      return;
+    }
+
+    setApplicationForm((current) => ({
+      ...current,
+      resumeFile: file,
+      resumeFileName: file.name,
+    }));
+  };
+
+  const handleApplicationSubmit = async (event) => {
+    event.preventDefault();
+    setIsSubmittingApplication(true);
+    setApplicationStatus({ type: '', text: '' });
+
+    try {
+      await createJobApplication({
+        ...applicationForm,
+        jobId: selectedJob.id || '',
+        jobTitle: selectedJob.title,
+      });
+
+      setApplicationForm({
+        applicantName: '',
+        email: '',
+        phone: '',
+        resumeFile: null,
+        resumeFileName: '',
+        coverLetter: '',
+      });
+      if (resumeInputRef.current) {
+        resumeInputRef.current.value = '';
+      }
+      setApplicationStatus({
+        type: 'success',
+        text: 'Application submitted. HR can now review your information and resume.',
+      });
+    } catch (error) {
+      setApplicationStatus({
+        type: 'error',
+        text: error.message || 'Unable to submit application. Please try again.',
+      });
+    } finally {
+      setIsSubmittingApplication(false);
+    }
+  };
+
   return (
     <>
-      <Navbar />
+      {!isApplicationModalOpen && <Navbar />}
 
       <main className="cp">
         {/* ── HERO ── */}
@@ -428,7 +503,11 @@ export default function Career() {
                 </div>
 
                 <div className="cp-apply-actions">
-                  <button type="button" className="cp-btn cp-btn--solid">
+                  <button
+                    type="button"
+                    className="cp-btn cp-btn--solid"
+                    onClick={() => setIsApplicationModalOpen(true)}
+                  >
                     Submit Application
                   </button>
                 </div>
@@ -437,6 +516,107 @@ export default function Career() {
           </div>
         </section>
       </main>
+
+      {isApplicationModalOpen ? (
+        <div className="cp-application-modal" role="dialog" aria-modal="true" aria-label="Submit application">
+          <form className="cp-application-dialog" onSubmit={handleApplicationSubmit}>
+            <div className="cp-application-dialog-head">
+              <div>
+                <p className="cp-section-kicker">Application</p>
+                <h3>{selectedJob.title}</h3>
+                <span>{selectedJob.department} - {selectedJob.location}</span>
+              </div>
+              <button
+                type="button"
+                className="cp-application-close"
+                onClick={() => setIsApplicationModalOpen(false)}
+                aria-label="Close application form"
+              >
+                x
+              </button>
+            </div>
+
+            {applicationStatus.text ? (
+              <div className={`cp-application-alert cp-application-alert--${applicationStatus.type}`}>
+                {applicationStatus.text}
+              </div>
+            ) : null}
+
+            <label className="cp-application-field">
+              <span>Full Name</span>
+              <input
+                type="text"
+                required
+                value={applicationForm.applicantName}
+                onChange={(event) => updateApplicationForm('applicantName', event.target.value)}
+                placeholder="Enter your full name"
+              />
+            </label>
+
+            <div className="cp-application-row">
+              <label className="cp-application-field">
+                <span>Email</span>
+                <input
+                  type="email"
+                  required
+                  value={applicationForm.email}
+                  onChange={(event) => updateApplicationForm('email', event.target.value)}
+                  placeholder="name@email.com"
+                />
+              </label>
+
+              <label className="cp-application-field">
+                <span>Phone</span>
+                <input
+                  type="tel"
+                  required
+                  value={applicationForm.phone}
+                  onChange={(event) => updateApplicationForm('phone', event.target.value)}
+                  placeholder="09XX XXX XXXX"
+                />
+              </label>
+            </div>
+
+            <label className="cp-application-field">
+              <span>Resume Attachment</span>
+              <input
+                ref={resumeInputRef}
+                type="file"
+                required
+                accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                onChange={handleResumeChange}
+              />
+              <small className="cp-application-file-hint">
+                {applicationForm.resumeFileName || 'Accepted files: PDF, DOC, or DOCX up to 10 MB.'}
+              </small>
+            </label>
+
+            <label className="cp-application-field">
+              <span>Cover Letter</span>
+              <textarea
+                value={applicationForm.coverLetter}
+                onChange={(event) => updateApplicationForm('coverLetter', event.target.value)}
+                placeholder="Briefly introduce yourself and your interest in the role."
+                rows={5}
+              />
+            </label>
+
+            <div className="cp-application-dialog-actions">
+              <button
+                type="button"
+                className="cp-btn cp-btn--ghost"
+                onClick={() => setIsApplicationModalOpen(false)}
+                disabled={isSubmittingApplication}
+              >
+                Cancel
+              </button>
+              <button type="submit" className="cp-btn cp-btn--solid" disabled={isSubmittingApplication}>
+                {isSubmittingApplication ? 'Submitting...' : 'Submit Application'}
+              </button>
+            </div>
+          </form>
+        </div>
+      ) : null}
 
       <Footer />
     </>

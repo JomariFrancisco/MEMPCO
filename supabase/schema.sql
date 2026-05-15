@@ -1,7 +1,25 @@
--- MEMPCO portal auth schema for Supabase.
--- Run this in Supabase Dashboard > SQL Editor before using the real login module.
+-- =====================================================
+-- MEMPCO WEBSITE SUPABASE SCHEMA - FULL UPDATED
+-- Safe to run in Supabase SQL Editor.
+-- Includes:
+-- 1. Portal auth/profiles
+-- 2. Helpdesk tickets
+-- 3. Ticket messages / conversation
+-- 4. Superadmin ticket delete
+-- 5. Notifications
+-- 6. Other Services requests
+-- 7. Marketing posts
+-- 8. HR job openings and job applications
+-- 9. Realtime support
+-- 10. RPC/function grants
+-- 11. Ticket ID gap reuse after delete
+-- =====================================================
 
 create extension if not exists pgcrypto;
+
+-- =====================================================
+-- USER ROLE ENUM
+-- =====================================================
 
 do $$
 begin
@@ -14,10 +32,28 @@ alter type public.user_role add value if not exists 'superadmin';
 alter type public.user_role add value if not exists 'marketing_admin';
 alter type public.user_role add value if not exists 'hr_admin';
 
+-- =====================================================
+-- UPDATED AT FUNCTION
+-- =====================================================
+
+create or replace function public.set_updated_at()
+returns trigger
+language plpgsql
+as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$;
+
+-- =====================================================
+-- PROFILES
+-- =====================================================
+
 create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   role public.user_role not null default 'employee',
-  full_name text not null,
+  full_name text not null default 'MEMPCO User',
   employee_id text,
   department text,
   branch text,
@@ -65,20 +101,9 @@ alter column updated_at set not null;
 create index if not exists profiles_email_idx on public.profiles (lower(email));
 create index if not exists profiles_role_idx on public.profiles (role);
 
-create or replace function public.set_updated_at()
-returns trigger
-language plpgsql
-as $$
-begin
-  new.updated_at = now();
-  return new;
-end;
-$$;
-
-drop trigger if exists profiles_set_updated_at on public.profiles;
-create trigger profiles_set_updated_at
-before update on public.profiles
-for each row execute function public.set_updated_at();
+-- =====================================================
+-- AUTO PROFILE CREATION
+-- =====================================================
 
 create or replace function public.handle_new_user()
 returns trigger
@@ -102,12 +127,12 @@ begin
   )
   values (
     new.id,
-    'employee',
-    coalesce(new.raw_user_meta_data ->> 'name', split_part(new.email, '@', 1)),
+    coalesce((new.raw_user_meta_data ->> 'role')::public.user_role, 'employee'::public.user_role),
+    coalesce(new.raw_user_meta_data ->> 'name', new.raw_user_meta_data ->> 'full_name', split_part(new.email, '@', 1), 'MEMPCO User'),
     new.raw_user_meta_data ->> 'employee_id',
     new.raw_user_meta_data ->> 'department',
     new.raw_user_meta_data ->> 'branch',
-    new.raw_user_meta_data ->> 'branch',
+    new.raw_user_meta_data ->> 'office',
     new.raw_user_meta_data ->> 'designation',
     new.email,
     new.raw_user_meta_data ->> 'phone',
@@ -119,11 +144,52 @@ begin
     employee_id = excluded.employee_id,
     department = excluded.department,
     branch = excluded.branch,
-    office = excluded.office,
+    office = coalesce(excluded.office, excluded.branch),
     designation = excluded.designation,
-    phone = excluded.phone;
+    phone = excluded.phone,
+    updated_at = now();
 
   return new;
+exception
+  when invalid_text_representation then
+    insert into public.profiles (
+      id,
+      role,
+      full_name,
+      employee_id,
+      department,
+      branch,
+      office,
+      designation,
+      email,
+      phone,
+      status
+    )
+    values (
+      new.id,
+      'employee',
+      coalesce(new.raw_user_meta_data ->> 'name', new.raw_user_meta_data ->> 'full_name', split_part(new.email, '@', 1), 'MEMPCO User'),
+      new.raw_user_meta_data ->> 'employee_id',
+      new.raw_user_meta_data ->> 'department',
+      new.raw_user_meta_data ->> 'branch',
+      new.raw_user_meta_data ->> 'office',
+      new.raw_user_meta_data ->> 'designation',
+      new.email,
+      new.raw_user_meta_data ->> 'phone',
+      'Active'
+    )
+    on conflict (id) do update set
+      email = excluded.email,
+      full_name = excluded.full_name,
+      employee_id = excluded.employee_id,
+      department = excluded.department,
+      branch = excluded.branch,
+      office = coalesce(excluded.office, excluded.branch),
+      designation = excluded.designation,
+      phone = excluded.phone,
+      updated_at = now();
+
+    return new;
 end;
 $$;
 
@@ -132,7 +198,9 @@ create trigger on_auth_user_created
 after insert on auth.users
 for each row execute function public.handle_new_user();
 
-alter table public.profiles enable row level security;
+-- =====================================================
+-- ROLE HELPERS
+-- =====================================================
 
 create or replace function public.is_admin()
 returns boolean
@@ -146,6 +214,7 @@ as $$
     from public.profiles
     where id = auth.uid()
       and role::text in ('admin', 'superadmin')
+      and coalesce(status, 'Active') = 'Active'
   );
 $$;
 
@@ -161,6 +230,7 @@ as $$
     from public.profiles
     where id = auth.uid()
       and role::text = 'superadmin'
+      and coalesce(status, 'Active') = 'Active'
   );
 $$;
 
@@ -175,6 +245,7 @@ as $$
     select 1
     from public.profiles
     where id = auth.uid()
+      and coalesce(status, 'Active') = 'Active'
       and (
         role::text = 'superadmin'
         or role::text = any(allowed_roles)
@@ -201,6 +272,12 @@ set search_path = public
 as $$
   select public.has_portal_role(array['hr_admin']);
 $$;
+
+-- =====================================================
+-- PROFILE RLS
+-- =====================================================
+
+alter table public.profiles enable row level security;
 
 drop policy if exists "Users can read own profile" on public.profiles;
 create policy "Users can read own profile"
@@ -229,33 +306,65 @@ on public.profiles for update
 using (public.is_admin())
 with check (public.is_admin());
 
--- To make your first superadmin after creating the user in Supabase Auth:
--- update public.profiles set role = 'superadmin' where email = 'your-superadmin-email@mempco.local';
+drop policy if exists "Superadmins can delete profiles" on public.profiles;
+create policy "Superadmins can delete profiles"
+on public.profiles for delete
+using (public.is_superadmin());
 
--- Persistent ICT helpdesk tickets.
+drop trigger if exists profiles_set_updated_at on public.profiles;
+create trigger profiles_set_updated_at
+before update on public.profiles
+for each row execute function public.set_updated_at();
+
+-- =====================================================
+-- GAP-REUSE HELP DESK TICKET ID
+-- Reuses the lowest missing ticket number for the current year.
+-- Example: if TCK-2026-0002 was deleted, the next ticket can become TCK-2026-0002.
+-- =====================================================
+
 create sequence if not exists public.ticket_number_seq start 1;
 
 create or replace function public.generate_ticket_id()
 returns text
-language sql
+language plpgsql
 as $$
-  select 'TCK-' || to_char(now(), 'YYYY') || '-' || lpad(nextval('public.ticket_number_seq')::text, 4, '0');
+declare
+  ticket_year text := to_char(now(), 'YYYY');
+  next_number integer;
+begin
+  select n
+  into next_number
+  from generate_series(1, 999999) as n
+  where not exists (
+    select 1
+    from public.tickets t
+    where t.id = 'TCK-' || ticket_year || '-' || lpad(n::text, 4, '0')
+  )
+  order by n
+  limit 1;
+
+  return 'TCK-' || ticket_year || '-' || lpad(coalesce(next_number, nextval('public.ticket_number_seq')::integer)::text, 4, '0');
+end;
 $$;
+
+-- =====================================================
+-- TICKETS
+-- =====================================================
 
 create table if not exists public.tickets (
   id text primary key default public.generate_ticket_id(),
-  owner_id uuid not null references public.profiles(id) on delete cascade,
-  owner_email text not null,
-  requester text not null,
+  owner_id uuid references public.profiles(id) on delete cascade,
+  owner_email text,
+  requester text,
   employee_id text,
-  branch text not null,
-  department text not null,
-  support_category text not null,
-  concern_type text not null,
+  branch text,
+  department text,
+  support_category text,
+  concern_type text,
   device_name text,
   contact_number text,
   impact text,
-  description text not null,
+  description text,
   sla text not null default 'Low',
   priority text not null default 'Low',
   status text not null default 'Created',
@@ -265,11 +374,13 @@ create table if not exists public.tickets (
   resolution text not null default '',
   saar_required boolean not null default false,
   saar_attachment jsonb,
+  photo_attachments jsonb not null default '[]'::jsonb,
   date_label text,
   last_employee_update text,
   admin_updated_at text,
   work_started_at text,
   work_ended_at text,
+  status_history jsonb not null default '[]'::jsonb,
   locked_by uuid references public.profiles(id) on delete set null,
   locked_by_name text,
   locked_at timestamptz,
@@ -300,17 +411,26 @@ add column if not exists admin_remarks text not null default '',
 add column if not exists resolution text not null default '',
 add column if not exists saar_required boolean not null default false,
 add column if not exists saar_attachment jsonb,
+add column if not exists photo_attachments jsonb not null default '[]'::jsonb,
 add column if not exists date_label text,
 add column if not exists last_employee_update text,
 add column if not exists admin_updated_at text,
 add column if not exists work_started_at text,
 add column if not exists work_ended_at text,
+add column if not exists status_history jsonb not null default '[]'::jsonb,
 add column if not exists locked_by uuid references public.profiles(id) on delete set null,
 add column if not exists locked_by_name text,
 add column if not exists locked_at timestamptz,
 add column if not exists lock_expires_at timestamptz,
 add column if not exists created_at timestamptz not null default now(),
 add column if not exists updated_at timestamptz not null default now();
+
+update public.tickets t
+set owner_id = p.id
+from public.profiles p
+where t.owner_id is null
+  and t.owner_email is not null
+  and lower(p.email) = lower(t.owner_email);
 
 update public.tickets
 set
@@ -320,6 +440,9 @@ set
   department = coalesce(nullif(department, ''), 'Unspecified'),
   support_category = coalesce(nullif(support_category, ''), 'Other ICT Support'),
   concern_type = coalesce(nullif(concern_type, ''), 'Other Technical Concern'),
+  device_name = coalesce(device_name, ''),
+  contact_number = coalesce(contact_number, ''),
+  impact = coalesce(impact, ''),
   description = coalesce(description, ''),
   sla = coalesce(nullif(sla, ''), 'Low'),
   priority = coalesce(nullif(priority, ''), sla, 'Low'),
@@ -329,11 +452,20 @@ set
   admin_remarks = coalesce(admin_remarks, ''),
   resolution = coalesce(resolution, ''),
   saar_required = coalesce(saar_required, false),
+  photo_attachments = coalesce(photo_attachments, '[]'::jsonb),
   created_at = coalesce(created_at, now()),
   updated_at = coalesce(updated_at, now());
 
+do $$
+begin
+  if not exists (select 1 from public.tickets where owner_id is null) then
+    alter table public.tickets alter column owner_id set not null;
+  else
+    raise notice 'Some existing tickets have no owner_id. owner_id was not forced to NOT NULL.';
+  end if;
+end $$;
+
 alter table public.tickets
-alter column owner_id set not null,
 alter column owner_email set not null,
 alter column requester set not null,
 alter column branch set not null,
@@ -349,21 +481,95 @@ alter column action_taken set not null,
 alter column admin_remarks set not null,
 alter column resolution set not null,
 alter column saar_required set not null,
+alter column photo_attachments set default '[]'::jsonb,
+alter column photo_attachments set not null,
 alter column created_at set not null,
 alter column updated_at set not null;
 
-create index if not exists tickets_owner_id_idx on public.tickets (owner_id);
-create index if not exists tickets_status_idx on public.tickets (status);
-create index if not exists tickets_branch_idx on public.tickets (branch);
-create index if not exists tickets_created_at_idx on public.tickets (created_at desc);
-create index if not exists tickets_updated_at_idx on public.tickets (updated_at desc);
-create index if not exists tickets_locked_by_idx on public.tickets (locked_by);
-create index if not exists tickets_lock_expires_at_idx on public.tickets (lock_expires_at);
+create or replace function public.prepare_ticket_for_write()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  active_profile public.profiles;
+begin
+  if TG_OP = 'INSERT' then
+    if new.owner_id is null then
+      new.owner_id := auth.uid();
+    end if;
+
+    select *
+    into active_profile
+    from public.profiles
+    where id = new.owner_id;
+
+    if active_profile.id is null then
+      raise exception 'Ticket cannot be submitted because the current user profile was not found. Please log out, log in again, or ask the administrator to verify your profile.';
+    end if;
+
+    new.owner_email := coalesce(nullif(new.owner_email, ''), active_profile.email);
+    new.requester := coalesce(nullif(new.requester, ''), active_profile.full_name, active_profile.email, 'Employee');
+    new.employee_id := coalesce(nullif(new.employee_id, ''), active_profile.employee_id);
+    new.branch := coalesce(nullif(new.branch, ''), active_profile.branch, active_profile.office, 'Unspecified');
+    new.department := coalesce(nullif(new.department, ''), active_profile.department, 'Unspecified');
+    new.created_at := coalesce(new.created_at, now());
+  end if;
+
+  new.support_category := coalesce(nullif(new.support_category, ''), 'Other ICT Support');
+  new.concern_type := coalesce(nullif(new.concern_type, ''), 'Other Technical Concern');
+  new.device_name := coalesce(new.device_name, '');
+  new.contact_number := coalesce(new.contact_number, '');
+  new.description := coalesce(new.description, '');
+  new.sla := coalesce(nullif(new.sla, ''), 'Low');
+  new.priority := coalesce(nullif(new.priority, ''), new.sla, 'Low');
+  new.impact := coalesce(
+    nullif(new.impact, ''),
+    case
+      when new.sla = 'Critical' then 'Core operation affected'
+      when new.sla = 'High' then 'Branch operation affected'
+      when new.sla = 'Medium' then 'Multiple users or department affected'
+      else 'Single user affected'
+    end
+  );
+  new.status := coalesce(nullif(new.status, ''), 'Created');
+  new.technician := coalesce(nullif(new.technician, ''), 'Unassigned');
+  new.action_taken := coalesce(new.action_taken, '');
+  new.admin_remarks := coalesce(new.admin_remarks, '');
+  new.resolution := coalesce(new.resolution, '');
+  new.saar_required := coalesce(new.saar_required, false);
+  new.photo_attachments := coalesce(new.photo_attachments, '[]'::jsonb);
+  new.updated_at := now();
+
+  return new;
+end;
+$$;
+
+drop trigger if exists tickets_prepare_for_write on public.tickets;
+create trigger tickets_prepare_for_write
+before insert or update on public.tickets
+for each row execute function public.prepare_ticket_for_write();
 
 drop trigger if exists tickets_set_updated_at on public.tickets;
 create trigger tickets_set_updated_at
 before update on public.tickets
 for each row execute function public.set_updated_at();
+
+create index if not exists tickets_owner_id_idx on public.tickets (owner_id);
+create index if not exists tickets_owner_email_idx on public.tickets (lower(owner_email));
+create index if not exists tickets_status_idx on public.tickets (status);
+create index if not exists tickets_branch_idx on public.tickets (branch);
+create index if not exists tickets_support_category_idx on public.tickets (support_category);
+create index if not exists tickets_concern_type_idx on public.tickets (concern_type);
+create index if not exists tickets_created_at_idx on public.tickets (created_at desc);
+create index if not exists tickets_updated_at_idx on public.tickets (updated_at desc);
+create index if not exists tickets_locked_by_idx on public.tickets (locked_by);
+create index if not exists tickets_lock_expires_at_idx on public.tickets (lock_expires_at);
+
+-- =====================================================
+-- TICKET RLS
+-- =====================================================
 
 alter table public.tickets enable row level security;
 
@@ -398,6 +604,10 @@ drop policy if exists "Superadmins can delete tickets" on public.tickets;
 create policy "Superadmins can delete tickets"
 on public.tickets for delete
 using (public.is_superadmin());
+
+-- =====================================================
+-- TICKET LOCKING RPC
+-- =====================================================
 
 create or replace function public.claim_ticket_lock(
   target_ticket_id text,
@@ -489,9 +699,486 @@ begin
 end;
 $$;
 
+-- =====================================================
+-- TICKET MESSAGES / END-TO-END CONVERSATION
+-- =====================================================
 
+create table if not exists public.ticket_messages (
+  id uuid primary key default gen_random_uuid(),
+  ticket_id text not null references public.tickets(id) on delete cascade,
+  sender_id uuid not null references public.profiles(id) on delete cascade,
+  sender_name text not null,
+  sender_email text,
+  sender_role text not null default 'employee',
+  message text not null default '',
+  attachments jsonb not null default '[]'::jsonb,
+  created_at timestamptz not null default now()
+);
 
--- Marketing-admin managed public news, events, and announcements.
+alter table public.ticket_messages
+add column if not exists ticket_id text references public.tickets(id) on delete cascade,
+add column if not exists sender_id uuid references public.profiles(id) on delete cascade,
+add column if not exists sender_name text,
+add column if not exists sender_email text,
+add column if not exists sender_role text not null default 'employee',
+add column if not exists message text not null default '',
+add column if not exists attachments jsonb not null default '[]'::jsonb,
+add column if not exists created_at timestamptz not null default now();
+
+update public.ticket_messages
+set
+  sender_name = coalesce(nullif(sender_name, ''), 'MEMPCO User'),
+  sender_role = coalesce(nullif(sender_role, ''), 'employee'),
+  message = coalesce(message, ''),
+  attachments = coalesce(attachments, '[]'::jsonb),
+  created_at = coalesce(created_at, now());
+
+alter table public.ticket_messages
+alter column ticket_id set not null,
+alter column sender_id set not null,
+alter column sender_name set not null,
+alter column sender_role set not null,
+alter column message set not null,
+alter column attachments set default '[]'::jsonb,
+alter column attachments set not null,
+alter column created_at set not null;
+
+create index if not exists ticket_messages_ticket_id_created_at_idx on public.ticket_messages (ticket_id, created_at);
+create index if not exists ticket_messages_sender_id_idx on public.ticket_messages (sender_id);
+
+alter table public.ticket_messages enable row level security;
+
+drop policy if exists "Ticket participants can read ticket messages" on public.ticket_messages;
+create policy "Ticket participants can read ticket messages"
+on public.ticket_messages for select
+using (
+  public.is_admin()
+  or exists (
+    select 1
+    from public.tickets t
+    where t.id = ticket_messages.ticket_id
+      and t.owner_id = auth.uid()
+  )
+);
+
+drop policy if exists "Ticket participants can create ticket messages" on public.ticket_messages;
+create policy "Ticket participants can create ticket messages"
+on public.ticket_messages for insert
+with check (
+  sender_id = auth.uid()
+  and (
+    public.is_admin()
+    or exists (
+      select 1
+      from public.tickets t
+      where t.id = ticket_messages.ticket_id
+        and t.owner_id = auth.uid()
+    )
+  )
+);
+
+drop policy if exists "Superadmins can delete ticket messages" on public.ticket_messages;
+create policy "Superadmins can delete ticket messages"
+on public.ticket_messages for delete
+using (public.is_superadmin());
+
+do $$
+declare
+  fk_name text;
+begin
+  select conname into fk_name
+  from pg_constraint
+  where conrelid = 'public.ticket_messages'::regclass
+    and contype = 'f'
+    and pg_get_constraintdef(oid) ilike '%tickets%';
+
+  if fk_name is not null and fk_name <> 'ticket_messages_ticket_id_fkey' then
+    execute format('alter table public.ticket_messages drop constraint %I', fk_name);
+  end if;
+
+  if not exists (
+    select 1
+    from pg_constraint
+    where conrelid = 'public.ticket_messages'::regclass
+      and conname = 'ticket_messages_ticket_id_fkey'
+  ) then
+    alter table public.ticket_messages
+    add constraint ticket_messages_ticket_id_fkey
+    foreign key (ticket_id)
+    references public.tickets(id)
+    on delete cascade;
+  end if;
+end $$;
+
+-- =====================================================
+-- SUPERADMIN HELP DESK DELETE
+-- Deletes ticket + related conversations/notifications with no remaining helpdesk trace.
+-- =====================================================
+
+create or replace function public.delete_helpdesk_ticket(target_ticket_id text)
+returns boolean
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not public.is_superadmin() then
+    raise exception 'Only the super admin can delete tickets.';
+  end if;
+
+  delete from public.ticket_messages
+  where ticket_id = target_ticket_id;
+
+  delete from public.user_notifications
+  where related_ticket_id = target_ticket_id;
+
+  delete from public.tickets
+  where id = target_ticket_id;
+
+  return true;
+end;
+$$;
+
+-- =====================================================
+-- USER NOTIFICATIONS
+-- =====================================================
+
+create table if not exists public.user_notifications (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.profiles(id) on delete cascade,
+  title text not null,
+  message text not null,
+  type text not null default 'info',
+  related_ticket_id text references public.tickets(id) on delete cascade,
+  related_service_id text,
+  is_read boolean not null default false,
+  created_at timestamptz not null default now()
+);
+
+alter table public.user_notifications
+add column if not exists user_id uuid references public.profiles(id) on delete cascade,
+add column if not exists title text,
+add column if not exists message text,
+add column if not exists type text not null default 'info',
+add column if not exists related_ticket_id text references public.tickets(id) on delete cascade,
+add column if not exists related_service_id text,
+add column if not exists is_read boolean not null default false,
+add column if not exists created_at timestamptz not null default now();
+
+update public.user_notifications
+set
+  title = coalesce(nullif(title, ''), 'Notification'),
+  message = coalesce(nullif(message, ''), 'You have a new notification.'),
+  type = coalesce(nullif(type, ''), 'info'),
+  is_read = coalesce(is_read, false),
+  created_at = coalesce(created_at, now());
+
+alter table public.user_notifications
+alter column user_id set not null,
+alter column title set not null,
+alter column message set not null,
+alter column type set not null,
+alter column is_read set not null,
+alter column created_at set not null;
+
+create index if not exists user_notifications_user_id_created_at_idx on public.user_notifications (user_id, created_at desc);
+create index if not exists user_notifications_related_ticket_id_idx on public.user_notifications (related_ticket_id);
+create index if not exists user_notifications_is_read_idx on public.user_notifications (is_read);
+
+alter table public.user_notifications enable row level security;
+
+drop policy if exists "Users can read own notifications" on public.user_notifications;
+create policy "Users can read own notifications"
+on public.user_notifications for select
+using (auth.uid() = user_id);
+
+drop policy if exists "Admins can read all notifications" on public.user_notifications;
+create policy "Admins can read all notifications"
+on public.user_notifications for select
+using (public.is_admin());
+
+drop policy if exists "Users can update own notifications" on public.user_notifications;
+create policy "Users can update own notifications"
+on public.user_notifications for update
+using (auth.uid() = user_id)
+with check (auth.uid() = user_id);
+
+drop policy if exists "Superadmins can delete notifications" on public.user_notifications;
+create policy "Superadmins can delete notifications"
+on public.user_notifications for delete
+using (public.is_superadmin());
+
+create or replace function public.create_ticket_submitted_notification()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  insert into public.user_notifications (
+    user_id,
+    title,
+    message,
+    type,
+    related_ticket_id
+  )
+  values (
+    new.owner_id,
+    'Ticket Submitted',
+    'Your ticket ' || new.id || ' has been submitted successfully and is now ready for ICT review.',
+    'ticket_submitted',
+    new.id
+  );
+
+  return new;
+end;
+$$;
+
+drop trigger if exists ticket_submitted_notification on public.tickets;
+create trigger ticket_submitted_notification
+after insert on public.tickets
+for each row execute function public.create_ticket_submitted_notification();
+
+-- =====================================================
+-- OTHER SERVICES
+-- =====================================================
+
+create sequence if not exists public.other_service_number_seq start 1;
+
+create or replace function public.generate_other_service_id()
+returns text
+language plpgsql
+as $$
+declare
+  service_year text := to_char(now(), 'YYYY');
+  next_number integer;
+begin
+  select n
+  into next_number
+  from generate_series(1, 999999) as n
+  where not exists (
+    select 1
+    from public.other_service_requests osr
+    where osr.id = 'OS-' || service_year || '-' || lpad(n::text, 4, '0')
+  )
+  order by n
+  limit 1;
+
+  return 'OS-' || service_year || '-' || lpad(coalesce(next_number, nextval('public.other_service_number_seq')::integer)::text, 4, '0');
+end;
+$$;
+
+create table if not exists public.other_service_requests (
+  id text primary key default public.generate_other_service_id(),
+  owner_id uuid references public.profiles(id) on delete cascade,
+  owner_email text,
+  requester text,
+  employee_id text,
+  branch text,
+  department text,
+  custodian text,
+  device_name text,
+  support_category text,
+  remarks text not null default '',
+  status text not null default 'Submitted',
+  admin_remarks text not null default '',
+  resolution text not null default '',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+alter table public.other_service_requests
+add column if not exists owner_id uuid references public.profiles(id) on delete cascade,
+add column if not exists owner_email text,
+add column if not exists requester text,
+add column if not exists employee_id text,
+add column if not exists branch text,
+add column if not exists department text,
+add column if not exists custodian text,
+add column if not exists device_name text,
+add column if not exists support_category text,
+add column if not exists remarks text not null default '',
+add column if not exists status text not null default 'Submitted',
+add column if not exists admin_remarks text not null default '',
+add column if not exists resolution text not null default '',
+add column if not exists created_at timestamptz not null default now(),
+add column if not exists updated_at timestamptz not null default now();
+
+update public.other_service_requests osr
+set owner_id = p.id
+from public.profiles p
+where osr.owner_id is null
+  and osr.owner_email is not null
+  and lower(p.email) = lower(osr.owner_email);
+
+update public.other_service_requests
+set
+  owner_email = coalesce(nullif(owner_email, ''), 'missing-owner-' || id || '@mempco.local'),
+  requester = coalesce(nullif(requester, ''), owner_email, 'Employee'),
+  branch = coalesce(nullif(branch, ''), 'Unspecified'),
+  department = coalesce(nullif(department, ''), 'Unspecified'),
+  custodian = coalesce(nullif(custodian, ''), 'Unspecified'),
+  device_name = coalesce(nullif(device_name, ''), 'Unspecified'),
+  support_category = coalesce(nullif(support_category, ''), 'Other Company Service'),
+  remarks = coalesce(remarks, ''),
+  status = coalesce(nullif(status, ''), 'Submitted'),
+  admin_remarks = coalesce(admin_remarks, ''),
+  resolution = coalesce(resolution, ''),
+  created_at = coalesce(created_at, now()),
+  updated_at = coalesce(updated_at, now());
+
+create or replace function public.prepare_other_service_for_write()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  active_profile public.profiles;
+begin
+  if TG_OP = 'INSERT' then
+    if new.owner_id is null then
+      new.owner_id := auth.uid();
+    end if;
+
+    select *
+    into active_profile
+    from public.profiles
+    where id = new.owner_id;
+
+    if active_profile.id is null then
+      raise exception 'Other Service request cannot be submitted because the current user profile was not found.';
+    end if;
+
+    new.owner_email := coalesce(nullif(new.owner_email, ''), active_profile.email);
+    new.requester := coalesce(nullif(new.requester, ''), active_profile.full_name, active_profile.email, 'Employee');
+    new.employee_id := coalesce(nullif(new.employee_id, ''), active_profile.employee_id);
+    new.branch := coalesce(nullif(new.branch, ''), active_profile.branch, active_profile.office, 'Unspecified');
+    new.department := coalesce(nullif(new.department, ''), active_profile.department, 'Unspecified');
+    new.created_at := coalesce(new.created_at, now());
+  end if;
+
+  new.custodian := coalesce(nullif(new.custodian, ''), 'Unspecified');
+  new.device_name := coalesce(nullif(new.device_name, ''), 'Unspecified');
+  new.support_category := coalesce(nullif(new.support_category, ''), 'Other Company Service');
+  new.remarks := coalesce(new.remarks, '');
+  new.status := coalesce(nullif(new.status, ''), 'Submitted');
+  new.admin_remarks := coalesce(new.admin_remarks, '');
+  new.resolution := coalesce(new.resolution, '');
+  new.updated_at := now();
+
+  return new;
+end;
+$$;
+
+drop trigger if exists other_service_requests_prepare_for_write on public.other_service_requests;
+create trigger other_service_requests_prepare_for_write
+before insert or update on public.other_service_requests
+for each row execute function public.prepare_other_service_for_write();
+
+drop trigger if exists other_service_requests_set_updated_at on public.other_service_requests;
+create trigger other_service_requests_set_updated_at
+before update on public.other_service_requests
+for each row execute function public.set_updated_at();
+
+do $$
+begin
+  if not exists (select 1 from public.other_service_requests where owner_id is null) then
+    alter table public.other_service_requests alter column owner_id set not null;
+  else
+    raise notice 'Some existing Other Services rows have no owner_id. owner_id was not forced to NOT NULL.';
+  end if;
+end $$;
+
+alter table public.other_service_requests
+alter column owner_email set not null,
+alter column requester set not null,
+alter column branch set not null,
+alter column department set not null,
+alter column custodian set not null,
+alter column device_name set not null,
+alter column support_category set not null,
+alter column remarks set not null,
+alter column status set not null,
+alter column admin_remarks set not null,
+alter column resolution set not null,
+alter column created_at set not null,
+alter column updated_at set not null;
+
+create index if not exists other_service_requests_owner_id_idx on public.other_service_requests (owner_id);
+create index if not exists other_service_requests_status_idx on public.other_service_requests (status);
+create index if not exists other_service_requests_support_category_idx on public.other_service_requests (support_category);
+create index if not exists other_service_requests_created_at_idx on public.other_service_requests (created_at desc);
+
+alter table public.other_service_requests enable row level security;
+
+drop policy if exists "Employees can read own other service requests" on public.other_service_requests;
+create policy "Employees can read own other service requests"
+on public.other_service_requests for select
+using (auth.uid() = owner_id);
+
+drop policy if exists "Admins can read all other service requests" on public.other_service_requests;
+create policy "Admins can read all other service requests"
+on public.other_service_requests for select
+using (public.is_admin());
+
+drop policy if exists "Employees can create own other service requests" on public.other_service_requests;
+create policy "Employees can create own other service requests"
+on public.other_service_requests for insert
+with check (auth.uid() = owner_id);
+
+drop policy if exists "Employees can update own other service requests" on public.other_service_requests;
+create policy "Employees can update own other service requests"
+on public.other_service_requests for update
+using (auth.uid() = owner_id)
+with check (auth.uid() = owner_id);
+
+drop policy if exists "Admins can update other service requests" on public.other_service_requests;
+create policy "Admins can update other service requests"
+on public.other_service_requests for update
+using (public.is_admin())
+with check (public.is_admin());
+
+drop policy if exists "Superadmins can delete other service requests" on public.other_service_requests;
+create policy "Superadmins can delete other service requests"
+on public.other_service_requests for delete
+using (public.is_superadmin());
+
+create or replace function public.create_other_service_submitted_notification()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  insert into public.user_notifications (
+    user_id,
+    title,
+    message,
+    type,
+    related_service_id
+  )
+  values (
+    new.owner_id,
+    'Other Service Submitted',
+    'Your Other Service request ' || new.id || ' has been submitted successfully.',
+    'other_service_submitted',
+    new.id
+  );
+
+  return new;
+end;
+$$;
+
+drop trigger if exists other_service_submitted_notification on public.other_service_requests;
+create trigger other_service_submitted_notification
+after insert on public.other_service_requests
+for each row execute function public.create_other_service_submitted_notification();
+
+-- =====================================================
+-- MARKETING POSTS
+-- =====================================================
+
 create table if not exists public.marketing_posts (
   id uuid primary key default gen_random_uuid(),
   slug text not null unique,
@@ -563,309 +1250,10 @@ alter column display_order set not null,
 alter column created_at set not null,
 alter column updated_at set not null;
 
-create unique index if not exists marketing_posts_slug_idx on public.marketing_posts (lower(slug));
+create unique index if not exists marketing_posts_slug_lower_idx on public.marketing_posts (lower(slug));
 create index if not exists marketing_posts_status_published_idx on public.marketing_posts (status, published_at desc);
 create index if not exists marketing_posts_category_idx on public.marketing_posts (category);
 create index if not exists marketing_posts_placement_order_idx on public.marketing_posts (placement, display_order, published_at desc);
-
-with seed_marketing_posts (
-  slug,
-  title,
-  category,
-  content_type,
-  excerpt,
-  body,
-  image_url,
-  status,
-  featured,
-  placement,
-  display_order,
-  published_at
-) as (
-  values
-    (
-      'mempco-share-capital-build-up-award-natcco',
-      'MEMPCO Receives Share Capital Build-Up Award at NATCCO Congress',
-      'News',
-      'news',
-      'MEMPCO was honored with the Share Capital Build-Up Award during the 40th NATCCO General Assembly and 24th Leaders Congress held in Iloilo City, reflecting the trust, commitment, and collective effort of its members, officers, and stakeholders.',
-      jsonb_build_array(
-        'MEMPCO is deeply honored to receive the Share Capital Build-Up Award during the 40th NATCCO General Assembly and 24th Leaders Congress held in Iloilo City.',
-        'With the theme One Year to Gold, this recognition reflects the unwavering trust, commitment, and collective effort of our members, officers, and stakeholders in strengthening our cooperative and building a more empowered community.',
-        'We extend our sincere appreciation to NATCCO for this recognition. This milestone inspires us even more to stay committed to our mission and continue creating meaningful impact as we move forward together.'
-      ),
-      '/About/40th NATCCO GA.png',
-      'published',
-      true,
-      'featured',
-      0,
-      '2026-05-02 09:00:00+08'::timestamptz
-    ),
-    (
-      'mempco-124th-labor-day-job-fair',
-      'MEMPCO Joins the 124th Labor Day Job Fair',
-      'Events',
-      'event',
-      'MEMPCO proudly took part in the 124th Labor Day Job Fair at KCC Mall de Zamboanga, supporting employment opportunities and empowering individuals toward a better and more inclusive future.',
-      jsonb_build_array(
-        'MEMPCO proudly took part in the 124th Labor Day Job Fair, embracing this years theme: Disenteng Trabaho Para sa Lahat: Iisang Hangarin, Bagong Pilipinas Sama-samang Mararating.',
-        'The event was held on May 1, 2026 at KCC Mall de Zamboanga and was led by the Department of Labor and Employment.',
-        'MEMPCO remains committed to supporting employment opportunities and empowering individuals toward a better and more inclusive future.'
-      ),
-      '/About/Labor Day.png',
-      'published',
-      false,
-      'latest',
-      1,
-      '2026-05-03 09:00:00+08'::timestamptz
-    ),
-    (
-      'mempco-wmsu-careercon-job-fair-2026',
-      'MEMPCO Participates in WMSU CareerCon and Job Fair 2026',
-      'Events',
-      'event',
-      'MEMPCO joined CareerCon and Job Fair 2026 at the WMSU Gymnasium, supporting an initiative that connects students and graduates to future career opportunities.',
-      jsonb_build_array(
-        'MEMPCO is grateful to be part of CareerCon and Job Fair 2026, held at the Western Mindanao State University Gymnasium on April 30, 2026.',
-        'We thank Western Mindanao State University for the invitation and for organizing a successful event that connects students and graduates to future opportunities.',
-        'MEMPCO is honored to support this meaningful initiative for alumni and graduating students.'
-      ),
-      '/About/CareerCon.png',
-      'published',
-      false,
-      'latest',
-      2,
-      '2026-05-01 09:00:00+08'::timestamptz
-    ),
-    (
-      'mempco-climbs-service-climate-action',
-      'MEMPCO Recognized by CLIMBS for Service and Climate Action',
-      'News',
-      'news',
-      'During the 54th Annual General Assembly of CLIMBS Life and General Insurance Cooperative, MEMPCO was recognized as Top Premium Producer Regional and Champion for Climate Action.',
-      jsonb_build_array(
-        'With humble hearts, MEMPCO shares this meaningful milestone. During the 54th Annual General Assembly of CLIMBS Life and General Insurance Cooperative in Cebu City, MEMPCO was honored to receive recognitions as Top Premium Producer Regional and Champion for Climate Action.',
-        'We accept these honors with gratitude, recognizing that these achievements reflect the trust of our member-owners and the dedication of our team.',
-        'MEMPCO remains committed to serving with integrity and contributing to a more sustainable and progressive community.'
-      ),
-      '/About/54th Climbs Annual General Assembly.png',
-      'published',
-      false,
-      'latest',
-      3,
-      '2026-04-29 09:00:00+08'::timestamptz
-    ),
-    (
-      'empowering-communities-financial-wellness',
-      'Empowering Communities Through Financial Wellness',
-      'Events',
-      'event',
-      'MEMPCO joined the DSWD Convergence Caravan with 4Ps beneficiaries in Zamboanga City, sharing financial wellness discussions on PMES, savings, loans, insurance, and financial literacy.',
-      jsonb_build_array(
-        'MEMPCO is grateful to the Department of Social Welfare and Development for inviting us to be part of their Convergence Caravan with 4Ps beneficiaries from different barangays in Zamboanga City.',
-        'During the activity, MEMPCO shared discussions on PMES, financial wellness and management, loans, savings, and insurance services.',
-        'We sincerely hope that the learnings shared will be applied and become a guide toward a more secure future. Helping people help themselves remains at the heart of this initiative.'
-      ),
-      '/About/Financial Literacy Seminar.png',
-      'published',
-      false,
-      'more',
-      4,
-      '2026-04-23 09:00:00+08'::timestamptz
-    ),
-    (
-      'central-office-fire-drill-seminar',
-      'Fire Drill Seminar Strengthens Preparedness at Central Office',
-      'Events',
-      'event',
-      'MEMPCO Central Office conducted a Fire Drill Seminar in partnership with the Bureau of Fire Protection - Zamboanga City Fire District to strengthen fire prevention, safety protocols, and emergency response.',
-      jsonb_build_array(
-        'MEMPCO Central Office successfully conducted a Fire Drill Seminar in partnership with the Bureau of Fire Protection - Zamboanga City Fire District.',
-        'The activity equipped participants with essential knowledge on fire prevention, safety protocols, and proper emergency response, reinforcing the importance of readiness in ensuring workplace safety.',
-        'MEMPCO extends its sincere gratitude to the Bureau of Fire Protection for their continuous efforts in promoting fire safety awareness and preparedness within the community.'
-      ),
-      '/About/Central Office Fire Drill.png',
-      'published',
-      false,
-      'more',
-      5,
-      '2026-04-23 10:00:00+08'::timestamptz
-    ),
-    (
-      'culianan-branch-fire-drill-seminar',
-      'Fire Drill Seminar Conducted at Culianan Branch',
-      'Events',
-      'event',
-      'MEMPCO Culianan Branch participated in a Fire Drill Seminar with the Bureau of Fire Protection, helping participants gain practical knowledge and confidence in responding to emergency situations.',
-      jsonb_build_array(
-        'MEMPCO Culianan Branch successfully participated in a Fire Drill Seminar in partnership with the Bureau of Fire Protection - Zamboanga City Fire District.',
-        'The seminar strengthened awareness on fire prevention, emergency response, and workplace safety. Participants were provided with valuable knowledge and practical guidance to ensure readiness during emergency situations.',
-        'Through activities like these, participants are empowered with both knowledge and confidence in responding effectively during fire-related incidents.'
-      ),
-      '/About/Culianan Fire Drill.png',
-      'published',
-      false,
-      'more',
-      6,
-      '2026-04-24 09:00:00+08'::timestamptz
-    ),
-    (
-      'earth-day-everyday-sustainable-living',
-      'Earth Day, Everyday: MEMPCO Promotes Sustainable Living',
-      'Announcement',
-      'announcement',
-      'MEMPCO encourages members and communities to practice simple daily actions such as conserving water, using natural light, choosing reusable items, and proper waste segregation.',
-      jsonb_build_array(
-        'At MEMPCO, we believe that meaningful change begins with simple everyday actions.',
-        'From conserving water and using natural light, to choosing reusable items and practicing proper waste segregation, each small step contributes to a healthier and more sustainable future for our communities.',
-        'Let us continue working together as responsible stewards of our environment. By making mindful choices today, we help build a better tomorrow for the next generation.'
-      ),
-      '/About/Earth Day.png',
-      'published',
-      false,
-      'more',
-      7,
-      '2026-05-01 10:00:00+08'::timestamptz
-    ),
-    (
-      'mempco-hour-level-up',
-      'Lets Go Green with MEMPCO Hour Level Up',
-      'Announcement',
-      'announcement',
-      'In celebration of Earth Month, MEMPCO continues to encourage green habits and responsible actions through the MEMPCO Hour Level Up initiative.',
-      jsonb_build_array(
-        'In celebration of Earth Month, MEMPCO continues to encourage members, employees, and communities to take part in meaningful actions for the environment.',
-        'The MEMPCO Hour Level Up initiative promotes simple but impactful habits that support sustainability and environmental responsibility.',
-        'Through collective participation, MEMPCO hopes to strengthen awareness and inspire everyone to contribute to a cleaner, greener, and more sustainable future.'
-      ),
-      '/About/MEMPCO Hour.png',
-      'published',
-      false,
-      'more',
-      8,
-      '2026-04-28 09:00:00+08'::timestamptz
-    ),
-    (
-      'member-story-amylita-villarosa',
-      'Amylita Villarosa',
-      'Member Stories',
-      'member_story',
-      'Once an OFW, Amylita invested her savings into building a small bakery. With business training and MEMPCO support, she expanded her livelihood and helped her children finish school.',
-      jsonb_build_object(
-        'paragraphs',
-        jsonb_build_array(
-          'Meet Amylita Villarosa, a proud entrepreneur from San Roque and the dedicated owner of her own bakery shop. Once an OFW, Amylita made the brave decision to invest her hard-earned savings into building a small bakery upon returning to the Philippines.',
-          'Instead of spending it elsewhere, she chose to take business training and workshops, equipping herself with the knowledge and confidence to properly manage her venture.',
-          'Through perseverance and determination, she supported her family needs, helped her children finish school, and expanded her bakery with the help and support of MEMPCO.'
-        ),
-        'videoUrl',
-        'https://youtu.be/QwMlGNOP2gY?si=Vuc8E9pATomR654n',
-        'role',
-        'Bakery Shop Owner',
-        'location',
-        'San Roque, Zamboanga City',
-        'tags',
-        jsonb_build_array('#MEMPCOStories', '#CooperativePride', '#WomenInBusiness', '#OFWtoEntrepreneur')
-      ),
-      '/MemberStories/Amylita.png',
-      'published',
-      false,
-      'more',
-      0,
-      '2026-05-04 09:00:00+08'::timestamptz
-    ),
-    (
-      'member-story-edna-mallorca',
-      'Edna Mallorca',
-      'Member Stories',
-      'member_story',
-      'Edna started with a humble ukay-ukay and used her MEMPCO loan to venture into a junk shop business. Today, her business employs more than 10 workers and has expanded to multiple locations.',
-      jsonb_build_object(
-        'paragraphs',
-        jsonb_build_array(
-          'Meet Edna Gonzalez Mallorca, a driven entrepreneur and the proud owner of a junk shop and demolition contracting business.',
-          'Her journey began with a humble ukay-ukay venture, where she earned a living and empowered others by teaching fellow MEMPCO members basic sewing and tailoring skills.',
-          'With MEMPCO support, Edna ventured into the junk shop business, expanded her operations, and built a livelihood that now supports her family and more than 10 workers.'
-        ),
-        'videoUrl',
-        'https://youtu.be/qTQaPQVCyHY?si=GyBn-USDbqnJFC8P',
-        'role',
-        'Junk Shop Owner',
-        'location',
-        'Zamboanga City',
-        'tags',
-        jsonb_build_array('#MEMPCOStories', '#CooperativePride', '#WomenInBusiness', '#FromHumbleBeginnings')
-      ),
-      '/MemberStories/Edna.png',
-      'published',
-      false,
-      'more',
-      1,
-      '2026-05-04 10:00:00+08'::timestamptz
-    ),
-    (
-      'member-story-girlee-del-rosario',
-      'Girlee Del Rosario',
-      'Member Stories',
-      'member_story',
-      'With MEMPCO support, Girlee strengthened her sari-sari store and rubber buying business, and acquired vehicles to help sustain and grow her livelihood for her family.',
-      jsonb_build_object(
-        'paragraphs',
-        jsonb_build_array(
-          'Meet Girlee Del Rosario, a passionate entrepreneur from Ipil, Zamboanga Sibugay, proudly managing her business as a rubber buyer and sari-sari store owner.',
-          'Through perseverance and dedication, Girlee was able to provide for her family and steadily grow her livelihood.',
-          'With MEMPCO support, she strengthened her sari-sari store and acquired a truck and a car, both essential in sustaining and growing her business.'
-        ),
-        'videoUrl',
-        'https://youtu.be/ublDz2mWQP0?si=vUfEwHut8r9eqw6W',
-        'role',
-        'Rubber Buyer and Sari-Sari Store Owner',
-        'location',
-        'Ipil, Zamboanga Sibugay',
-        'tags',
-        jsonb_build_array('#MEMPCOStories', '#Entrepreneurship', '#CooperativeSuccess', '#WomenInBusiness')
-      ),
-      '/MemberStories/Girlee.png',
-      'published',
-      false,
-      'more',
-      2,
-      '2026-05-04 11:00:00+08'::timestamptz
-    )
-)
-insert into public.marketing_posts (
-  slug,
-  title,
-  category,
-  content_type,
-  excerpt,
-  body,
-  image_url,
-  status,
-  featured,
-  placement,
-  display_order,
-  published_at
-)
-select
-  seed.slug,
-  seed.title,
-  seed.category,
-  seed.content_type,
-  seed.excerpt,
-  seed.body,
-  seed.image_url,
-  seed.status,
-  seed.featured,
-  seed.placement,
-  seed.display_order,
-  seed.published_at
-from seed_marketing_posts seed
-where not exists (
-  select 1
-  from public.marketing_posts existing
-  where lower(existing.slug) = lower(seed.slug)
-);
 
 drop trigger if exists marketing_posts_set_updated_at on public.marketing_posts;
 create trigger marketing_posts_set_updated_at
@@ -900,7 +1288,10 @@ create policy "Marketing admins can delete posts"
 on public.marketing_posts for delete
 using (public.is_marketing_admin());
 
--- HR-admin managed careers and applications.
+-- =====================================================
+-- JOB OPENINGS
+-- =====================================================
+
 create table if not exists public.job_openings (
   id uuid primary key default gen_random_uuid(),
   slug text not null unique,
@@ -922,8 +1313,8 @@ create table if not exists public.job_openings (
 alter table public.job_openings
 add column if not exists slug text,
 add column if not exists title text,
-add column if not exists department text,
-add column if not exists location text,
+add column if not exists department text not null default 'Unspecified',
+add column if not exists location text not null default 'Unspecified',
 add column if not exists employment_type text not null default 'Full-time',
 add column if not exists description text not null default '',
 add column if not exists image_url text,
@@ -960,7 +1351,7 @@ alter column display_order set not null,
 alter column created_at set not null,
 alter column updated_at set not null;
 
-create unique index if not exists job_openings_slug_idx on public.job_openings (lower(slug));
+create unique index if not exists job_openings_slug_lower_idx on public.job_openings (lower(slug));
 create index if not exists job_openings_status_order_idx on public.job_openings (status, display_order, published_at desc);
 
 drop trigger if exists job_openings_set_updated_at on public.job_openings;
@@ -995,6 +1386,10 @@ drop policy if exists "HR admins can delete job openings" on public.job_openings
 create policy "HR admins can delete job openings"
 on public.job_openings for delete
 using (public.is_hr_admin());
+
+-- =====================================================
+-- JOB APPLICATIONS
+-- =====================================================
 
 create table if not exists public.job_applications (
   id uuid primary key default gen_random_uuid(),
@@ -1076,168 +1471,120 @@ on public.job_applications for delete
 using (public.is_hr_admin());
 
 -- =====================================================
--- Helpdesk media attachments and end-to-end conversation upgrade
+-- JOB APPLICATION RESUME STORAGE
 -- =====================================================
 
-alter table public.tickets
-add column if not exists photo_attachments jsonb not null default '[]'::jsonb;
-
-update public.tickets
-set photo_attachments = coalesce(photo_attachments, '[]'::jsonb);
-
-alter table public.tickets
-alter column photo_attachments set default '[]'::jsonb,
-alter column photo_attachments set not null;
-
-create table if not exists public.ticket_messages (
-  id uuid primary key default gen_random_uuid(),
-  ticket_id text not null references public.tickets(id) on delete cascade,
-  sender_id uuid not null references public.profiles(id) on delete cascade,
-  sender_name text not null,
-  sender_email text,
-  sender_role text not null default 'employee',
-  message text not null default '',
-  attachments jsonb not null default '[]'::jsonb,
-  created_at timestamptz not null default now()
-);
-
-alter table public.ticket_messages
-add column if not exists ticket_id text references public.tickets(id) on delete cascade,
-add column if not exists sender_id uuid references public.profiles(id) on delete cascade,
-add column if not exists sender_name text,
-add column if not exists sender_email text,
-add column if not exists sender_role text not null default 'employee',
-add column if not exists message text not null default '',
-add column if not exists attachments jsonb not null default '[]'::jsonb,
-add column if not exists created_at timestamptz not null default now();
-
-update public.ticket_messages
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'job-resumes',
+  'job-resumes',
+  true,
+  10485760,
+  array[
+    'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+  ]
+)
+on conflict (id) do update
 set
-  sender_name = coalesce(nullif(sender_name, ''), 'MEMPCO User'),
-  sender_role = coalesce(nullif(sender_role, ''), 'employee'),
-  message = coalesce(message, ''),
-  attachments = coalesce(attachments, '[]'::jsonb),
-  created_at = coalesce(created_at, now());
+  public = excluded.public,
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
 
-alter table public.ticket_messages
-alter column ticket_id set not null,
-alter column sender_id set not null,
-alter column sender_name set not null,
-alter column sender_role set not null,
-alter column message set not null,
-alter column attachments set default '[]'::jsonb,
-alter column attachments set not null,
-alter column created_at set not null;
+drop policy if exists "Public can upload job resumes" on storage.objects;
+create policy "Public can upload job resumes"
+on storage.objects for insert
+to anon, authenticated
+with check (bucket_id = 'job-resumes');
 
-create index if not exists ticket_messages_ticket_id_created_at_idx
-on public.ticket_messages (ticket_id, created_at);
-
-create index if not exists ticket_messages_sender_id_idx
-on public.ticket_messages (sender_id);
-
-alter table public.ticket_messages enable row level security;
-
-drop policy if exists "Ticket participants can read ticket messages" on public.ticket_messages;
-create policy "Ticket participants can read ticket messages"
-on public.ticket_messages for select
-using (
-  public.is_admin()
-  or exists (
-    select 1
-    from public.tickets t
-    where t.id = ticket_messages.ticket_id
-      and t.owner_id = auth.uid()
-  )
-);
-
-drop policy if exists "Ticket participants can create ticket messages" on public.ticket_messages;
-create policy "Ticket participants can create ticket messages"
-on public.ticket_messages for insert
-with check (
-  sender_id = auth.uid()
-  and (
-    public.is_admin()
-    or exists (
-      select 1
-      from public.tickets t
-      where t.id = ticket_messages.ticket_id
-        and t.owner_id = auth.uid()
-    )
-  )
-);
-
-drop policy if exists "Superadmins can delete ticket messages" on public.ticket_messages;
-create policy "Superadmins can delete ticket messages"
-on public.ticket_messages for delete
-using (public.is_superadmin());
-
-
+drop policy if exists "Public can read job resumes" on storage.objects;
+create policy "Public can read job resumes"
+on storage.objects for select
+to anon, authenticated
+using (bucket_id = 'job-resumes');
 
 -- =====================================================
--- Reliable superadmin helpdesk deletion and conversation cascade
+-- GRANTS
 -- =====================================================
 
-do $$
-declare
-  fk_name text;
-begin
-  select conname into fk_name
-  from pg_constraint
-  where conrelid = 'public.ticket_messages'::regclass
-    and contype = 'f'
-    and pg_get_constraintdef(oid) ilike '%tickets%';
+grant usage on schema public to anon, authenticated;
 
-  if fk_name is not null then
-    execute format('alter table public.ticket_messages drop constraint %I', fk_name);
-  end if;
+grant select, insert, update, delete on public.profiles to authenticated;
+grant select, insert, update, delete on public.tickets to authenticated;
+grant select, insert, update, delete on public.ticket_messages to authenticated;
+grant select, insert, update, delete on public.user_notifications to authenticated;
+grant select, insert, update, delete on public.other_service_requests to authenticated;
+grant select, insert, update, delete on public.marketing_posts to authenticated;
+grant select on public.marketing_posts to anon;
+grant select, insert, update, delete on public.job_openings to authenticated;
+grant select on public.job_openings to anon;
+grant select, insert, update, delete on public.job_applications to authenticated;
+grant insert on public.job_applications to anon;
 
-  alter table public.ticket_messages
-  add constraint ticket_messages_ticket_id_fkey
-  foreign key (ticket_id)
-  references public.tickets(id)
-  on delete cascade;
-end $$;
-
-create or replace function public.delete_helpdesk_ticket(target_ticket_id text)
-returns boolean
-language plpgsql
-security definer
-set search_path = public
-as $$
-begin
-  if not public.is_superadmin() then
-    raise exception 'Only the super admin can delete tickets.';
-  end if;
-
-  delete from public.ticket_messages
-  where ticket_id = target_ticket_id;
-
-  delete from public.tickets
-  where id = target_ticket_id;
-
-  return true;
-end;
-$$;
-
+grant execute on function public.claim_ticket_lock(text, uuid, text) to authenticated;
+grant execute on function public.release_ticket_lock(text, uuid) to authenticated;
 grant execute on function public.delete_helpdesk_ticket(text) to authenticated;
+grant execute on function public.generate_ticket_id() to authenticated;
+grant execute on function public.generate_other_service_id() to authenticated;
+grant execute on function public.is_admin() to authenticated;
+grant execute on function public.is_superadmin() to authenticated;
+grant execute on function public.is_marketing_admin() to authenticated;
+grant execute on function public.is_hr_admin() to authenticated;
+grant execute on function public.has_portal_role(text[]) to authenticated;
+
+grant usage, select on sequence public.ticket_number_seq to authenticated;
+grant usage, select on sequence public.other_service_number_seq to authenticated;
 
 -- =====================================================
--- Realtime support for helpdesk tickets and conversation
+-- REALTIME SUPPORT
 -- =====================================================
 
 alter table public.tickets replica identity full;
 alter table public.ticket_messages replica identity full;
+alter table public.user_notifications replica identity full;
+alter table public.other_service_requests replica identity full;
 
 do $$
 begin
-  alter publication supabase_realtime add table public.tickets;
+  if exists (select 1 from pg_publication where pubname = 'supabase_realtime') then
+    alter publication supabase_realtime add table public.tickets;
+  end if;
 exception
   when duplicate_object then null;
 end $$;
 
 do $$
 begin
-  alter publication supabase_realtime add table public.ticket_messages;
+  if exists (select 1 from pg_publication where pubname = 'supabase_realtime') then
+    alter publication supabase_realtime add table public.ticket_messages;
+  end if;
 exception
   when duplicate_object then null;
 end $$;
+
+do $$
+begin
+  if exists (select 1 from pg_publication where pubname = 'supabase_realtime') then
+    alter publication supabase_realtime add table public.user_notifications;
+  end if;
+exception
+  when duplicate_object then null;
+end $$;
+
+do $$
+begin
+  if exists (select 1 from pg_publication where pubname = 'supabase_realtime') then
+    alter publication supabase_realtime add table public.other_service_requests;
+  end if;
+exception
+  when duplicate_object then null;
+end $$;
+
+-- =====================================================
+-- IMPORTANT: MAKE YOUR OWN ACCOUNT SUPERADMIN
+-- Replace the email before running this manually if needed:
+-- update public.profiles set role = 'superadmin', status = 'Active' where lower(email) = lower('your-email@example.com');
+-- =====================================================
+
+select 'MEMPCO full updated schema completed successfully.' as result;

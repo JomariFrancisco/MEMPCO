@@ -129,7 +129,7 @@ Implemented now:
 - password reset email
 - password update form
 - server auth callback
-- Next.js proxy protection for `/dashboard` and `/admin-dashboard`
+- Next.js proxy protection for `/employee-dashboard` and `/admin-dashboard`
 - Supabase-backed profile and role checks
 
 Still local demo storage:

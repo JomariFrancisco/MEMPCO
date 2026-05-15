@@ -1,20 +1,26 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse } from 'next/server';
+import {
+  getSupabaseAnonKey,
+  getSupabaseAuthCookieName,
+  getSupabaseUrl,
+  hasSupabaseConfig,
+} from './lib/supabase/config';
 
 const LOGIN_ROUTE = '/LogIn';
 const SUPABASE_PROXY_TIMEOUT_MS = 12000;
 
-const hasSupabaseConfig = () =>
-  Boolean(
-    process.env.NEXT_PUBLIC_SUPABASE_URL &&
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  );
+const normalizePortalRole = (role = '') =>
+  String(role || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[-\s]+/g, '_');
 
 const getRequiredRole = (pathname) => {
   if (pathname.startsWith('/admin-dashboard')) return 'admin';
   if (pathname.startsWith('/marketing-admin')) return 'marketing_admin';
   if (pathname.startsWith('/hr-admin')) return 'hr_admin';
-  if (pathname.startsWith('/dashboard')) return 'employee';
+  if (pathname.startsWith('/employee-dashboard')) return 'employee';
   return null;
 };
 
@@ -26,7 +32,7 @@ const getPortalHomeRoute = (role) => {
   if (isAdminRole(role)) return '/admin-dashboard';
   if (role === 'marketing_admin') return '/marketing-admin';
   if (role === 'hr_admin') return '/hr-admin';
-  return '/dashboard';
+  return '/employee-dashboard';
 };
 
 const hasRequiredRole = (role, requiredRole) => {
@@ -76,9 +82,12 @@ export async function proxy(request) {
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    getSupabaseUrl(),
+    getSupabaseAnonKey(),
     {
+      cookieOptions: {
+        name: getSupabaseAuthCookieName(),
+      },
       cookies: {
         getAll() {
           return request.cookies.getAll();
@@ -125,7 +134,9 @@ export async function proxy(request) {
         .eq('id', user.id)
         .maybeSingle()
     );
-    profile = result.data;
+    profile = result.data
+      ? { ...result.data, role: normalizePortalRole(result.data.role) }
+      : null;
   } catch {
     return requiredRole ? redirectWithCookies(request, response, LOGIN_ROUTE) : response;
   }
@@ -150,5 +161,5 @@ export async function proxy(request) {
 }
 
 export const config = {
-  matcher: ['/LogIn', '/dashboard/:path*', '/admin-dashboard/:path*', '/marketing-admin/:path*', '/hr-admin/:path*'],
+  matcher: ['/LogIn', '/employee-dashboard/:path*', '/admin-dashboard/:path*', '/marketing-admin/:path*', '/hr-admin/:path*'],
 };

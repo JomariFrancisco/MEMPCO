@@ -364,6 +364,50 @@ button {
   transform: translateY(-1px);
 }
 
+.password-field {
+  position: relative;
+  width: 100%;
+}
+
+.password-field input {
+  padding-right: 2.45rem;
+}
+
+.password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 0.82rem;
+  width: auto;
+  height: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #6b7280;
+  box-shadow: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transform: translateY(-50%);
+}
+
+.password-toggle:hover,
+.password-toggle:focus-visible {
+  color: var(--red-500);
+  background: transparent;
+}
+
+.password-toggle:focus-visible {
+  outline: 2px solid rgba(220, 38, 38, 0.38);
+  outline-offset: 3px;
+}
+
+.password-toggle-icon {
+  width: 1rem;
+  height: 1rem;
+  stroke-width: 2;
+}
+
 .auth-form-row {
   display: flex;
   align-items: center;
@@ -443,6 +487,11 @@ button {
 .auth-submit-btn:disabled:hover {
   transform: none;
   filter: none;
+}
+
+.login-submit-btn {
+  width: min(100%, 320px);
+  align-self: center;
 }
 
 .auth-switch-text {

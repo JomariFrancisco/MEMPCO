@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 import { listPublishedMemberStories } from '@/lib/marketing/marketingPosts';
 import './MemberStories.css';
 
-const COMPANY_YOUTUBE_URL = 'https://www.youtube.com/@mempcoph3541';
+const COMPANY_FACEBOOK_URL = 'https://www.facebook.com/groups/mempcopreneurs';
 
 const STORIES = [
   {
@@ -21,7 +21,7 @@ const STORIES = [
       "Her inspiring success story reminds us that no dream is too big when paired with hard work and the right support system. MEMPCO is proud to be part of Amelita's journey toward growth and stability—a shining example of empowerment through cooperation and perseverance.",
     ],
     tags: ['#MEMPCOStories', '#CooperativePride', '#WomenInBusiness', '#OFWtoEntrepreneur', '#InspiringJourney', '#MEMPCOSupportsSuccess'],
-    videoUrl: 'https://youtu.be/QwMlGNOP2gY?si=Vuc8E9pATomR654n',
+    facebookUrl: COMPANY_FACEBOOK_URL,
   },
   {
     text: 'I started with a humble ukay-ukay and used my MEMPCO loan to venture into a junk shop business. Today, my business employs more than 10 workers and has expanded to multiple locations.',
@@ -36,7 +36,7 @@ const STORIES = [
       "Today, Edna's business continues to thrive, employing more than 10 workers and expanding into multiple locations, including areas in La Paz Arc and Pamucutan. From a small, risk-filled beginning to a booming and sustainable enterprise, she is now able to support her family, sustain her employees, and even enjoy the fruits of her hard work through travel and a stable lifestyle.",
     ],
     tags: ['#MEMPCOStories', '#CooperativePride', '#WomenInBusiness', '#FromHumbleBeginnings', '#MEMPCOSuccess'],
-    videoUrl: 'https://youtu.be/qTQaPQVCyHY?si=GyBn-USDbqnJFC8P',
+    facebookUrl: COMPANY_FACEBOOK_URL,
   },
   {
     text: "With MEMPCO's support, I strengthened my sari-sari store and rubber buying business, and even acquired a truck and a car to help sustain and grow my livelihood for my family.",
@@ -51,7 +51,7 @@ const STORIES = [
       "As a proud MEMPCO member, Girlee continues to inspire with her resilience and vision for a brighter future. Her journey proves that when hard work meets cooperative strength, success knows no limits. Let's celebrate Girlee's achievements and may her story spark motivation for more aspiring entrepreneurs to dream big and never give up!",
     ],
     tags: ['#MEMPCOStories', '#Entrepreneurship', '#CooperativeSuccess', '#WomenInBusiness', '#InspiringJourneys'],
-    videoUrl: 'https://youtu.be/ublDz2mWQP0?si=vUfEwHut8r9eqw6W',
+    facebookUrl: COMPANY_FACEBOOK_URL,
   },
 ];
 
@@ -64,7 +64,7 @@ const toMemberStory = (post) => ({
   emoji: '',
   fullStory: post.fullArticle?.length ? post.fullArticle : [post.excerpt || ''],
   tags: post.tags?.length ? post.tags : ['#MEMPCOStories'],
-  videoUrl: post.externalUrl || COMPANY_YOUTUBE_URL,
+  facebookUrl: COMPANY_FACEBOOK_URL,
 });
 
 /* ── Icons ── */
@@ -109,10 +109,10 @@ function ReadMoreIcon() {
   );
 }
 
-function YouTubeIcon() {
+function FacebookIcon() {
   return (
     <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <path d="M21.58 7.2a2.72 2.72 0 0 0-1.91-1.93C17.98 4.82 12 4.82 12 4.82s-5.98 0-7.67.45A2.72 2.72 0 0 0 2.42 7.2 28.36 28.36 0 0 0 2 12a28.36 28.36 0 0 0 .42 4.8 2.72 2.72 0 0 0 1.91 1.93c1.69.45 7.67.45 7.67.45s5.98 0 7.67-.45a2.72 2.72 0 0 0 1.91-1.93A28.36 28.36 0 0 0 22 12a28.36 28.36 0 0 0-.42-4.8ZM10 15.18V8.82L15.5 12 10 15.18Z" />
+      <path d="M22 12.06C22 6.5 17.52 2 12 2S2 6.5 2 12.06C2 17.08 5.66 21.25 10.44 22v-7.03H7.9v-2.91h2.54V9.84c0-2.52 1.49-3.91 3.77-3.91 1.09 0 2.23.2 2.23.2v2.47h-1.25c-1.24 0-1.63.78-1.63 1.57v1.89h2.77l-.44 2.91h-2.33V22C18.34 21.25 22 17.08 22 12.06Z" />
     </svg>
   );
 }
@@ -249,16 +249,13 @@ function StoryModal({ story, onClose }) {
 
           <div className="ms-modal__actions">
             <a
-              href={story.videoUrl || COMPANY_YOUTUBE_URL}
+              href={story.facebookUrl || COMPANY_FACEBOOK_URL}
               target="_blank"
               rel="noopener noreferrer"
               className="ms-modal__btn ms-modal__btn--primary"
             >
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-                <circle cx="7" cy="7" r="6" stroke="currentColor" strokeWidth="1.4" />
-                <path d="M5.5 4.8l4 2.2-4 2.2V4.8z" fill="currentColor" />
-              </svg>
-              Watch Story
+              <FacebookIcon />
+              Visit Facebook Group
             </a>
 
             <button
@@ -451,14 +448,14 @@ export default function MemberStories() {
         </div>
 
         <a
-          href={COMPANY_YOUTUBE_URL}
+          href={COMPANY_FACEBOOK_URL}
           target="_blank"
           rel="noopener noreferrer"
           className="ms-fb-cta"
-          aria-label="Visit MEMPCO on YouTube"
+          aria-label="Visit MEMPCOpreneurs Facebook group"
         >
-          <YouTubeIcon />
-          <span>Visit MEMPCO YouTube</span>
+          <FacebookIcon />
+          <span>Visit MEMPCOpreneurs</span>
           <ReadMoreIcon />
         </a>
       </section>

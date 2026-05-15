@@ -5,7 +5,11 @@ import {
   toPortalProfileRow,
   toPortalUserMetadata,
 } from '@/lib/auth/portalAccountSchema';
-import { createAdminClient } from '@/lib/supabase/admin';
+import {
+  SUPABASE_ADMIN_CONFIG_ERROR,
+  createAdminClient,
+  hasSupabaseAdminConfig,
+} from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 
 const BASE_PROFILE_COLUMNS =
@@ -96,6 +100,14 @@ export async function POST(request) {
     if (auth.response) return auth.response;
 
     const account = parsePortalAccountPayload(await parseRequestJson(request));
+
+    if (!hasSupabaseAdminConfig()) {
+      return NextResponse.json(
+        { error: SUPABASE_ADMIN_CONFIG_ERROR },
+        { status: 503 }
+      );
+    }
+
     const supabaseAdmin = createAdminClient();
 
     const { data: created, error: createError } =
@@ -146,7 +158,6 @@ export async function PATCH(request) {
     if (auth.response) return auth.response;
 
     const account = parsePortalAccountUpdatePayload(await parseRequestJson(request));
-    const supabaseAdmin = createAdminClient();
 
     if (account.id === auth.user.id && account.role !== 'superadmin') {
       return NextResponse.json(
@@ -154,6 +165,58 @@ export async function PATCH(request) {
         { status: 400 }
       );
     }
+
+    if (!hasSupabaseAdminConfig()) {
+      const supabase = await createClient();
+
+      if (account.password) {
+        return NextResponse.json(
+          { error: `${SUPABASE_ADMIN_CONFIG_ERROR} Password changes require Supabase admin access.` },
+          { status: 503 }
+        );
+      }
+
+      const { data: existingProfile, error: existingProfileError } = await supabase
+        .from('profiles')
+        .select('email')
+        .eq('id', account.id)
+        .maybeSingle();
+
+      if (existingProfileError) {
+        return NextResponse.json(
+          { error: existingProfileError.message || 'Unable to verify current user profile.' },
+          { status: 400 }
+        );
+      }
+
+      if (
+        existingProfile?.email &&
+        existingProfile.email.toLowerCase() !== account.email.toLowerCase()
+      ) {
+        return NextResponse.json(
+          { error: `${SUPABASE_ADMIN_CONFIG_ERROR} Email changes require Supabase admin access.` },
+          { status: 503 }
+        );
+      }
+
+      const profileRow = toPortalProfileRow(account, account.id);
+      const { data: profile, error: updateError } = await saveProfileRow(
+        supabase,
+        profileRow,
+        { mode: 'update', userId: account.id }
+      );
+
+      if (updateError) {
+        return NextResponse.json(
+          { error: updateError.message || 'Unable to update user profile.' },
+          { status: 400 }
+        );
+      }
+
+      return NextResponse.json({ profile });
+    }
+
+    const supabaseAdmin = createAdminClient();
 
     const authUpdates = {
       email: account.email,
@@ -216,6 +279,13 @@ export async function DELETE(request) {
       return NextResponse.json(
         { error: 'You cannot delete your own superadmin account.' },
         { status: 400 }
+      );
+    }
+
+    if (!hasSupabaseAdminConfig()) {
+      return NextResponse.json(
+        { error: SUPABASE_ADMIN_CONFIG_ERROR },
+        { status: 503 }
       );
     }
 

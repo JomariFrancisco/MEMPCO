@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   BriefcaseBusiness,
@@ -53,13 +53,16 @@ import {
 } from '@/lib/auth/portalAuth';
 import {
   claimTicketLock,
+  canTicketAcceptMessages,
   createTicketMessage,
   deleteTicket,
   getTicketMessages,
   getTickets,
+  isTicketBeingHandled,
   releaseTicketLock,
   subscribeToTicket,
   subscribeToTicketMessages,
+  subscribeToTickets,
   updateTicket,
 } from '@/lib/tickets/portalTickets';
 import './admin-dashboard.css';
@@ -400,7 +403,9 @@ const buildSummary = (tickets) => {
 
 const breakdown = (tickets, key, source = []) => {
   const counts = countBy(tickets, key);
-  const names = source.length ? source : Object.keys(counts);
+  const names = source.length
+    ? Array.from(new Set([...source, ...Object.keys(counts)]))
+    : Object.keys(counts);
 
   return names
     .map((name) => ({ name, count: counts[name] || 0 }))
@@ -433,33 +438,20 @@ const buildDateBreakdown = (tickets, mode) => {
   const buckets = new Map();
 
   tickets.forEach((ticket) => {
-    const submittedTime = getSubmittedTime(ticket);
-    if (!submittedTime) return;
+    getTicketReportEvents(ticket).forEach((event) => {
+      const period = getPeriodBucketForTimestamp(event.timestamp, mode);
 
-    const submittedDate = new Date(submittedTime);
-    let key = '';
-    let name = '';
+      if (!period) return;
 
-    if (mode === 'day') {
-      const day = new Date(submittedDate);
-      day.setHours(0, 0, 0, 0);
-      key = day.toISOString();
-      name = formatReportDate(day, { month: 'short', day: 'numeric', year: 'numeric' });
-    } else if (mode === 'week') {
-      const weekStart = getWeekStart(submittedDate);
-      const weekEnd = new Date(weekStart);
-      weekEnd.setDate(weekStart.getDate() + 6);
-      key = weekStart.toISOString();
-      name = `${formatReportDate(weekStart, { month: 'short', day: 'numeric' })} - ${formatReportDate(weekEnd, { month: 'short', day: 'numeric', year: 'numeric' })}`;
-    } else {
-      const month = new Date(submittedDate.getFullYear(), submittedDate.getMonth(), 1);
-      key = month.toISOString();
-      name = formatReportDate(month, { month: 'long', year: 'numeric' });
-    }
+      const current = buckets.get(period.key) || {
+        name: period.name,
+        count: 0,
+        timestamp: period.timestamp,
+      };
 
-    const current = buckets.get(key) || { name, count: 0, timestamp: new Date(key).getTime() };
-    current.count += 1;
-    buckets.set(key, current);
+      current.count += 1;
+      buckets.set(period.key, current);
+    });
   });
 
   return [...buckets.values()].sort((a, b) => b.timestamp - a.timestamp);
@@ -473,10 +465,138 @@ const getDateKey = (date) => {
   return `${year}-${month}-${day}`;
 };
 
+const getTicketResolvedTime = (ticket) => {
+  if (!isTicketResolved(ticket)) return 0;
+
+  const raw = ticket.workEndedAt || ticket.adminUpdatedAt || ticket.lastUpdated;
+  const parsed = new Date(raw || '').getTime();
+
+  return Number.isNaN(parsed) ? 0 : parsed;
+};
+
+const getTicketMovedDateTime = (ticket) => {
+  const storedMovedDate = ticket?.movedDateAt || ticket?.movedDate || ticket?.movedAt || ticket?.dateLabel;
+  const storedParsed = new Date(storedMovedDate || '').getTime();
+
+  if (!Number.isNaN(storedParsed)) return storedParsed;
+
+  if (!isMovedDateTicket(ticket)) return 0;
+
+  const fallback = ticket.adminUpdatedAt || ticket.lastUpdated || ticket.workStartedAt || ticket.createdAt || ticket.date;
+  const fallbackParsed = new Date(fallback || '').getTime();
+
+  return Number.isNaN(fallbackParsed) ? 0 : fallbackParsed;
+};
+
+const formatReportTimestamp = (timestamp, fallback = 'Not recorded') => {
+  if (!timestamp) return fallback;
+
+  return new Date(timestamp).toLocaleString();
+};
+
+const getTicketMovedDateLabel = (ticket) =>
+  formatReportTimestamp(getTicketMovedDateTime(ticket));
+
+const getTicketResolvedDateLabel = (ticket) =>
+  formatReportTimestamp(getTicketResolvedTime(ticket));
+
+const createTicketReportEvent = (ticket, { timestamp, label, type, status }) => {
+  if (!timestamp) return null;
+
+  const reportDate = new Date(timestamp);
+
+  if (Number.isNaN(reportDate.getTime())) return null;
+
+  const reportStatus = status || label;
+
+  return {
+    ticket,
+    key: getDateKey(reportDate),
+    timestamp,
+    label,
+    type,
+    reportDate,
+    reportDateLabel: formatReportTimestamp(timestamp),
+    reportStatus,
+  };
+};
+
+const getTicketStatusHistoryEvents = (ticket) => {
+  const history = Array.isArray(ticket?.statusHistory) ? ticket.statusHistory : [];
+
+  return history
+    .map((entry) => {
+      const timestamp = new Date(entry?.timestamp || entry?.date || '').getTime();
+      const status = entry?.status || entry?.label || '';
+      const normalizedStatus = normalizeTicketStatus(status);
+      const type =
+        entry?.type ||
+        (normalizedStatus === 'moved date'
+          ? 'moved-date'
+          : normalizedStatus === 'resolved'
+            ? 'resolved'
+            : normalizedStatus === 'submitted'
+              ? 'submitted'
+              : 'status');
+
+      return createTicketReportEvent(ticket, {
+        timestamp,
+        label: entry?.label || status || 'Status Update',
+        type,
+        status: status || entry?.label || 'Status Update',
+      });
+    })
+    .filter(Boolean);
+};
+
+const getTicketReportEvents = (ticket) => {
+  const historyEvents = getTicketStatusHistoryEvents(ticket);
+
+  if (historyEvents.length) {
+    return historyEvents;
+  }
+
+  const events = [];
+  const submittedTime = getSubmittedTime(ticket);
+  const movedDateTime = getTicketMovedDateTime(ticket);
+
+  if (movedDateTime) {
+    events.push(createTicketReportEvent(ticket, {
+      timestamp: movedDateTime,
+      label: 'Moved Date',
+      type: 'moved-date',
+      status: 'Moved Date',
+    }));
+  } else if (submittedTime) {
+    events.push(createTicketReportEvent(ticket, {
+      timestamp: submittedTime,
+      label: 'Submitted',
+      type: 'submitted',
+      status: 'Submitted',
+    }));
+  }
+
+  const resolvedTime = getTicketResolvedTime(ticket);
+
+  if (resolvedTime) {
+    events.push(createTicketReportEvent(ticket, {
+      timestamp: resolvedTime,
+      label: 'Resolved',
+      type: 'resolved',
+      status: 'Resolved',
+    }));
+  }
+
+  return events.filter(Boolean);
+};
+
 const getTicketCalendarMonth = (tickets) => {
   const latestTicketTime = tickets.reduce((latest, ticket) => {
-    const submittedTime = getSubmittedTime(ticket);
-    return submittedTime > latest ? submittedTime : latest;
+    const latestEventTime = getTicketReportEvents(ticket).reduce(
+      (eventLatest, event) => Math.max(eventLatest, event.timestamp),
+      0
+    );
+    return latestEventTime > latest ? latestEventTime : latest;
   }, 0);
 
   const date = latestTicketTime ? new Date(latestTicketTime) : new Date();
@@ -497,12 +617,9 @@ const buildCalendarMonth = (tickets, monthDate) => {
   gridStart.setDate(monthStart.getDate() - monthStart.getDay());
 
   tickets.forEach((ticket) => {
-    const submittedTime = getSubmittedTime(ticket);
-    if (!submittedTime) return;
-
-    const submittedDate = new Date(submittedTime);
-    const key = getDateKey(submittedDate);
-    counts.set(key, (counts.get(key) || 0) + 1);
+    getTicketReportEvents(ticket).forEach((event) => {
+      counts.set(event.key, (counts.get(event.key) || 0) + 1);
+    });
   });
 
   const todayKey = getDateKey(new Date());
@@ -689,6 +806,7 @@ const openPrintDocument = (title, body) => {
           .note { min-height: 45px; max-height: 74px; padding: 7px 8px; border: 1px solid #e5e7eb; border-radius: 7px; white-space: pre-wrap; line-height: 1.35; font-size: 10.5px; overflow: hidden; }
           .report-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-top: 8px; }
           .report-list.single { grid-template-columns: 1fr; margin-top: 0; }
+          .report-list.period-volume-list { grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 0; }
           .report-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px; align-items: center; padding: 7px 8px; border: 1px solid #e5e7eb; border-radius: 7px; background: #f8fafc; font-size: 10.5px; }
           .report-row strong { min-width: 28px; text-align: right; color: #dc2626; }
           .report-row em { min-width: 32px; color: #64748b; font-style: normal; font-weight: 800; text-align: right; }
@@ -698,17 +816,36 @@ const openPrintDocument = (title, body) => {
           .detail-table th, .detail-table td { border: 1px solid #d1d5db; padding: 4px 5px; text-align: left; vertical-align: top; overflow-wrap: anywhere; }
           .detail-table th { background: #111827; color: #fff; font-size: 7.5px; text-transform: uppercase; letter-spacing: 0.04em; }
           .detail-table tr { page-break-inside: avoid; }
-          .detail-table th:nth-child(1), .detail-table td:nth-child(1) { width: 9%; }
-          .detail-table th:nth-child(2), .detail-table td:nth-child(2) { width: 10%; }
-          .detail-table th:nth-child(3), .detail-table td:nth-child(3) { width: 11%; }
-          .detail-table th:nth-child(4), .detail-table td:nth-child(4) { width: 8%; }
-          .detail-table th:nth-child(5), .detail-table td:nth-child(5) { width: 10%; }
-          .detail-table th:nth-child(6), .detail-table td:nth-child(6) { width: 10%; }
-          .detail-table th:nth-child(7), .detail-table td:nth-child(7) { width: 10%; }
-          .detail-table th:nth-child(8), .detail-table td:nth-child(8) { width: 12%; }
-          .detail-table th:nth-child(9), .detail-table td:nth-child(9) { width: 7%; }
-          .detail-table th:nth-child(10), .detail-table td:nth-child(10) { width: 5%; }
-          .detail-table th:nth-child(11), .detail-table td:nth-child(11) { width: 8%; }
+          .detail-table th:nth-child(1), .detail-table td:nth-child(1) { width: 8%; }
+          .detail-table th:nth-child(2), .detail-table td:nth-child(2) { width: 9%; }
+          .detail-table th:nth-child(3), .detail-table td:nth-child(3) { width: 9%; }
+          .detail-table th:nth-child(4), .detail-table td:nth-child(4) { width: 9%; }
+          .detail-table th:nth-child(5), .detail-table td:nth-child(5) { width: 9%; }
+          .detail-table th:nth-child(6), .detail-table td:nth-child(6) { width: 6%; }
+          .detail-table th:nth-child(7), .detail-table td:nth-child(7) { width: 8%; }
+          .detail-table th:nth-child(8), .detail-table td:nth-child(8) { width: 8%; }
+          .detail-table th:nth-child(9), .detail-table td:nth-child(9) { width: 8%; }
+          .detail-table th:nth-child(10), .detail-table td:nth-child(10) { width: 10%; }
+          .detail-table th:nth-child(11), .detail-table td:nth-child(11) { width: 6%; }
+          .detail-table th:nth-child(12), .detail-table td:nth-child(12) { width: 5%; }
+          .detail-table th:nth-child(13), .detail-table td:nth-child(13) { width: 5%; }
+          .period-detail-table { font-size: 7.4px; line-height: 1.18; }
+          .period-detail-table th, .period-detail-table td { padding: 3px 3.5px; }
+          .period-detail-table th { font-size: 6.7px; }
+          .period-detail-table th:nth-child(1), .period-detail-table td:nth-child(1) { width: 8%; }
+          .period-detail-table th:nth-child(2), .period-detail-table td:nth-child(2) { width: 6%; }
+          .period-detail-table th:nth-child(3), .period-detail-table td:nth-child(3) { width: 7%; }
+          .period-detail-table th:nth-child(4), .period-detail-table td:nth-child(4) { width: 8%; }
+          .period-detail-table th:nth-child(5), .period-detail-table td:nth-child(5) { width: 8%; }
+          .period-detail-table th:nth-child(6), .period-detail-table td:nth-child(6) { width: 8%; }
+          .period-detail-table th:nth-child(7), .period-detail-table td:nth-child(7) { width: 8%; }
+          .period-detail-table th:nth-child(8), .period-detail-table td:nth-child(8) { width: 7%; }
+          .period-detail-table th:nth-child(9), .period-detail-table td:nth-child(9) { width: 8%; }
+          .period-detail-table th:nth-child(10), .period-detail-table td:nth-child(10) { width: 8%; }
+          .period-detail-table th:nth-child(11), .period-detail-table td:nth-child(11) { width: 10%; }
+          .period-detail-table th:nth-child(12), .period-detail-table td:nth-child(12) { width: 5%; }
+          .period-detail-table th:nth-child(13), .period-detail-table td:nth-child(13) { width: 4%; }
+          .period-detail-table th:nth-child(14), .period-detail-table td:nth-child(14) { width: 5%; }
           .print-note { margin-top: 7px; color: #64748b; font-size: 9.5px; font-weight: 700; }
           @media print {
             body {
@@ -749,6 +886,8 @@ const printResolvedTicket = (ticket) => {
     ['Support Category', ticket.supportCategory || 'Unspecified'],
     ['Concern Type', ticket.concernType || 'Unspecified'],
     ['Submitted', ticket.createdAt || ticket.date || 'Not provided'],
+    ['Moved Date', getTicketMovedDateLabel(ticket)],
+    ['Resolved Date', getTicketResolvedDateLabel(ticket)],
     ['Resolved / Updated', ticket.adminUpdatedAt || ticket.lastUpdated || 'Not provided'],
     ['Assigned ICT Staff', ticket.technician || 'Unassigned'],
     ['Device / System', ticket.deviceName || 'Not provided'],
@@ -792,113 +931,172 @@ const printResolvedTicket = (ticket) => {
   openPrintDocument(`Resolved Ticket ${ticket.id}`, body);
 };
 
-const printReportSummary = ({ mode, title, items, total }) => {
-  const periodLabel = mode === 'day' ? 'Daily' : mode === 'week' ? 'Weekly' : 'Monthly';
-  const printableItems = items.slice(0, 30);
-  const hiddenCount = Math.max(0, items.length - printableItems.length);
-  const body = `
-    <main class="print-page">
-      ${getPrintLetterhead()}
-      <section class="doc-head">
-        <h2>${escapePrintHtml(periodLabel)} Ticket Report</h2>
-        <div class="meta">${escapePrintHtml(title)}<br />Printed ${escapePrintHtml(new Date().toLocaleString())}</div>
-      </section>
-      <section class="grid">
-        <div class="field"><span>Total Tickets</span><strong>${escapePrintHtml(total)}</strong></div>
-        <div class="field"><span>Periods Included</span><strong>${escapePrintHtml(items.length)}</strong></div>
-        <div class="field"><span>Report Type</span><strong>${escapePrintHtml(periodLabel)}</strong></div>
-        <div class="field"><span>Prepared By</span><strong>IT Helpdesk Admin</strong></div>
-      </section>
-      <h3 class="section-title">${escapePrintHtml(title)}</h3>
-      <section class="report-list">
-        ${printableItems.map((item) => {
-            const percent = total ? Math.round((item.count / total) * 100) : 0;
-            return `
-              <div class="report-row">
-                <span>${escapePrintHtml(item.name)}</span>
-                <strong>${escapePrintHtml(item.count)}</strong>
-                <em>${escapePrintHtml(percent)}%</em>
-              </div>
-            `;
-          }).join('')}
-      </section>
-      ${hiddenCount ? `<p class="print-note">Showing the latest ${printableItems.length} periods to keep this report on one page. ${hiddenCount} older period${hiddenCount === 1 ? '' : 's'} not shown.</p>` : ''}
-    </main>
-  `;
+const getPeriodBucketForTimestamp = (timestamp, mode) => {
+  if (!timestamp) return null;
 
-  openPrintDocument(`${periodLabel} Ticket Report`, body);
+  const date = new Date(timestamp);
+
+  if (Number.isNaN(date.getTime())) return null;
+
+  if (mode === 'week') {
+    const weekStart = getWeekStart(date);
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 6);
+
+    return {
+      key: weekStart.toISOString(),
+      name: `${formatReportDate(weekStart, { month: 'short', day: 'numeric' })} - ${formatReportDate(weekEnd, { month: 'short', day: 'numeric', year: 'numeric' })}`,
+      timestamp: weekStart.getTime(),
+    };
+  }
+
+  if (mode === 'month') {
+    const month = new Date(date.getFullYear(), date.getMonth(), 1);
+
+    return {
+      key: month.toISOString(),
+      name: formatReportDate(month, { month: 'long', year: 'numeric' }),
+      timestamp: month.getTime(),
+    };
+  }
+
+  const day = new Date(date);
+  day.setHours(0, 0, 0, 0);
+
+  return {
+    key: day.toISOString(),
+    name: formatReportDate(day, { month: 'short', day: 'numeric', year: 'numeric' }),
+    timestamp: day.getTime(),
+  };
 };
 
-const getMonthlyReportData = (tickets, monthDate) => {
+const buildDetailedPeriodEvents = (tickets = [], mode = 'day') =>
+  tickets
+    .flatMap((ticket) =>
+      getTicketReportEvents(ticket).map((event) => {
+        const period = getPeriodBucketForTimestamp(event.timestamp, mode);
+
+        return period
+          ? {
+              ...event,
+              ticket,
+              periodKey: period.key,
+              periodName: period.name,
+              periodTimestamp: period.timestamp,
+            }
+          : null;
+      })
+    )
+    .filter(Boolean)
+    .sort(
+      (a, b) =>
+        b.periodTimestamp - a.periodTimestamp ||
+        b.timestamp - a.timestamp ||
+        String(a.ticket.id || '').localeCompare(String(b.ticket.id || ''))
+    );
+
+const getReportEventRowsForMonth = (tickets = [], monthDate) => {
   const target = new Date(monthDate);
   const year = target.getFullYear();
   const month = target.getMonth();
-  const monthTitle = formatReportDate(new Date(year, month, 1), { month: 'long', year: 'numeric' });
-  const monthlyTickets = tickets.filter((ticket) => {
-    const submittedTime = getSubmittedTime(ticket);
-    if (!submittedTime) return false;
 
-    const submittedDate = new Date(submittedTime);
-    return submittedDate.getFullYear() === year && submittedDate.getMonth() === month;
-  }).sort((a, b) => getSubmittedTime(a) - getSubmittedTime(b) || a.id.localeCompare(b.id));
+  return tickets
+    .flatMap((ticket) => getTicketReportEvents(ticket))
+    .filter((event) => {
+      if (!event?.timestamp) return false;
 
-  return { monthTitle, monthlyTickets };
+      const eventDate = new Date(event.timestamp);
+      return eventDate.getFullYear() === year && eventDate.getMonth() === month;
+    })
+    .sort(
+      (a, b) =>
+        a.timestamp - b.timestamp ||
+        String(a.ticket?.id || '').localeCompare(String(b.ticket?.id || '')) ||
+        String(a.type || '').localeCompare(String(b.type || ''))
+    );
 };
 
-const getTicketField = (value, fallback = 'Not provided') => {
-  const normalized = String(value ?? '').trim();
-  return normalized || fallback;
+const getUniqueTicketsFromPeriodEvents = (events = []) => {
+  const ticketMap = new Map();
+
+  events.forEach((event) => {
+    if (event?.ticket?.id && !ticketMap.has(event.ticket.id)) {
+      ticketMap.set(event.ticket.id, event.ticket);
+    }
+  });
+
+  return [...ticketMap.values()];
 };
 
-const monthlyTicketColumns = [
-  ['Ticket ID', (ticket) => ticket.id],
-  ['Submitted', (ticket) => getTicketField(ticket.createdAt || ticket.date)],
-  ['Name', (ticket) => getTicketField(ticket.requester || ticket.ownerEmail, 'Employee')],
-  ['Employee ID', (ticket) => getTicketField(ticket.employeeId)],
-  ['Branch', (ticket) => getTicketField(ticket.branch, 'Unspecified')],
-  ['Department', (ticket) => getTicketField(ticket.department, 'Unspecified')],
-  ['Category', (ticket) => getTicketField(ticket.supportCategory, 'Unspecified')],
-  ['Concern', (ticket) => getTicketField(ticket.concernType, 'Unspecified')],
-  ['Status', (ticket) => getTicketField(ticket.status, 'Created')],
-  ['SLA', (ticket) => getTicketField(ticket.sla, 'Low')],
-  ['Technician', (ticket) => getTicketField(ticket.technician, 'Unassigned')],
-  ['Description', (ticket) => getTicketField(ticket.description, '')],
-  ['Action Taken', (ticket) => getTicketField(ticket.actionTaken, '')],
-  ['Resolution', (ticket) => getTicketField(ticket.resolution, '')],
-  ['Admin Remarks', (ticket) => getTicketField(ticket.adminRemarks, '')],
-];
+const buildPeriodPrintOptions = (tickets = [], mode = 'day') => {
+  const periodMap = new Map();
 
-const monthlyPrintColumns = monthlyTicketColumns.slice(0, 11);
+  buildDetailedPeriodEvents(tickets, mode).forEach((event) => {
+    if (!event?.periodKey) return;
 
-const buildMonthlyTicketTableRows = (tickets, columns) =>
-  tickets.length
-    ? tickets.map((ticket) => `
+    const current = periodMap.get(event.periodKey) || {
+      key: event.periodKey,
+      name: event.periodName,
+      timestamp: event.periodTimestamp,
+      count: 0,
+      ticketIds: new Set(),
+    };
+
+    current.count += 1;
+
+    if (event.ticket?.id) {
+      current.ticketIds.add(event.ticket.id);
+    }
+
+    periodMap.set(event.periodKey, current);
+  });
+
+  return [...periodMap.values()]
+    .map((item) => ({
+      key: item.key,
+      name: item.name,
+      timestamp: item.timestamp,
+      count: item.count,
+      ticketCount: item.ticketIds.size,
+    }))
+    .sort((a, b) => b.timestamp - a.timestamp || a.name.localeCompare(b.name));
+};
+
+const buildPeriodEventTableRows = (events, columns) =>
+  events.length
+    ? events.map((event) => `
         <tr>
-          ${columns.map(([, getValue]) => `<td>${escapePrintHtml(getValue(ticket))}</td>`).join('')}
+          ${columns.map(([, getValue]) => `<td>${escapePrintHtml(getValue(event))}</td>`).join('')}
         </tr>
       `).join('')
-    : `<tr><td colspan="${columns.length}">No tickets submitted for this month.</td></tr>`;
+    : `<tr><td colspan="${columns.length}">No ticket events found for this report.</td></tr>`;
 
-const printMonthlyConsolidatedReport = (tickets, monthDate) => {
-  const { monthTitle, monthlyTickets } = getMonthlyReportData(tickets, monthDate);
-  const monthlySummary = buildSummary(monthlyTickets);
-  const technicianItems = TECHNICIANS
-    .map((name) => ({
-      name,
-      count: monthlyTickets.filter((ticket) => (ticket.technician || 'Unassigned') === name).length,
-    }))
-    .filter((item) => item.count > 0);
-  const escalationItems = ESCALATION_PARTNERS.map((name) => ({
-    name,
-    count: monthlyTickets.filter(
-      (ticket) => ticket.status === 'Escalated' && (ticket.technician || '') === name
-    ).length,
-  })).filter((item) => item.count > 0);
-  const statusItems = breakdown(monthlyTickets, 'status', TICKET_STATUSES).slice(0, 6);
-  const categoryItems = breakdown(monthlyTickets, 'supportCategory', SUPPORT_CATEGORIES).slice(0, 6);
-  const branchItems = breakdown(monthlyTickets, 'branch', BRANCHES).slice(0, 6);
-  const row = (item, total = monthlyTickets.length) => {
-    const percent = total ? Math.round((item.count / total) * 100) : 0;
+const printReportSummary = ({
+  mode,
+  title,
+  items,
+  total,
+  tickets = [],
+  selectedPeriodKey = '',
+  selectedPeriodName = '',
+}) => {
+  const periodLabel = mode === 'day' ? 'Daily' : mode === 'week' ? 'Weekly' : 'Monthly';
+  const allDetailedEvents = buildDetailedPeriodEvents(tickets, mode);
+  const detailedEvents = selectedPeriodKey
+    ? allDetailedEvents.filter((event) => event.periodKey === selectedPeriodKey)
+    : allDetailedEvents;
+  const uniqueTickets = getUniqueTicketsFromPeriodEvents(detailedEvents);
+  const detailedSummary = buildSummary(uniqueTickets);
+  const submittedCount = detailedEvents.filter((event) => event.type === 'submitted').length;
+  const movedDateCount = detailedEvents.filter((event) => event.type === 'moved-date').length;
+  const resolvedEventCount = detailedEvents.filter((event) => event.type === 'resolved').length;
+  const periodItems = selectedPeriodKey
+    ? [{ name: selectedPeriodName || title, count: detailedEvents.length }]
+    : (items?.length ? items : buildDateBreakdown(tickets, mode));
+  const reportTotal = uniqueTickets.length || total || 0;
+  const row = (item, totalCount = reportTotal) => {
+    const percent = totalCount ? Math.round((item.count / totalCount) * 100) : 0;
+
     return `
       <div class="report-row">
         <span>${escapePrintHtml(item.name)}</span>
@@ -907,30 +1105,64 @@ const printMonthlyConsolidatedReport = (tickets, monthDate) => {
       </div>
     `;
   };
+  const technicianItems = TECHNICIANS
+    .map((name) => ({
+      name,
+      count: uniqueTickets.filter((ticket) => (ticket.technician || 'Unassigned') === name).length,
+    }))
+    .filter((item) => item.count > 0);
+  const statusItems = breakdown(detailedEvents, 'reportStatus', ['Submitted', ...TICKET_STATUSES]).slice(0, 6);
+  const categoryItems = breakdown(uniqueTickets, 'supportCategory', SUPPORT_CATEGORIES).slice(0, 6);
+  const branchItems = breakdown(uniqueTickets, 'branch', BRANCHES).slice(0, 6);
   const ictRows = technicianItems.length
     ? technicianItems.map((item) => row(item)).join('')
     : '<div class="report-row"><span>No ICT assignments</span><strong>0</strong><em>0%</em></div>';
-  const escalationRows = escalationItems.length
-    ? escalationItems.map((item) => row(item)).join('')
-    : '<div class="report-row"><span>No third-party escalation</span><strong>0</strong><em>0%</em></div>';
+  const statusRows = statusItems.length
+    ? statusItems.map((item) => row(item, detailedEvents.length)).join('')
+    : '<div class="report-row"><span>No status data</span><strong>0</strong><em>0%</em></div>';
   const categoryRows = categoryItems.length
     ? categoryItems.map((item) => row(item)).join('')
     : '<div class="report-row"><span>No support category data</span><strong>0</strong><em>0%</em></div>';
   const branchRows = branchItems.length
     ? branchItems.map((item) => row(item)).join('')
     : '<div class="report-row"><span>No branch data</span><strong>0</strong><em>0%</em></div>';
+  const periodRows = periodItems.length
+    ? periodItems.slice(0, 12).map((item) => row(item, periodItems.reduce((sum, current) => sum + current.count, 0))).join('')
+    : '<div class="report-row"><span>No period data</span><strong>0</strong><em>0%</em></div>';
+  const periodPrintColumns = [
+    ['Period', (event) => event.periodName],
+    ['Event', (event) => event.label],
+    ['Ticket ID', (event) => event.ticket.id],
+    ['Submitted', (event) => getTicketField(event.ticket.createdAt || event.ticket.date)],
+    ['Moved Date', (event) => getTicketMovedDateLabel(event.ticket)],
+    ['Resolved Date', (event) => getTicketResolvedDateLabel(event.ticket)],
+    ['Name', (event) => getTicketField(event.ticket.requester || event.ticket.ownerEmail, 'Employee')],
+    ['Branch', (event) => getTicketField(event.ticket.branch, 'Unspecified')],
+    ['Department', (event) => getTicketField(event.ticket.department, 'Unspecified')],
+    ['Category', (event) => getTicketField(event.ticket.supportCategory, 'Unspecified')],
+    ['Concern', (event) => getTicketField(event.ticket.concernType, 'Unspecified')],
+    ['Status', (event) => getTicketField(event.reportStatus, 'Submitted')],
+    ['SLA', (event) => getTicketField(event.ticket.sla, 'Low')],
+    ['Technician', (event) => getTicketField(event.ticket.technician, 'Unassigned')],
+  ];
   const body = `
     <main class="print-page">
       ${getPrintLetterhead()}
       <section class="doc-head">
-        <h2>Monthly ICT Consolidated Report</h2>
-        <div class="meta">${escapePrintHtml(monthTitle)}<br />Printed ${escapePrintHtml(new Date().toLocaleString())}</div>
+        <h2>${escapePrintHtml(periodLabel)} ICT Detailed Report</h2>
+        <div class="meta">${escapePrintHtml(selectedPeriodName || title)}<br />Printed ${escapePrintHtml(new Date().toLocaleString())}</div>
       </section>
       <section class="grid">
-        <div class="field"><span>Total Tickets</span><strong>${escapePrintHtml(monthlySummary.total)}</strong></div>
-        <div class="field"><span>Resolved</span><strong>${escapePrintHtml(monthlySummary.resolved)}</strong></div>
-        <div class="field"><span>Active</span><strong>${escapePrintHtml(monthlySummary.active)}</strong></div>
-        <div class="field"><span>High / Critical</span><strong>${escapePrintHtml(monthlySummary.critical)}</strong></div>
+        <div class="field"><span>Unique Tickets</span><strong>${escapePrintHtml(reportTotal)}</strong></div>
+        <div class="field"><span>Submitted Events</span><strong>${escapePrintHtml(submittedCount)}</strong></div>
+        <div class="field"><span>Moved Date Events</span><strong>${escapePrintHtml(movedDateCount)}</strong></div>
+        <div class="field"><span>Resolved Events</span><strong>${escapePrintHtml(resolvedEventCount)}</strong></div>
+      </section>
+      <section class="grid">
+        <div class="field"><span>Active</span><strong>${escapePrintHtml(detailedSummary.active)}</strong></div>
+        <div class="field"><span>Resolved</span><strong>${escapePrintHtml(detailedSummary.resolved)}</strong></div>
+        <div class="field"><span>High / Critical</span><strong>${escapePrintHtml(detailedSummary.critical)}</strong></div>
+        <div class="field"><span>Report Type</span><strong>${escapePrintHtml(periodLabel)}</strong></div>
       </section>
       <section class="consolidated-grid">
         <div>
@@ -938,8 +1170,8 @@ const printMonthlyConsolidatedReport = (tickets, monthDate) => {
           <div class="report-list single">${ictRows}</div>
         </div>
         <div>
-          <h3 class="section-title">Escalation</h3>
-          <div class="report-list single">${escalationRows}</div>
+          <h3 class="section-title">Status</h3>
+          <div class="report-list single">${statusRows}</div>
         </div>
         <div>
           <h3 class="section-title">Support Category</h3>
@@ -951,7 +1183,144 @@ const printMonthlyConsolidatedReport = (tickets, monthDate) => {
         </div>
       </section>
       <section class="ticket-detail-section">
-        <h3 class="section-title">Ticket Details</h3>
+        <h3 class="section-title">Period Volume</h3>
+        <div class="report-list period-volume-list">${periodRows}</div>
+      </section>
+      <section class="ticket-detail-section">
+        <h3 class="section-title">Ticket Event Details</h3>
+        <table class="detail-table period-detail-table">
+          <thead>
+            <tr>
+              ${periodPrintColumns.map(([label]) => `<th>${escapePrintHtml(label)}</th>`).join('')}
+            </tr>
+          </thead>
+          <tbody>
+            ${buildPeriodEventTableRows(detailedEvents, periodPrintColumns)}
+          </tbody>
+        </table>
+      </section>
+      <p class="print-note">Detailed ${escapePrintHtml(periodLabel.toLowerCase())} report includes submitted, moved-date, and resolved events for ICT review.</p>
+    </main>
+  `;
+
+  openPrintDocument(`${periodLabel} ICT Detailed Report`, body);
+};
+
+const getMonthlyReportData = (tickets, monthDate) => {
+  const target = new Date(monthDate);
+  const year = target.getFullYear();
+  const month = target.getMonth();
+  const monthTitle = formatReportDate(new Date(year, month, 1), { month: 'long', year: 'numeric' });
+  const monthlyEvents = getReportEventRowsForMonth(tickets, monthDate);
+  const monthlyTickets = getUniqueTicketsFromPeriodEvents(monthlyEvents);
+
+  return { monthTitle, monthlyTickets, monthlyEvents };
+};
+
+const getTicketField = (value, fallback = 'Not provided') => {
+  const normalized = String(value ?? '').trim();
+  return normalized || fallback;
+};
+
+const monthlyEventColumns = [
+  ['Ticket ID', (event) => event.ticket.id],
+  ['Report Date', (event) => event.reportDateLabel],
+  ['Submitted', (event) => getTicketField(event.ticket.createdAt || event.ticket.date)],
+  ['Moved Date', (event) => getTicketMovedDateLabel(event.ticket)],
+  ['Resolved Date', (event) => getTicketResolvedDateLabel(event.ticket)],
+  ['Name', (event) => getTicketField(event.ticket.requester || event.ticket.ownerEmail, 'Employee')],
+  ['Employee ID', (event) => getTicketField(event.ticket.employeeId)],
+  ['Branch', (event) => getTicketField(event.ticket.branch, 'Unspecified')],
+  ['Department', (event) => getTicketField(event.ticket.department, 'Unspecified')],
+  ['Category', (event) => getTicketField(event.ticket.supportCategory, 'Unspecified')],
+  ['Concern', (event) => getTicketField(event.ticket.concernType, 'Unspecified')],
+  ['Status', (event) => getTicketField(event.reportStatus, 'Submitted')],
+  ['SLA', (event) => getTicketField(event.ticket.sla, 'Low')],
+  ['Technician', (event) => getTicketField(event.ticket.technician, 'Unassigned')],
+  ['Description', (event) => getTicketField(event.ticket.description, '')],
+  ['Action Taken', (event) => getTicketField(event.ticket.actionTaken, '')],
+  ['Resolution', (event) => getTicketField(event.ticket.resolution, '')],
+  ['Admin Remarks', (event) => getTicketField(event.ticket.adminRemarks, '')],
+];
+
+const monthlyPrintColumns = monthlyEventColumns.filter(([label]) => label !== 'Submitted').slice(0, 13);
+
+const buildMonthlyEventTableRows = (events, columns) =>
+  events.length
+    ? events.map((event) => `
+        <tr>
+          ${columns.map(([, getValue]) => `<td>${escapePrintHtml(getValue(event))}</td>`).join('')}
+        </tr>
+      `).join('')
+    : `<tr><td colspan="${columns.length}">No ticket events found for this month.</td></tr>`;
+
+const printMonthlyConsolidatedReport = (tickets, monthDate) => {
+  const { monthTitle, monthlyTickets, monthlyEvents } = getMonthlyReportData(tickets, monthDate);
+  const monthlySummary = buildSummary(monthlyTickets);
+  const technicianItems = TECHNICIANS
+    .map((name) => ({
+      name,
+      count: monthlyTickets.filter((ticket) => (ticket.technician || 'Unassigned') === name).length,
+    }))
+    .filter((item) => item.count > 0);
+  const statusItems = breakdown(monthlyEvents, 'reportStatus', ['Submitted', ...TICKET_STATUSES]).slice(0, 6);
+  const categoryItems = breakdown(monthlyTickets, 'supportCategory', SUPPORT_CATEGORIES).slice(0, 6);
+  const branchItems = breakdown(monthlyTickets, 'branch', BRANCHES).slice(0, 6);
+  const row = (item, total = monthlyEvents.length) => {
+    const percent = total ? Math.round((item.count / total) * 100) : 0;
+    return `
+      <div class="report-row">
+        <span>${escapePrintHtml(item.name)}</span>
+        <strong>${escapePrintHtml(item.count)}</strong>
+        <em>${escapePrintHtml(percent)}%</em>
+      </div>
+    `;
+  };
+  const ictRows = technicianItems.length
+    ? technicianItems.map((item) => row(item, monthlyTickets.length)).join('')
+    : '<div class="report-row"><span>No ICT assignments</span><strong>0</strong><em>0%</em></div>';
+  const statusRows = statusItems.length
+    ? statusItems.map((item) => row(item)).join('')
+    : '<div class="report-row"><span>No status events</span><strong>0</strong><em>0%</em></div>';
+  const categoryRows = categoryItems.length
+    ? categoryItems.map((item) => row(item, monthlyTickets.length)).join('')
+    : '<div class="report-row"><span>No support category data</span><strong>0</strong><em>0%</em></div>';
+  const branchRows = branchItems.length
+    ? branchItems.map((item) => row(item, monthlyTickets.length)).join('')
+    : '<div class="report-row"><span>No branch data</span><strong>0</strong><em>0%</em></div>';
+  const body = `
+    <main class="print-page">
+      ${getPrintLetterhead()}
+      <section class="doc-head">
+        <h2>Monthly ICT Consolidated Report</h2>
+        <div class="meta">${escapePrintHtml(monthTitle)}<br />Printed ${escapePrintHtml(new Date().toLocaleString())}</div>
+      </section>
+      <section class="grid">
+        <div class="field"><span>Total Tickets</span><strong>${escapePrintHtml(monthlySummary.total)}</strong></div>
+        <div class="field"><span>Total Activities</span><strong>${escapePrintHtml(monthlyEvents.length)}</strong></div>
+        <div class="field"><span>Resolved Events</span><strong>${escapePrintHtml(monthlyEvents.filter((event) => event.type === 'resolved').length)}</strong></div>
+        <div class="field"><span>High / Critical</span><strong>${escapePrintHtml(monthlySummary.critical)}</strong></div>
+      </section>
+      <section class="consolidated-grid">
+        <div>
+          <h3 class="section-title">ICT Workload</h3>
+          <div class="report-list single">${ictRows}</div>
+        </div>
+        <div>
+          <h3 class="section-title">Status Events</h3>
+          <div class="report-list single">${statusRows}</div>
+        </div>
+        <div>
+          <h3 class="section-title">Support Category</h3>
+          <div class="report-list single">${categoryRows}</div>
+        </div>
+        <div>
+          <h3 class="section-title">Branch Volume</h3>
+          <div class="report-list single">${branchRows}</div>
+        </div>
+      </section>
+      <section class="ticket-detail-section">
+        <h3 class="section-title">Ticket Event Details</h3>
         <table class="detail-table">
           <thead>
             <tr>
@@ -959,7 +1328,7 @@ const printMonthlyConsolidatedReport = (tickets, monthDate) => {
             </tr>
           </thead>
           <tbody>
-            ${buildMonthlyTicketTableRows(monthlyTickets, monthlyPrintColumns)}
+            ${buildMonthlyEventTableRows(monthlyEvents, monthlyPrintColumns)}
           </tbody>
         </table>
       </section>
@@ -978,13 +1347,14 @@ const escapeCsvCell = (value) => {
 const exportMonthlyConsolidatedReportCsv = (tickets, monthDate) => {
   if (typeof window === 'undefined') return;
 
-  const { monthTitle, monthlyTickets } = getMonthlyReportData(tickets, monthDate);
+  const { monthTitle, monthlyTickets, monthlyEvents } = getMonthlyReportData(tickets, monthDate);
   const monthlySummary = buildSummary(monthlyTickets);
   const summaryRows = [
     ['Report', 'Monthly ICT Consolidated Report'],
     ['Period', monthTitle],
-    ['Total Tickets', monthlySummary.total],
-    ['Resolved', monthlySummary.resolved],
+    ['Unique Tickets', monthlySummary.total],
+    ['Total Activities', monthlyEvents.length],
+    ['Resolved Events', monthlyEvents.filter((event) => event.type === 'resolved').length],
     ['Active', monthlySummary.active],
     ['High / Critical', monthlySummary.critical],
     ['Exported', new Date().toLocaleString()],
@@ -993,8 +1363,8 @@ const exportMonthlyConsolidatedReportCsv = (tickets, monthDate) => {
     ['Monthly ICT Consolidated Report'],
     ...summaryRows,
     [],
-    monthlyTicketColumns.map(([label]) => label),
-    ...monthlyTickets.map((ticket) => monthlyTicketColumns.map(([, getValue]) => getValue(ticket))),
+    monthlyEventColumns.map(([label]) => label),
+    ...monthlyEvents.map((event) => monthlyEventColumns.map(([, getValue]) => getValue(event))),
   ];
   const csv = `\uFEFF${csvRows.map((row) => row.map(escapeCsvCell).join(',')).join('\r\n')}`;
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -1060,6 +1430,27 @@ const getTicketSearchText = (ticket) =>
     .filter(Boolean)
     .join(' ')
     .toLowerCase();
+
+const buildStatusHistoryEntry = (status, timestamp, user) => {
+  const normalizedStatus = normalizeTicketStatus(status);
+  const type =
+    normalizedStatus === 'moved date'
+      ? 'moved-date'
+      : normalizedStatus === 'resolved'
+        ? 'resolved'
+        : normalizedStatus === 'submitted'
+          ? 'submitted'
+          : 'status';
+
+  return {
+    status,
+    label: status,
+    type,
+    timestamp: new Date(timestamp).toISOString(),
+    updatedBy: user?.id || '',
+    updatedByName: user?.name || '',
+  };
+};
 
 const getTicketWorkStartedAt = (ticket) =>
   ticket?.workStartedAt ||
@@ -1171,8 +1562,10 @@ function Sidebar({ active, onNav, onLogout, open, canCreateUsers }) {
 function StatCard({ icon, label, value, meta }) {
   return (
     <article className="stat-card glass">
-      <div className="stat-icon">{typeof icon === 'string' ? icon : <MonoIcon icon={icon} />}</div>
-      <span className="stat-label">{label}</span>
+      <div className="stat-card-head">
+        <span className="stat-icon">{typeof icon === 'string' ? icon : <MonoIcon icon={icon} />}</span>
+        <span className="stat-label">{label}</span>
+      </div>
       <p className="stat-value">{value}</p>
       <span className="stat-meta">{meta}</span>
     </article>
@@ -1249,40 +1642,92 @@ function PhotoAttachmentGallery({ photos = [], emptyText = 'No photo attachments
 }
 
 function TicketConversationPanel({
+  ticket,
   currentUser,
   messages,
   messageDraft,
   messagePhotos,
   messageError,
   isSending,
+  floating = false,
+  canSend = true,
+  unreadCount = 0,
+  onClose,
   onMessageChange,
   onPhotoChange,
   onRemovePhoto,
   onSend,
 }) {
+  const messageListRef = useRef(null);
+  const disabledMessage =
+    'Conversation is closed. Replies are available only while ICT is actively handling an unresolved ticket.';
+
+  useEffect(() => {
+    const messageList = messageListRef.current;
+
+    if (!messageList) return;
+
+    const scrollToLatest = (behavior = 'smooth') => {
+      messageList.scrollTo({
+        top: messageList.scrollHeight,
+        behavior,
+      });
+    };
+
+    scrollToLatest(messages.length > 1 ? 'smooth' : 'auto');
+    const timer = window.setTimeout(() => scrollToLatest('smooth'), 80);
+
+    return () => window.clearTimeout(timer);
+  }, [messages.length]);
+
+  const handleMessageKeyDown = (e) => {
+    if (e.key !== 'Enter' || e.shiftKey || e.nativeEvent?.isComposing || isSending || !canSend) return;
+
+    e.preventDefault();
+    onSend();
+  };
+
   return (
-    <section className="ticket-conversation-section">
+    <section className={`ticket-conversation-section${floating ? ' floating-ticket-chat' : ''}`}>
       <div className="ticket-conversation-head">
         <div>
           <span className="section-kicker"><MonoIcon icon={MessageCircle} /> Conversation</span>
-          <h4>Admin and employee communication</h4>
+          <h4>
+            {ticket?.id ? (
+              <>
+                <span className="ticket-chat-title-label">Ticket ID:</span>
+                <span className="ticket-chat-title-id">{ticket.id}</span>
+              </>
+            ) : (
+              'Admin and employee communication'
+            )}
+          </h4>
         </div>
-        <span className="ticket-conversation-count">{messages.length} message{messages.length === 1 ? '' : 's'}</span>
+        <span className="ticket-conversation-count">
+          {unreadCount > 0 ? `${unreadCount} unread` : 'No unread'}
+        </span>
+        {onClose && (
+          <button type="button" className="ticket-chat-close" onClick={onClose} aria-label="Minimize conversation">
+            <MonoIcon icon={X} />
+          </button>
+        )}
       </div>
 
-      <div className="ticket-message-list">
+      <div className="ticket-message-list" ref={messageListRef}>
         {messages.length ? (
           messages.map((item) => {
             const isMine = item.senderId === currentUser?.id;
 
             return (
-              <article key={item.id} className={`ticket-message-bubble${isMine ? ' mine' : ''}`}>
+              <article key={item.id} className={`ticket-message-item${isMine ? ' mine' : ''}`}>
                 <div className="ticket-message-meta">
                   <strong>{item.senderName}</strong>
-                  <span>{item.senderRole} · {item.createdAt}</span>
+                  <span>{item.senderRole} - {item.createdAt}</span>
                 </div>
-                {item.message && <p>{item.message}</p>}
-                <PhotoAttachmentGallery photos={item.attachments} emptyText="" />
+                <div className="ticket-message-bubble">
+                  {item.message && <p>{item.message}</p>}
+                  <PhotoAttachmentGallery photos={item.attachments} emptyText="" />
+                </div>
               </article>
             );
           })
@@ -1294,13 +1739,15 @@ function TicketConversationPanel({
         )}
       </div>
 
-      <div className="ticket-message-composer">
+      <div className={`ticket-message-composer${canSend ? '' : ' locked'}`}>
         <textarea
           className="ticket-field ticket-textarea ticket-message-textarea"
           value={messageDraft}
           onChange={(e) => onMessageChange(e.target.value)}
-          placeholder="Write a reply or ask for more details..."
+          onKeyDown={handleMessageKeyDown}
+          placeholder={canSend ? 'Write a reply or ask for more details...' : disabledMessage}
           maxLength={800}
+          disabled={!canSend}
         />
 
         {messagePhotos.length > 0 && (
@@ -1321,17 +1768,18 @@ function TicketConversationPanel({
         )}
 
         <div className="ticket-message-actions">
-          <label className="message-attach-btn">
+          <label className={`message-attach-btn${canSend ? '' : ' disabled'}`}>
             <MonoIcon icon={Paperclip} />
             Attach photos
-            <input type="file" accept={PHOTO_ACCEPT} multiple onChange={onPhotoChange} />
+            <input type="file" accept={PHOTO_ACCEPT} multiple onChange={onPhotoChange} disabled={!canSend} />
           </label>
-          <button type="button" className="modal-btn confirm" onClick={onSend} disabled={isSending}>
+          <button type="button" className="modal-btn confirm" onClick={onSend} disabled={isSending || !canSend}>
             <MonoIcon icon={Send} />
             {isSending ? 'Sending...' : 'Send Reply'}
           </button>
         </div>
 
+        {!canSend && <div className="ticket-chat-locked-note">{disabledMessage}</div>}
         {messageError && <div className="form-error">{messageError}</div>}
       </div>
     </section>
@@ -1506,28 +1954,45 @@ function TicketTable({
   );
 }
 
-function BreakdownItems({ items, total }) {
+function BreakdownItems({
+  items,
+  total,
+  selectable = false,
+  selectedKey = '',
+  onSelect,
+  countLabel = 'ticket',
+}) {
   return (
-    <div className="admin-breakdown-list">
+    <div className={`admin-breakdown-list${selectable ? ' selectable' : ''}`}>
       {items.length === 0 ? (
         <div className="empty-state small">
           <p>No data available yet.</p>
         </div>
       ) : (
         items.map((item) => {
+          const itemKey = item.key || item.name;
           const percent = total ? Math.round((item.count / total) * 100) : 0;
+          const isSelected = selectable && itemKey === selectedKey;
+          const Tag = selectable ? 'button' : 'div';
+          const countText = item.countLabel || `${item.count} ${countLabel}${item.count === 1 ? '' : 's'}`;
 
           return (
-            <div key={item.name} className="admin-breakdown-item">
+            <Tag
+              key={itemKey}
+              type={selectable ? 'button' : undefined}
+              className={`admin-breakdown-item${selectable ? ' selectable' : ''}${isSelected ? ' selected' : ''}`}
+              onClick={selectable ? () => onSelect?.(item) : undefined}
+              aria-pressed={selectable ? isSelected : undefined}
+            >
               <div className="admin-breakdown-copy">
                 <strong>{item.name}</strong>
-                <span>{item.count} ticket{item.count === 1 ? '' : 's'}</span>
+                <span>{countText}</span>
               </div>
 
               <div className="admin-progress-track" aria-hidden="true">
                 <span className="admin-progress-fill" style={{ width: `${percent}%` }} />
               </div>
-            </div>
+            </Tag>
           );
         })
       )}
@@ -1711,7 +2176,9 @@ function ReportCalendar({
                     >
                       <span>{ticket.id}</span>
                       <strong>{ticket.concernType || ticket.supportCategory || 'Ticket concern'}</strong>
-                      <em>{ticket.status} / {ticket.sla}</em>
+                      <em>
+                        {ticket.reportEventLabel || ticket.status} / {ticket.sla}
+                      </em>
                     </button>
                   ))}
                 </div>
@@ -1827,14 +2294,6 @@ function DashboardView({ tickets, summary, categorySummary, onGoTo, onOpenTicket
               }}
             />
           </section>
-
-          <BreakdownList
-            title="Support Category Load"
-            kicker="Workload"
-            items={categorySummary.slice(0, 8)}
-            total={tickets.length}
-            className="admin-workload-panel"
-          />
         </div>
 
         <div className="dashboard-stack">
@@ -2059,63 +2518,212 @@ function TicketsView({ tickets, filteredTickets, filters, setFilters, onOpenTick
 ========================= */
 
 function BranchesView({ branchSummary, tickets, onOpenTicket, onDeleteTicket, canDeleteTickets, now }) {
-  const activeTickets = tickets.filter((ticket) => isUnresolved(ticket.status));
+  const BRANCH_PAGE_SIZE = 2;
+  const BRANCH_SUMMARY_PAGE_SIZE = 2;
+  const activeTickets = sortTickets(tickets.filter((ticket) => isUnresolved(ticket.status)));
+  const [branchTicketPage, setBranchTicketPage] = useState(1);
+  const [branchSummaryPage, setBranchSummaryPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(activeTickets.length / BRANCH_PAGE_SIZE));
+  const currentPage = Math.min(branchTicketPage, totalPages);
+  const branchSummaryTotalPages = Math.max(1, Math.ceil(branchSummary.length / BRANCH_SUMMARY_PAGE_SIZE));
+  const currentBranchSummaryPage = Math.min(branchSummaryPage, branchSummaryTotalPages);
+  const pagedTickets = activeTickets.slice(
+    (currentPage - 1) * BRANCH_PAGE_SIZE,
+    currentPage * BRANCH_PAGE_SIZE
+  );
+  const pagedBranchSummary = branchSummary.slice(
+    (currentBranchSummaryPage - 1) * BRANCH_SUMMARY_PAGE_SIZE,
+    currentBranchSummaryPage * BRANCH_SUMMARY_PAGE_SIZE
+  );
+  const activeBranchCount = branchSummary.filter((branch) =>
+    tickets.some((ticket) => ticket.branch === branch.name && isUnresolved(ticket.status))
+  ).length;
+  const urgentCount = activeTickets.filter(isSlaWatchTicket).length;
+  const goToBranchPage = (page) => setBranchTicketPage(Math.min(Math.max(page, 1), totalPages));
+  const goToBranchSummaryPage = (page) =>
+    setBranchSummaryPage(Math.min(Math.max(page, 1), branchSummaryTotalPages));
+
+  useEffect(() => {
+    if (branchTicketPage > totalPages) {
+      setBranchTicketPage(totalPages);
+    }
+  }, [branchTicketPage, totalPages]);
+
+  useEffect(() => {
+    if (branchSummaryPage > branchSummaryTotalPages) {
+      setBranchSummaryPage(branchSummaryTotalPages);
+    }
+  }, [branchSummaryPage, branchSummaryTotalPages]);
 
   return (
-    <div className="dashboard-view">
-      <section className="panel-card glass hero-panel">
-        <div className="hero-copy">
-          <span className="section-kicker">Branch Monitor</span>
-          <h2>Track submitted concerns by branch and location.</h2>
-          <p>Identify branches with high unresolved requests and respond to operational concerns quickly.</p>
-        </div>
-      </section>
-
-      <section className="admin-branch-grid">
-        {branchSummary.length === 0 ? (
-          <div className="empty-state">
-            <div className="empty-icon"><MonoIcon icon={Building2} /></div>
-            <h4>No branch requests yet</h4>
-            <p>Submitted employee tickets will generate branch monitoring data.</p>
-          </div>
-        ) : (
-          branchSummary.map((branch) => {
-            const branchTickets = tickets.filter((ticket) => ticket.branch === branch.name);
-            const unresolved = branchTickets.filter((ticket) => isUnresolved(ticket.status)).length;
-            const urgent = branchTickets.filter(isSlaWatchTicket).length;
-
-            return (
-              <article key={branch.name} className="stat-card glass admin-branch-card">
-                <span className="section-kicker">Branch</span>
-                <h3>{branch.name}</h3>
-                <div className="admin-branch-stats">
-                  <span>{branch.count} total</span>
-                  <strong>{unresolved} active</strong>
-                  <em>{urgent} urgent</em>
-                </div>
-              </article>
-            );
-          })
-        )}
-      </section>
-
-      <section className="panel-card glass">
-        <div className="section-head">
+    <div className="dashboard-view branch-monitor-view">
+      <section className="panel-card glass branch-monitor-panel">
+        <div className="section-head branch-monitor-head">
           <div>
             <span className="section-kicker">Active Branch Requests</span>
             <h3>Unresolved Tickets</h3>
+            <p>
+              View unresolved employee concerns by branch. Use the cards below to open, update,
+              or delete a ticket depending on your admin access.
+            </p>
+          </div>
+
+          <div className="branch-monitor-summary-pills">
+            <span>{activeTickets.length} unresolved</span>
+            <span>{activeBranchCount} active branch{activeBranchCount === 1 ? '' : 'es'}</span>
+            <span>{urgentCount} urgent</span>
           </div>
         </div>
 
-        <TicketTable
-          tickets={activeTickets}
-          onOpenTicket={onOpenTicket}
-          onDeleteTicket={onDeleteTicket}
-          canDelete={canDeleteTickets}
-          compact
-          now={now}
-        />
+        {activeTickets.length === 0 ? (
+          <div className="empty-state branch-monitor-empty">
+            <div className="empty-icon"><MonoIcon icon={Building2} /></div>
+            <h4>No unresolved branch requests</h4>
+            <p>Submitted employee tickets will appear here while they are still unresolved.</p>
+          </div>
+        ) : (
+          <>
+            <div className="branch-monitor-ticket-grid">
+              {pagedTickets.map((ticket) => (
+                <article key={ticket.id} className="branch-monitor-ticket-card">
+                  <div className="branch-monitor-ticket-top">
+                    <span className="ticket-id">{ticket.id}</span>
+                    <TicketBadges ticket={ticket} />
+                  </div>
+
+                  <div className="branch-monitor-ticket-main">
+                    <h4>{ticket.concernType || ticket.supportCategory || 'Unspecified concern'}</h4>
+                    <p>{ticket.branch || 'Unspecified branch'} · {ticket.department || 'No department'}</p>
+                  </div>
+
+                  <div className="branch-monitor-ticket-meta">
+                    <div>
+                      <span>Requester</span>
+                      <strong>{ticket.requester || ticket.ownerEmail || 'Employee'}</strong>
+                    </div>
+                    <div>
+                      <span>Technician</span>
+                      <strong>{ticket.technician || 'Unassigned'}</strong>
+                    </div>
+                    <div>
+                      <span>Submitted</span>
+                      <strong>{ticket.createdAt || ticket.date || 'Not recorded'}</strong>
+                    </div>
+                    <div>
+                      <span>Device / System</span>
+                      <strong>{ticket.deviceName || 'Not provided'}</strong>
+                    </div>
+                  </div>
+
+                  <PreservedText
+                    className="branch-monitor-ticket-description"
+                    value={ticket.description}
+                  />
+
+                  <TicketWorkTimer ticket={ticket} now={now} compact />
+
+                  <div className="branch-monitor-ticket-actions">
+                    <button type="button" className="ticket-action-btn" onClick={() => onOpenTicket(ticket)}>
+                      <MonoIcon icon={Eye} />
+                      {getActionButtonLabel(ticket)}
+                    </button>
+
+                    {canDeleteTickets && (
+                      <button
+                        type="button"
+                        className="ticket-action-btn danger"
+                        onClick={() => onDeleteTicket(ticket)}
+                        aria-label={`Delete ticket ${ticket.id}`}
+                      >
+                        <MonoIcon icon={Trash2} />
+                        Delete
+                      </button>
+                    )}
+                  </div>
+                </article>
+              ))}
+            </div>
+
+            <div className="branch-monitor-page-control" aria-label="Branch monitor ticket pages">
+              <button
+                type="button"
+                onClick={() => goToBranchPage(currentPage - 1)}
+                disabled={currentPage <= 1}
+                aria-label="Previous branch ticket page"
+              >
+                <ChevronLeft aria-hidden="true" />
+              </button>
+              <span>Page {currentPage}</span>
+              <button
+                type="button"
+                onClick={() => goToBranchPage(currentPage + 1)}
+                disabled={currentPage >= totalPages}
+                aria-label="Next branch ticket page"
+              >
+                <ChevronRight aria-hidden="true" />
+              </button>
+            </div>
+          </>
+        )}
       </section>
+
+      {branchSummary.length > 0 && (
+        <section aria-label="Branch ticket summary">
+          <div className="branch-monitor-branch-summary">
+            {pagedBranchSummary.map((branch) => {
+              const branchTickets = tickets.filter((ticket) => ticket.branch === branch.name);
+              const unresolved = branchTickets.filter((ticket) => isUnresolved(ticket.status)).length;
+              const urgent = branchTickets.filter(isSlaWatchTicket).length;
+              const resolved = branchTickets.filter(isTicketResolved).length;
+
+              return (
+                <article key={branch.name} className="glass branch-summary-chip-card">
+                  <span>Branch</span>
+                  <strong>{branch.name}</strong>
+                  <div className="branch-summary-metrics" aria-label={`${branch.name} ticket summary`}>
+                    <div>
+                      <em>Total</em>
+                      <b>{branch.count}</b>
+                    </div>
+                    <div>
+                      <em>Unresolved</em>
+                      <b>{unresolved}</b>
+                    </div>
+                    <div>
+                      <em>Resolved</em>
+                      <b>{resolved}</b>
+                    </div>
+                    <div>
+                      <em>Urgent</em>
+                      <b>{urgent}</b>
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+
+          <div className="branch-monitor-page-control branch-summary-page-control" aria-label="Branch summary pages">
+            <button
+              type="button"
+              onClick={() => goToBranchSummaryPage(currentBranchSummaryPage - 1)}
+              disabled={currentBranchSummaryPage <= 1}
+              aria-label="Previous branch summary page"
+            >
+              <ChevronLeft aria-hidden="true" />
+            </button>
+            <span>Page {currentBranchSummaryPage}</span>
+            <button
+              type="button"
+              onClick={() => goToBranchSummaryPage(currentBranchSummaryPage + 1)}
+              disabled={currentBranchSummaryPage >= branchSummaryTotalPages}
+              aria-label="Next branch summary page"
+            >
+              <ChevronRight aria-hidden="true" />
+            </button>
+          </div>
+        </section>
+      )}
     </div>
   );
 }
@@ -2128,8 +2736,18 @@ function ReportsView({ tickets, summary, categorySummary, statusSummary, branchS
   const [periodMode, setPeriodMode] = useState('day');
   const [calendarMonth, setCalendarMonth] = useState(null);
   const [selectedCalendarDate, setSelectedCalendarDate] = useState('');
+  const [selectedPrintDayKey, setSelectedPrintDayKey] = useState('');
+  const [selectedPrintWeekKey, setSelectedPrintWeekKey] = useState('');
   const concernSummary = breakdown(tickets, 'concernType').slice(0, 10);
   const slaSummary = breakdown(tickets, 'sla', SLA_LEVELS);
+  const reportActivityRows = useMemo(
+    () => tickets.flatMap((ticket) => getTicketReportEvents(ticket)),
+    [tickets]
+  );
+  const statusActivitySummary = useMemo(
+    () => breakdown(reportActivityRows, 'reportStatus', ['Submitted', ...TICKET_STATUSES]),
+    [reportActivityRows]
+  );
   const dateSummaries = {
     day: buildDateBreakdown(tickets, 'day').slice(0, 8),
     week: buildDateBreakdown(tickets, 'week').slice(0, 8),
@@ -2137,15 +2755,62 @@ function ReportsView({ tickets, summary, categorySummary, statusSummary, branchS
   };
   const selectedPeriod = REPORT_PERIOD_OPTIONS.find((option) => option.key === periodMode) || REPORT_PERIOD_OPTIONS[0];
   const selectedDateSummary = dateSummaries[selectedPeriod.key] || [];
+  const dayPrintOptions = useMemo(() => buildPeriodPrintOptions(tickets, 'day'), [tickets]);
+  const weekPrintOptions = useMemo(() => buildPeriodPrintOptions(tickets, 'week'), [tickets]);
+  const selectedPrintOptions = selectedPeriod.key === 'week' ? weekPrintOptions : dayPrintOptions;
+  const selectedPrintKey = selectedPeriod.key === 'week' ? selectedPrintWeekKey : selectedPrintDayKey;
+  const selectedPrintOption = selectedPrintOptions.find((option) => option.key === selectedPrintKey) || null;
+  const selectablePeriodItems = selectedPrintOptions.map((option) => ({
+    key: option.key,
+    name: option.name,
+    count: option.ticketCount || option.count,
+    countLabel: `${option.ticketCount || option.count} ticket${(option.ticketCount || option.count) === 1 ? '' : 's'}`,
+  }));
+  const selectedBreakdownItems = selectedPeriod.key === 'month' ? selectedDateSummary : selectablePeriodItems;
+  const selectedBreakdownTotal = selectedPeriod.key === 'month'
+    ? tickets.length
+    : selectablePeriodItems.reduce((totalCount, item) => totalCount + item.count, 0);
   const activeCalendarMonth = calendarMonth || getTicketCalendarMonth(tickets);
   const selectedDateTickets = selectedCalendarDate
     ? tickets
-        .filter((ticket) => {
-          const submittedTime = getSubmittedTime(ticket);
-          return submittedTime && getDateKey(new Date(submittedTime)) === selectedCalendarDate;
-        })
-        .sort((a, b) => normalizeDate(b) - normalizeDate(a))
+        .flatMap((ticket) =>
+          getTicketReportEvents(ticket)
+            .filter((event) => event.key === selectedCalendarDate)
+            .map((event) => ({
+              ...ticket,
+              reportEventLabel: event.label,
+              reportEventType: event.type,
+              reportEventTimestamp: event.timestamp,
+              reportDate: event.reportDate,
+              reportDateLabel: event.reportDateLabel,
+              reportStatus: event.reportStatus,
+            }))
+        )
+        .sort((a, b) => b.reportEventTimestamp - a.reportEventTimestamp || normalizeDate(b) - normalizeDate(a))
     : [];
+
+  useEffect(() => {
+    if (!dayPrintOptions.length) {
+      setSelectedPrintDayKey('');
+      return;
+    }
+
+    setSelectedPrintDayKey((current) => (
+      dayPrintOptions.some((option) => option.key === current) ? current : dayPrintOptions[0].key
+    ));
+  }, [dayPrintOptions]);
+
+  useEffect(() => {
+    if (!weekPrintOptions.length) {
+      setSelectedPrintWeekKey('');
+      return;
+    }
+
+    setSelectedPrintWeekKey((current) => (
+      weekPrintOptions.some((option) => option.key === current) ? current : weekPrintOptions[0].key
+    ));
+  }, [weekPrintOptions]);
+
   const changeCalendarMonth = (step) => {
     setCalendarMonth((current) => {
       const next = new Date(current || activeCalendarMonth);
@@ -2170,15 +2835,34 @@ function ReportsView({ tickets, summary, categorySummary, statusSummary, branchS
       return;
     }
 
+    if (!selectedPrintOption) {
+      window.alert(`Please choose a specific ${selectedPeriod.key} to print.`);
+      return;
+    }
+
     printReportSummary({
       mode: selectedPeriod.key,
       title: selectedPeriod.title,
-      items: buildDateBreakdown(tickets, selectedPeriod.key),
-      total: tickets.length,
+      items: [{ name: selectedPrintOption.name, count: selectedPrintOption.count }],
+      total: selectedPrintOption.ticketCount,
+      tickets,
+      selectedPeriodKey: selectedPrintOption.key,
+      selectedPeriodName: selectedPrintOption.name,
     });
   };
   const handleExportMonthly = () => {
     exportMonthlyConsolidatedReportCsv(tickets, activeCalendarMonth);
+  };
+
+  const handleSelectReportPeriod = (item) => {
+    if (!item?.key || selectedPeriod.key === 'month') return;
+
+    if (selectedPeriod.key === 'week') {
+      setSelectedPrintWeekKey(item.key);
+      return;
+    }
+
+    setSelectedPrintDayKey(item.key);
   };
 
   return (
@@ -2206,7 +2890,12 @@ function ReportsView({ tickets, summary, categorySummary, statusSummary, branchS
           </div>
 
           <div className="report-period-actions">
-            <button type="button" className="report-print-btn" onClick={handlePrintPeriod}>
+            <button
+              type="button"
+              className="report-print-btn"
+              onClick={handlePrintPeriod}
+              disabled={selectedPeriod.key !== 'month' && !selectedPrintOption}
+            >
               <MonoIcon icon={Printer} />
               {selectedPeriod.key === 'month' ? 'Print Consolidated' : `Print ${selectedPeriod.label}`}
             </button>
@@ -2235,7 +2924,13 @@ function ReportsView({ tickets, summary, categorySummary, statusSummary, branchS
           </div>
         </div>
 
-        <BreakdownItems items={selectedDateSummary} total={tickets.length} />
+        <BreakdownItems
+          items={selectedBreakdownItems}
+          total={selectedBreakdownTotal}
+          selectable={selectedPeriod.key !== 'month'}
+          selectedKey={selectedPrintKey}
+          onSelect={handleSelectReportPeriod}
+        />
       </section>
 
       <ReportCalendar
@@ -2249,7 +2944,8 @@ function ReportsView({ tickets, summary, categorySummary, statusSummary, branchS
       />
 
       <div className="admin-report-grid compact">
-        <BreakdownList title="Status" kicker="Report" items={statusSummary} total={tickets.length} />
+        <BreakdownList title="Workload" kicker="Reports" items={categorySummary.slice(0, 8)} total={tickets.length} className="admin-workload-panel" />
+        <BreakdownList title="Status" kicker="Report" items={statusActivitySummary} total={reportActivityRows.length} />
         <BreakdownList title="SLA" kicker="Report" items={slaSummary} total={tickets.length} />
         <BreakdownList title="Support Category" kicker="Report" items={categorySummary.slice(0, 6)} total={tickets.length} />
         <BreakdownList title="Branch" kicker="Report" items={branchSummary.slice(0, 6)} total={tickets.length} />
@@ -2679,9 +3375,9 @@ function UsersView({ users, canManageUsers, currentUserId, onUsersChanged }) {
                     className="password-toggle-btn"
                     onClick={() => setShowEditPassword((prev) => !prev)}
                     aria-label={showEditPassword ? 'Hide password' : 'Show password'}
+                    title={showEditPassword ? 'Hide password' : 'Show password'}
                   >
                     <MonoIcon icon={showEditPassword ? EyeOff : Eye} />
-                    {showEditPassword ? 'Hide' : 'Show'}
                   </button>
                 </div>
               </div>
@@ -2703,9 +3399,9 @@ function UsersView({ users, canManageUsers, currentUserId, onUsersChanged }) {
                     className="password-toggle-btn"
                     onClick={() => setShowEditPassword((prev) => !prev)}
                     aria-label={showEditPassword ? 'Hide password confirmation' : 'Show password confirmation'}
+                    title={showEditPassword ? 'Hide password confirmation' : 'Show password confirmation'}
                   >
                     <MonoIcon icon={showEditPassword ? EyeOff : Eye} />
-                    {showEditPassword ? 'Hide' : 'Show'}
                   </button>
                 </div>
               </div>
@@ -2919,9 +3615,9 @@ function CreateUserView({ onCreated }) {
                   className="password-toggle-btn"
                   onClick={() => setShowCreatePassword((prev) => !prev)}
                   aria-label={showCreatePassword ? 'Hide password' : 'Show password'}
+                  title={showCreatePassword ? 'Hide password' : 'Show password'}
                 >
                   <MonoIcon icon={showCreatePassword ? EyeOff : Eye} />
-                  {showCreatePassword ? 'Hide' : 'Show'}
                 </button>
               </div>
             </div>
@@ -2944,9 +3640,9 @@ function CreateUserView({ onCreated }) {
                   className="password-toggle-btn"
                   onClick={() => setShowCreatePassword((prev) => !prev)}
                   aria-label={showCreatePassword ? 'Hide password confirmation' : 'Show password confirmation'}
+                  title={showCreatePassword ? 'Hide password confirmation' : 'Show password confirmation'}
                 >
                   <MonoIcon icon={showCreatePassword ? EyeOff : Eye} />
-                  {showCreatePassword ? 'Hide' : 'Show'}
                 </button>
               </div>
             </div>
@@ -3012,6 +3708,11 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
   const [messagePhotos, setMessagePhotos] = useState([]);
   const [messageError, setMessageError] = useState('');
   const [isSendingMessage, setIsSendingMessage] = useState(false);
+  const [isChatMinimized, setIsChatMinimized] = useState(true);
+  const [unreadConversationCount, setUnreadConversationCount] = useState(0);
+  const isChatMinimizedRef = useRef(true);
+  const currentUserIdRef = useRef(currentUser?.id || '');
+  const ticketMessageIdsRef = useRef(new Set());
 
   const currentStaffName = currentUser?.name || 'Unassigned';
   const assignedStaff = ticket.technician && ticket.technician !== 'Unassigned'
@@ -3035,18 +3736,36 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
   const visibleTechnician = technicianOptions.includes(draft.technician) ? draft.technician : 'Unassigned';
   const canEditOutcomeFields = !isResolvedLocked && normalizeTicketStatus(draft.status) !== 'in progress';
   const lockedOutcomePlaceholder = 'Available once the ticket is updated away from In Progress.';
+  const canSendConversationMessage = canTicketAcceptMessages(ticket);
+  const shouldShowConversation = isTicketBeingHandled(ticket) || ticketMessages.length > 0;
+  const isChatOpen = shouldShowConversation && !isChatMinimized;
+
+  useEffect(() => {
+    isChatMinimizedRef.current = isChatMinimized;
+
+    if (!isChatMinimized) {
+      setUnreadConversationCount(0);
+    }
+  }, [isChatMinimized]);
+
+  useEffect(() => {
+    currentUserIdRef.current = currentUser?.id || '';
+  }, [currentUser?.id]);
 
   useEffect(() => {
     if (!ticket?.id) return undefined;
 
     let cancelled = false;
+    ticketMessageIdsRef.current = new Set();
 
     const loadMessages = async () => {
       try {
         const messages = await getTicketMessages(ticket.id);
 
         if (!cancelled) {
+          ticketMessageIdsRef.current = new Set(messages.map((message) => message.id));
           setTicketMessages(messages);
+          setUnreadConversationCount(0);
           setMessageError('');
         }
       } catch (error) {
@@ -3060,10 +3779,18 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
     void loadMessages();
 
     const unsubscribeMessages = subscribeToTicketMessages(ticket.id, (newMessage) => {
-      setTicketMessages((current) => {
-        const exists = current.some((message) => message.id === newMessage.id);
-        return exists ? current : [...current, newMessage];
-      });
+      const messageAlreadyExists = ticketMessageIdsRef.current.has(newMessage.id);
+
+      if (!messageAlreadyExists) {
+        ticketMessageIdsRef.current.add(newMessage.id);
+        setTicketMessages((current) => [...current, newMessage]);
+      }
+
+      const isIncomingMessage = newMessage.senderId !== currentUserIdRef.current;
+
+      if (!messageAlreadyExists && isIncomingMessage && isChatMinimizedRef.current) {
+        setUnreadConversationCount((current) => current + 1);
+      }
     });
 
     const unsubscribeTicket = subscribeToTicket(ticket.id, (updatedTicket) => {
@@ -3078,6 +3805,11 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
       unsubscribeTicket();
     };
   }, [ticket?.id, onTicketRealtimeUpdate]);
+
+  useEffect(() => {
+    setIsChatMinimized(true);
+    setUnreadConversationCount(0);
+  }, [ticket?.id]);
 
   const handleConversationPhotoChange = async (e) => {
     const files = e.target.files;
@@ -3096,6 +3828,11 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
   const sendTicketMessage = async () => {
     const cleanMessage = messageDraft.trim();
 
+    if (!canSendConversationMessage) {
+      setMessageError('Conversation is closed for tickets that are not actively being handled or are already resolved.');
+      return;
+    }
+
     if (!cleanMessage && !messagePhotos.length) {
       setMessageError('Please type a message or attach a photo before sending.');
       return;
@@ -3111,6 +3848,7 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
         attachments: messagePhotos,
       });
 
+      ticketMessageIdsRef.current.add(sentMessage.id);
       setTicketMessages((current) => {
         const exists = current.some((message) => message.id === sentMessage.id);
         return exists ? current : [...current, sentMessage];
@@ -3179,12 +3917,14 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
         };
 
     const timestamp = new Date().toLocaleString();
+    const movedDateValue = draftStatus === 'moved date' ? ticket.dateLabel || timestamp : ticket.dateLabel;
     const nextTicketSnapshot = {
       ...ticket,
       ...sanitizedDraft,
       technician: sanitizedDraft.technician || currentStaffName,
       adminUpdatedAt: timestamp,
       lastUpdated: timestamp,
+      dateLabel: movedDateValue,
     };
 
     onSave(ticket.id, {
@@ -3192,6 +3932,7 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
       technician: sanitizedDraft.technician || currentStaffName,
       adminUpdatedAt: timestamp,
       lastUpdated: timestamp,
+      dateLabel: movedDateValue,
       employeeEditLocked: isEmployeeLockedTicket(nextTicketSnapshot),
       employeeEditLockedAt: timestamp,
       employeeEditLockedBy: currentUser?.id || null,
@@ -3201,13 +3942,27 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
   };
 
   return (
-    <div className="modal-overlay" role="dialog" aria-modal="true" aria-label="Ticket action modal">
+    <div
+      className={[
+        'modal-overlay',
+        'ticket-action-overlay',
+        isChatOpen ? 'chat-open' : '',
+        shouldShowConversation && isChatMinimized ? 'chat-minimized' : '',
+      ].filter(Boolean).join(' ')}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Ticket action modal"
+    >
       <form className="modal-box glass admin-modal-box ticket-action-modal" onSubmit={handleSubmit}>
         <div className="admin-modal-head ticket-action-head">
           <div>
-            <span className="ticket-id">{ticket.id}</span>
-            <h3>{ticket.concernType}</h3>
-            <p>{ticket.branch} · {ticket.department}</p>
+            <div className="ticket-action-title-row">
+              <span className="ticket-id">{ticket.id}</span>
+              <div className="ticket-action-title-copy">
+                <h3>{ticket.concernType}</h3>
+                <p>{ticket.branch} - {ticket.department}</p>
+              </div>
+            </div>
           </div>
 
           <button type="button" className="admin-modal-close" onClick={onClose} aria-label="Close modal">
@@ -3216,7 +3971,7 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
         </div>
 
         <div className="admin-workflow-box ticket-action-status-panel">
-          <div>
+          <div className="ticket-action-workflow-copy">
             <span className="section-kicker">{isResolvedLocked ? 'Locked Ticket' : isStartMode ? 'Start Work' : 'Ticket Timer'}</span>
             <h4>
               {isResolvedLocked
@@ -3227,12 +3982,13 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
             </h4>
             <p>
               {isResolvedLocked
-                ? 'Resolved tickets are read-only for editing. Super admin emergency deletion remains available when required.'
+                ? 'Resolved tickets are read-only for editing.'
                 : isStartMode
-                  ? 'Saving as In Progress starts the work timer and changes this action to Update Ticket.'
+                  ? 'Saving as In Progress starts the work timer.'
                   : 'The timer ends when this ticket is resolved or canceled.'}
             </p>
           </div>
+
           <TicketWorkTimer ticket={ticket} now={now} compact={!getTicketWorkStartedAt(ticket)} />
         </div>
 
@@ -3271,32 +4027,14 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
           </div>
         </div>
 
-        {ticket.saarAttachment?.dataUrl && (
-          <div className="admin-attachment-box">
-            <div>
-              <strong>SAAR PDF Attachment</strong>
-              <p>{ticket.saarAttachment.name} · {ticket.saarAttachment.sizeLabel || 'PDF file'}</p>
-            </div>
-            <a href={ticket.saarAttachment.dataUrl} target="_blank" rel="noopener noreferrer">
-              Open PDF
-            </a>
+
+        <div className="ticket-action-details-row">
+          <div className="admin-description-box ticket-action-description">
+            <span>Description of Problem</span>
+            <PreservedText value={ticket.description} />
           </div>
-        )}
 
-        <div className="admin-attachment-box admin-photo-attachment-box">
-          <div>
-            <strong>Photo / Screenshot Attachments</strong>
-            <p>{ticket.photoAttachments?.length || 0} photo{ticket.photoAttachments?.length === 1 ? '' : 's'} attached by the employee</p>
-          </div>
-          <PhotoAttachmentGallery photos={ticket.photoAttachments} emptyText="No photos attached to this ticket." />
-        </div>
-
-        <div className="admin-description-box ticket-action-description">
-          <span>Description of Problem</span>
-          <PreservedText value={ticket.description} />
-        </div>
-
-        <div className="ticket-form-grid ticket-action-update-grid">
+          <div className="ticket-action-control-stack">
           <div className="ticket-form-group">
             <label>Status</label>
             <select
@@ -3327,7 +4065,7 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
             </select>
           </div>
 
-          <div className="ticket-form-group full">
+          <div className="ticket-form-group">
             <label>{isEscalationStatus ? 'Assigned ICT Staff / Escalation Partner' : 'Assigned ICT Staff'}</label>
             <select
               className="ticket-field ticket-select"
@@ -3343,7 +4081,11 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
             </select>
           </div>
 
-          <div className="ticket-form-group full">
+          </div>
+        </div>
+
+        <div className="ticket-action-notes-grid">
+          <div className="ticket-form-group">
             <label>Action Taken</label>
             <textarea
               className="ticket-field ticket-textarea admin-small-textarea"
@@ -3354,7 +4096,7 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
             />
           </div>
 
-          <div className="ticket-form-group full">
+          <div className="ticket-form-group">
             <label>Admin Remarks</label>
             <textarea
               className="ticket-field ticket-textarea admin-small-textarea"
@@ -3365,7 +4107,7 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
             />
           </div>
 
-          <div className="ticket-form-group full">
+          <div className="ticket-form-group">
             <label>Resolution Notes</label>
             <textarea
               className="ticket-field ticket-textarea admin-small-textarea"
@@ -3377,18 +4119,31 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
           </div>
         </div>
 
-        <TicketConversationPanel
-          currentUser={currentUser}
-          messages={ticketMessages}
-          messageDraft={messageDraft}
-          messagePhotos={messagePhotos}
-          messageError={messageError}
-          isSending={isSendingMessage}
-          onMessageChange={setMessageDraft}
-          onPhotoChange={handleConversationPhotoChange}
-          onRemovePhoto={(photoId) => setMessagePhotos((current) => current.filter((photo) => photo.id !== photoId))}
-          onSend={sendTicketMessage}
-        />
+        {(ticket.saarAttachment?.dataUrl || ticket.photoAttachments?.length > 0) && (
+          <div className="ticket-action-attachments-row">
+            {ticket.saarAttachment?.dataUrl && (
+              <div className="admin-attachment-box">
+                <div>
+                  <strong>SAAR PDF Attachment</strong>
+                  <p>{ticket.saarAttachment.name} - {ticket.saarAttachment.sizeLabel || 'PDF file'}</p>
+                </div>
+                <a href={ticket.saarAttachment.dataUrl} target="_blank" rel="noopener noreferrer">
+                  Open PDF
+                </a>
+              </div>
+            )}
+
+            {ticket.photoAttachments?.length > 0 && (
+              <div className="admin-attachment-box admin-photo-attachment-box">
+                <div>
+                  <strong>Photo / Screenshot Attachments</strong>
+                  <p>{ticket.photoAttachments.length} photo{ticket.photoAttachments.length === 1 ? '' : 's'} attached by the employee</p>
+                </div>
+                <PhotoAttachmentGallery photos={ticket.photoAttachments} emptyText="" />
+              </div>
+            )}
+          </div>
+        )}
 
         {formError && <div className="form-error">{formError}</div>}
 
@@ -3418,6 +4173,41 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
           )}
         </div>
       </form>
+
+      {isChatOpen && (
+        <TicketConversationPanel
+          ticket={ticket}
+          currentUser={currentUser}
+          messages={ticketMessages}
+          messageDraft={messageDraft}
+          messagePhotos={messagePhotos}
+          messageError={messageError}
+          isSending={isSendingMessage}
+          floating
+          canSend={canSendConversationMessage}
+          unreadCount={unreadConversationCount}
+          onClose={() => setIsChatMinimized(true)}
+          onMessageChange={setMessageDraft}
+          onPhotoChange={handleConversationPhotoChange}
+          onRemovePhoto={(photoId) => setMessagePhotos((current) => current.filter((photo) => photo.id !== photoId))}
+          onSend={sendTicketMessage}
+        />
+      )}
+
+      {shouldShowConversation && isChatMinimized && (
+        <button
+          type="button"
+          className="ticket-chat-launcher"
+          onClick={() => {
+            setIsChatMinimized(false);
+            setUnreadConversationCount(0);
+          }}
+          aria-label="Open ticket conversation"
+        >
+          <MonoIcon icon={MessageCircle} />
+          {unreadConversationCount > 0 && <span>{unreadConversationCount}</span>}
+        </button>
+      )}
     </div>
   );
 }
@@ -3441,6 +4231,8 @@ export default function AdminDashboardPage() {
   const [isPageTransitioning, setIsPageTransitioning] = useState(false);
   const [transitionLabel, setTransitionLabel] = useState(adminTransitionLabels.dashboard);
   const [timerNow, setTimerNow] = useState(Date.now());
+  const [notifications, setNotifications] = useState([]);
+  const [showNotifications, setShowNotifications] = useState(false);
   const [filters, setFilters] = useState({
     search: '',
     status: 'All',
@@ -3484,8 +4276,29 @@ export default function AdminDashboardPage() {
 
         if (cancelled) return;
 
-        if (!activeUser || !isAdminRole(activeUser.role)) {
-          await signOutPortal().catch(() => {});
+        if (!activeUser) {
+          setAuthChecked(true);
+          setAdmin(null);
+
+          window.alert(
+            'No active login session was found on the Admin Dashboard. Please log in again. The session was not cleared so we can debug it.'
+          );
+
+          router.replace(LOGIN_ROUTE);
+          return;
+        }
+
+        if (!isAdminRole(activeUser.role)) {
+          setAuthChecked(true);
+          setAdmin(null);
+
+          window.alert(
+            `Login succeeded, but this account is not allowed to open the Admin Dashboard.
+
+Email: ${activeUser.email}
+Current role: ${activeUser.role || 'No role found'}`
+          );
+
           router.replace(LOGIN_ROUTE);
           return;
         }
@@ -3493,27 +4306,41 @@ export default function AdminDashboardPage() {
         if (isInactivePortalUser(activeUser)) {
           setIsInactiveBlocked(true);
           setAuthChecked(true);
-          await signOutPortal().catch(() => {});
+          setAdmin(null);
+
           window.setTimeout(() => {
             router.replace('/');
           }, 5000);
+
           return;
         }
 
         setAdmin(activeUser);
-        await loadData();
+        setAuthChecked(true);
+
+        void loadData({
+          includeUsers: true,
+        }).catch((error) => {
+          console.error('[Admin Dashboard Load Error]', error);
+          window.alert(error.message || 'Unable to load dashboard data.');
+        });
+      } catch (error) {
+        console.error('[Admin Auth Check Error]', error);
 
         if (!cancelled) {
           setAuthChecked(true);
-        }
-      } catch {
-        if (!cancelled) {
+          setAdmin(null);
+
+          window.alert(
+            error.message || 'Admin session check failed. Please check the console.'
+          );
+
           router.replace(LOGIN_ROUTE);
         }
       }
     };
 
-    verifySession();
+    void verifySession();
 
     return () => {
       cancelled = true;
@@ -3548,6 +4375,50 @@ export default function AdminDashboardPage() {
       window.clearInterval(intervalId);
     };
   }, [authChecked, activeSection]);
+
+  useEffect(() => {
+    if (!authChecked || !admin) return undefined;
+
+    const unsubscribe = subscribeToTickets(({ eventType, ticket }) => {
+      if (!ticket?.id) return;
+
+      if (eventType === 'INSERT') {
+        const notification = {
+          id: `${ticket.id}-${Date.now()}`,
+          ticketId: ticket.id,
+          title: 'New employee ticket submitted',
+          body: `${ticket.requester || ticket.ownerEmail || 'Employee'} submitted ${ticket.concernType || ticket.supportCategory || 'a helpdesk request'}.`,
+          createdAt: new Date().toLocaleString(),
+          read: false,
+        };
+
+        setNotifications((current) => [notification, ...current].slice(0, 12));
+      }
+
+      setTickets((currentTickets) => {
+        if (eventType === 'DELETE') {
+          setNotifications((currentNotifications) =>
+            currentNotifications.filter((notification) => notification.ticketId !== ticket.id)
+          );
+
+          setSelectedTicket((currentSelectedTicket) =>
+            currentSelectedTicket?.id === ticket.id ? null : currentSelectedTicket
+          );
+
+          return currentTickets.filter((item) => item.id !== ticket.id);
+        }
+
+        const exists = currentTickets.some((item) => item.id === ticket.id);
+        const nextTickets = exists
+          ? currentTickets.map((item) => (item.id === ticket.id ? ticket : item))
+          : [ticket, ...currentTickets];
+
+        return sortTickets(nextTickets);
+      });
+    });
+
+    return unsubscribe;
+  }, [authChecked, admin]);
 
   useEffect(() => {
     if (!isPageTransitioning) return undefined;
@@ -3607,6 +4478,27 @@ export default function AdminDashboardPage() {
   const isSuperAdmin = normalizePortalRole(admin?.role) === 'superadmin';
   const canCreateUsers = isSuperAdmin;
   const canDeleteTickets = isSuperAdmin;
+  const unreadNotificationCount = notifications.filter((notification) => !notification.read).length;
+
+  const markNotificationsRead = () => {
+    setNotifications((current) =>
+      current.map((notification) => ({ ...notification, read: true }))
+    );
+  };
+
+  const toggleNotifications = () => {
+    setShowNotifications((current) => !current);
+  };
+
+  const openNotificationTicket = (notification) => {
+    const ticket = tickets.find((item) => item.id === notification.ticketId);
+
+    setShowNotifications(false);
+
+    if (ticket) {
+      void handleOpenTicket(ticket);
+    }
+  };
 
   const goTo = (section) => {
     if (section !== activeSection) {
@@ -3698,9 +4590,17 @@ export default function AdminDashboardPage() {
     };
     const currentStaffName = admin?.name || 'Unassigned';
     const nextStatus = normalizeTicketStatus(updates.status);
+    const currentStatus = normalizeTicketStatus(currentTicket?.status);
 
     if (!nextUpdates.technician || nextUpdates.technician === 'Unassigned') {
       nextUpdates.technician = currentStaffName;
+    }
+
+    if (updates.status && nextStatus && nextStatus !== currentStatus) {
+      nextUpdates.statusHistory = [
+        ...(Array.isArray(currentTicket?.statusHistory) ? currentTicket.statusHistory : []),
+        buildStatusHistoryEntry(updates.status, timestamp, admin),
+      ];
     }
 
     if (nextStatus === 'in progress') {
@@ -3716,6 +4616,7 @@ export default function AdminDashboardPage() {
         nextUpdates.workStartedAt = timestamp;
       }
 
+      nextUpdates.dateLabel = currentTicket?.dateLabel || timestamp;
       nextUpdates.workEndedAt = currentTicket?.workEndedAt || '';
     }
 
@@ -3797,6 +4698,9 @@ export default function AdminDashboardPage() {
         bypassStatusLock: true,
       });
       setSelectedTicket(null);
+      setNotifications((currentNotifications) =>
+        currentNotifications.filter((notification) => notification.ticketId !== ticket.id)
+      );
       setTickets((currentTickets) => currentTickets.filter((item) => item.id !== ticket.id));
       await loadData({
         includeUsers: activeSection === 'users' || activeSection === 'create-user',
@@ -3848,9 +4752,50 @@ export default function AdminDashboardPage() {
                 Synced {lastSynced || 'now'}
               </span>
 
-              <button className="topbar-icon-btn" type="button" aria-label="Notifications" onClick={() => loadData({ includeUsers: activeSection === 'users' || activeSection === 'create-user' })}>
-                <Icon.Bell />
-              </button>
+              <div className="topbar-notification-wrap">
+                <button
+                  className={`topbar-icon-btn notification-btn${unreadNotificationCount ? ' has-unread' : ''}`}
+                  type="button"
+                  aria-label="Notifications"
+                  aria-expanded={showNotifications}
+                  onClick={toggleNotifications}
+                >
+                  <Icon.Bell />
+                  {unreadNotificationCount > 0 && (
+                    <span className="notification-badge">{unreadNotificationCount}</span>
+                  )}
+                </button>
+
+                {showNotifications && (
+                  <div className="notification-popover glass" role="status" aria-live="polite">
+                    <div className="notification-popover-head">
+                      <strong>Notifications</strong>
+                      <button type="button" onClick={markNotificationsRead}>Mark read</button>
+                    </div>
+
+                    <div className="notification-list">
+                      {notifications.length ? (
+                        notifications.map((notification) => (
+                          <button
+                            key={notification.id}
+                            type="button"
+                            className={`notification-item${notification.read ? '' : ' unread'}`}
+                            onClick={() => openNotificationTicket(notification)}
+                          >
+                            <span>{notification.title}</span>
+                            <p>{notification.body}</p>
+                            <em>{notification.createdAt}</em>
+                          </button>
+                        ))
+                      ) : (
+                        <div className="notification-empty">
+                          <p>No new ticket notifications yet.</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
 
               <div className="profile-chip">
                 <span className="profile-chip-avatar">{admin.initials}</span>
@@ -3979,3 +4924,4 @@ export default function AdminDashboardPage() {
     </>
   );
 }
+

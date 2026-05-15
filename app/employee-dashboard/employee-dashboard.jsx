@@ -1,6 +1,6 @@
-'use client';
+﻿'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   BadgeCheck,
@@ -34,35 +34,35 @@ import {
   Wrench,
   X,
 } from 'lucide-react';
-import Navbar from '@/components/Navbar/Navbar';
 import {
   BRANCHES,
   CATEGORY_TEMPLATES,
-  CONCERN_TYPES,
   DEPARTMENTS,
   DEVICE_OPTIONS,
-  SUPPORT_CATEGORIES,
   SLA_LEVELS,
   isUnresolved,
   slugify,
 } from '../portalStorage';
 import {
   getCurrentPortalUser,
+  getPortalHomeRoute,
   INACTIVE_ACCOUNT_MESSAGE,
   isInactivePortalUser,
   signOutPortal,
 } from '@/lib/auth/portalAuth';
 import {
+  canTicketAcceptMessages,
   createTicket,
   createTicketMessage,
   getTicket,
   getTicketMessages,
   getTicketsForUser,
+  isTicketBeingHandled,
   subscribeToTicket,
   subscribeToTicketMessages,
   updateTicket,
 } from '@/lib/tickets/portalTickets';
-import './dashboard.css';
+import './employee-dashboard.css';
 
 /* =========================
    ROUTES
@@ -82,34 +82,107 @@ const PHOTO_MAX_COUNT = 5;
 const PHOTO_ACCEPT = 'image/jpeg,image/jpg,image/png,image/webp';
 const PHOTO_ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
+
+const HELPDESK_CATEGORY_CONCERNS = {
+  'Software Support': [
+    'Application Installation or Update',
+    'Application Error or Bug',
+    'Software License or Activation',
+    'System Configuration',
+    'Application Access Request',
+  ],
+  'Network Support': [
+    'Internet or Wi-Fi Connection',
+    'LAN Connection',
+    'Network Printer or Shared Device',
+    'VPN or Remote Access',
+    'Network Account or Voucher',
+  ],
+  'Hardware Support': [
+    'Desktop or Laptop Issue',
+    'Printer or Scanner Issue',
+    'Monitor or Display Issue',
+    'Keyboard Mouse or Peripheral',
+    'Power UPS or AVR Issue',
+  ],
+  'User Account Management': [
+    'Password Reset',
+    'Account Unlock',
+    'Create User Account',
+    'Change Access Permission',
+    'Email or Outlook Account',
+    'MBWIN Account Request',
+  ],
+};
+
+const HELPDESK_SUPPORT_CATEGORIES = Object.keys(HELPDESK_CATEGORY_CONCERNS);
+const getConcernOptionsForCategory = (category = '') => HELPDESK_CATEGORY_CONCERNS[category] || [];
+
+const OTHER_SERVICES_STORAGE_KEY = 'mempcop-employee-other-services';
+const OTHER_SERVICE_CATEGORIES = [
+  'Burnout',
+  'Office Equipment Request',
+  'Facilities / Maintenance Request',
+  'Custodial Assistance',
+  'Asset / Equipment Request',
+  'Document / Records Request',
+  'Other Company Service',
+];
+
+const createOtherServiceId = () => {
+  const year = new Date().getFullYear();
+  const randomPart = String(Math.floor(Math.random() * 10000)).padStart(4, '0');
+
+  return `OS-${year}-${randomPart}`;
+};
+
+const getNewOtherServiceForm = (user = {}) => ({
+  branch: user.branch || user.office || '',
+  custodian: '',
+  deviceName: '',
+  department: user.department || '',
+  supportCategory: '',
+  remarks: '',
+});
+
+const getOtherServiceRemarksPlaceholder = (category = '') => {
+  if (!category) return 'Select an Other Services category, then write the request details here.';
+
+  if (category === 'Burnout') {
+    return 'Write the burnout details, affected device, location, and assistance needed.';
+  }
+
+  return `Write additional details about the ${category} request.`;
+};
+
 const ANNOUNCEMENTS = [
   {
     tag: 'Helpdesk',
-    title: 'Centralized employee technical support',
+    title: 'Use the correct support category',
     description:
-      'Submit ICT concerns with complete information, required attachments, and manually selected SLA level for proper ICT routing.',
+      'Choose Software Support, Network Support, Hardware Support, or User Account Management before selecting the concern type.',
+    date: 'Guide',
+  },
+  {
+    tag: 'SLA',
+    title: 'SLA is selected manually by the user',
+    description:
+      'The selected SLA level also sets the operational impact and will not be overwritten by the system.',
+    date: 'Manual',
+  },
+  {
+    tag: 'Required',
+    title: 'Complete the tailored issue description',
+    description:
+      'The issue description fields change depending on the selected concern type so ICT receives the right details.',
     date: 'Active',
-  },
-  {
-    tag: 'Support',
-    title: 'Track status, technician action, and resolution',
-    description:
-      'Every submitted request can be reviewed from your ticket history. Updates from ICT will appear in your ticket details.',
-    date: 'Live',
-  },
-  {
-    tag: 'Reminder',
-    title: 'MBWIN requests require SAAR attachment',
-    description:
-      'For MBWIN-related concerns, attach the approved SAAR PDF before submitting the request.',
-    date: 'Required',
   },
 ];
 
 const GUIDES = [
-  'Provide the branch, department, device or workstation name, and complete issue description.',
-  'For MBWIN concerns, attach the approved SAAR PDF before submitting the ticket.',
-  'Use the ticket details view to monitor technician action, remarks, and resolution notes.',
+  'Select a support category first. The concern type dropdown will only show concerns related to that category.',
+  'Choose the correct SLA level and operational impact before submitting the ticket.',
+  'For installation or update requests, provide the application name, request type, purpose, and remarks.',
 ];
 
 const SLA_PICKER_OPTIONS = [
@@ -179,11 +252,6 @@ const emptyForm = {
   sla: 'Low',
 };
 
-/* =========================
-   CLEAN ISSUE DESCRIPTION TEMPLATES
-   Removed redundant Device Type, Device Name, and Tried.
-========================= */
-
 const DEFAULT_DESCRIPTION_TEMPLATE = [
   'AnyDesk:',
   'System/App:',
@@ -192,6 +260,13 @@ const DEFAULT_DESCRIPTION_TEMPLATE = [
 ].join('\n');
 
 const CONCERN_DESCRIPTION_TEMPLATES = {
+  applicationRequest: [
+    'Application Name:',
+    'Request Type:',
+    'Purpose:',
+    'Remarks:',
+  ].join('\n'),
+
   mbwin: [
     'AnyDesk:',
     'MBWIN Account:',
@@ -315,6 +390,23 @@ const getIssueDescriptionTemplate = (context = {}) => {
   const deviceName = typeof context === 'string' ? '' : context.deviceName;
 
   const combined = [supportCategory, concernType, deviceName].map(normalize).join(' ');
+
+  if (
+    hasAnyKeyword(combined, [
+      'application installation',
+      'application update',
+      'installation or update',
+      'software installation',
+      'system update',
+      'program installation',
+      'install application',
+      'install software',
+      'software license',
+      'activation',
+    ])
+  ) {
+    return CONCERN_DESCRIPTION_TEMPLATES.applicationRequest;
+  }
 
   if (hasAnyKeyword(combined, ['mbwin', 'mb win', 'mbwim', 'mb wim', 'teller', 'treasury', 'saar'])) {
     return CONCERN_DESCRIPTION_TEMPLATES.mbwin;
@@ -489,11 +581,6 @@ const updateDescriptionLabelValue = (value = '', context = {}, label = '', nextV
   );
 };
 
-/*
-  No auto-prefill from device name.
-  This prevents duplicate details because device/system is already selected
-  in the main Device / Workstation / System field.
-*/
 const getContextPrefillForLabel = () => '';
 
 const applyDescriptionContextPrefills = (value = '', context = {}, previousContext = {}) => {
@@ -517,6 +604,10 @@ const applyDescriptionContextPrefills = (value = '', context = {}, previousConte
 const getDescriptionInputPlaceholder = (label = '') => {
   const lowerLabel = normalize(label);
 
+  if (lowerLabel.includes('application name')) return 'Type the application or system name';
+  if (lowerLabel.includes('request type')) return 'Example: installation, update, license, or activation';
+  if (lowerLabel.includes('purpose')) return 'State the business purpose of the request';
+  if (lowerLabel.includes('remarks')) return 'Add other important details or approval notes';
   if (lowerLabel.includes('anydesk')) return 'Enter AnyDesk number';
   if (lowerLabel.includes('summary')) return 'Briefly describe the issue';
   if (lowerLabel.includes('error') || lowerLabel.includes('warning') || lowerLabel.includes('signal')) {
@@ -558,6 +649,10 @@ const hasMeaningfulDescriptionDetails = (value = '', context = {}) => {
 
 const getIssueDescriptionHint = (form = {}) => {
   const combined = getIssueContextText(form);
+
+  if (hasAnyKeyword(combined, ['application installation', 'application update', 'installation or update', 'software license', 'activation'])) {
+    return 'For installation or update requests, include the application name, request type, purpose, and remarks. No error signal is required.';
+  }
 
   if (isMbwinRequest(form)) {
     return 'For MBWIN concerns, include the account, requested access, affected module, error, and SAAR reference.';
@@ -610,23 +705,10 @@ const detectOperationalImpact = (form = {}) => {
 
   if (
     hasAnyKeyword(combined, [
-      'ransomware',
-      'data breach',
-      'breach',
-      'security incident',
-      'data loss',
-      'database down',
-      'server down',
-      'system down',
-      'core system down',
-      'all branch down',
-      'entire branch down',
-      'no operation',
-      'cannot operate',
-      'cannot transact',
-      'transaction stopped',
-      'service stopped',
-      'production stopped',
+      'ransomware', 'data breach', 'breach', 'security incident', 'data loss',
+      'database down', 'server down', 'system down', 'core system down',
+      'all branch down', 'entire branch down', 'no operation', 'cannot operate',
+      'cannot transact', 'transaction stopped', 'service stopped', 'production stopped',
     ])
   ) {
     return 'Core operation affected';
@@ -634,19 +716,9 @@ const detectOperationalImpact = (form = {}) => {
 
   if (
     hasAnyKeyword(combined, [
-      'branch operation',
-      'branch affected',
-      'all users',
-      'whole branch',
-      'no internet',
-      'internet outage',
-      'network outage',
-      'router down',
-      'modem down',
-      'main printer down',
-      'power supply',
-      'server',
-      'backup failed',
+      'branch operation', 'branch affected', 'all users', 'whole branch',
+      'no internet', 'internet outage', 'network outage', 'router down', 'modem down',
+      'main printer down', 'power supply', 'server', 'backup failed',
     ])
   ) {
     return 'Branch operation affected';
@@ -654,14 +726,8 @@ const detectOperationalImpact = (form = {}) => {
 
   if (
     hasAnyKeyword(combined, [
-      'department affected',
-      'department',
-      'multiple users',
-      'several users',
-      'team affected',
-      'shared printer',
-      'shared scanner',
-      'common area',
+      'department affected', 'department', 'multiple users', 'several users',
+      'team affected', 'shared printer', 'shared scanner', 'common area',
     ])
   ) {
     return 'Department affected';
@@ -669,22 +735,9 @@ const detectOperationalImpact = (form = {}) => {
 
   if (
     hasAnyKeyword(combined, [
-      'mbwin',
-      'mb win',
-      'printer',
-      'scanner',
-      'network connection',
-      'wi-fi',
-      'wifi',
-      'voucher',
-      'account',
-      'access',
-      'password',
-      'login',
-      'email',
-      'outlook',
-      'application error',
-      'software error',
+      'mbwin', 'mb win', 'printer', 'scanner', 'network connection',
+      'wi-fi', 'wifi', 'voucher', 'account', 'access', 'password',
+      'login', 'email', 'outlook', 'application error', 'software error',
     ])
   ) {
     return 'Multiple users affected';
@@ -753,8 +806,47 @@ const filesToPhotoAttachments = async (files = [], existingCount = 0) => {
   );
 };
 
-const getTicketOwnerMatch = (ticket, user) =>
-  ticket.ownerId === user.id || ticket.ownerEmail === user.email;
+let portalBodyScrollLockCount = 0;
+let portalBodyScrollLockSnapshot = null;
+
+function useBodyScrollLock(active) {
+  useEffect(() => {
+    if (!active || typeof document === 'undefined') return undefined;
+
+    const body = document.body;
+    const root = document.documentElement;
+
+    if (portalBodyScrollLockCount === 0) {
+      const scrollbarWidth = window.innerWidth - root.clientWidth;
+
+      portalBodyScrollLockSnapshot = {
+        bodyOverflow: body.style.overflow,
+        rootOverflow: root.style.overflow,
+        bodyPaddingRight: body.style.paddingRight,
+      };
+
+      body.style.overflow = 'hidden';
+      root.style.overflow = 'hidden';
+
+      if (scrollbarWidth > 0) {
+        body.style.paddingRight = `${scrollbarWidth}px`;
+      }
+    }
+
+    portalBodyScrollLockCount += 1;
+
+    return () => {
+      portalBodyScrollLockCount = Math.max(0, portalBodyScrollLockCount - 1);
+
+      if (portalBodyScrollLockCount === 0 && portalBodyScrollLockSnapshot) {
+        body.style.overflow = portalBodyScrollLockSnapshot.bodyOverflow;
+        root.style.overflow = portalBodyScrollLockSnapshot.rootOverflow;
+        body.style.paddingRight = portalBodyScrollLockSnapshot.bodyPaddingRight;
+        portalBodyScrollLockSnapshot = null;
+      }
+    };
+  }, [active]);
+}
 
 const canEmployeeEditTicket = (ticket = {}) => {
   if (ticket.employeeEditLocked) return false;
@@ -771,6 +863,125 @@ const canEmployeeEditTicket = (ticket = {}) => {
 
   return editableStatuses.includes(status) && !hasTechnician && !hasStarted && !hasAction;
 };
+
+/* =========================
+   ICONS
+========================= */
+
+const MonoIcon = ({ icon: IconComponent }) => (
+  <IconComponent className="admin-mono-icon" aria-hidden="true" />
+);
+
+const Icon = {
+  Dashboard: () => <LayoutDashboard className="sidebar-nav-icon" aria-hidden="true" />,
+  Profile: () => <UserRound className="sidebar-nav-icon" aria-hidden="true" />,
+  Helpdesk: () => <Ticket className="sidebar-nav-icon" aria-hidden="true" />,
+  OtherServices: () => <Wrench className="sidebar-nav-icon" aria-hidden="true" />,
+  HRMax: () => <BriefcaseBusiness className="sidebar-nav-icon" aria-hidden="true" />,
+  Connect: () => <Link2 className="sidebar-nav-icon" aria-hidden="true" />,
+  Logout: () => <LogOut className="sidebar-nav-icon" aria-hidden="true" />,
+  Bell: () => <Bell className="icon-bell" aria-hidden="true" />,
+};
+
+const employeeTransitionLabels = {
+  dashboard: 'Opening employee dashboard...',
+  profile: 'Loading employee profile...',
+  helpdesk: 'Preparing helpdesk workspace...',
+  otherServices: 'Opening other services...',
+  logout: 'Signing out...',
+};
+
+function PortalTransitionLoader({ label }) {
+  return (
+    <div className="portal-transition-loader" role="status" aria-live="polite" aria-label={label}>
+      <div className="portal-transition-card">
+        <img src="/Logos/Logo.png" alt="" aria-hidden="true" />
+      </div>
+    </div>
+  );
+}
+
+function InactiveAccountNotice() {
+  return (
+    <main className="portal-main portal-app-main">
+      <div className="portal-shell">
+        <section className="panel-card glass profile-status-panel">
+          <div className="section-heading">
+            <span className="section-kicker">Access Restricted</span>
+            <h2>{INACTIVE_ACCOUNT_MESSAGE}</h2>
+            <p>You will be redirected to the home page in 5 seconds.</p>
+          </div>
+        </section>
+      </div>
+    </main>
+  );
+}
+
+/* =========================
+   SIDEBAR
+========================= */
+
+function Sidebar({ active, onNav, onLogout, open }) {
+  const items = [
+    { key: 'dashboard', label: 'Dashboard', Icon: Icon.Dashboard },
+    { key: 'profile', label: 'My Profile', Icon: Icon.Profile },
+    { key: 'helpdesk', label: 'Helpdesk', Icon: Icon.Helpdesk },
+    { key: 'otherServices', label: 'Other Services', Icon: Icon.OtherServices },
+  ];
+
+  return (
+    <aside className={`portal-sidebar${open ? ' open' : ''}`}>
+      <div className="sidebar-brand">
+        <span className="sidebar-eyebrow">MEMPCO</span>
+        <h3 className="sidebar-title">Employee Portal</h3>
+      </div>
+
+      <nav className="sidebar-nav" aria-label="Main navigation">
+        {items.map(({ key, label, Icon: NavIcon }) => (
+          <button
+            key={key}
+            type="button"
+            className={`sidebar-nav-btn${active === key ? ' active' : ''}`}
+            onClick={() => onNav(key)}
+            aria-current={active === key ? 'page' : undefined}
+          >
+            <NavIcon />
+            {label}
+          </button>
+        ))}
+
+        <a className="sidebar-nav-btn sidebar-external-link" href={HRMAX_ROUTE}>
+          <Icon.HRMax />
+          HRMax
+          <ExternalLink className="sidebar-trailing-icon" aria-hidden="true" />
+        </a>
+
+        <a
+          className="sidebar-nav-btn sidebar-external-link"
+          href="https://www.facebook.com/groups/379262493052189"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Open MEMPCOnnected Facebook group"
+        >
+          <Icon.Connect />
+          MEMPCOnnected
+          <ExternalLink className="sidebar-trailing-icon" aria-hidden="true" />
+        </a>
+
+        <div className="sidebar-logout">
+          <button type="button" className="sidebar-nav-btn" onClick={onLogout}>
+            <Icon.Logout />
+            Logout
+          </button>
+        </div>
+      </nav>
+    </aside>
+  );
+}
+
+/* =========================
+   SHARED COMPONENTS
+========================= */
 
 function PhotoAttachmentGallery({ photos = [], emptyText = 'No photo attachments.' }) {
   const validPhotos = Array.isArray(photos)
@@ -860,211 +1071,6 @@ function IssueDescriptionBuilder({ form, onChange }) {
   );
 }
 
-function TicketConversationPanel({
-  currentUser,
-  messages,
-  messageDraft,
-  messagePhotos,
-  messageError,
-  isSending,
-  onMessageChange,
-  onPhotoChange,
-  onRemovePhoto,
-  onSend,
-}) {
-  return (
-    <section className="ticket-conversation-section">
-      <div className="ticket-conversation-head">
-        <div>
-          <span className="section-kicker"><MonoIcon icon={MessageCircle} /> Conversation</span>
-          <h4>Employee and ICT communication</h4>
-        </div>
-        <span className="ticket-conversation-count">{messages.length} message{messages.length === 1 ? '' : 's'}</span>
-      </div>
-
-      <div className="ticket-message-list">
-        {messages.length ? (
-          messages.map((item) => {
-            const isMine = item.senderId === currentUser?.id;
-
-            return (
-              <article key={item.id} className={`ticket-message-bubble${isMine ? ' mine' : ''}`}>
-                <div className="ticket-message-meta">
-                  <strong>{item.senderName}</strong>
-                  <span>{item.senderRole} · {item.createdAt}</span>
-                </div>
-                {item.message && <p>{item.message}</p>}
-                <PhotoAttachmentGallery photos={item.attachments} emptyText="" />
-              </article>
-            );
-          })
-        ) : (
-          <div className="ticket-message-empty">
-            <MonoIcon icon={MessageCircle} />
-            <p>No conversation yet. Send a reply if ICT needs more details or screenshots.</p>
-          </div>
-        )}
-      </div>
-
-      <div className="ticket-message-composer">
-        <textarea
-          className="ticket-field ticket-textarea ticket-message-textarea"
-          value={messageDraft}
-          onChange={(e) => onMessageChange(e.target.value)}
-          placeholder="Write a reply or update for ICT..."
-          maxLength={800}
-        />
-
-        {messagePhotos.length > 0 && (
-          <div className="message-photo-preview-row">
-            {messagePhotos.map((photo) => (
-              <button
-                key={photo.id || photo.name}
-                type="button"
-                className="message-photo-preview"
-                onClick={() => onRemovePhoto(photo.id)}
-                title="Remove photo"
-              >
-                <img src={photo.dataUrl} alt={photo.name} />
-                <span><MonoIcon icon={X} /></span>
-              </button>
-            ))}
-          </div>
-        )}
-
-        <div className="ticket-message-actions">
-          <label className="message-attach-btn">
-            <MonoIcon icon={Paperclip} />
-            Attach photos
-            <input type="file" accept={PHOTO_ACCEPT} multiple onChange={onPhotoChange} />
-          </label>
-          <button type="button" className="modal-btn confirm" onClick={onSend} disabled={isSending}>
-            <MonoIcon icon={Send} />
-            {isSending ? 'Sending...' : 'Send Reply'}
-          </button>
-        </div>
-
-        {messageError && <div className="form-error">{messageError}</div>}
-      </div>
-    </section>
-  );
-}
-
-/* =========================
-   ICONS
-========================= */
-
-const MonoIcon = ({ icon: IconComponent }) => (
-  <IconComponent className="admin-mono-icon" aria-hidden="true" />
-);
-
-const Icon = {
-  Dashboard: () => <LayoutDashboard className="sidebar-nav-icon" aria-hidden="true" />,
-  Profile: () => <UserRound className="sidebar-nav-icon" aria-hidden="true" />,
-  Helpdesk: () => <Ticket className="sidebar-nav-icon" aria-hidden="true" />,
-  HRMax: () => <BriefcaseBusiness className="sidebar-nav-icon" aria-hidden="true" />,
-  Connect: () => <Link2 className="sidebar-nav-icon" aria-hidden="true" />,
-  Logout: () => <LogOut className="sidebar-nav-icon" aria-hidden="true" />,
-  Bell: () => <Bell className="icon-bell" aria-hidden="true" />,
-};
-
-const employeeTransitionLabels = {
-  dashboard: 'Opening employee dashboard...',
-  profile: 'Loading employee profile...',
-  helpdesk: 'Preparing helpdesk workspace...',
-  logout: 'Signing out...',
-};
-
-function PortalTransitionLoader({ label }) {
-  return (
-    <div className="portal-transition-loader" role="status" aria-live="polite" aria-label={label}>
-      <div className="portal-transition-card">
-        <img src="/Logos/Logo.png" alt="" aria-hidden="true" />
-      </div>
-    </div>
-  );
-}
-
-function InactiveAccountNotice() {
-  return (
-    <>
-      <Navbar />
-      <main className="portal-main portal-app-main">
-        <div className="portal-shell">
-          <section className="panel-card glass profile-status-panel">
-            <div className="section-heading">
-              <span className="section-kicker">Access Restricted</span>
-              <h2>{INACTIVE_ACCOUNT_MESSAGE}</h2>
-              <p>You will be redirected to the home page in 5 seconds.</p>
-            </div>
-          </section>
-        </div>
-      </main>
-    </>
-  );
-}
-
-/* =========================
-   SIDEBAR
-========================= */
-
-function Sidebar({ active, onNav, onLogout, open }) {
-  const items = [
-    { key: 'dashboard', label: 'Dashboard', Icon: Icon.Dashboard },
-    { key: 'profile', label: 'My Profile', Icon: Icon.Profile },
-    { key: 'helpdesk', label: 'Helpdesk', Icon: Icon.Helpdesk },
-  ];
-
-  return (
-    <aside className={`portal-sidebar${open ? ' open' : ''}`}>
-      <div className="sidebar-brand">
-        <span className="sidebar-eyebrow">MEMPCO</span>
-        <h3 className="sidebar-title">Employee Portal</h3>
-      </div>
-
-      <nav className="sidebar-nav" aria-label="Main navigation">
-        {items.map(({ key, label, Icon: NavIcon }) => (
-          <button
-            key={key}
-            type="button"
-            className={`sidebar-nav-btn${active === key ? ' active' : ''}`}
-            onClick={() => onNav(key)}
-            aria-current={active === key ? 'page' : undefined}
-          >
-            <NavIcon />
-            {label}
-          </button>
-        ))}
-
-        <a className="sidebar-nav-btn sidebar-external-link" href={HRMAX_ROUTE}>
-          <Icon.HRMax />
-          HRMax
-          <ExternalLink className="sidebar-trailing-icon" aria-hidden="true" />
-        </a>
-
-        <a
-          className="sidebar-nav-btn sidebar-external-link"
-          href="https://www.facebook.com/groups/379262493052189"
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label="Open MEMPCOnnected Facebook group"
-        >
-          <Icon.Connect />
-          MEMPCOnnected
-          <ExternalLink className="sidebar-trailing-icon" aria-hidden="true" />
-        </a>
-
-        <div className="sidebar-logout">
-          <button type="button" className="sidebar-nav-btn" onClick={onLogout}>
-            <Icon.Logout />
-            Logout
-          </button>
-        </div>
-      </nav>
-    </aside>
-  );
-}
-
 function TicketPagination({ page, totalPages, totalItems, pageSize, onPageChange }) {
   if (totalPages <= 1) return null;
 
@@ -1104,11 +1110,382 @@ function TicketPagination({ page, totalPages, totalItems, pageSize, onPageChange
 function StatCard({ icon, label, value, meta }) {
   return (
     <article className="stat-card glass">
-      <div className="stat-icon"><MonoIcon icon={icon} /></div>
-      <span className="stat-label">{label}</span>
+      <div className="stat-card-head">
+        <span className="stat-icon"><MonoIcon icon={icon} /></span>
+        <span className="stat-label">{label}</span>
+      </div>
       <p className="stat-value">{value}</p>
       <span className="stat-meta">{meta}</span>
     </article>
+  );
+}
+
+/* =========================
+   TICKET CONVERSATION PANEL
+   — mirrors admin TicketConversationPanel exactly
+========================= */
+
+function TicketConversationPanel({
+  ticket,
+  currentUser,
+  messages,
+  messageDraft,
+  messagePhotos,
+  messageError,
+  isSending,
+  floating = false,
+  canSend = true,
+  unreadCount = 0,
+  onClose,
+  onMessageChange,
+  onPhotoChange,
+  onRemovePhoto,
+  onSend,
+}) {
+  const messageListRef = useRef(null);
+  const disabledMessage =
+    'Conversation is closed. Replies are available only while ICT is actively handling an unresolved ticket.';
+
+  useEffect(() => {
+    const messageList = messageListRef.current;
+
+    if (!messageList) return;
+
+    const scrollToLatest = (behavior = 'smooth') => {
+      messageList.scrollTo({ top: messageList.scrollHeight, behavior });
+    };
+
+    scrollToLatest(messages.length > 1 ? 'smooth' : 'auto');
+    const timer = window.setTimeout(() => scrollToLatest('smooth'), 80);
+
+    return () => window.clearTimeout(timer);
+  }, [messages.length]);
+
+  const handleMessageKeyDown = (e) => {
+    if (e.key !== 'Enter' || e.shiftKey || e.nativeEvent?.isComposing || isSending || !canSend) return;
+
+    e.preventDefault();
+    onSend();
+  };
+
+  return (
+    <section className={`ticket-conversation-section${floating ? ' floating-ticket-chat' : ''}`}>
+      <div className="ticket-conversation-head">
+        <div>
+          <span className="section-kicker"><MonoIcon icon={MessageCircle} /> Conversation</span>
+          <h4>
+            {ticket?.id ? (
+              <>
+                <span className="ticket-chat-title-label">Ticket ID:</span>
+                <span className="ticket-chat-title-id">{ticket.id}</span>
+              </>
+            ) : (
+              'Employee and ICT communication'
+            )}
+          </h4>
+        </div>
+        <span className="ticket-conversation-count">
+          {unreadCount > 0 ? `${unreadCount} unread` : 'No unread'}
+        </span>
+        {onClose && (
+          <button type="button" className="ticket-chat-close" onClick={onClose} aria-label="Minimize conversation">
+            <MonoIcon icon={X} />
+          </button>
+        )}
+      </div>
+
+      <div className="ticket-message-list" ref={messageListRef}>
+        {messages.length ? (
+          messages.map((item) => {
+            const isMine = item.senderId === currentUser?.id;
+
+            return (
+              <article key={item.id} className={`ticket-message-item${isMine ? ' mine' : ''}`}>
+                <div className="ticket-message-meta">
+                  <strong>{item.senderName}</strong>
+                  <span>{item.senderRole} · {item.createdAt}</span>
+                </div>
+                <div className="ticket-message-bubble">
+                  {item.message && <p>{item.message}</p>}
+                  <PhotoAttachmentGallery photos={item.attachments} emptyText="" />
+                </div>
+              </article>
+            );
+          })
+        ) : (
+          <div className="ticket-message-empty">
+            <MonoIcon icon={MessageCircle} />
+            <p>No conversation yet. Send a reply if ICT needs more details or screenshots.</p>
+          </div>
+        )}
+      </div>
+
+      <div className={`ticket-message-composer${canSend ? '' : ' locked'}`}>
+        <textarea
+          className="ticket-field ticket-textarea ticket-message-textarea"
+          value={messageDraft}
+          onChange={(e) => onMessageChange(e.target.value)}
+          onKeyDown={handleMessageKeyDown}
+          placeholder={canSend ? 'Write a reply or update for ICT...' : disabledMessage}
+          maxLength={800}
+          disabled={!canSend}
+        />
+
+        {messagePhotos.length > 0 && (
+          <div className="message-photo-preview-row">
+            {messagePhotos.map((photo) => (
+              <button
+                key={photo.id || photo.name}
+                type="button"
+                className="message-photo-preview"
+                onClick={() => onRemovePhoto(photo.id)}
+                title="Remove photo"
+              >
+                <img src={photo.dataUrl} alt={photo.name} />
+                <span><MonoIcon icon={X} /></span>
+              </button>
+            ))}
+          </div>
+        )}
+
+        <div className="ticket-message-actions">
+          <label className={`message-attach-btn${canSend ? '' : ' disabled'}`}>
+            <MonoIcon icon={Paperclip} />
+            Attach photos
+            <input type="file" accept={PHOTO_ACCEPT} multiple onChange={onPhotoChange} disabled={!canSend} />
+          </label>
+          <button type="button" className="modal-btn confirm" onClick={onSend} disabled={isSending || !canSend}>
+            <MonoIcon icon={Send} />
+            {isSending ? 'Sending...' : 'Send Reply'}
+          </button>
+        </div>
+
+        {!canSend && <div className="ticket-chat-locked-note">{disabledMessage}</div>}
+        {messageError && <div className="form-error">{messageError}</div>}
+      </div>
+    </section>
+  );
+}
+
+/* =========================
+   EMPLOYEE TICKET DETAIL MODAL
+   — structure mirrors admin TicketActionModal exactly
+========================= */
+
+function EmployeeTicketDetailModal({
+  ticket,
+  user,
+  messages,
+  messageDraft,
+  messagePhotos,
+  messageError,
+  isSendingMessage,
+  shouldShowConversation,
+  canSendConversationMessage,
+  unreadCount,
+  isChatMinimized,
+  onClose,
+  onEdit,
+  onChatOpen,
+  onChatClose,
+  onMessageChange,
+  onPhotoChange,
+  onRemovePhoto,
+  onSend,
+}) {
+  const canEditTicket = canEmployeeEditTicket(ticket);
+  const lockReason =
+    ticket.employeeLockReason ||
+    ticket.employeeEditLockReason ||
+    'Locked because ICT is already handling this ticket.';
+  const lastUpdated = ticket.lastUpdated || ticket.lastEmployeeUpdate || ticket.date || ticket.createdAt || 'Not available';
+  const isChatOpen = shouldShowConversation && !isChatMinimized;
+
+  return (
+    <div
+      className={[
+        'modal-overlay',
+        'employee-ticket-action-overlay',
+        isChatOpen ? 'chat-open' : '',
+      ].filter(Boolean).join(' ')}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Ticket details"
+    >
+      <article className="modal-box glass employee-admin-modal-box employee-ticket-modal">
+        {/* Header — mirrors admin ticket-action-head */}
+        <div className="admin-modal-head ticket-action-head">
+          <div>
+            <div className="ticket-action-title-row">
+              <span className="ticket-id">{ticket.id}</span>
+              <div className="ticket-action-title-copy">
+                <h3>{ticket.concernType}</h3>
+                <p>{ticket.branch} - {ticket.department}</p>
+              </div>
+            </div>
+          </div>
+
+          <button type="button" className="admin-modal-close" onClick={onClose} aria-label="Close modal">
+            <MonoIcon icon={X} />
+          </button>
+        </div>
+
+        {/* Status panel — mirrors admin ticket-action-status-panel */}
+        <div className="admin-workflow-box ticket-action-status-panel">
+          <div className="ticket-action-workflow-copy">
+            <span className="section-kicker">Employee Ticket</span>
+            <h4>{canEditTicket ? 'This request can still be edited.' : 'ICT is already handling this request.'}</h4>
+            <p>{canEditTicket ? 'You may update the ticket while it is still pending review.' : lockReason}</p>
+          </div>
+
+          <div className="employee-ticket-status-stack" aria-label="Ticket status">
+            <span className={`status ${slugify(ticket.status)}`}>{ticket.status}</span>
+            <span className={`priority ${slugify(ticket.sla)}`}>{ticket.sla}</span>
+            {isMbwinRequest(ticket) && <span className="status saar">SAAR Required</span>}
+          </div>
+        </div>
+
+        {/* Info grid — mirrors admin ticket-action-info-grid */}
+        <div className="admin-modal-grid ticket-action-info-grid">
+          <div className="ticket-meta-cell">
+            <span>Branch</span>
+            <p>{ticket.branch || 'Not specified'}</p>
+          </div>
+          <div className="ticket-meta-cell">
+            <span>Department</span>
+            <p>{ticket.department || 'Not specified'}</p>
+          </div>
+          <div className="ticket-meta-cell">
+            <span>Support Category</span>
+            <p>{ticket.supportCategory || 'Unspecified'}</p>
+          </div>
+          <div className="ticket-meta-cell">
+            <span>Submitted</span>
+            <p>{ticket.createdAt || ticket.date || 'Submitted'}</p>
+          </div>
+          <div className="ticket-meta-cell">
+            <span>Device / System</span>
+            <p>{ticket.deviceName || 'Not specified'}</p>
+          </div>
+          <div className="ticket-meta-cell">
+            <span>Contact</span>
+            <p>{ticket.contactNumber || 'Not specified'}</p>
+          </div>
+          <div className="ticket-meta-cell">
+            <span>Impact</span>
+            <p>{ticket.impact || 'Not specified'}</p>
+          </div>
+          <div className="ticket-meta-cell">
+            <span>Assigned Technician</span>
+            <p>{ticket.technician || 'Unassigned'}</p>
+          </div>
+        </div>
+
+        {/* Details row — mirrors admin ticket-action-details-row */}
+        <div className="ticket-action-details-row">
+          <div className="admin-description-box ticket-action-description">
+            <span>Description of Problem</span>
+            <p style={{ whiteSpace: 'pre-wrap' }}>{ticket.description || 'No description provided.'}</p>
+          </div>
+
+          <div className="ticket-action-control-stack employee-ticket-update-stack">
+            <div className="employee-update-note">
+              <span>ICT Action</span>
+              <p>{ticket.actionTaken || 'No action recorded yet.'}</p>
+            </div>
+            <div className="employee-update-note">
+              <span>Remarks</span>
+              <p>{ticket.adminRemarks || 'No remarks yet.'}</p>
+            </div>
+            <div className="employee-update-note">
+              <span>Resolution</span>
+              <p>{ticket.resolution || 'No resolution yet.'}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Attachments */}
+        {(ticket.saarAttachment?.name || ticket.photoAttachments?.length > 0) && (
+          <div className="ticket-action-attachments-row">
+            {ticket.saarAttachment?.name && (
+              <div className="admin-attachment-box">
+                <div>
+                  <strong>SAAR PDF Attachment</strong>
+                  <p>{ticket.saarAttachment.name} - {ticket.saarAttachment.sizeLabel || 'PDF file'}</p>
+                </div>
+                {ticket.saarAttachment.dataUrl && (
+                  <a href={ticket.saarAttachment.dataUrl} target="_blank" rel="noopener noreferrer">
+                    Open PDF
+                  </a>
+                )}
+              </div>
+            )}
+
+            {ticket.photoAttachments?.length > 0 && (
+              <div className="admin-attachment-box admin-photo-attachment-box">
+                <div>
+                  <strong>Photo / Screenshot Attachments</strong>
+                  <p>{ticket.photoAttachments.length} photo{ticket.photoAttachments.length === 1 ? '' : 's'} attached for ICT review</p>
+                </div>
+                <PhotoAttachmentGallery photos={ticket.photoAttachments} emptyText="" />
+              </div>
+            )}
+          </div>
+        )}
+
+        <p className="modal-date-note">Last updated: {lastUpdated}</p>
+
+        {/* Footer — mirrors admin modal-footer */}
+        <div className="modal-footer">
+          <button type="button" className="modal-btn cancel" onClick={onClose}>
+            Close
+          </button>
+
+          {canEditTicket ? (
+            <button type="button" className="modal-btn confirm" onClick={onEdit}>
+              <MonoIcon icon={PenLine} />
+              Edit Ticket
+            </button>
+          ) : (
+            <span className="ticket-locked-pill modal-locked-pill">{lockReason}</span>
+          )}
+        </div>
+      </article>
+
+      {/* Floating chat — shown when chat is open (same pattern as admin) */}
+      {isChatOpen && (
+        <TicketConversationPanel
+          ticket={ticket}
+          currentUser={user}
+          messages={messages}
+          messageDraft={messageDraft}
+          messagePhotos={messagePhotos}
+          messageError={messageError}
+          isSending={isSendingMessage}
+          floating
+          canSend={canSendConversationMessage}
+          unreadCount={unreadCount}
+          onClose={onChatClose}
+          onMessageChange={onMessageChange}
+          onPhotoChange={onPhotoChange}
+          onRemovePhoto={onRemovePhoto}
+          onSend={onSend}
+        />
+      )}
+
+      {/* Chat launcher button — shown when chat is minimized (same as admin) */}
+      {shouldShowConversation && isChatMinimized && (
+        <button
+          type="button"
+          className="ticket-chat-launcher"
+          onClick={onChatOpen}
+          aria-label="Open ticket conversation"
+        >
+          <MonoIcon icon={MessageCircle} />
+          {unreadCount > 0 && <span>{unreadCount}</span>}
+        </button>
+      )}
+    </div>
   );
 }
 
@@ -1124,6 +1501,15 @@ function DashboardView({ user, tickets, openTickets, onGoTo }) {
   ).length;
 
   const latestTicket = tickets[0];
+  const latestSubmittedDate = latestTicket?.createdAt || latestTicket?.date || 'Not available';
+  const latestUpdatedDate =
+    latestTicket?.lastUpdated ||
+    latestTicket?.lastEmployeeUpdate ||
+    latestTicket?.updatedAt ||
+    latestTicket?.date ||
+    latestTicket?.createdAt ||
+    'No update recorded';
+  const supportCategoryEntries = Object.entries(HELPDESK_CATEGORY_CONCERNS);
 
   return (
     <div className="dashboard-view">
@@ -1154,64 +1540,134 @@ function DashboardView({ user, tickets, openTickets, onGoTo }) {
         ].map((item) => <StatCard key={item.label} {...item} />)}
       </section>
 
-      <section className="support-flow-grid">
-        {SUPPORT_FLOW.map((step, index) => (
-          <article key={step.title} className="support-flow-card glass">
-            <span>{String(index + 1).padStart(2, '0')}</span>
-            <h4>{step.title}</h4>
-            <p>{step.text}</p>
-          </article>
-        ))}
-      </section>
+      <section className="dashboard-support-layout" aria-label="Dashboard helpdesk guide and latest activity">
+        <article className="panel-card glass dashboard-support-main">
+          <div className="section-head dashboard-support-head">
+            <div>
+              <span className="section-kicker">Helpdesk Information</span>
+              <h3>ICT Support Guide</h3>
+            </div>
+            <button type="button" className="quick-action-btn primary dashboard-head-action" onClick={() => onGoTo('helpdesk', 'submit')}>
+              <MonoIcon icon={Send} />
+              Submit Ticket
+            </button>
+          </div>
 
-      <div className="dashboard-columns equal-columns">
-        <div className="dashboard-stack">
-          <section className="panel-card glass equal-panel">
-            <div className="section-head">
-              <div>
-                <span className="section-kicker">Internal Updates</span>
-                <h3>Helpdesk Notices</h3>
-              </div>
+          <p className="dashboard-guide-intro">
+            Use the helpdesk only for ICT-related concerns. The Support Category controls the available Concern Type options,
+            so choose the category first before completing the rest of the ticket details.
+          </p>
+
+          <div className="dashboard-info-band dashboard-info-band-top">
+            <div>
+              <span className="section-kicker">SLA &amp; Operational Impact</span>
+              <p>
+                Select the SLA level based on how wide the concern affects work. The operational impact follows the selected SLA and is saved with the ticket.
+              </p>
             </div>
 
-            <div className="announcement-list">
-              {ANNOUNCEMENTS.map((item) => (
-                <article key={item.title} className="announcement-item">
-                  <span className="announcement-tag">{item.tag}</span>
-                  <h4>{item.title}</h4>
-                  <p>{item.description}</p>
-                  <span className="announcement-date">{item.date}</span>
-                </article>
+            <div className="dashboard-sla-mini-grid">
+              {SLA_PICKER_OPTIONS.map((option) => (
+                <span key={option.level} className={`dashboard-sla-pill ${slugify(option.level)}`}>
+                  <strong>{option.level}</strong>
+                  {option.impact}
+                </span>
               ))}
             </div>
-          </section>
-        </div>
+          </div>
 
-        <div className="dashboard-stack">
-          <section className="panel-card glass equal-panel">
+          <div className="support-guide-grid">
+            {supportCategoryEntries.map(([category, concernList]) => (
+              <section key={category} className="support-guide-card">
+                <div className="support-guide-card-head">
+                  <span className="support-guide-icon"><MonoIcon icon={Ticket} /></span>
+                  <div>
+                    <span>Support Category</span>
+                    <h4>{category}</h4>
+                  </div>
+                </div>
+
+                <ul className="support-guide-concerns">
+                  {concernList.map((concern) => (
+                    <li key={concern}>{concern}</li>
+                  ))}
+                </ul>
+              </section>
+            ))}
+          </div>
+
+          <div className="dashboard-guide-examples" aria-label="Helpdesk submission examples">
+            <article className="dashboard-guide-example-card">
+              <span>Software example</span>
+              <p>
+                For Application Installation or Update, the form asks for Application Name, Request Type, Purpose, and Remarks instead of Error or Signal.
+              </p>
+            </article>
+            <article className="dashboard-guide-example-card">
+              <span>Network example</span>
+              <p>
+                For Internet or Wi-Fi concerns, include the connection type, affected area, users affected, summary, and status or error.
+              </p>
+            </article>
+            <article className="dashboard-guide-example-card">
+              <span>Hardware example</span>
+              <p>
+                For Desktop, Laptop, Printer, Scanner, Monitor, or Power concerns, include the device, problem summary, when it started, and the error or signal.
+              </p>
+            </article>
+            <article className="dashboard-guide-example-card">
+              <span>MBWIN reminder</span>
+              <p>
+                MBWIN account requests are under User Account Management and require an approved SAAR PDF attachment before submission.
+              </p>
+            </article>
+          </div>
+        </article>
+
+        <aside className="dashboard-support-side">
+          <section className="panel-card glass dashboard-side-panel latest-activity-panel">
             <div className="section-head">
               <div>
-                <span className="section-kicker">Latest Activity</span>
-                <h3>Most Recent Ticket</h3>
+                <span className="section-kicker">Ticket Updates</span>
+                <h3>Latest Activity</h3>
               </div>
             </div>
 
             {latestTicket ? (
-              <article className="latest-ticket-card">
+              <article className="latest-activity-card">
                 <div className="ticket-header">
                   <div className="ticket-header-left">
-                    <h4>{latestTicket.concernType}</h4>
+                    <h4>{latestTicket.concernType || 'Helpdesk Ticket'}</h4>
                     <span className="ticket-id">{latestTicket.id}</span>
                   </div>
-                  <span className="ticket-date">{latestTicket.date}</span>
+                  <span className="ticket-date">{latestSubmittedDate}</span>
                 </div>
 
                 <div className="ticket-badges">
-                  <span className={`status ${slugify(latestTicket.status)}`}>{latestTicket.status}</span>
-                  <span className={`priority ${slugify(latestTicket.sla)}`}>{latestTicket.sla}</span>
+                  <span className={`status ${slugify(latestTicket.status || 'Created')}`}>{latestTicket.status || 'Created'}</span>
+                  <span className={`priority ${slugify(latestTicket.sla || latestTicket.priority || 'Low')}`}>
+                    {latestTicket.sla || latestTicket.priority || 'Low'}
+                  </span>
                 </div>
 
-                <p className="ticket-description">{latestTicket.description}</p>
+                <div className="dashboard-ticket-info-grid">
+                  <div className="dashboard-ticket-meta-cell">
+                    <span>Category</span>
+                    <p>{latestTicket.supportCategory || 'Not specified'}</p>
+                  </div>
+                  <div className="dashboard-ticket-meta-cell">
+                    <span>Technician</span>
+                    <p>{latestTicket.technician || 'Unassigned'}</p>
+                  </div>
+                  <div className="dashboard-ticket-meta-cell">
+                    <span>Last Updated</span>
+                    <p>{latestUpdatedDate}</p>
+                  </div>
+                </div>
+
+                <p className="ticket-description dashboard-latest-description">
+                  {latestTicket.description || 'No description provided.'}
+                </p>
 
                 <button type="button" className="quick-action-btn primary" onClick={() => onGoTo('helpdesk', 'tickets')}>
                   <MonoIcon icon={Eye} />
@@ -1223,32 +1679,58 @@ function DashboardView({ user, tickets, openTickets, onGoTo }) {
                 <div className="empty-icon"><MonoIcon icon={Ticket} /></div>
                 <h4>No ticket yet</h4>
                 <p>Create your first support ticket so ICT can review your concern.</p>
+                <button type="button" className="quick-action-btn primary" onClick={() => onGoTo('helpdesk', 'submit')}>
+                  <MonoIcon icon={Send} />
+                  Submit Ticket
+                </button>
               </div>
             )}
           </section>
 
-          <section className="panel-card glass equal-panel">
+          <section className="panel-card glass dashboard-side-panel submission-guide-panel">
             <div className="section-head">
               <div>
-                <span className="section-kicker">Submission Guide</span>
-                <h3>Before Creating a Ticket</h3>
+                <span className="section-kicker">ICT Support Guide</span>
+                <h3>Submission Guide</h3>
               </div>
             </div>
 
-            <div className="guide-list">
-              {GUIDES.map((guide) => (
-                <div key={guide} className="guide-item">
-                  <span className="guide-dot" aria-hidden="true" />
-                  <p>{guide}</p>
-                </div>
-              ))}
+            <div className="submission-guide-list">
+              <div className="submission-guide-item">
+                <span className="submission-guide-number">01</span>
+                <p>Complete the required ticket fields: Branch, Department, Device or System, Contact Number, Support Category, and Concern Type.</p>
+              </div>
+              <div className="submission-guide-item">
+                <span className="submission-guide-number">02</span>
+                <p>Select the SLA level manually. The operational impact will follow your selected SLA level.</p>
+              </div>
+              <div className="submission-guide-item">
+                <span className="submission-guide-number">03</span>
+                <p>Fill in the issue description fields shown for the selected concern type. Installation or update requests ask for Application Name, Request Type, Purpose, and Remarks.</p>
+              </div>
+              <div className="submission-guide-item">
+                <span className="submission-guide-number">04</span>
+                <p>For MBWIN-related requests, attach the approved SAAR PDF. Photos or screenshots are optional and limited to {PHOTO_MAX_COUNT} files.</p>
+              </div>
+            </div>
+
+            <div className="dashboard-other-services-note">
+              <strong>Other Services</strong>
+              <p>
+                Non-ICT requests are handled separately under Other Services. Available categories include {OTHER_SERVICE_CATEGORIES.slice(0, 3).join(', ')} and more.
+              </p>
+              <button type="button" className="quick-action-btn" onClick={() => onGoTo('otherServices')}>
+                <MonoIcon icon={Wrench} />
+                Open Other Services
+              </button>
             </div>
           </section>
-        </div>
-      </div>
+        </aside>
+      </section>
     </div>
   );
 }
+
 
 /* =========================
    PROFILE VIEW
@@ -1346,6 +1828,10 @@ function ProfileView({ user, onGoTo }) {
                 <MonoIcon icon={Eye} />
                 Review My Tickets
               </button>
+              <button type="button" className="quick-action-btn" onClick={() => onGoTo('otherServices')}>
+                <MonoIcon icon={Wrench} />
+                Open Other Services
+              </button>
               <button type="button" className="quick-action-btn" onClick={() => onGoTo('dashboard')}>
                 <MonoIcon icon={LayoutDashboard} />
                 Return to Dashboard
@@ -1367,26 +1853,77 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
   const [form, setForm] = useState(() => getNewTicketForm(user));
   const [editingId, setEditingId] = useState(null);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [successNotice, setSuccessNotice] = useState(null);
   const [viewTicket, setViewTicket] = useState(null);
   const [formError, setFormError] = useState('');
   const [ticketPage, setTicketPage] = useState(1);
+
+  // Conversation state — matches admin pattern exactly
   const [ticketMessages, setTicketMessages] = useState([]);
   const [messageDraft, setMessageDraft] = useState('');
   const [messagePhotos, setMessagePhotos] = useState([]);
   const [messageError, setMessageError] = useState('');
   const [isSendingMessage, setIsSendingMessage] = useState(false);
+  const [isChatMinimized, setIsChatMinimized] = useState(true);
+  const [unreadConversationCount, setUnreadConversationCount] = useState(0);
   const [isLoadingTicketDetails, setIsLoadingTicketDetails] = useState(false);
+
+  const isChatMinimizedRef = useRef(true);
+  const currentUserIdRef = useRef(user?.id || '');
+  const ticketMessageIdsRef = useRef(new Set());
 
   const activeCount = tickets.filter((ticket) => isUnresolved(ticket.status)).length;
   const resolvedCount = tickets.filter((ticket) => ticket.status === 'Resolved').length;
   const mbwinRequired = isMbwinRequest(form);
   const selectedSlaOption = useMemo(() => getSelectedSlaOption(form.sla), [form.sla]);
   const issueDescriptionHint = useMemo(() => getIssueDescriptionHint(form), [form]);
+  const concernOptions = useMemo(() => getConcernOptionsForCategory(form.supportCategory), [form.supportCategory]);
   const pageSize = 3;
   const totalPages = Math.max(1, Math.ceil(tickets.length / pageSize));
   const currentPage = Math.min(ticketPage, totalPages);
   const pagedTickets = tickets.slice((currentPage - 1) * pageSize, currentPage * pageSize);
   const goToTicketPage = (page) => setTicketPage(Math.min(Math.max(page, 1), totalPages));
+
+  const ticketHasAssignedStaff = viewTicket
+    ? Boolean(String(viewTicket.technician || '').trim()) && normalize(viewTicket.technician) !== 'unassigned'
+    : false;
+
+  const conversationStatusAllowsReply = viewTicket
+    ? isUnresolved(viewTicket.status) && !['resolved', 'canceled', 'cancelled'].includes(normalize(viewTicket.status))
+    : false;
+
+  const canSendConversationMessage = Boolean(
+    viewTicket &&
+      conversationStatusAllowsReply &&
+      (canTicketAcceptMessages(viewTicket) || isTicketBeingHandled(viewTicket) || ticketHasAssignedStaff)
+  );
+
+  const shouldShowConversation = Boolean(viewTicket);
+
+  useBodyScrollLock(showConfirm || Boolean(successNotice));
+
+  useEffect(() => {
+    if (viewTicket || showConfirm || successNotice || typeof document === 'undefined') return undefined;
+
+    document.body.style.overflow = '';
+    document.documentElement.style.overflow = '';
+    document.body.style.paddingRight = '';
+
+    return undefined;
+  }, [viewTicket, showConfirm, successNotice]);
+
+  // Keep refs in sync — same as admin
+  useEffect(() => {
+    isChatMinimizedRef.current = isChatMinimized;
+
+    if (!isChatMinimized) {
+      setUnreadConversationCount(0);
+    }
+  }, [isChatMinimized]);
+
+  useEffect(() => {
+    currentUserIdRef.current = user?.id || '';
+  }, [user?.id]);
 
   useEffect(() => {
     if (ticketPage > totalPages) {
@@ -1394,23 +1931,28 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
     }
   }, [ticketPage, totalPages]);
 
+  // Subscribe to messages and ticket updates — same pattern as admin
   useEffect(() => {
     if (!viewTicket?.id) {
       setTicketMessages([]);
       setMessageDraft('');
       setMessagePhotos([]);
       setMessageError('');
+      ticketMessageIdsRef.current = new Set();
       return undefined;
     }
 
     let cancelled = false;
+    ticketMessageIdsRef.current = new Set();
 
     const loadMessages = async () => {
       try {
         const messages = await getTicketMessages(viewTicket.id);
 
         if (!cancelled) {
+          ticketMessageIdsRef.current = new Set(messages.map((m) => m.id));
           setTicketMessages(messages);
+          setUnreadConversationCount(0);
           setMessageError('');
         }
       } catch (error) {
@@ -1424,10 +1966,18 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
     void loadMessages();
 
     const unsubscribeMessages = subscribeToTicketMessages(viewTicket.id, (newMessage) => {
-      setTicketMessages((current) => {
-        const exists = current.some((message) => message.id === newMessage.id);
-        return exists ? current : [...current, newMessage];
-      });
+      const alreadyExists = ticketMessageIdsRef.current.has(newMessage.id);
+
+      if (!alreadyExists) {
+        ticketMessageIdsRef.current.add(newMessage.id);
+        setTicketMessages((current) => [...current, newMessage]);
+      }
+
+      const isIncoming = newMessage.senderId !== currentUserIdRef.current;
+
+      if (!alreadyExists && isIncoming && isChatMinimizedRef.current) {
+        setUnreadConversationCount((c) => c + 1);
+      }
     });
 
     const unsubscribeTicket = subscribeToTicket(viewTicket.id, (updatedTicket) => {
@@ -1441,6 +1991,12 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
       unsubscribeMessages();
       unsubscribeTicket();
     };
+  }, [viewTicket?.id]);
+
+  // Reset chat state when a new ticket is opened — same as admin
+  useEffect(() => {
+    setIsChatMinimized(true);
+    setUnreadConversationCount(0);
   }, [viewTicket?.id]);
 
   useEffect(() => {
@@ -1460,7 +2016,17 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
     setForm((prev) => {
       const next = { ...prev, [field]: value };
 
-      if (['supportCategory', 'concernType', 'deviceName'].includes(field)) {
+      if (field === 'supportCategory') {
+        const nextConcernOptions = getConcernOptionsForCategory(value);
+
+        if (!nextConcernOptions.includes(prev.concernType)) {
+          next.concernType = '';
+        }
+      }
+
+      if (['supportCategory', 'concernType'].includes(field)) {
+        next.description = getIssueDescriptionTemplate(next);
+      } else if (field === 'deviceName') {
         const nextTemplate = getIssueDescriptionTemplate(next);
         const baseDescription = isGeneratedDescriptionOnly(prev.description)
           ? nextTemplate
@@ -1605,6 +2171,11 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
 
     const cleanMessage = messageDraft.trim();
 
+    if (!canSendConversationMessage) {
+      setMessageError('Conversation is closed for tickets that are not actively being handled or are already resolved.');
+      return;
+    }
+
     if (!cleanMessage && !messagePhotos.length) {
       setMessageError('Please type a message or attach a photo before sending.');
       return;
@@ -1620,8 +2191,9 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
         attachments: messagePhotos,
       });
 
+      ticketMessageIdsRef.current.add(sentMessage.id);
       setTicketMessages((current) => {
-        const exists = current.some((message) => message.id === sentMessage.id);
+        const exists = current.some((m) => m.id === sentMessage.id);
         return exists ? current : [...current, sentMessage];
       });
       setMessageDraft('');
@@ -1674,6 +2246,7 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
   };
 
   const confirmSubmit = async () => {
+    const wasEditing = Boolean(editingId);
     const cleanDescription = sanitizeDescriptionForSubmit(form.description, form);
     const finalSla = form.sla || 'Low';
     const finalSlaOption = getSelectedSlaOption(finalSla);
@@ -1689,7 +2262,7 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
     };
 
     try {
-      if (editingId) {
+      if (wasEditing) {
         await updateTicket(
           editingId,
           {
@@ -1709,6 +2282,12 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
       setShowConfirm(false);
       setTab('tickets');
       await reloadTickets();
+      setSuccessNotice({
+        title: wasEditing ? 'Ticket Updated' : 'Ticket Submitted',
+        message: wasEditing
+          ? 'Your ticket changes were saved successfully and sent back to ICT for review.'
+          : 'Your ticket was submitted successfully. ICT can now review your request.',
+      });
     } catch (error) {
       setFormError(error.message || 'Unable to save ticket. Please try again.');
       setShowConfirm(false);
@@ -1957,44 +2536,6 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
               </div>
 
               <div className="ticket-form-group">
-                <label htmlFor="ticket-category">Support Category</label>
-                <select
-                  id="ticket-category"
-                  className="ticket-field ticket-select"
-                  value={form.supportCategory}
-                  onChange={(e) => handleFormChange('supportCategory', e.target.value)}
-                  required
-                >
-                  <option value="" disabled>Select support category</option>
-                  {form.supportCategory && !SUPPORT_CATEGORIES.includes(form.supportCategory) && (
-                    <option value={form.supportCategory}>{form.supportCategory}</option>
-                  )}
-                  {SUPPORT_CATEGORIES.map((category) => (
-                    <option key={category} value={category}>{category}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="ticket-form-group">
-                <label htmlFor="ticket-concern">Concern Type</label>
-                <select
-                  id="ticket-concern"
-                  className="ticket-field ticket-select"
-                  value={form.concernType}
-                  onChange={(e) => handleFormChange('concernType', e.target.value)}
-                  required
-                >
-                  <option value="" disabled>Select concern type</option>
-                  {form.concernType && !CONCERN_TYPES.includes(form.concernType) && (
-                    <option value={form.concernType}>{form.concernType}</option>
-                  )}
-                  {CONCERN_TYPES.map((type) => (
-                    <option key={type} value={type}>{type}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="ticket-form-group">
                 <label htmlFor="ticket-device">Device / Workstation / System</label>
                 <select
                   id="ticket-device"
@@ -2024,6 +2565,47 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
                   placeholder="Example: 0917 000 0000 or local number"
                   required
                 />
+              </div>
+
+              <div className="ticket-form-group">
+                <label htmlFor="ticket-category">Support Category</label>
+                <select
+                  id="ticket-category"
+                  className="ticket-field ticket-select"
+                  value={form.supportCategory}
+                  onChange={(e) => handleFormChange('supportCategory', e.target.value)}
+                  required
+                >
+                  <option value="" disabled>Select support category</option>
+                  {form.supportCategory && !HELPDESK_SUPPORT_CATEGORIES.includes(form.supportCategory) && (
+                    <option value={form.supportCategory}>{form.supportCategory}</option>
+                  )}
+                  {HELPDESK_SUPPORT_CATEGORIES.map((category) => (
+                    <option key={category} value={category}>{category}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="ticket-form-group">
+                <label htmlFor="ticket-concern">Concern Type</label>
+                <select
+                  id="ticket-concern"
+                  className="ticket-field ticket-select"
+                  value={form.concernType}
+                  onChange={(e) => handleFormChange('concernType', e.target.value)}
+                  disabled={!form.supportCategory}
+                  required
+                >
+                  <option value="" disabled>
+                    {form.supportCategory ? 'Select concern type' : 'Select support category first'}
+                  </option>
+                  {form.concernType && !concernOptions.includes(form.concernType) && (
+                    <option value={form.concernType}>{form.concernType}</option>
+                  )}
+                  {concernOptions.map((type) => (
+                    <option key={type} value={type}>{type}</option>
+                  ))}
+                </select>
               </div>
 
               <div className="ticket-form-group full sla-level-section">
@@ -2145,6 +2727,7 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
         )}
       </section>
 
+      {/* Confirm submission modal */}
       {showConfirm && (
         <div className="modal-overlay" role="dialog" aria-modal="true" aria-label="Confirm ticket submission">
           <div className="modal-box glass">
@@ -2175,117 +2758,325 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
         </div>
       )}
 
-      {viewTicket && (
-        <div className="modal-overlay" role="dialog" aria-modal="true" aria-label="Ticket details">
-          <div className="modal-box glass ticket-detail-modal">
-            <h3>{viewTicket.concernType}</h3>
-
-            <div className="modal-meta">
-              <span className="ticket-id">{viewTicket.id}</span>
-              <span className={`status ${slugify(viewTicket.status)}`}>{viewTicket.status}</span>
-              <span className={`priority ${slugify(viewTicket.sla)}`}>{viewTicket.sla}</span>
-            </div>
-
-            <div className="modal-divider" />
-
-            <div className="ticket-meta-grid modal-ticket-grid">
-              <div className="ticket-meta-cell">
-                <span>Branch</span>
-                <p>{viewTicket.branch}</p>
-              </div>
-              <div className="ticket-meta-cell">
-                <span>Department</span>
-                <p>{viewTicket.department}</p>
-              </div>
-              <div className="ticket-meta-cell">
-                <span>Device / System</span>
-                <p>{viewTicket.deviceName || 'Not specified'}</p>
-              </div>
-              <div className="ticket-meta-cell">
-                <span>Contact</span>
-                <p>{viewTicket.contactNumber || 'Not specified'}</p>
-              </div>
-              <div className="ticket-meta-cell">
-                <span>Detected Impact</span>
-                <p>{viewTicket.impact || 'Not specified'}</p>
-              </div>
-              <div className="ticket-meta-cell">
-                <span>Assigned Technician</span>
-                <p>{viewTicket.technician || 'Unassigned'}</p>
-              </div>
-            </div>
-
-            <div className="modal-description support-modal-description">{viewTicket.description}</div>
-
-            {viewTicket.saarAttachment?.name && (
-              <div className="ticket-attachment-note modal-attachment-note">
-                <strong>SAAR PDF Attachment</strong>
-                <p>{viewTicket.saarAttachment.name} · {viewTicket.saarAttachment.sizeLabel}</p>
-                {viewTicket.saarAttachment.dataUrl && (
-                  <a href={viewTicket.saarAttachment.dataUrl} target="_blank" rel="noopener noreferrer">
-                    Open SAAR PDF
-                  </a>
-                )}
-              </div>
-            )}
-
-            <div className="ticket-attachment-note modal-attachment-note">
-              <strong>Photo / Screenshot Attachments</strong>
-              <PhotoAttachmentGallery photos={viewTicket.photoAttachments} emptyText="No photos attached to this ticket." />
-            </div>
-
-            <div className="ticket-meta-grid modal-ticket-grid">
-              <div className="ticket-meta-cell">
-                <span>ICT Action</span>
-                <p>{viewTicket.actionTaken || 'No action recorded yet.'}</p>
-              </div>
-              <div className="ticket-meta-cell">
-                <span>Remarks</span>
-                <p>{viewTicket.adminRemarks || 'No remarks yet.'}</p>
-              </div>
-              <div className="ticket-meta-cell">
-                <span>Resolution</span>
-                <p>{viewTicket.resolution || 'No resolution yet.'}</p>
-              </div>
-            </div>
-
-            <p className="modal-date-note">Last updated: {viewTicket.lastUpdated || viewTicket.lastEmployeeUpdate || viewTicket.date}</p>
-
-            <TicketConversationPanel
-              currentUser={user}
-              messages={ticketMessages}
-              messageDraft={messageDraft}
-              messagePhotos={messagePhotos}
-              messageError={messageError}
-              isSending={isSendingMessage}
-              onMessageChange={setMessageDraft}
-              onPhotoChange={handleConversationPhotoChange}
-              onRemovePhoto={(photoId) => setMessagePhotos((current) => current.filter((photo) => photo.id !== photoId))}
-              onSend={sendTicketMessage}
-            />
-
+      {successNotice && (
+        <div className="modal-overlay" role="dialog" aria-modal="true" aria-label="Ticket submission successful">
+          <div className="modal-box glass success-modal">
+            <div className="success-icon"><MonoIcon icon={CheckCircle2} /></div>
+            <h3>{successNotice.title}</h3>
+            <p>{successNotice.message}</p>
             <div className="modal-footer">
-              <button type="button" className="modal-btn cancel" onClick={() => setViewTicket(null)}>
-                Close
+              <button type="button" className="modal-btn confirm" onClick={() => setSuccessNotice(null)}>
+                Okay
               </button>
+            </div>
+          </div>
+        </div>
+      )}
 
-              {canEmployeeEditTicket(viewTicket) ? (
-                <button
-                  type="button"
-                  className="modal-btn confirm"
-                  onClick={() => {
-                    handleEdit(viewTicket);
-                    setViewTicket(null);
-                  }}
-                >
-                  <MonoIcon icon={PenLine} />
-                  Edit Ticket
-                </button>
-              ) : (
-                <span className="ticket-locked-pill modal-locked-pill">
-                  {viewTicket.employeeLockReason || 'Locked because ICT is already handling this ticket.'}
-                </span>
-              )}
+      {/* Ticket detail modal — uses new admin-matching component */}
+      {viewTicket && (
+        <EmployeeTicketDetailModal
+          ticket={viewTicket}
+          user={user}
+          messages={ticketMessages}
+          messageDraft={messageDraft}
+          messagePhotos={messagePhotos}
+          messageError={messageError}
+          isSendingMessage={isSendingMessage}
+          shouldShowConversation={shouldShowConversation}
+          canSendConversationMessage={canSendConversationMessage}
+          unreadCount={unreadConversationCount}
+          isChatMinimized={isChatMinimized}
+          onClose={() => {
+            setIsChatMinimized(true);
+            setViewTicket(null);
+          }}
+          onEdit={() => {
+            handleEdit(viewTicket);
+            setViewTicket(null);
+          }}
+          onChatOpen={() => {
+            setIsChatMinimized(false);
+            setUnreadConversationCount(0);
+          }}
+          onChatClose={() => setIsChatMinimized(true)}
+          onMessageChange={setMessageDraft}
+          onPhotoChange={handleConversationPhotoChange}
+          onRemovePhoto={(photoId) => setMessagePhotos((current) => current.filter((p) => p.id !== photoId))}
+          onSend={sendTicketMessage}
+        />
+      )}
+    </div>
+  );
+}
+
+
+/* =========================
+   OTHER SERVICES VIEW
+========================= */
+
+function OtherServicesView({ user }) {
+  const [form, setForm] = useState(() => getNewOtherServiceForm(user));
+  const [requests, setRequests] = useState([]);
+  const [formError, setFormError] = useState('');
+  const [successNotice, setSuccessNotice] = useState(null);
+
+  useBodyScrollLock(Boolean(successNotice));
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    try {
+      const savedRequests = JSON.parse(window.localStorage.getItem(OTHER_SERVICES_STORAGE_KEY) || '[]');
+      setRequests(Array.isArray(savedRequests) ? savedRequests : []);
+    } catch {
+      setRequests([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    setForm((current) => ({
+      ...current,
+      branch: current.branch || user.branch || user.office || '',
+      department: current.department || user.department || '',
+    }));
+  }, [user.branch, user.department, user.office]);
+
+  const handleChange = (field, value) => {
+    setFormError('');
+    setForm((current) => ({ ...current, [field]: value }));
+  };
+
+  const saveRequests = (nextRequests) => {
+    setRequests(nextRequests);
+
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(OTHER_SERVICES_STORAGE_KEY, JSON.stringify(nextRequests));
+    }
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+
+    const requiredFields = [
+      ['branch', 'Branch or Location'],
+      ['custodian', 'Custodian'],
+      ['deviceName', 'Device'],
+      ['department', 'Department'],
+      ['supportCategory', 'Support Category'],
+    ];
+
+    const missing = requiredFields.find(([field]) => !String(form[field] || '').trim());
+
+    if (missing) {
+      setFormError(`${missing[1]} is required.`);
+      return;
+    }
+
+    const newRequest = {
+      id: createOtherServiceId(),
+      ...form,
+      status: 'Submitted',
+      date: new Date().toLocaleString(),
+    };
+
+    saveRequests([newRequest, ...requests]);
+    setForm(getNewOtherServiceForm(user));
+    setSuccessNotice({
+      title: 'Other Service Submitted',
+      message: `Your ${form.supportCategory} request was submitted successfully and saved in Other Services.`,
+    });
+  };
+
+  return (
+    <div className="other-services-view">
+      <section className="panel-card glass helpdesk-banner other-services-banner">
+        <div className="helpdesk-banner-copy">
+          <span className="section-kicker">Other Services</span>
+          <h2>Submit non-helpdesk service requests.</h2>
+          <p>
+            This page follows the Helpdesk layout but uses a separate form for service concerns outside ICT ticketing.
+          </p>
+        </div>
+
+        <div className="helpdesk-banner-actions">
+          <span className="helpdesk-badge">{OTHER_SERVICE_CATEGORIES.length} Categories</span>
+          <span className="helpdesk-badge">{requests.length} Request{requests.length === 1 ? '' : 's'}</span>
+        </div>
+      </section>
+
+      <section className="panel-card glass">
+        <div className="section-head">
+          <div>
+            <span className="section-kicker">Other Services Request</span>
+            <h3>Service Request Form</h3>
+          </div>
+        </div>
+
+        <form className="ticket-form-wrap" onSubmit={handleSubmit}>
+          <div className="ticket-form-grid other-service-grid">
+            <div className="ticket-form-group">
+              <label htmlFor="other-branch">Branch / Location</label>
+              <select
+                id="other-branch"
+                className="ticket-field ticket-select"
+                value={form.branch}
+                onChange={(e) => handleChange('branch', e.target.value)}
+                required
+              >
+                <option value="" disabled>Select branch</option>
+                {BRANCHES.map((branch) => (
+                  <option key={branch} value={branch}>{branch}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="ticket-form-group">
+              <label htmlFor="other-custodian">Custodian</label>
+              <input
+                id="other-custodian"
+                className="ticket-field ticket-input"
+                type="text"
+                value={form.custodian}
+                onChange={(e) => handleChange('custodian', e.target.value)}
+                placeholder="Name of custodian"
+                required
+              />
+            </div>
+
+            <div className="ticket-form-group">
+              <label htmlFor="other-device">Device</label>
+              <select
+                id="other-device"
+                className="ticket-field ticket-select"
+                value={form.deviceName}
+                onChange={(e) => handleChange('deviceName', e.target.value)}
+                required
+              >
+                <option value="" disabled>Select device</option>
+                {DEVICE_OPTIONS.map((device) => (
+                  <option key={device} value={device}>{device}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="ticket-form-group">
+              <label htmlFor="other-department">Department</label>
+              <select
+                id="other-department"
+                className="ticket-field ticket-select"
+                value={form.department}
+                onChange={(e) => handleChange('department', e.target.value)}
+                required
+              >
+                <option value="" disabled>Select department</option>
+                {DEPARTMENTS.map((dept) => (
+                  <option key={dept} value={dept}>{dept}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="ticket-form-group full other-service-category-row">
+              <label htmlFor="other-category">Support Category</label>
+              <select
+                id="other-category"
+                className="ticket-field ticket-select other-service-category-select"
+                value={form.supportCategory}
+                onChange={(e) => handleChange('supportCategory', e.target.value)}
+                required
+              >
+                <option value="" disabled>Select other service</option>
+                {OTHER_SERVICE_CATEGORIES.map((category) => (
+                  <option key={category} value={category}>{category}</option>
+                ))}
+              </select>
+              <span className="ticket-form-hint">Choose the proper company service. Burnout is one option under Other Services.</span>
+            </div>
+
+            <div className="ticket-form-group full">
+              <label htmlFor="other-remarks">Notes / Remarks</label>
+              <textarea
+                id="other-remarks"
+                className="ticket-field ticket-textarea"
+                value={form.remarks}
+                onChange={(e) => handleChange('remarks', e.target.value)}
+                placeholder={getOtherServiceRemarksPlaceholder(form.supportCategory)}
+                maxLength={800}
+              />
+            </div>
+          </div>
+
+          {formError && <div className="form-error">{formError}</div>}
+
+          <button type="submit" className="auth-submit-btn">
+            <MonoIcon icon={Send} />
+            Submit Other Service
+          </button>
+        </form>
+      </section>
+
+      <section className="panel-card glass">
+        <div className="section-head">
+          <div>
+            <span className="section-kicker">Request History</span>
+            <h3>Recent Other Services</h3>
+          </div>
+        </div>
+
+        <div className="ticket-list">
+          {requests.length ? (
+            requests.slice(0, 5).map((request) => (
+              <article key={request.id} className="ticket-card other-service-card">
+                <div className="ticket-header">
+                  <div className="ticket-header-left">
+                    <h4>{request.supportCategory}</h4>
+                    <span className="ticket-id">{request.id}</span>
+                  </div>
+                  <span className="ticket-date">{request.date}</span>
+                </div>
+
+                <div className="ticket-meta-grid">
+                  <div className="ticket-meta-cell">
+                    <span>Branch</span>
+                    <p>{request.branch}</p>
+                  </div>
+                  <div className="ticket-meta-cell">
+                    <span>Custodian</span>
+                    <p>{request.custodian}</p>
+                  </div>
+                  <div className="ticket-meta-cell">
+                    <span>Device</span>
+                    <p>{request.deviceName}</p>
+                  </div>
+                  <div className="ticket-meta-cell">
+                    <span>Department</span>
+                    <p>{request.department}</p>
+                  </div>
+                </div>
+
+                {request.remarks && <p className="ticket-description">{request.remarks}</p>}
+              </article>
+            ))
+          ) : (
+            <div className="empty-state compact">
+              <div className="empty-icon"><MonoIcon icon={Wrench} /></div>
+              <h4>No other service request yet</h4>
+              <p>Submit an Other Services request and it will appear here.</p>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {successNotice && (
+        <div className="modal-overlay" role="dialog" aria-modal="true" aria-label="Other service submitted">
+          <div className="modal-box glass success-modal">
+            <div className="success-icon"><MonoIcon icon={CheckCircle2} /></div>
+            <h3>{successNotice.title}</h3>
+            <p>{successNotice.message}</p>
+            <div className="modal-footer">
+              <button type="button" className="modal-btn confirm" onClick={() => setSuccessNotice(null)}>
+                Okay
+              </button>
             </div>
           </div>
         </div>
@@ -2298,7 +3089,7 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
    ROOT EXPORT — EMPLOYEE APP
 ========================= */
 
-export default function DashboardPage() {
+export default function EmployeeDashboardPage() {
   const [activeSection, setActiveSection] = useState('dashboard');
   const [helpdeskTab, setHelpdeskTab] = useState('tickets');
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -2338,9 +3129,13 @@ export default function DashboardPage() {
 
         if (cancelled) return;
 
-        if (!activeUser || normalizePortalRole(activeUser.role) !== 'employee') {
-          await signOutPortal().catch(() => {});
+        if (!activeUser) {
           router.replace(LOGIN_ROUTE);
+          return;
+        }
+
+        if (normalizePortalRole(activeUser.role) !== 'employee') {
+          router.replace(getPortalHomeRoute(activeUser.role));
           return;
         }
 
@@ -2434,7 +3229,6 @@ export default function DashboardPage() {
 
     return (
       <>
-        <Navbar />
         <main className="portal-main portal-app-main">
           <div className="portal-shell" />
         </main>
@@ -2445,8 +3239,6 @@ export default function DashboardPage() {
 
   return (
     <>
-      <Navbar />
-
       <main className="portal-main portal-app-main">
         <div className="portal-shell">
           <header className="portal-topbar glass">
@@ -2532,6 +3324,10 @@ export default function DashboardPage() {
                   reloadTickets={() => loadTickets()}
                   initialTab={helpdeskTab}
                 />
+              )}
+
+              {activeSection === 'otherServices' && (
+                <OtherServicesView user={user} />
               )}
             </section>
           </div>

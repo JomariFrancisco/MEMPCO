@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import {
   getCurrentPortalUser,
+  getPortalHomeRoute,
   isInactivePortalUser,
   isMarketingAdminRole,
   signOutPortal,
@@ -469,9 +470,19 @@ export default function MarketingAdminPage() {
 
       if (cancelled) return;
 
-      if (!activeUser || isInactivePortalUser(activeUser) || !isMarketingAdminRole(activeUser.role)) {
+      if (!activeUser) {
+        router.replace('/LogIn');
+        return;
+      }
+
+      if (isInactivePortalUser(activeUser)) {
         await signOutPortal().catch(() => {});
         router.replace('/LogIn');
+        return;
+      }
+
+      if (!isMarketingAdminRole(activeUser.role)) {
+        router.replace(getPortalHomeRoute(activeUser.role));
         return;
       }
 

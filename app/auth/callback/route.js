@@ -4,13 +4,19 @@ import { createClient } from '@/lib/supabase/server';
 export async function GET(request) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get('code');
-  const next = requestUrl.searchParams.get('next') || '/dashboard';
-  const redirectUrl = new URL(next, requestUrl.origin);
+  const next = requestUrl.searchParams.get('next') || '/employee-dashboard';
+  const redirectUrl = next.startsWith('/') && !next.startsWith('//')
+    ? new URL(next, requestUrl.origin)
+    : new URL('/employee-dashboard', requestUrl.origin);
 
   if (code) {
     try {
       const supabase = await createClient();
-      await supabase.auth.exchangeCodeForSession(code);
+      const { error } = await supabase.auth.exchangeCodeForSession(code);
+
+      if (error) {
+        throw error;
+      }
     } catch {
       redirectUrl.pathname = '/LogIn';
       redirectUrl.search = '';

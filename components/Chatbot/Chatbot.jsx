@@ -703,7 +703,7 @@ export default function Chatbot() {
   const pathname = usePathname();
   const router = useRouter();
   const portalRouteHidden =
-    pathname?.startsWith('/dashboard') ||
+    pathname?.startsWith('/employee-dashboard') ||
     pathname?.startsWith('/admin-dashboard');
 
   const scrollRef = useRef(null);

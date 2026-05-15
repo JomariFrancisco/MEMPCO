@@ -1,15 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { CheckCircle2, LogIn } from 'lucide-react';
-import Navbar from '@/components/Navbar/Navbar';
+import { CheckCircle2, Eye, EyeOff, LogIn } from 'lucide-react';
 import {
   getCurrentPortalUser,
   getPortalHomeRoute,
   INACTIVE_ACCOUNT_MESSAGE,
   isInactivePortalUser,
-  sendPasswordResetEmail,
   signInPortal,
   signOutPortal,
   updatePortalPassword,
@@ -18,9 +15,11 @@ import './login.css';
 
 const authLoadingCopy = {
   signin: 'Securing portal access...',
-  forgot: 'Sending reset instructions...',
   reset: 'Updating secure password...',
+  redirect: 'Redirecting to portal...',
 };
+
+const REMEMBERED_EMAIL_KEY = 'mempco.portal.rememberedEmail';
 
 const AuthButtonIcon = ({ icon: IconComponent }) => (
   <IconComponent className="auth-button-icon" aria-hidden="true" />
@@ -37,17 +36,38 @@ function AuthLoadingOverlay({ label }) {
 }
 
 export default function LoginPage() {
-  const router = useRouter();
-
   const [authMode, setAuthMode] = useState('signin');
   const [loginForm, setLoginForm] = useState({ email: '', password: '' });
   const [resetForm, setResetForm] = useState({ password: '', confirmPassword: '' });
   const [message, setMessage] = useState({ type: '', text: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const [loadingLabel, setLoadingLabel] = useState(authLoadingCopy.signin);
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
+
+  const redirectToRoute = (route = '/') => {
+    const destination = String(route || '/').startsWith('/') ? route : '/';
+
+    setIsRedirecting(true);
+    setLoadingLabel(authLoadingCopy.redirect);
+
+    window.setTimeout(() => {
+      window.location.replace(destination);
+    }, 350);
+  };
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+    const rememberedEmail = window.localStorage.getItem(REMEMBERED_EMAIL_KEY);
+
+    if (rememberedEmail) {
+      setRememberMe(true);
+      setLoginForm((prev) => ({
+        ...prev,
+        email: rememberedEmail,
+      }));
+    }
 
     if (params.get('mode') === 'reset') {
       setAuthMode('reset');
@@ -70,8 +90,18 @@ export default function LoginPage() {
     setLoginForm((prev) => ({ ...prev, [field]: value }));
   };
 
+  const handleRememberMeChange = (checked) => {
+    setRememberMe(checked);
+
+    if (!checked) {
+      window.localStorage.removeItem(REMEMBERED_EMAIL_KEY);
+    }
+  };
+
   const handleLogin = async (e) => {
     e.preventDefault();
+
+    if (isSubmitting || isRedirecting) return;
 
     setIsSubmitting(true);
     setLoadingLabel(authLoadingCopy.signin);
@@ -79,6 +109,13 @@ export default function LoginPage() {
 
     try {
       const user = await signInPortal(loginForm);
+      const email = loginForm.email.trim();
+
+      if (rememberMe && email) {
+        window.localStorage.setItem(REMEMBERED_EMAIL_KEY, email);
+      } else {
+        window.localStorage.removeItem(REMEMBERED_EMAIL_KEY);
+      }
 
       if (isInactivePortalUser(user)) {
         await signOutPortal().catch(() => {});
@@ -86,44 +123,28 @@ export default function LoginPage() {
           type: 'error',
           text: INACTIVE_ACCOUNT_MESSAGE,
         });
+
         window.setTimeout(() => {
-          router.replace('/');
+          window.location.replace('/');
         }, 5000);
+
         return;
       }
+
+      const destination = getPortalHomeRoute(user.role);
 
       setMessage({
         type: 'success',
         text: 'Login successful. Redirecting...',
       });
 
-      router.push(getPortalHomeRoute(user.role));
+      redirectToRoute(destination);
     } catch (error) {
       setMessage({
         type: 'error',
         text: error.message || 'Unable to login. Please try again.',
       });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleForgotPassword = async () => {
-    setIsSubmitting(true);
-    setLoadingLabel(authLoadingCopy.forgot);
-    setMessage({ type: '', text: '' });
-
-    try {
-      await sendPasswordResetEmail(loginForm.email);
-      setMessage({
-        type: 'success',
-        text: 'Password reset email sent. Open the link from your inbox to set a new password.',
-      });
-    } catch (error) {
-      setMessage({
-        type: 'error',
-        text: error.message || 'Unable to send password reset email.',
-      });
+      setIsRedirecting(false);
     } finally {
       setIsSubmitting(false);
     }
@@ -131,6 +152,8 @@ export default function LoginPage() {
 
   const handleUpdatePassword = async (e) => {
     e.preventDefault();
+
+    if (isSubmitting || isRedirecting) return;
 
     if (resetForm.password !== resetForm.confirmPassword) {
       setMessage({
@@ -154,23 +177,28 @@ export default function LoginPage() {
           type: 'error',
           text: INACTIVE_ACCOUNT_MESSAGE,
         });
+
         window.setTimeout(() => {
-          router.replace('/');
+          window.location.replace('/');
         }, 5000);
+
         return;
       }
+
+      const destination = getPortalHomeRoute(user?.role);
 
       setMessage({
         type: 'success',
         text: 'Password updated. Redirecting...',
       });
 
-      router.push(getPortalHomeRoute(user?.role));
+      redirectToRoute(destination);
     } catch (error) {
       setMessage({
         type: 'error',
         text: error.message || 'Unable to update password.',
       });
+      setIsRedirecting(false);
     } finally {
       setIsSubmitting(false);
     }
@@ -181,10 +209,10 @@ export default function LoginPage() {
     setMessage({ type: '', text: '' });
   };
 
+  const isBusy = isSubmitting || isRedirecting;
+
   return (
     <>
-      <Navbar />
-
       <main className="portal-main portal-auth-main">
         <section className="auth-section">
           <div className={`auth-shell ${authMode === 'reset' ? 'reset-mode' : ''}`}>
@@ -235,41 +263,55 @@ export default function LoginPage() {
                           placeholder="Enter your email"
                           value={loginForm.email}
                           onChange={(e) => updateLogin('email', e.target.value)}
+                          disabled={isBusy}
                         />
                       </div>
 
                       <div className="form-group">
                         <label htmlFor="login-password">Password</label>
-                        <input
-                          id="login-password"
-                          type="password"
-                          required
-                          placeholder="Enter your password"
-                          value={loginForm.password}
-                          onChange={(e) => updateLogin('password', e.target.value)}
-                        />
+                        <div className="password-field">
+                          <input
+                            id="login-password"
+                            type={showLoginPassword ? 'text' : 'password'}
+                            required
+                            placeholder="Enter your password"
+                            value={loginForm.password}
+                            onChange={(e) => updateLogin('password', e.target.value)}
+                            disabled={isBusy}
+                          />
+                          <button
+                            type="button"
+                            className="password-toggle"
+                            aria-label={showLoginPassword ? 'Hide password' : 'Show password'}
+                            aria-pressed={showLoginPassword}
+                            onClick={() => setShowLoginPassword((current) => !current)}
+                            disabled={isBusy}
+                          >
+                            {showLoginPassword ? (
+                              <EyeOff className="password-toggle-icon" aria-hidden="true" />
+                            ) : (
+                              <Eye className="password-toggle-icon" aria-hidden="true" />
+                            )}
+                          </button>
+                        </div>
                       </div>
                     </div>
 
                     <div className="auth-form-row">
                       <label className="remember-me">
-                        <input type="checkbox" />
+                        <input
+                          type="checkbox"
+                          checked={rememberMe}
+                          onChange={(e) => handleRememberMeChange(e.target.checked)}
+                          disabled={isBusy}
+                        />
                         <span>Remember me</span>
                       </label>
-
-                      <button
-                        type="button"
-                        className="text-link"
-                        onClick={handleForgotPassword}
-                        disabled={isSubmitting}
-                      >
-                        Forgot password?
-                      </button>
                     </div>
 
-                    <button type="submit" className="auth-submit-btn" disabled={isSubmitting}>
+                    <button type="submit" className="auth-submit-btn login-submit-btn" disabled={isBusy}>
                       <AuthButtonIcon icon={LogIn} />
-                      Login to Portal
+                      {isBusy ? 'Please wait...' : 'Login to Portal'}
                     </button>
 
                     <p className="auth-switch-text">
@@ -299,6 +341,7 @@ export default function LoginPage() {
                           onChange={(e) =>
                             setResetForm((prev) => ({ ...prev, password: e.target.value }))
                           }
+                          disabled={isBusy}
                         />
                       </div>
 
@@ -316,13 +359,14 @@ export default function LoginPage() {
                               confirmPassword: e.target.value,
                             }))
                           }
+                          disabled={isBusy}
                         />
                       </div>
                     </div>
 
-                    <button type="submit" className="auth-submit-btn" disabled={isSubmitting}>
+                    <button type="submit" className="auth-submit-btn" disabled={isBusy}>
                       <AuthButtonIcon icon={CheckCircle2} />
-                      Update Password
+                      {isBusy ? 'Please wait...' : 'Update Password'}
                     </button>
 
                     <p className="auth-switch-text">
@@ -331,6 +375,7 @@ export default function LoginPage() {
                         type="button"
                         className="text-link"
                         onClick={() => switchMode('signin')}
+                        disabled={isBusy}
                       >
                         sign in
                       </button>
@@ -347,7 +392,7 @@ export default function LoginPage() {
         </section>
       </main>
 
-      {isSubmitting && <AuthLoadingOverlay label={loadingLabel} />}
+      {isBusy && <AuthLoadingOverlay label={loadingLabel} />}
     </>
   );
 }

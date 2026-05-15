@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import './HeroSection.css';
 
-/* ── Constants ─────────────────────────────────────────────────── */
+/* Constants */
 
 const FIRST_VISUAL_VISIBLE_MS = 5000;
 const VISUAL_FADE_MS = 900;
@@ -17,7 +17,7 @@ const SERVICE_TAGS = [
 
 const MARQUEE_ITEMS = [
   'Regular Savings',
-  "KKT — Kinabukasan Ko'To",
+  "KKT - Kinabukasan Ko'To",
   'Time Deposit',
   'Business Loan',
   'Providential Loan',
@@ -39,7 +39,7 @@ const TAGLINE_PHRASES = [
 const HERO_VISUALS = {
   anniversary: {
     src: '/Hero/24Years&Logo.png',
-    alt: 'MEMPCO — 24 Years in Service',
+    alt: 'MEMPCO - 24 Years in Service',
     imageClass: 'hero__visual-image hero__visual-image--anniversary',
   },
   logo: {
@@ -57,13 +57,13 @@ const SECOND_HERO = {
   tagline: 'Where memories are forever',
   title: 'La Hermosa Funeraria De MEMPCO',
   description:
-    'A compassionate funeral service support created to help members and families receive dignified, reliable, and well-coordinated assistance during life’s most delicate moments.',
+    "A compassionate funeral service support created to help members and families receive dignified, reliable, and well-coordinated assistance during life's most delicate moments.",
   details:
     'Guided by care, respect, and the cooperative spirit of service, La Hermosa Funeraria De MEMPCO provides meaningful support when it matters most.',
   highlights: ['Compassionate care', 'Dignified assistance', 'Family-centered service'],
 };
 
-/* ── Particle system ───────────────────────────────────────────── */
+/* Particle system */
 
 function initParticles(canvas) {
   const ctx = canvas.getContext('2d');
@@ -135,7 +135,7 @@ function initParticles(canvas) {
   };
 }
 
-/* ── Main component ────────────────────────────────────────────── */
+/* Main component */
 
 export default function HeroSection() {
   const sectionRef = useRef(null);
@@ -147,7 +147,7 @@ export default function HeroSection() {
   const [isVisualVisible, setIsVisualVisible] = useState(true);
   const [typedTagline, setTypedTagline] = useState('');
 
-  /* ── Automatic hero structure carousel ─────────────────────── */
+  /* Automatic hero structure carousel */
   useEffect(() => {
     const timers = [];
 
@@ -188,7 +188,7 @@ export default function HeroSection() {
     };
   }, [activeSlide]);
 
-  /* ── Tagline typewriter ────────────────────────────────────── */
+  /* Tagline typewriter */
   useEffect(() => {
     let phraseIndex = 0;
     let charIndex = 0;
@@ -239,7 +239,7 @@ export default function HeroSection() {
     };
   }, []);
 
-  /* ── Particles ─────────────────────────────────────────────── */
+  /* Particles */
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -248,7 +248,7 @@ export default function HeroSection() {
     return cleanup;
   }, []);
 
-  /* ── Scroll: parallax + progress ───────────────────────────── */
+  /* Scroll: parallax + progress */
   useEffect(() => {
     const section = sectionRef.current;
     const fillEl = progressRef.current;
@@ -294,7 +294,7 @@ export default function HeroSection() {
     };
   }, []);
 
-  /* ── Mouse-tracking tilt ───────────────────────────────────── */
+  /* Mouse-tracking tilt */
   useEffect(() => {
     const section = sectionRef.current;
     if (!section) return;
@@ -378,7 +378,7 @@ export default function HeroSection() {
             <div className="hero__content">
               <div className="hero__copy">
                 <span className="hero__eyebrow" aria-hidden="true">
-                  Trusted Cooperative · Zamboanga City
+                  Trusted Cooperative - Zamboanga City
                 </span>
 
                 <p className="hero__tagline">
