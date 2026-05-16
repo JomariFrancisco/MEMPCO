@@ -44,6 +44,34 @@
   overflow-x: hidden;
 }
 
+.wp-hero-title,
+.wp-intro-title,
+.wp-detail-title,
+.wp-process-title,
+.wp-note-title {
+  color: transparent;
+  background: linear-gradient(90deg, #0b0b0b 0%, #141414 64%, #343434 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  overflow: visible;
+  padding-block: 0.03em 0.1em;
+}
+
+.wp-hero-title .accent,
+.wp-intro-title em,
+.wp-process-title em,
+.wp-note-title em {
+  display: inline-block;
+  font-style: normal;
+  color: transparent;
+  background: linear-gradient(90deg, var(--red) 0%, var(--red-dk) 62%, #7f1d1d 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  padding-bottom: 0.05em;
+}
+
 /* ═══════════════════════════════════════
    SHARED
 ═══════════════════════════════════════ */
@@ -99,7 +127,7 @@
 .wp-hero-title {
   font-size: clamp(3.2rem, 8vw, 7rem);
   font-weight: 700;
-  line-height: 0.95;
+  line-height: 1.08;
   letter-spacing: -0.05em;
   color: var(--ink);
   margin-bottom: 1.5rem;
@@ -417,7 +445,7 @@
   font-size: clamp(1.8rem, 3.5vw, 2.8rem);
   font-weight: 700;
   letter-spacing: -0.04em;
-  line-height: 1.05;
+  line-height: 1.14;
   color: var(--ink);
   margin-bottom: 3rem;
 }

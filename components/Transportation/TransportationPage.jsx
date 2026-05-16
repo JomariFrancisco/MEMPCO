@@ -134,7 +134,7 @@ export default function TransportationPage() {
       <section className="tp-section tp-intro" aria-label="Transportation introduction">
         <div className="tp-inner">
           <p className="tp-intro-kicker">Transportation Support</p>
-          <h2 className="tp-intro-title">Transportation service details are on the way.</h2>
+          <h2 className="tp-intro-title">Transportation service details are <em>on the way.</em></h2>
           <p className="tp-intro-sub">
             Coming soon...
           </p>
@@ -185,7 +185,7 @@ export default function TransportationPage() {
         <div className="tp-inner">
           <p className="tp-process-kicker">Process</p>
           <h2 className="tp-process-title" id="tp-process-heading">
-            Service flow coming soon.
+            Service flow <em>coming soon.</em>
           </h2>
 
           <div className="tp-process-grid">
@@ -207,7 +207,7 @@ export default function TransportationPage() {
             <h2 className="tp-note-title" id="tp-note-heading">
               Full transportation information
               <br />
-              is coming soon...
+              <em>is coming soon...</em>
             </h2>
             <p className="tp-note-text">
               Coming soon...

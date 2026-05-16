@@ -272,7 +272,7 @@ export default function BusinessLoan() {
         <div className="bl-inner">
           <p className="bl-section-kicker">Loan portfolio</p>
           <h2 className="bl-section-title" id="bl-overview-heading">
-            Structured by borrower type.
+            Structured by <em>borrower type.</em>
           </h2>
           <p className="bl-section-text">
             This layout presents the Business Loan page as a clean product catalog
@@ -323,7 +323,7 @@ export default function BusinessLoan() {
             <p className="bl-note-kicker">Apply with MEMPCO</p>
             <h2 className="bl-note-title" id="bl-note-heading">
               For updated requirements, application review, and final loan terms,<br />
-              coordinate directly with MEMPCO.
+              <em>coordinate directly with MEMPCO.</em>
             </h2>
             <p className="bl-note-text">
               Final approval, pricing, eligibility evaluation, and documentary

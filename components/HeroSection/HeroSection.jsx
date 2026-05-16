@@ -377,6 +377,7 @@ export default function HeroSection() {
           >
             <div className="hero__content">
               <div className="hero__copy">
+                <h1 className="hero__sr-title">MEMPCO Cooperative</h1>
                 <span className="hero__eyebrow" aria-hidden="true">
                   Trusted Cooperative - Zamboanga City
                 </span>

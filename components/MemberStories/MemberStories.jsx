@@ -428,7 +428,7 @@ export default function MemberStories() {
           <header className="ms-header ms-reveal ms-reveal--up" data-reveal>
             <span className="ms-eyebrow">Our Members</span>
             <h2 className="ms-title">
-              Real stories. <em>Real people.</em>
+              <span className="ms-title-main">Real stories.</span> <em>Real people.</em>
             </h2>
             <p className="ms-subtitle">
               Meet the individuals behind MEMPCO's growing community—members whose

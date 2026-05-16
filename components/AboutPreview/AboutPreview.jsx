@@ -90,7 +90,7 @@ export default function AboutPreview() {
 
             <div className="ap-title-row ap-reveal ap-reveal--right" data-reveal>
               <h2 className="ap-title">
-                Cooperative.<br /><em>Built just for you.</em>
+                <span className="ap-title-main">Cooperative.</span><br /><em>Built just for you.</em>
               </h2>
               <img
                 src="/About/AboutLOGO.png"

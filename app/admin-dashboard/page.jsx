@@ -15,6 +15,7 @@ import {
   EyeOff,
   FileText,
   ImageIcon,
+  Megaphone,
   Menu,
   MessageCircle,
   Monitor,
@@ -73,6 +74,8 @@ import './admin-dashboard.css';
 
 const LOGIN_ROUTE = '/LogIn';
 const HRMAX_ROUTE = '/HRMax';
+const MARKETING_ADMIN_ROUTE = '/marketing-admin';
+const HR_ADMIN_ROUTE = '/hr-admin';
 const TRANSITION_DURATION = 560;
 const REPORT_PERIOD_OPTIONS = [
   { key: 'day', label: 'Day', title: 'Tickets by Day', meta: 'Daily submissions' },
@@ -474,11 +477,37 @@ const getTicketResolvedTime = (ticket) => {
   return Number.isNaN(parsed) ? 0 : parsed;
 };
 
+const hasTimeInDateLabel = (value = '') => /\d{1,2}:\d{2}|am|pm/i.test(String(value || ''));
+
+const getStatusHistoryEventTime = (ticket, expectedType, expectedStatus) => {
+  const history = Array.isArray(ticket?.statusHistory) ? ticket.statusHistory : [];
+  const matchedEntry = history.find((entry) => {
+    const entryType = String(entry?.type || '').trim().toLowerCase();
+    const entryStatus = normalizeTicketStatus(entry?.status || entry?.label);
+
+    return entryType === expectedType || entryStatus === expectedStatus;
+  });
+
+  const parsed = new Date(matchedEntry?.timestamp || matchedEntry?.date || '').getTime();
+
+  return Number.isNaN(parsed) ? 0 : parsed;
+};
+
 const getTicketMovedDateTime = (ticket) => {
-  const storedMovedDate = ticket?.movedDateAt || ticket?.movedDate || ticket?.movedAt || ticket?.dateLabel;
+  const historyMovedDate = getStatusHistoryEventTime(ticket, 'moved-date', 'moved date');
+
+  if (historyMovedDate) return historyMovedDate;
+
+  const storedMovedDate = ticket?.movedDateAt || ticket?.movedDate || ticket?.movedAt;
   const storedParsed = new Date(storedMovedDate || '').getTime();
 
   if (!Number.isNaN(storedParsed)) return storedParsed;
+
+  if (hasTimeInDateLabel(ticket?.dateLabel)) {
+    const dateLabelParsed = new Date(ticket.dateLabel).getTime();
+
+    if (!Number.isNaN(dateLabelParsed)) return dateLabelParsed;
+  }
 
   if (!isMovedDateTicket(ticket)) return 0;
 
@@ -553,7 +582,22 @@ const getTicketReportEvents = (ticket) => {
   const historyEvents = getTicketStatusHistoryEvents(ticket);
 
   if (historyEvents.length) {
-    return historyEvents;
+    const hasMovedDateEvent = historyEvents.some((event) => event.type === 'moved-date');
+    const movedDateTime = getTicketMovedDateTime(ticket);
+
+    if (hasMovedDateEvent || !movedDateTime) {
+      return historyEvents;
+    }
+
+    return [
+      ...historyEvents,
+      createTicketReportEvent(ticket, {
+        timestamp: movedDateTime,
+        label: 'Moved Date',
+        type: 'moved-date',
+        status: 'Moved Date',
+      }),
+    ].filter(Boolean);
   }
 
   const events = [];
@@ -1504,7 +1548,7 @@ const getActionButtonLabel = (ticket) => {
    SIDEBAR
 ========================= */
 
-function Sidebar({ active, onNav, onLogout, open, canCreateUsers }) {
+function Sidebar({ active, onNav, onLogout, open, canCreateUsers, canAccessDepartmentConsoles }) {
   const items = [
     { key: 'dashboard', label: 'Dashboard', Icon: Icon.Dashboard },
     { key: 'tickets', label: 'All Tickets', Icon: Icon.Tickets },
@@ -1537,6 +1581,22 @@ function Sidebar({ active, onNav, onLogout, open, canCreateUsers }) {
             {label}
           </button>
         ))}
+
+        {canAccessDepartmentConsoles && (
+          <>
+            <a className="sidebar-nav-btn sidebar-external-link" href={MARKETING_ADMIN_ROUTE}>
+              <Megaphone className="sidebar-nav-icon" aria-hidden="true" />
+              Marketing Console
+              <ExternalLink className="sidebar-trailing-icon" aria-hidden="true" />
+            </a>
+
+            <a className="sidebar-nav-btn sidebar-external-link" href={HR_ADMIN_ROUTE}>
+              <BriefcaseBusiness className="sidebar-nav-icon" aria-hidden="true" />
+              HR Console
+              <ExternalLink className="sidebar-trailing-icon" aria-hidden="true" />
+            </a>
+          </>
+        )}
 
         <a className="sidebar-nav-btn sidebar-external-link" href={HRMAX_ROUTE}>
           <BriefcaseBusiness className="sidebar-nav-icon" aria-hidden="true" />
@@ -3917,7 +3977,8 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
         };
 
     const timestamp = new Date().toLocaleString();
-    const movedDateValue = draftStatus === 'moved date' ? ticket.dateLabel || timestamp : ticket.dateLabel;
+    const existingMovedDateValue = hasTimeInDateLabel(ticket.dateLabel) ? ticket.dateLabel : '';
+    const movedDateValue = draftStatus === 'moved date' ? existingMovedDateValue || timestamp : ticket.dateLabel;
     const nextTicketSnapshot = {
       ...ticket,
       ...sanitizedDraft,
@@ -4477,6 +4538,7 @@ Current role: ${activeUser.role || 'No role found'}`
   const branchSummary = useMemo(() => breakdown(tickets, 'branch', BRANCHES), [tickets]);
   const isSuperAdmin = normalizePortalRole(admin?.role) === 'superadmin';
   const canCreateUsers = isSuperAdmin;
+  const canAccessDepartmentConsoles = isSuperAdmin;
   const canDeleteTickets = isSuperAdmin;
   const unreadNotificationCount = notifications.filter((notification) => !notification.read).length;
 
@@ -4616,7 +4678,9 @@ Current role: ${activeUser.role || 'No role found'}`
         nextUpdates.workStartedAt = timestamp;
       }
 
-      nextUpdates.dateLabel = currentTicket?.dateLabel || timestamp;
+      nextUpdates.dateLabel = hasTimeInDateLabel(currentTicket?.dateLabel)
+        ? currentTicket.dateLabel
+        : timestamp;
       nextUpdates.workEndedAt = currentTicket?.workEndedAt || '';
     }
 
@@ -4814,6 +4878,7 @@ Current role: ${activeUser.role || 'No role found'}`
               onLogout={handleLogout}
               open={sidebarOpen}
               canCreateUsers={canCreateUsers}
+              canAccessDepartmentConsoles={canAccessDepartmentConsoles}
             />
 
             {sidebarOpen && <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />}

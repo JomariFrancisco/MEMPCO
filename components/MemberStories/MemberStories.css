@@ -20,6 +20,40 @@
   --navbar-height: 72px;
 }
 
+.ms-title {
+  color: var(--ms-ink);
+  background: none;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+  -webkit-text-fill-color: currentColor;
+  overflow: visible;
+  padding-block: 0.04em 0.18em;
+}
+
+.ms-title-main {
+  display: inline-block;
+  color: transparent;
+  background: linear-gradient(90deg, #0b0b0b 0%, #141414 64%, #343434 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  overflow: visible;
+  line-height: 1.18;
+  padding: 0 0.08em 0.14em 0;
+}
+
+.ms-title em {
+  color: transparent;
+  background: linear-gradient(90deg, var(--ms-red) 0%, var(--ms-red-dk) 62%, #7f1d1d 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: inline-block;
+  overflow: visible;
+  line-height: 1.18;
+  padding: 0 0.12em 0.16em 0;
+}
+
 .ms,
 .ms *,
 .ms *::before,
@@ -172,7 +206,7 @@ body.ms-modal-lock {
 .ms-title {
   margin: 0 0 1rem;
   font-size: clamp(2.15rem, 6vw, 3.8rem);
-  line-height: 0.97;
+  line-height: 1.18;
   font-weight: 800;
   letter-spacing: -0.06em;
   color: var(--ms-ink);
@@ -181,7 +215,6 @@ body.ms-modal-lock {
 
 .ms-title em {
   font-style: normal;
-  color: var(--ms-red);
 }
 
 .ms-subtitle {

@@ -65,6 +65,31 @@ body {
     linear-gradient(180deg, #fcfbfa 0%, #f5f1ee 100%);
 }
 
+.mgmt-hero-copy h1,
+.oc-section-head h2,
+.mgmt-section-head h2 {
+  color: transparent;
+  background: linear-gradient(90deg, #0b0b0b 0%, #141414 64%, #343434 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  overflow: visible;
+  padding-block: 0.03em 0.08em;
+}
+
+.mgmt-hero-copy h1 em,
+.oc-section-head h2 em,
+.mgmt-section-head h2 em {
+  display: inline-block;
+  font-style: normal;
+  color: transparent;
+  background: linear-gradient(90deg, var(--red) 0%, var(--red-dk) 62%, #7f1d1d 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  padding-bottom: 0.05em;
+}
+
 .mgmt-page::before {
   content: '';
   position: absolute;
@@ -142,7 +167,7 @@ canvas {
   font-size: clamp(1.9rem, 3.5vw, 2.8rem);
   font-weight: 700;
   letter-spacing: -0.05em;
-  line-height: 1.06;
+  line-height: 1.1;
   color: var(--ink);
 }
 
@@ -196,7 +221,7 @@ canvas {
   margin: 1rem 0 0;
   font-size: clamp(3rem, 6vw, 5.8rem);
   font-weight: 700;
-  line-height: 0.95;
+  line-height: 1.08;
   letter-spacing: -0.06em;
   color: var(--ink);
 }
@@ -452,7 +477,7 @@ canvas {
   font-size: clamp(1.9rem, 3.5vw, 2.8rem);
   font-weight: 700;
   letter-spacing: -0.05em;
-  line-height: 1.06;
+  line-height: 1.1;
   color: var(--ink);
 }
 

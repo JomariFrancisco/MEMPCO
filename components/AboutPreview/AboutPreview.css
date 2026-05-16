@@ -34,6 +34,40 @@
   -webkit-font-smoothing: antialiased;
 }
 
+.ap-title {
+  color: var(--ap-ink);
+  background: none;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+  -webkit-text-fill-color: currentColor;
+  overflow: visible;
+  padding-block: 0.04em 0.18em;
+}
+
+.ap-title-main {
+  display: inline-block;
+  color: transparent;
+  background: linear-gradient(90deg, #0b0b0b 0%, #141414 64%, #343434 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  overflow: visible;
+  line-height: 1.18;
+  padding: 0 0.08em 0.14em 0;
+}
+
+.ap-title em {
+  color: transparent;
+  background: linear-gradient(90deg, var(--ap-red) 0%, var(--ap-red-dk) 62%, #7f1d1d 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: inline-block;
+  overflow: visible;
+  line-height: 1.18;
+  padding: 0 0.12em 0.16em 0;
+}
+
 /* Glow blobs */
 .ap-glow {
   position: absolute;
@@ -218,7 +252,7 @@
   margin: 0;
   font-size: clamp(2rem, 3.2vw, 3rem);
   font-weight: 800;
-  line-height: 1.0;
+  line-height: 1.18;
   letter-spacing: -0.055em;
   color: var(--ap-ink);
   text-wrap: balance;
@@ -226,7 +260,6 @@
 
 .ap-title em {
   font-style: normal;
-  color: var(--ap-red);
 }
 
 /* Body */
@@ -563,7 +596,7 @@
 
   .ap-title {
     font-size: clamp(1.5rem, 6vw, 2.2rem);
-    line-height: 1.02;
+    line-height: 1.18;
     text-wrap: pretty;
   }
 

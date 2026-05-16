@@ -556,7 +556,7 @@ export default function ManagementPage() {
         <section className="oc-section" id="management-structure">
           <div className="oc-section-head">
             <span className="mgmt-tag">Organizational Structure</span>
-            <h2>Management Hierarchy</h2>
+            <h2>Management <em>Hierarchy</em></h2>
             <p>One Chief Executive Officer, four Division Chiefs, two Area Managers, and eleven branch-based operating units.</p>
           </div>
 
@@ -611,7 +611,7 @@ export default function ManagementPage() {
           <div className="mgmt-container branch-container">
             <div className="mgmt-section-head">
               <span className="mgmt-tag">Branch Operations</span>
-              <h2>Branch &amp; Unit Managers</h2>
+              <h2>Branch &amp; Unit <em>Managers</em></h2>
               <p>Eleven branch and unit managers provide localized operational leadership across all service areas and satellite offices.</p>
             </div>
 
@@ -640,7 +640,7 @@ export default function ManagementPage() {
           <div className="mgmt-container">
             <div className="mgmt-section-head">
               <span className="mgmt-tag">Management Focus</span>
-              <h2>How Leadership Supports Operations</h2>
+              <h2>How Leadership Supports <em>Operations</em></h2>
             </div>
 
             <div className="focus-grid">

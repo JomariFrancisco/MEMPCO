@@ -134,7 +134,7 @@ export default function WellnessPage() {
       <section className="wp-section wp-intro" aria-label="Wellness introduction">
         <div className="wp-inner">
           <p className="wp-intro-kicker">Wellness Support</p>
-          <h2 className="wp-intro-title">Wellness service details are on the way.</h2>
+          <h2 className="wp-intro-title">Wellness service details are <em>on the way.</em></h2>
           <p className="wp-intro-sub">
             Coming soon...
           </p>
@@ -185,7 +185,7 @@ export default function WellnessPage() {
         <div className="wp-inner">
           <p className="wp-process-kicker">Process</p>
           <h2 className="wp-process-title" id="wp-process-heading">
-            Service flow coming soon.
+            Service flow <em>coming soon.</em>
           </h2>
 
           <div className="wp-process-grid">
@@ -207,7 +207,7 @@ export default function WellnessPage() {
             <h2 className="wp-note-title" id="wp-note-heading">
               Full wellness information
               <br />
-              is coming soon...
+              <em>is coming soon...</em>
             </h2>
             <p className="wp-note-text">
               Coming soon...

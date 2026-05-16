@@ -40,6 +40,33 @@
   overflow-x: hidden;
 }
 
+.rs-hero-title,
+.rs-details-title,
+.rs-why-title {
+  display: inline-block;
+  padding-block: 0.03em 0.18em;
+  color: transparent;
+  background: linear-gradient(90deg, #0b0b0b 0%, #141414 64%, #343434 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  overflow: visible;
+}
+
+.rs-hero-title em,
+.rs-details-title em,
+.rs-why-title em {
+  display: inline-block;
+  font-style: normal;
+  color: transparent;
+  background: linear-gradient(90deg, var(--red) 0%, var(--red-dk) 62%, #7f1d1d 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  overflow: visible;
+  padding-bottom: 0.05em;
+}
+
 /* ═══════════════════════════════════════
    SECTION BASE
 ═══════════════════════════════════════ */
@@ -94,10 +121,10 @@
 .rs-hero-title {
   font-size: clamp(3rem, 7vw, 5.5rem);
   font-weight: 700;
-  line-height: 1.0;
+  line-height: 1.18;
   letter-spacing: -0.04em;
   color: var(--ink);
-  margin-bottom: 1.25rem;
+  margin-bottom: 0.75rem;
 }
 
 /* hero sub */
@@ -216,7 +243,7 @@
 .rs-details-title {
   font-size: clamp(1.8rem, 3.5vw, 2.8rem);
   font-weight: 700;
-  line-height: 1.05;
+  line-height: 1.2;
   letter-spacing: -0.04em;
   color: var(--ink);
   margin-bottom: 1.25rem;
@@ -349,7 +376,7 @@
   font-size: clamp(1.8rem, 3.5vw, 2.8rem);
   font-weight: 700;
   letter-spacing: -0.04em;
-  line-height: 1.05;
+  line-height: 1.2;
   color: var(--ink);
   margin-bottom: 3.5rem;
 }
@@ -412,6 +439,7 @@
 
   .rs-hero-title {
     font-size: clamp(2.5rem, 12vw, 3.8rem);
+    line-height: 1.12;
     letter-spacing: -0.03em;
   }
 

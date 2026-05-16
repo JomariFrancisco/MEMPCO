@@ -170,12 +170,12 @@
 ═══════════════════════════════════════ */
 
 .hero__progress {
-  position: fixed;
+  position: absolute;
   top: 0;
   right: 0;
   width: 2px;
-  height: 100vh;
-  z-index: 9999;
+  height: 100%;
+  z-index: 12;
   pointer-events: none;
   background: rgba(220, 38, 38, 0.08);
 }
@@ -361,6 +361,18 @@
   opacity: 0;
   animation: heroCopyIn 0.95s cubic-bezier(0.22, 1, 0.36, 1) 0.06s forwards;
   pointer-events: none;
+}
+
+.hero__sr-title {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .hero__eyebrow {
@@ -1370,8 +1382,9 @@
 
 @media (max-width: 768px) {
   .hero {
-    height: 100svh;
-    min-height: 100svh;
+    --hero-mobile-stage: max(100svh, 680px);
+    height: var(--hero-mobile-stage);
+    min-height: var(--hero-mobile-stage);
     overflow: hidden;
   }
 
@@ -1389,7 +1402,7 @@
   }
 
   .hero__backdrop--memorial {
-    background-position: center center;
+    background-position: 42% center;
     filter: saturate(0.95) contrast(0.98) brightness(0.78);
   }
 
@@ -1411,7 +1424,8 @@
     position: relative;
     z-index: 5;
     width: 100%;
-    height: 100%;
+    height: var(--hero-mobile-stage);
+    min-height: var(--hero-mobile-stage);
     padding: 0 1rem;
     display: flex;
     flex-direction: column;
@@ -1421,11 +1435,13 @@
 
   .hero__carousel {
     width: 100%;
-    height: 100%;
+    height: var(--hero-mobile-stage);
+    min-height: var(--hero-mobile-stage);
     flex: 1;
   }
 
   .hero__slide {
+    min-height: var(--hero-mobile-stage);
     transform: translate3d(1.2rem, 0, 0);
   }
 
@@ -1441,7 +1457,7 @@
     position: relative;
     width: 100%;
     max-width: 100%;
-    height: 100%;
+    height: var(--hero-mobile-stage);
     margin: 0;
     display: flex;
     flex-direction: column;
@@ -1453,7 +1469,7 @@
 
   .hero__copy {
     position: absolute;
-    top: clamp(4.7rem, 8vh, 5.7rem);
+    top: clamp(8.8rem, 30svh, 12.8rem);
     left: 50%;
     transform: translateX(-50%);
     width: 100%;
@@ -1529,9 +1545,9 @@
   }
 
   .hero__visual-image--anniversary {
-    width: min(118vw, 600px);
-    max-width: none;
-    max-height: min(70vh, 468px);
+    width: min(96vw, 560px);
+    max-width: 100%;
+    max-height: min(58vh, 420px);
     height: auto;
     object-fit: contain;
     object-position: center center;
@@ -1556,7 +1572,7 @@
     position: absolute;
     left: 0;
     right: 0;
-    bottom: clamp(6.6rem, 13vh, 8.4rem);
+    bottom: clamp(11.8rem, 29svh, 14.8rem);
     width: 100%;
     margin: 0;
     z-index: 10;
@@ -1576,7 +1592,7 @@
   .hero__services {
     position: absolute;
     left: 50%;
-    bottom: clamp(2.3rem, 6vh, 3.2rem);
+    bottom: clamp(8rem, 20.5svh, 10.6rem);
     transform: translateX(-50%);
     width: 100%;
     padding: 0 0.8rem;
@@ -1594,6 +1610,8 @@
     min-height: 2rem;
     padding: 0.5rem 0.85rem;
     font-size: 0.72rem;
+    line-height: 1.2;
+    text-align: center;
     flex-shrink: 0;
   }
 
@@ -1604,8 +1622,12 @@
 }
 
 @media (max-width: 480px) {
+  .hero {
+    --hero-mobile-stage: max(100svh, 640px);
+  }
+
   .hero__copy {
-    top: 4.8rem;
+    top: clamp(8.5rem, 29svh, 11.4rem);
   }
 
   .hero__eyebrow {
@@ -1621,9 +1643,9 @@
   }
 
   .hero__visual-image--anniversary {
-    width: min(120vw, 546px);
-    max-width: none;
-    max-height: min(65vh, 408px);
+    width: min(96vw, 420px);
+    max-width: 100%;
+    max-height: min(55vh, 360px);
   }
 
   .hero__visual-image--logo {
@@ -1635,6 +1657,14 @@
     font-size: 0.65rem;
     padding: 0.44rem 0.72rem;
     min-height: 1.85rem;
+  }
+
+  .hero__marquee {
+    bottom: clamp(10.7rem, 27svh, 12.9rem);
+  }
+
+  .hero__services {
+    bottom: clamp(7.3rem, 18.6svh, 9rem);
   }
 
   .hero__memorial {
@@ -1666,8 +1696,12 @@
 }
 
 @media (max-width: 380px) {
+  .hero {
+    --hero-mobile-stage: max(100svh, 600px);
+  }
+
   .hero__copy {
-    top: 4.5rem;
+    top: clamp(7.8rem, 27svh, 9.8rem);
   }
 
   .hero__eyebrow {
@@ -1683,9 +1717,9 @@
   }
 
   .hero__visual-image--anniversary {
-    width: min(120vw, 492px);
-    max-width: none;
-    max-height: min(61vh, 372px);
+    width: min(95vw, 360px);
+    max-width: 100%;
+    max-height: min(50vh, 310px);
   }
 
   .hero__visual-image--logo {
@@ -1696,6 +1730,14 @@
   .hero__service-chip {
     font-size: 0.6rem;
     padding: 0.38rem 0.6rem;
+  }
+
+  .hero__marquee {
+    bottom: clamp(9.8rem, 25svh, 11.3rem);
+  }
+
+  .hero__services {
+    bottom: clamp(6.5rem, 17svh, 7.7rem);
   }
 
   .hero__memorial {

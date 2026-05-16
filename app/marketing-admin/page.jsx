@@ -43,6 +43,7 @@ import '../admin-dashboard/admin-dashboard.css';
 import './marketing-admin.css';
 
 const EDITOR_CATEGORIES = ['News', 'Events', 'Announcement', 'Member Stories'];
+const ADMIN_DASHBOARD_ROUTE = '/admin-dashboard';
 const HRMAX_ROUTE = '/HRMax';
 const POSTS_PER_PAGE = 2;
 const SORT_OPTIONS = [
@@ -770,6 +771,14 @@ export default function MarketingAdminPage() {
               </div>
 
               <div className="sidebar-logout">
+                {user.role === 'superadmin' && (
+                  <a className="sidebar-nav-btn sidebar-external-link" href={ADMIN_DASHBOARD_ROUTE}>
+                    <LayoutDashboard className="sidebar-nav-icon" aria-hidden="true" />
+                    IT Super Admin
+                    <ExternalLink className="sidebar-trailing-icon" aria-hidden="true" />
+                  </a>
+                )}
+
                 <a className="sidebar-nav-btn sidebar-external-link" href={HRMAX_ROUTE}>
                   <BriefcaseBusiness className="sidebar-nav-icon" aria-hidden="true" />
                   HRMax

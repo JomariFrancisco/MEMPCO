@@ -287,7 +287,7 @@ export default function NewsEvents() {
           <span className="ne-eyebrow">MEMPCO Bulletin</span>
 
           <h2 className="ne-title">
-            News &amp; <em>Events</em>
+            <span className="ne-title-main">News &amp;</span> <em>Events</em>
           </h2>
 
           <p className="ne-subtitle">

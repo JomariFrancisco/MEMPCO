@@ -1,11 +1,12 @@
 'use client';
 
 import Link from 'next/link';
+import { Clock, Mail, MapPin, Phone } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import './Footer.css';
 
 const NAV_LINKS = {
-  About: [
+  Cooperative: [
     { label: 'About Us', href: '/about' },
     { label: 'Branches', href: '/branches' },
     { label: 'Governance', href: '/governance' },
@@ -14,15 +15,39 @@ const NAV_LINKS = {
   Services: [
     { label: 'All Services', href: '/services' },
     { label: 'Regular Savings', href: '/services/savings/regular-savings' },
-    { label: 'KKT Savings', href: '/services/savings/kkt' },
-    { label: 'Business Loan', href: '/services/loans/business-loan' },
-    { label: 'Aflatoun Savings', href: '/services/savings/aflatoun-savings' },
+    { label: 'Insurance', href: '/services/insurance' },
+    { label: 'Funeral', href: '/services/funeral' },
   ],
-  Portals: [
-    { label: 'Employee Portal', href: '/employee' },
+  Access: [
     { label: 'Careers', href: '/jobs' },
   ],
 };
+
+const CONTACT_INFO = [
+  {
+    label: 'Call Us',
+    value: '(062) 991-7772',
+    href: 'tel:+63629917772',
+    Icon: Phone,
+  },
+  {
+    label: 'Email Us',
+    value: 'inquiries@mempco.coop',
+    href: 'mailto:inquiries@mempco.coop',
+    Icon: Mail,
+  },
+  {
+    label: 'Our Location',
+    value: '3D-3E HC Marketing Bldg. Veterans Avenue, Zamboanga City 7000',
+    href: '/branches',
+    Icon: MapPin,
+  },
+  {
+    label: 'Working Hours',
+    value: 'Mon - Fri 08:00am - 04:00pm',
+    Icon: Clock,
+  },
+];
 
 const SOCIAL = [
   {
@@ -37,7 +62,7 @@ const SOCIAL = [
   },
   {
     label: 'Instagram',
-    href: '#',
+    href: 'https://www.instagram.com/mempco.ph/',
     external: true,
     icon: (
       <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -57,7 +82,7 @@ const SOCIAL = [
   },
   {
     label: 'TikTok',
-    href: 'https://www.tiktok.com/@mempco.official?_r=1&_d=secCgYIASAHKAESPgo8tPvx%2Bk%2Bluj%2FeTryqe9LYjzOP1uhDkQT5BJqBEEYcU1jm8DMaSSNQ92AKKm2h0ITg2GA46clQ5DVZJDuiGgA%3D&_svg=1&checksum=9544e60cb4f427d649fb87aa810a8bbab26eda1ad8064125b4485fd6904c412a&item_author_type=2&reflow_sign_scene=7&rgssign=8.1.q4Mtv6uzODteqMYUXBFNog&sec_uid=MS4wLjABAAAAUQU6L7zyATND89CB4gcR7HQWJviV6CI6sGGFn2PeNqkvV6SwBC8f26CWuP0Afwx3&sec_user_id=MS4wLjABAAAAWa-V2VIlwEZb_B2zbQNzA-57TN5o3IeI8gpZga-ZSoPr68Ebv0x7lyVXIAbzO6cK&share_app_id=1180&share_author_id=7462995897732727828&share_link_id=04EFD4AB-1A61-41C9-95D4-3DC768AB22BD&share_region=PH&share_scene=1&sharer_language=en&social_share_type=5&source=h5_t&timestamp=1776761699&tt_from=copy&u_code=46g6igj4cc2db&ug_btm=b6880%2Cb5836&user_id=94050454287826945',
+    href: 'https://www.tiktok.com/@mempco.official',
     external: true,
     icon: (
       <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -97,6 +122,40 @@ export default function Footer() {
       <div className="ft-glow" aria-hidden="true" />
 
       <div className="ft-inner">
+        <div className="ft-contact-strip" aria-label="MEMPCO contact details">
+          {CONTACT_INFO.map(({ label, value, href, Icon }) => {
+            const content = (
+              <>
+                <span className="ft-contact-icon" aria-hidden="true">
+                  <Icon size={18} strokeWidth={2.2} />
+                </span>
+                <span className="ft-contact-copy">
+                  <span className="ft-contact-label">{label}</span>
+                  <span className="ft-contact-value">{value}</span>
+                </span>
+              </>
+            );
+
+            if (!href) {
+              return (
+                <div key={label} className="ft-contact-item">
+                  {content}
+                </div>
+              );
+            }
+
+            return href.startsWith('/') ? (
+              <Link key={label} href={href} className="ft-contact-item">
+                {content}
+              </Link>
+            ) : (
+              <a key={label} href={href} className="ft-contact-item">
+                {content}
+              </a>
+            );
+          })}
+        </div>
+
         <div className="ft-top">
           <div className="ft-brand">
             <span className="ft-logo">MEMPCO</span>
@@ -129,7 +188,13 @@ export default function Footer() {
               <ul className="ft-col-list">
                 {links.map((l) => (
                   <li key={l.href}>
-                    <Link href={l.href} className="ft-col-link">
+                    <Link
+                      href={l.href}
+                      className="ft-col-link"
+                      {...(l.external
+                        ? { target: '_blank', rel: 'noopener noreferrer' }
+                        : {})}
+                    >
                       {l.label}
                     </Link>
                   </li>
@@ -138,28 +203,6 @@ export default function Footer() {
             </nav>
           ))}
 
-          <div className="ft-col">
-            <p className="ft-col-heading">Contact</p>
-            <ul className="ft-col-list ft-contact-list">
-              <li>
-                <a href="mailto:inquiries@mempco.com" className="ft-col-link">
-                  inquiries@mempco.com
-                </a>
-              </li>
-              <li>
-                <a href="tel:+639000000000" className="ft-col-link">
-                  +639 000-0000-000
-                </a>
-              </li>
-              <li className="ft-col-address">
-                3D-3E HC Marketing Bldg,
-                <br />
-                Veterans Avenue,
-                <br />
-                Zamboanga City, Philippines
-              </li>
-            </ul>
-          </div>
         </div>
 
         <div className="ft-bottom">

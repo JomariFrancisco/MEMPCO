@@ -172,15 +172,37 @@
   margin: 0 0 1rem;
   font-size: clamp(2.6rem, 4.5vw, 4.2rem);
   font-weight: 850;
-  line-height: 0.95;
+  line-height: 1.08;
   letter-spacing: -0.06em;
-  color: var(--ne-ink);
+  color: transparent;
+  background: linear-gradient(90deg, #0b0b0b 0%, #141414 64%, #343434 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  overflow: visible;
+  padding-block: 0.03em 0.08em;
   text-wrap: balance;
+}
+
+.ne-title-main {
+  color: transparent;
+  background: linear-gradient(90deg, #0b0b0b 0%, #141414 64%, #343434 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  overflow: visible;
 }
 
 .ne-title em {
   font-style: normal;
-  color: var(--ne-red);
+  color: transparent;
+  background: linear-gradient(90deg, var(--ne-red) 0%, var(--ne-red-dk) 62%, #7f1d1d 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: inline-block;
+  overflow: visible;
+  padding: 0 0.14em 0.08em 0;
 }
 
 .ne-subtitle {

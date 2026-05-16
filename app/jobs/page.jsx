@@ -194,10 +194,8 @@ export default function Career() {
       if (resumeInputRef.current) {
         resumeInputRef.current.value = '';
       }
-      setApplicationStatus({
-        type: 'success',
-        text: 'Application submitted. HR can now review your information and resume.',
-      });
+      setApplicationStatus({ type: '', text: '' });
+      setIsApplicationModalOpen(false);
     } catch (error) {
       setApplicationStatus({
         type: 'error',
@@ -597,7 +595,7 @@ export default function Career() {
                 value={applicationForm.coverLetter}
                 onChange={(event) => updateApplicationForm('coverLetter', event.target.value)}
                 placeholder="Briefly introduce yourself and your interest in the role."
-                rows={5}
+                rows={3}
               />
             </label>
 

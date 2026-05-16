@@ -108,7 +108,7 @@ export default function KKT() {
           {/* headline */}
           <span className="kkt-eyebrow">MEMPCO Savings Program</span>
           <h1 className="kkt-hero-title" id="kkt-heading">
-            Kinabukasan Ko &lsquo;To.
+            Kinabukasan <em>Ko &lsquo;To.</em>
           </h1>
           <p className="kkt-hero-subtitle">
             KKT Wealth Building Savings
@@ -156,7 +156,7 @@ export default function KKT() {
             <div>
               <p className="kkt-details-kicker">The program</p>
               <h2 className="kkt-details-title" id="kkt-details-heading">
-                Savings built for<br />the sacrifices you make.
+                Savings built for<br /><em>the sacrifices you make.</em>
               </h2>
               <p className="kkt-details-body">
                 The KKT Wealth Building Savings Program is designed for{' '}
@@ -219,7 +219,7 @@ export default function KKT() {
         <div className="kkt-inner">
           <p className="kkt-why-kicker">Why KKT</p>
           <h2 className="kkt-why-title" id="kkt-why-heading">
-            Your future, secured.
+            Your future, <em>secured.</em>
           </h2>
 
           <div className="kkt-why-grid">

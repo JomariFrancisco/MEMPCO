@@ -116,7 +116,7 @@ export default function Governance() {
           <div className="gov-container">
             <div className="gov-section-heading">
               <span className="gov-section-tag">Positions</span>
-              <h2>Leadership Positions</h2>
+              <h2>Leadership <em>Positions</em></h2>
               <p>
                 A direct summary of the positions under the Board of Directors and
                 Management.
@@ -161,7 +161,7 @@ export default function Governance() {
           <div className="gov-container">
             <div className="gov-section-heading">
               <span className="gov-section-tag">Branches</span>
-              <h2>Branch Network</h2>
+              <h2>Branch <em>Network</em></h2>
               <p>
                 The branch and unit coverage under Area 1 and Area 2.
               </p>

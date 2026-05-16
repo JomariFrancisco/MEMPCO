@@ -372,7 +372,7 @@ export default function BoardOfDirectorsPage() {
           <div className="bod-container">
             <div className="bod-section-heading">
               <span className="bod-section-tag">Organizational Structure</span>
-              <h2>Leadership Hierarchy</h2>
+              <h2>Leadership <em>Hierarchy</em></h2>
               <p>
                 Click any board member to view their full profile. The chart
                 reflects the cooperative&apos;s formal governance structure and chain
@@ -391,7 +391,7 @@ export default function BoardOfDirectorsPage() {
           <div className="bod-container">
             <div className="bod-section-heading">
               <span className="bod-section-tag">Core Governance Focus</span>
-              <h2>What the Board Upholds</h2>
+              <h2>What the Board <em>Upholds</em></h2>
             </div>
 
             <div className="bod-focus-grid">
@@ -411,7 +411,7 @@ export default function BoardOfDirectorsPage() {
           <div className="bod-container">
             <div className="bod-section-heading">
               <span className="bod-section-tag">Committee Structure</span>
-              <h2>Governance Support Areas</h2>
+              <h2>Governance Support <em>Areas</em></h2>
             </div>
 
             <div className="bod-committee-grid">

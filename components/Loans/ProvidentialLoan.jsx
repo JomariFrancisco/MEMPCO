@@ -479,7 +479,7 @@ export default function ProvidentialLoan() {
         <div className="pl-inner">
           <p className="pl-section-kicker">Loan portfolio</p>
           <h2 className="pl-section-title" id="pl-overview-heading">
-            Structured by member need.
+            Structured by <em>member need.</em>
           </h2>
           <p className="pl-section-text">
             This layout turns the Providential Loan page into a cleaner product
@@ -531,7 +531,7 @@ export default function ProvidentialLoan() {
             <p className="pl-note-kicker">Apply with MEMPCO</p>
             <h2 className="pl-note-title" id="pl-note-heading">
               For updated requirements, approval review, and final loan terms,<br />
-              coordinate directly with MEMPCO.
+              <em>coordinate directly with MEMPCO.</em>
             </h2>
             <p className="pl-note-text">
               Final eligibility, documentary requirements, repayment structure,

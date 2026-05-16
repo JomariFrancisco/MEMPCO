@@ -1402,6 +1402,10 @@ create table if not exists public.job_applications (
   cover_letter text,
   status text not null default 'new',
   hr_notes text not null default '',
+  status_history jsonb not null default '[]'::jsonb,
+  interview_at timestamptz,
+  interview_type text not null default '',
+  interviewer text not null default '',
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -1416,6 +1420,10 @@ add column if not exists resume_url text,
 add column if not exists cover_letter text,
 add column if not exists status text not null default 'new',
 add column if not exists hr_notes text not null default '',
+add column if not exists status_history jsonb not null default '[]'::jsonb,
+add column if not exists interview_at timestamptz,
+add column if not exists interview_type text not null default '',
+add column if not exists interviewer text not null default '',
 add column if not exists created_at timestamptz not null default now(),
 add column if not exists updated_at timestamptz not null default now();
 
@@ -1426,6 +1434,9 @@ set
   email = coalesce(nullif(email, ''), 'missing-applicant-' || id::text || '@mempco.local'),
   status = coalesce(nullif(status, ''), 'new'),
   hr_notes = coalesce(hr_notes, ''),
+  status_history = coalesce(status_history, '[]'::jsonb),
+  interview_type = coalesce(interview_type, ''),
+  interviewer = coalesce(interviewer, ''),
   created_at = coalesce(created_at, now()),
   updated_at = coalesce(updated_at, now());
 
@@ -1435,6 +1446,12 @@ alter column applicant_name set not null,
 alter column email set not null,
 alter column status set not null,
 alter column hr_notes set not null,
+alter column status_history set default '[]'::jsonb,
+alter column status_history set not null,
+alter column interview_type set default '',
+alter column interview_type set not null,
+alter column interviewer set default '',
+alter column interviewer set not null,
 alter column created_at set not null,
 alter column updated_at set not null;
 
@@ -1466,9 +1483,10 @@ using (public.is_hr_admin())
 with check (public.is_hr_admin());
 
 drop policy if exists "HR admins can delete job applications" on public.job_applications;
-create policy "HR admins can delete job applications"
+drop policy if exists "Super admins can delete job applications" on public.job_applications;
+create policy "Super admins can delete job applications"
 on public.job_applications for delete
-using (public.is_hr_admin());
+using (public.is_superadmin());
 
 -- =====================================================
 -- JOB APPLICATION RESUME STORAGE
@@ -1503,6 +1521,12 @@ create policy "Public can read job resumes"
 on storage.objects for select
 to anon, authenticated
 using (bucket_id = 'job-resumes');
+
+drop policy if exists "Super admins can delete job resumes" on storage.objects;
+create policy "Super admins can delete job resumes"
+on storage.objects for delete
+to authenticated
+using (bucket_id = 'job-resumes' and public.is_superadmin());
 
 -- =====================================================
 -- GRANTS

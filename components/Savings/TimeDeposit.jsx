@@ -108,7 +108,7 @@ export default function TimeDeposit() {
 
           {/* headline */}
           <span className="td-eyebrow">MEMPCO Savings Program</span>
-          <h1 className="td-hero-title" id="td-heading">Time Deposit.</h1>
+          <h1 className="td-hero-title" id="td-heading">Time <em>Deposit.</em></h1>
           <p className="td-hero-tagline">
             Lock in your money. Lock out temptation.<br />
             Let discipline do the earning.
@@ -152,7 +152,7 @@ export default function TimeDeposit() {
             <div>
               <p className="td-details-kicker">The program</p>
               <h2 className="td-details-title" id="td-details-heading">
-                Your money, working<br />while you wait.
+                Your money, working<br /><em>while you wait.</em>
               </h2>
               <p className="td-details-body">
                 Cash on hand disappears faster than we expect. MEMPCO Time
@@ -217,7 +217,7 @@ export default function TimeDeposit() {
         <div className="td-inner">
           <p className="td-why-kicker">Why Time Deposit</p>
           <h2 className="td-why-title" id="td-why-heading">
-            Discipline, rewarded.
+            Discipline, <em>rewarded.</em>
           </h2>
 
           <div className="td-why-grid">

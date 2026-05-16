@@ -826,7 +826,7 @@ export default function About() {
               <div className="ao-history-stage">
                 <div className="ao-history-intro">
                   <p className="ao-section-kicker">History & Milestone</p>
-                  <h2 className="ao-history-main-title">Our Journey</h2>
+                  <h2 className="ao-history-main-title">Our <em>Journey</em></h2>
                   <p className="ao-history-main-copy">
                     From its early microfinancing roots to its growing service
                     network today, MEMPCO&apos;s milestones reflect a continuous
@@ -889,7 +889,7 @@ export default function About() {
             <div className="ao-shell">
               <div className="ao-section-intro reveal reveal-up">
                 <p className="ao-section-kicker">Foundation</p>
-                <h2 className="ao-section-title">Mission, Vision & Core Values</h2>
+                <h2 className="ao-section-title">Mission, Vision & <em>Core Values</em></h2>
                 <p className="ao-section-description">
                   The principles that guide MEMPCO&apos;s service, leadership,
                   and commitment to its members.
@@ -940,7 +940,10 @@ export default function About() {
               </div>
 
               <div className="ao-awards-stage-head reveal reveal-up">
-                <h2>Awards & Recognition</h2>
+                <h2>
+                  <span className="ao-awards-stage-title-main">Awards &</span>{' '}
+                  <em>Recognition</em>
+                </h2>
                 <p>
                   These recognitions reflect MEMPCO&apos;s excellence in
                   cooperative service, sustainability, institutional growth,
@@ -1025,7 +1028,7 @@ export default function About() {
             <div className="ao-shell">
               <div className="ao-section-intro reveal reveal-up">
                 <p className="ao-section-kicker">Structure</p>
-                <h2 className="ao-section-title">Offices and Governance</h2>
+                <h2 className="ao-section-title">Offices and <em>Governance</em></h2>
                 <p className="ao-section-description">
                   Explore MEMPCO&apos;s service presence and leadership structure
                   through its offices and governance overview.

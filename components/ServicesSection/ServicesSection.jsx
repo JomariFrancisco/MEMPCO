@@ -125,7 +125,7 @@ export default function ServicesSection() {
           <p className="services-eyebrow">MEMPCO Services</p>
 
           <h2 className="section-title">
-            Our <em>Services</em>
+            <span className="section-title-main">Our</span> <em>Services</em>
           </h2>
 
           <p className="services-subtitle">

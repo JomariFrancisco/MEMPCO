@@ -93,7 +93,7 @@ export default function RegularSavings() {
 
           {/* headline */}
           <span className="rs-eyebrow">MEMPCO Savings Program</span>
-          <h1 className="rs-hero-title" id="rs-heading">Regular Savings.</h1>
+          <h1 className="rs-hero-title" id="rs-heading">Regular <em>Savings.</em></h1>
           <p className="rs-hero-tagline">
             Simple, dependable, and tax-free.<br />
             Built for every member from day one.
@@ -141,7 +141,7 @@ export default function RegularSavings() {
             <div className="rs-details-copy">
               <p className="rs-details-kicker">The essentials</p>
               <h2 className="rs-details-title" id="rs-details-heading">
-                Everything you need.<br />Nothing you don&apos;t.
+                Everything you <em>need.</em><br />Nothing you don&apos;t.
               </h2>
               <p className="rs-details-body">
                 The Regular Savings account is the foundation of your MEMPCO membership.
@@ -188,7 +188,7 @@ export default function RegularSavings() {
         <div className="rs-inner">
           <p className="rs-why-kicker">Why it matters</p>
           <h2 className="rs-why-title" id="rs-why-heading">
-            Designed for real life.
+            Designed for <em>real life.</em>
           </h2>
 
           <div className="rs-why-grid">

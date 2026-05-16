@@ -47,6 +47,31 @@
   overflow-x: hidden;
 }
 
+.bl-hero-title,
+.bl-section-title,
+.bl-note-title {
+  color: transparent;
+  background: linear-gradient(90deg, #0b0b0b 0%, #141414 64%, #343434 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  overflow: visible;
+  padding-block: 0.03em 0.1em;
+}
+
+.bl-hero-title .accent,
+.bl-section-title em,
+.bl-note-title em {
+  display: inline-block;
+  font-style: normal;
+  color: transparent;
+  background: linear-gradient(90deg, var(--red) 0%, var(--red-dk) 62%, #7f1d1d 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  padding-bottom: 0.05em;
+}
+
 html,
 body {
   scroll-behavior: smooth;
@@ -77,7 +102,7 @@ body {
 .bl-section-title {
   font-size: clamp(1.8rem, 3.5vw, 3rem);
   font-weight: 700;
-  line-height: 1.04;
+  line-height: 1.12;
   letter-spacing: -0.045em;
   color: var(--ink);
   max-width: 760px;
@@ -137,7 +162,7 @@ body {
 .bl-hero-title {
   font-size: clamp(3.3rem, 8vw, 7rem);
   font-weight: 700;
-  line-height: 0.94;
+  line-height: 1.08;
   letter-spacing: -0.06em;
   color: var(--ink);
   text-align: center;

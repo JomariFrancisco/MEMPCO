@@ -76,6 +76,33 @@ body {
     sans-serif;
 }
 
+.ao-hero-title,
+.ao-history-main-title,
+.ao-section-title,
+.ao-awards-stage-head h2 {
+  color: transparent;
+  background: linear-gradient(90deg, #0b0b0b 0%, #141414 64%, #343434 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  overflow: visible;
+  padding-block: 0.03em 0.08em;
+}
+
+.ao-hero-title em,
+.ao-history-main-title em,
+.ao-section-title em,
+.ao-awards-stage-head h2 em {
+  font-style: normal;
+  color: transparent;
+  background: linear-gradient(90deg, var(--ao-red) 0%, var(--ao-red-dark) 62%, #7f1d1d 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: inline-block;
+  padding-bottom: 0.05em;
+}
+
 .ao-page,
 .ao-page *,
 .ao-page *::before,
@@ -249,21 +276,34 @@ body {
   color: #111111;
   font-size: clamp(3rem, 5.4vw, 5.4rem);
   font-weight: 850;
-  line-height: 0.95;
+  line-height: 1.08;
   letter-spacing: -0.07em;
-  white-space: nowrap;
-  text-shadow:
-    0 2px 14px rgba(255, 255, 255, 0.88),
-    0 8px 28px rgba(255, 255, 255, 0.48);
+  white-space: normal;
+  text-wrap: balance;
+  text-shadow: none;
 }
 
 .ao-hero-title em {
   font-style: normal;
   color: var(--ao-red);
   font-weight: 850;
-  text-shadow:
-    0 2px 14px rgba(255, 255, 255, 0.9),
-    0 10px 28px rgba(220, 38, 38, 0.18);
+  text-shadow: none;
+}
+
+.ao-hero-title {
+  color: transparent;
+  background: linear-gradient(90deg, #0b0b0b 0%, #141414 64%, #343434 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.ao-hero-title em {
+  color: transparent;
+  background: linear-gradient(90deg, var(--ao-red) 0%, var(--ao-red-dark) 62%, #7f1d1d 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .ao-hero-sub {
@@ -421,7 +461,7 @@ body {
   font-size: clamp(2.4rem, 4.2vw, 3.7rem);
   font-weight: 700;
   letter-spacing: -0.05em;
-  line-height: 1.02;
+  line-height: 1.1;
   color: var(--ao-ink);
 }
 
@@ -506,11 +546,12 @@ body {
 .ao-history-main-title {
   margin: 0;
   font-size: clamp(2rem, 4.4vw, 3.7rem);
-  line-height: 0.96;
+  line-height: 1.08;
   letter-spacing: -0.015em;
   font-weight: 850;
   color: var(--ao-ink);
-  white-space: nowrap;
+  white-space: normal;
+  text-wrap: balance;
 }
 
 .ao-history-main-copy {
@@ -629,7 +670,7 @@ body {
   margin: 0;
   color: var(--ao-red);
   font-size: clamp(3rem, 5.6vw, 5.8rem);
-  line-height: 0.9;
+  line-height: 1.06;
   letter-spacing: -0.08em;
   font-weight: 900;
 }
@@ -770,7 +811,7 @@ body {
 .ao-principle-card h3 {
   margin: 0;
   font-size: clamp(2.05rem, 3.2vw, 3.25rem);
-  line-height: 0.94;
+  line-height: 1.08;
   letter-spacing: -0.07em;
   text-transform: uppercase;
   color: var(--ao-red);
@@ -908,7 +949,7 @@ body {
   margin: 0;
   color: var(--ao-red);
   font-size: clamp(1.45rem, 1.9vw, 1.82rem);
-  line-height: 0.98;
+  line-height: 1.12;
   letter-spacing: -0.05em;
   text-transform: uppercase;
   font-weight: 900;
@@ -976,10 +1017,34 @@ body {
   margin: 0;
   color: var(--ao-ink);
   font-size: clamp(2.2rem, 4vw, 4rem);
-  line-height: 0.98;
+  line-height: 1.18;
   letter-spacing: -0.06em;
   font-weight: 800;
   text-wrap: balance;
+  background: none;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+  -webkit-text-fill-color: currentColor;
+  overflow: visible;
+  padding-block: 0.04em 0.18em;
+}
+
+.ao-awards-stage-title-main {
+  display: inline-block;
+  color: transparent;
+  background: linear-gradient(90deg, #0b0b0b 0%, #141414 64%, #343434 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  line-height: 1.18;
+  overflow: visible;
+  padding: 0 0.08em 0.14em 0;
+}
+
+.ao-awards-stage-head h2 em {
+  line-height: 1.18;
+  overflow: visible;
+  padding: 0 0.12em 0.16em 0;
 }
 
 .ao-awards-stage-head p {
@@ -1540,10 +1605,10 @@ body {
 
   .ao-hero-title {
     font-size: clamp(2.35rem, 12vw, 4rem);
-    line-height: 0.95;
+    line-height: 1.08;
     margin-bottom: 1rem;
     letter-spacing: -0.055em;
-    white-space: nowrap;
+    white-space: normal;
   }
 
   .ao-hero-sub {
@@ -1606,7 +1671,7 @@ body {
 
   .ao-history-main-title {
     font-size: clamp(1.9rem, 8vw, 2.6rem);
-    white-space: nowrap;
+    white-space: normal;
   }
 
   .ao-history-main-copy {
@@ -1755,7 +1820,7 @@ body {
 
   .ao-history-main-title {
     font-size: clamp(2rem, 10vw, 2.65rem);
-    white-space: nowrap;
+    white-space: normal;
   }
 
   .ao-history-main-copy {
