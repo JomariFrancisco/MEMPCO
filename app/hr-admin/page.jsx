@@ -39,7 +39,7 @@ import '../admin-dashboard/admin-dashboard.css';
 import './hr-admin.css';
 
 const ADMIN_DASHBOARD_ROUTE = '/admin-dashboard';
-const HRMAX_ROUTE = '/HRMax';
+const HRMAX_ROUTE = 'http://120.28.214.253/hrmax/';
 const JOBS_ROUTE = '/jobs';
 
 const EMPTY_OPENING = {
@@ -100,6 +100,32 @@ const getResumeFileName = (application = {}) =>
     .trim()
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-') || 'applicant'}-resume`;
+
+const dataUrlToBlobUrl = (dataUrl = '') => {
+  const [meta = '', encodedData = ''] = String(dataUrl).split(',');
+  const mimeMatch = meta.match(/^data:([^;]+);base64$/i);
+
+  if (!mimeMatch || !encodedData) {
+    throw new Error('This resume file cannot be previewed.');
+  }
+
+  const byteCharacters = window.atob(encodedData);
+  const byteArrays = [];
+  const sliceSize = 1024;
+
+  for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
+    const slice = byteCharacters.slice(offset, offset + sliceSize);
+    const byteNumbers = new Array(slice.length);
+
+    for (let index = 0; index < slice.length; index += 1) {
+      byteNumbers[index] = slice.charCodeAt(index);
+    }
+
+    byteArrays.push(new Uint8Array(byteNumbers));
+  }
+
+  return URL.createObjectURL(new Blob(byteArrays, { type: mimeMatch[1] }));
+};
 
 const isSuperAdminRole = (role = '') => String(role || '').trim().toLowerCase() === 'superadmin';
 
@@ -185,6 +211,7 @@ export default function HrAdminPage() {
   const router = useRouter();
   const openingEditorRef = useRef(null);
   const openingTitleInputRef = useRef(null);
+  const resumePreviewUrlsRef = useRef([]);
   const [user, setUser] = useState(null);
   const [checked, setChecked] = useState(false);
   const [openings, setOpenings] = useState([]);
@@ -263,6 +290,14 @@ export default function HrAdminPage() {
     loadHrData();
   }, [checked, user]);
 
+  useEffect(
+    () => () => {
+      resumePreviewUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
+      resumePreviewUrlsRef.current = [];
+    },
+    [],
+  );
+
   const openingStats = useMemo(
     () => ({
       total: openings.length,
@@ -309,6 +344,62 @@ export default function HrAdminPage() {
       return matchesStatus && matchesSearch;
     });
   }, [applicationSearch, applicationStatus, applications]);
+
+  const getReportApplications = (status = applicationStatus) => {
+    const query = normalizeText(applicationSearch);
+
+    return sortNewestFirst(applications).filter((application) => {
+      const matchesStatus = status === 'all' || application.status === status;
+      const matchesSearch =
+        !query ||
+        [
+          application.applicantName,
+          application.email,
+          application.phone,
+          application.jobTitle,
+          application.status,
+          application.interviewer,
+          application.interviewType,
+        ]
+          .map(normalizeText)
+          .some((value) => value.includes(query));
+
+      return matchesStatus && matchesSearch;
+    });
+  };
+
+  const getApplicationStatusTimeline = (application = {}) => {
+    const baseHistory = application.statusHistory?.length
+      ? application.statusHistory
+      : [
+          {
+            status: 'new',
+            label: 'Application Submitted',
+            timestamp: application.createdAt,
+            updatedByName: application.applicantName || 'Applicant',
+          },
+        ];
+    const currentStatus = application.status || 'new';
+    const alreadyHasCurrentStatus = baseHistory.some((entry) => entry.status === currentStatus);
+
+    if (alreadyHasCurrentStatus) return baseHistory;
+
+    return [
+      ...baseHistory,
+      {
+        status: currentStatus,
+        label: `Current Status: ${statusLabel(currentStatus)}`,
+        timestamp: application.updatedAt || application.createdAt,
+        updatedByName: 'HR',
+      },
+    ];
+  };
+
+  const getTimelineEntryLabel = (entry = {}) => {
+    if (entry.label) return entry.label;
+    if (entry.status === 'new') return 'Application Submitted';
+    return `Moved to ${statusLabel(entry.status)}`;
+  };
 
   const applicationStatusFilters = useMemo(
     () => [
@@ -483,26 +574,101 @@ export default function HrAdminPage() {
     }
   };
 
-  const handlePrintApplicationsReport = () => {
+  const handleViewResume = (application) => {
+    const resumeUrl = application?.resumeUrl || '';
+    if (!resumeUrl) return;
+
+    const previewWindow = window.open('', '_blank');
+
+    if (!previewWindow) {
+      setNotice('Please allow pop-ups to view the resume.');
+      return;
+    }
+
+    try {
+      if (!resumeUrl.startsWith('data:')) {
+        previewWindow.opener = null;
+        previewWindow.location.href = resumeUrl;
+        return;
+      }
+
+      const blobUrl = dataUrlToBlobUrl(resumeUrl);
+      resumePreviewUrlsRef.current.push(blobUrl);
+      const title = `${getResumeFileName(application)}.pdf`;
+
+      previewWindow.document.write(`
+        <!doctype html>
+        <html>
+          <head>
+            <title>${escapeReportHtml(title)}</title>
+            <style>
+              html,
+              body {
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                background: #111827;
+              }
+
+              iframe {
+                display: block;
+                width: 100%;
+                height: 100%;
+                border: 0;
+                background: #fff;
+              }
+            </style>
+          </head>
+          <body>
+            <iframe src="${blobUrl}" title="${escapeReportHtml(title)}"></iframe>
+          </body>
+        </html>
+      `);
+      previewWindow.document.close();
+      previewWindow.opener = null;
+    } catch (error) {
+      previewWindow.close();
+      setNotice(error.message || 'Unable to open this resume.');
+    }
+  };
+
+  const handlePrintApplicationsReport = (status = applicationStatus) => {
     const printedAt = new Date().toLocaleString();
-    const reportRows = filteredApplications.map((application) => `
-      <tr>
-        <td>${escapeReportHtml(application.applicantName || 'Unnamed Applicant')}</td>
-        <td>${escapeReportHtml(application.email || 'Not provided')}</td>
-        <td>${escapeReportHtml(application.phone || 'Not provided')}</td>
-        <td>${escapeReportHtml(application.jobTitle || 'General Application')}</td>
-        <td>${escapeReportHtml(formatDate(application.createdAt))}</td>
-        <td>${escapeReportHtml(statusLabel(application.status))}</td>
-      </tr>
+    const reportApplications = getReportApplications(status);
+    const selectedStatusLabel = status === 'all' ? 'All application statuses' : statusLabel(status);
+    const reportRows = reportApplications
+      .map((application) => {
+        const timelineRows = getApplicationStatusTimeline(application)
+          .map((entry) => `
+            <li>
+              <strong>${escapeReportHtml(statusLabel(entry.status))}</strong>
+              <span>${escapeReportHtml(formatDate(entry.timestamp))}</span>
+              <em>${escapeReportHtml(getTimelineEntryLabel(entry))}${entry.updatedByName ? ` by ${escapeReportHtml(entry.updatedByName)}` : ''}</em>
+            </li>
+          `)
+          .join('');
+
+        return `
+          <tr>
+            <td>
+              <strong>${escapeReportHtml(application.applicantName || 'Unnamed Applicant')}</strong>
+              <small>${escapeReportHtml(application.email || 'No email')}</small>
+              <small>${escapeReportHtml(application.phone || 'No phone')}</small>
+            </td>
+            <td>${escapeReportHtml(application.jobTitle || 'General Application')}</td>
+            <td>${escapeReportHtml(formatDate(application.createdAt))}</td>
+            <td>${escapeReportHtml(statusLabel(application.status))}</td>
+            <td><ol class="timeline">${timelineRows}</ol></td>
+          </tr>
+        `;
+      })
+      .join('');
+    const statusHeaderCells = APPLICATION_STATUSES.map((status) => `
+      <th>${escapeReportHtml(statusLabel(status))}</th>
     `).join('');
-    const statusRows = APPLICATION_STATUSES.map((status) => {
-      const count = filteredApplications.filter((application) => application.status === status).length;
-      return `
-        <div class="summary-row">
-          <span>${escapeReportHtml(statusLabel(status))}</span>
-          <strong>${escapeReportHtml(count)}</strong>
-        </div>
-      `;
+    const statusCountCells = APPLICATION_STATUSES.map((status) => {
+      const count = reportApplications.filter((application) => application.status === status).length;
+      return `<td>${escapeReportHtml(count)}</td>`;
     }).join('');
     const printWindow = window.open('', '_blank', 'width=980,height=720');
 
@@ -518,21 +684,33 @@ export default function HrAdminPage() {
           <title>HR Applications Report</title>
           <style>
             * { box-sizing: border-box; }
-            body { margin: 0; padding: 28px; color: #111827; font-family: Arial, sans-serif; }
-            .head { display: flex; justify-content: space-between; gap: 24px; border-bottom: 3px solid #dc2626; padding-bottom: 16px; margin-bottom: 18px; }
-            .kicker { color: #dc2626; font-size: 11px; font-weight: 900; letter-spacing: 0.18em; text-transform: uppercase; }
-            h1 { margin: 6px 0 4px; font-size: 25px; }
-            p { margin: 0; color: #64748b; font-size: 13px; }
-            .meta { text-align: right; font-size: 12px; color: #64748b; }
-            .summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 16px 0; }
-            .summary-row { border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; }
-            .summary-row span { display: block; color: #64748b; font-size: 11px; font-weight: 800; text-transform: uppercase; }
-            .summary-row strong { display: block; margin-top: 4px; color: #dc2626; font-size: 20px; }
-            table { width: 100%; border-collapse: collapse; margin-top: 14px; font-size: 12px; }
-            th { background: #111827; color: white; text-align: left; padding: 9px; }
-            td { border: 1px solid #e2e8f0; padding: 8px; vertical-align: top; }
-            tr:nth-child(even) td { background: #f8fafc; }
-            .empty { border: 1px dashed #cbd5e1; border-radius: 8px; padding: 18px; color: #64748b; text-align: center; }
+            body { margin: 0; padding: 28px; color: #111827; font-family: Arial, sans-serif; font-size: 12px; }
+            .head { display: flex; justify-content: space-between; gap: 24px; border-bottom: 2px solid #111827; padding-bottom: 12px; margin-bottom: 14px; }
+            .kicker { color: #6b7280; font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; }
+            h1 { margin: 5px 0 3px; font-size: 22px; line-height: 1.15; }
+            p { margin: 0; color: #4b5563; }
+            .meta { text-align: right; color: #4b5563; line-height: 1.45; }
+            .meta strong { color: #111827; font-size: 14px; }
+            table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+            th, td { border: 1px solid #d1d5db; padding: 7px 8px; text-align: left; vertical-align: top; word-break: break-word; }
+            th { background: #f3f4f6; color: #111827; font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+            td small { display: block; margin-top: 3px; color: #4b5563; line-height: 1.35; }
+            .summary-title { margin: 0 0 6px; color: #374151; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; }
+            .summary-table { margin-bottom: 16px; table-layout: auto; }
+            .summary-table th, .summary-table td { text-align: center; }
+            .summary-table td { font-size: 16px; font-weight: 700; }
+            .records-table th:nth-child(1) { width: 20%; }
+            .records-table th:nth-child(2) { width: 18%; }
+            .records-table th:nth-child(3) { width: 14%; }
+            .records-table th:nth-child(4) { width: 12%; }
+            .records-table th:nth-child(5) { width: 36%; }
+            .timeline { margin: 0; padding-left: 16px; }
+            .timeline li { margin-bottom: 5px; }
+            .timeline li:last-child { margin-bottom: 0; }
+            .timeline strong { margin-right: 4px; }
+            .timeline span { color: #374151; }
+            .timeline em { display: block; color: #4b5563; font-style: normal; line-height: 1.35; }
+            .empty { border: 1px solid #d1d5db; padding: 16px; color: #4b5563; text-align: center; }
             @media print { body { padding: 18px; } }
           </style>
         </head>
@@ -540,25 +718,28 @@ export default function HrAdminPage() {
           <section class="head">
             <div>
               <span class="kicker">HR Applications</span>
-              <h1>Applicant Status Report</h1>
-              <p>${escapeReportHtml(applicationStatus === 'all' ? 'All application statuses' : statusLabel(applicationStatus))}</p>
+              <h1>${escapeReportHtml(selectedStatusLabel)} Applicant Report</h1>
+              <p>${escapeReportHtml(applicationSearch ? `Search: ${applicationSearch}` : selectedStatusLabel)}</p>
             </div>
             <div class="meta">
-              <strong>${escapeReportHtml(filteredApplications.length)} Applicants</strong><br />
+              <strong>${escapeReportHtml(reportApplications.length)} Applicants</strong><br />
               Printed ${escapeReportHtml(printedAt)}
             </div>
           </section>
-          <section class="summary">${statusRows}</section>
-          ${filteredApplications.length ? `
-            <table>
+          <p class="summary-title">Status Summary</p>
+          <table class="summary-table">
+            <thead><tr>${statusHeaderCells}</tr></thead>
+            <tbody><tr>${statusCountCells}</tr></tbody>
+          </table>
+          ${reportApplications.length ? `
+            <table class="records-table">
               <thead>
                 <tr>
                   <th>Name</th>
-                  <th>Email</th>
-                  <th>Phone</th>
                   <th>Applied For</th>
                   <th>Date Submitted</th>
-                  <th>Status</th>
+                  <th>Current Status</th>
+                  <th>Status Timeline</th>
                 </tr>
               </thead>
               <tbody>${reportRows}</tbody>
@@ -920,7 +1101,7 @@ export default function HrAdminPage() {
                   <span className="hr-panel-kicker">Applications</span>
                   <h2>{filteredApplications.length} Records</h2>
                 </div>
-                <button className="hr-btn" type="button" onClick={handlePrintApplicationsReport}>
+                <button className="hr-btn" type="button" onClick={() => handlePrintApplicationsReport()}>
                   <Printer size={16} />
                   Report
                 </button>
@@ -1025,23 +1206,14 @@ export default function HrAdminPage() {
 
                   {selectedApplication.resumeUrl ? (
                     <div className="hr-resume-actions">
-                      <a
+                      <button
                         className="hr-resume-link"
-                        href={selectedApplication.resumeUrl}
-                        target="_blank"
-                        rel="noreferrer"
+                        type="button"
+                        onClick={() => handleViewResume(selectedApplication)}
                       >
                         <ExternalLink size={16} />
                         View Resume
-                      </a>
-                      <a
-                        className="hr-resume-link"
-                        href={selectedApplication.resumeUrl}
-                        download={getResumeFileName(selectedApplication)}
-                      >
-                        <FileText size={16} />
-                        Download Resume
-                      </a>
+                      </button>
                     </div>
                   ) : null}
 
@@ -1062,21 +1234,11 @@ export default function HrAdminPage() {
 
                   <div className="hr-history">
                     <span className="hr-history-title">Application Timeline</span>
-                    {(selectedApplication.statusHistory?.length
-                      ? selectedApplication.statusHistory
-                      : [
-                          {
-                            status: 'new',
-                            label: 'Application Submitted',
-                            timestamp: selectedApplication.createdAt,
-                            updatedByName: selectedApplication.applicantName || 'Applicant',
-                          },
-                        ]
-                    ).map((entry, index) => (
+                    {getApplicationStatusTimeline(selectedApplication).map((entry, index) => (
                       <div className="hr-history-item" key={`${entry.status}-${entry.timestamp || index}`}>
                         <span className={`hr-status-chip status-${entry.status}`}>{statusLabel(entry.status)}</span>
                         <div>
-                          <strong>{entry.label || statusLabel(entry.status)}</strong>
+                          <strong>{getTimelineEntryLabel(entry)}</strong>
                           <small>
                             {formatDate(entry.timestamp)}{entry.updatedByName ? ` by ${entry.updatedByName}` : ''}
                           </small>
@@ -1102,7 +1264,7 @@ export default function HrAdminPage() {
                   <span className="hr-panel-kicker">Reports</span>
                   <h2>Applicant Status Report</h2>
                 </div>
-                <button className="hr-btn hr-btn-primary" type="button" onClick={handlePrintApplicationsReport}>
+                <button className="hr-btn hr-btn-primary" type="button" onClick={() => handlePrintApplicationsReport(applicationStatus)}>
                   <Printer size={16} />
                   Print Report
                 </button>
@@ -1112,10 +1274,16 @@ export default function HrAdminPage() {
                 {APPLICATION_STATUSES.map((status) => {
                   const count = applications.filter((application) => application.status === status).length;
                   return (
-                    <article className="hr-report-card" key={status}>
+                    <button
+                      className={`hr-report-card ${applicationStatus === status ? 'active' : ''}`}
+                      key={status}
+                      type="button"
+                      onClick={() => setApplicationStatus((current) => (current === status ? 'all' : status))}
+                      aria-pressed={applicationStatus === status}
+                    >
                       <span className={`hr-status-chip status-${status}`}>{statusLabel(status)}</span>
                       <strong>{count}</strong>
-                    </article>
+                    </button>
                   );
                 })}
               </div>
@@ -1128,6 +1296,15 @@ export default function HrAdminPage() {
                   <h2>{filteredApplications.length} Applicants</h2>
                 </div>
               </div>
+
+              <label className="hr-search hr-report-search">
+                <Search size={17} />
+                <input
+                  value={applicationSearch}
+                  onChange={(event) => setApplicationSearch(event.target.value)}
+                  placeholder="Search applicant records"
+                />
+              </label>
 
               <div className="hr-report-table-wrap">
                 <table className="hr-report-table">

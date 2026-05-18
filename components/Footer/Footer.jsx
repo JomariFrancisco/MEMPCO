@@ -44,7 +44,7 @@ const CONTACT_INFO = [
   },
   {
     label: 'Working Hours',
-    value: 'Mon - Fri 08:00am - 04:00pm',
+    value: 'Mon - Fri 08:00am - 05:00pm',
     Icon: Clock,
   },
 ];

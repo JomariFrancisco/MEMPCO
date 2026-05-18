@@ -512,8 +512,8 @@
 }
 
 .hr-application-filters {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0.5rem;
   margin-top: 0.75rem;
 }
@@ -523,6 +523,7 @@
   align-items: center;
   justify-content: center;
   gap: 0.45rem;
+  width: 100%;
   min-height: 36px;
   padding: 0 0.75rem;
   border: 1px solid #e2e8f0;
@@ -646,12 +647,33 @@
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   background: #f8fafc;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    background 160ms ease;
+}
+
+.hr-report-card:hover,
+.hr-report-card.active {
+  border-color: rgba(220, 38, 38, 0.42);
+  background: #fff7f7;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+  transform: translateY(-1px);
 }
 
 .hr-report-card strong {
   color: #dc2626;
   font-size: 1.8rem;
   line-height: 1;
+}
+
+.hr-report-search {
+  margin-bottom: 0.9rem;
 }
 
 .hr-report-table-wrap {
@@ -725,9 +747,17 @@
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
+  border: 0;
+  background: transparent;
   color: #dc2626;
+  font: inherit;
   font-weight: 900;
   text-decoration: none;
+  cursor: pointer;
+}
+
+.hr-resume-link:hover {
+  color: #b91c1c;
 }
 
 .hr-history {
@@ -828,5 +858,15 @@
 
   .hr-application-row-meta .hr-status-chip {
     justify-self: start;
+  }
+
+  .hr-application-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 420px) {
+  .hr-application-filters {
+    grid-template-columns: 1fr;
   }
 }

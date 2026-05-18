@@ -44,7 +44,7 @@ import './marketing-admin.css';
 
 const EDITOR_CATEGORIES = ['News', 'Events', 'Announcement', 'Member Stories'];
 const ADMIN_DASHBOARD_ROUTE = '/admin-dashboard';
-const HRMAX_ROUTE = '/HRMax';
+const HRMAX_ROUTE = 'http://120.28.214.253/hrmax/';
 const POSTS_PER_PAGE = 2;
 const SORT_OPTIONS = [
   { value: 'website_order', label: 'Website Order' },

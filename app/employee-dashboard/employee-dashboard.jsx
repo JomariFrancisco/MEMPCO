@@ -69,7 +69,7 @@ import './employee-dashboard.css';
 ========================= */
 
 const LOGIN_ROUTE = '/LogIn';
-const HRMAX_ROUTE = '/HRMax';
+const HRMAX_ROUTE = 'http://120.28.214.253/hrmax/';
 const TRANSITION_DURATION = 560;
 
 /* =========================

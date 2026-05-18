@@ -443,15 +443,6 @@ body.ms-modal-lock {
   flex: 1;
 }
 
-.ms-card__quote-mark {
-  font-family: Georgia, 'Times New Roman', serif;
-  font-size: clamp(3.4rem, 8vw, 4.2rem);
-  line-height: 0.7;
-  color: rgba(220,38,38,0.14);
-  user-select: none;
-  margin-bottom: 0.15rem;
-}
-
 .ms-card__text {
   margin: 0;
   font-size: clamp(0.9rem, 1.8vw, 0.96rem);

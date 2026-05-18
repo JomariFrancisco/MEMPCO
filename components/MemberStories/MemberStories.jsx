@@ -285,9 +285,6 @@ function StoryCard({ story, onOpenModal, className = 'ms-card' }) {
       </div>
 
       <div className="ms-card__body">
-        <div className="ms-card__quote-mark" aria-hidden="true">
-          "
-        </div>
         <p className="ms-card__text">{story.text}</p>
       </div>
 

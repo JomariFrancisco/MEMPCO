@@ -6,54 +6,6 @@ import Footer from '@/components/Footer/Footer';
 import { createJobApplication, listOpenJobOpenings } from '@/lib/hr/hrContent';
 import '../jobs/jobs.css';
 
-const JOB_OPENINGS = [
-  {
-    title: 'Accounting Assistant',
-    department: 'Finance',
-    location: 'Veterans, Zamboanga City',
-    type: 'Full-time',
-    description:
-      'Assist with financial records, reporting, and day-to-day accounting functions with strong attention to accuracy and compliance.',
-    image: '/Career/ACCOUNTING%20ASSISTANT.png',
-  },
-  {
-    title: 'Member Development Assistant',
-    department: 'Member Development',
-    location: 'Veterans, Zamboanga City',
-    type: 'Full-time',
-    description:
-      'Support member engagement, development initiatives, and internal coordination in a structured and service-oriented environment.',
-    image: '/Career/MEBER%20DEVELOPMENT%20ASSISTANT.png',
-  },
-  {
-    title: 'Member Treasury Assistant',
-    department: 'Treasury',
-    location: 'Veterans, Zamboanga City',
-    type: 'Full-time',
-    description:
-      'Assist treasury processes, maintain transaction accuracy, and support reliable financial operations for members and branches.',
-    image: '/Career/MEMBER%20TREASURY%20ASSISTANT.png',
-  },
-  {
-    title: 'MRDSS Assistant',
-    department: 'MRDSS',
-    location: 'Veterans, Zamboanga City',
-    type: 'Full-time',
-    description:
-      'Provide dependable support for department operations, documentation, coordination, and member-related service workflows.',
-    image: '/Career/MRDSS%20ASSISTANT.png',
-  },
-  {
-    title: 'New Accounts Assistant',
-    department: 'Accounts',
-    location: 'Veterans, Zamboanga City',
-    type: 'Full-time',
-    description:
-      'Assist in opening and processing new accounts with accuracy, professionalism, and strong attention to member-facing service.',
-    image: '/Career/NEW%20ACCOUNTS%20ASSISTANT.png',
-  },
-];
-
 const VALUES = [
   {
     title: 'Professional Growth',
@@ -79,8 +31,10 @@ const HIGHLIGHTS = [
 ];
 
 export default function Career() {
-  const [selectedJob, setSelectedJob] = useState(JOB_OPENINGS[0]);
-  const [jobOpenings, setJobOpenings] = useState(JOB_OPENINGS);
+  const [selectedJob, setSelectedJob] = useState(null);
+  const [jobOpenings, setJobOpenings] = useState([]);
+  const [isLoadingJobs, setIsLoadingJobs] = useState(true);
+  const [jobLoadError, setJobLoadError] = useState('');
   const [applicationForm, setApplicationForm] = useState({
     applicantName: '',
     email: '',
@@ -102,18 +56,26 @@ export default function Career() {
     let cancelled = false;
 
     const loadJobs = async () => {
+      setIsLoadingJobs(true);
+      setJobLoadError('');
       try {
         const openings = await listOpenJobOpenings();
 
-        if (!cancelled && openings.length) {
-          setJobOpenings(openings);
-          setSelectedJob(openings[0]);
-        }
-      } catch {
         if (!cancelled) {
-          setJobOpenings(JOB_OPENINGS);
-          setSelectedJob(JOB_OPENINGS[0]);
+          setJobOpenings(openings);
+          setSelectedJob((current) => {
+            if (!current) return openings[0] || null;
+            return openings.find((opening) => opening.id === current.id) || openings[0] || null;
+          });
         }
+      } catch (error) {
+        if (!cancelled) {
+          setJobOpenings([]);
+          setSelectedJob(null);
+          setJobLoadError(error.message || 'Unable to load open positions.');
+        }
+      } finally {
+        if (!cancelled) setIsLoadingJobs(false);
       }
     };
 
@@ -173,6 +135,14 @@ export default function Career() {
 
   const handleApplicationSubmit = async (event) => {
     event.preventDefault();
+    if (!selectedJob) {
+      setApplicationStatus({
+        type: 'error',
+        text: 'Please select an open role before submitting your application.',
+      });
+      return;
+    }
+
     setIsSubmittingApplication(true);
     setApplicationStatus({ type: '', text: '' });
 
@@ -205,6 +175,17 @@ export default function Career() {
       setIsSubmittingApplication(false);
     }
   };
+
+  const hasOpenings = jobOpenings.length > 0;
+  const selectedTitle = selectedJob?.title || (isLoadingJobs ? 'Loading openings' : 'No open roles');
+  const selectedDescription =
+    selectedJob?.description ||
+    (jobLoadError
+      ? jobLoadError
+      : 'There are no published career openings at the moment. Please check back soon.');
+  const selectedType = selectedJob?.type || 'Careers';
+  const selectedDepartment = selectedJob?.department || 'MEMPCO';
+  const selectedLocation = selectedJob?.location || 'Zamboanga';
 
   return (
     <>
@@ -282,13 +263,13 @@ export default function Career() {
 
               <div className="cp-hero-role-minimal">
                 <span className="cp-hero-role-label">Featured opening</span>
-                <h2 className="cp-hero-role-title">{selectedJob.title}</h2>
-                <p className="cp-hero-role-text">{selectedJob.description}</p>
+                <h2 className="cp-hero-role-title">{selectedTitle}</h2>
+                <p className="cp-hero-role-text">{selectedDescription}</p>
 
                 <div className="cp-hero-role-chips">
-                  <span className="cp-chip">{selectedJob.type}</span>
-                  <span className="cp-chip cp-chip--soft">{selectedJob.department}</span>
-                  <span className="cp-chip cp-chip--ghost">{selectedJob.location}</span>
+                  <span className="cp-chip">{selectedType}</span>
+                  <span className="cp-chip cp-chip--soft">{selectedDepartment}</span>
+                  <span className="cp-chip cp-chip--ghost">{selectedLocation}</span>
                 </div>
               </div>
 
@@ -323,10 +304,10 @@ export default function Career() {
 
             <nav className="cp-tab-nav" role="tablist" aria-label="Job openings">
               {jobOpenings.map((job, i) => {
-                const isActive = selectedJob.title === job.title;
+                const isActive = selectedJob?.id === job.id;
                 return (
                   <button
-                    key={`${job.title}-${i}`}
+                    key={job.id || `${job.title}-${i}`}
                     role="tab"
                     aria-selected={isActive}
                     type="button"
@@ -343,20 +324,22 @@ export default function Career() {
               })}
             </nav>
 
-            <p className="cp-tab-hint">Select a role to view details</p>
+            <p className="cp-tab-hint">
+              {isLoadingJobs ? 'Loading roles from HR Admin' : hasOpenings ? 'Select a role to view details' : 'No roles are published right now'}
+            </p>
           </aside>
 
           <div className="cp-showcase-col" ref={showcaseStageRef}>
             <div className="cp-showcase-head">
               <p className="cp-section-kicker">Role Details</p>
               <p className="cp-showcase-sub">
-                {jobOpenings.length} positions · {selectedJob.department} · {selectedJob.location}
+                {jobOpenings.length} positions - {selectedDepartment} - {selectedLocation}
               </p>
             </div>
 
             <div className="cp-showcase-main">
               <div className="cp-showcase-visual">
-                {selectedJob.image ? (
+                {selectedJob?.image ? (
                   <img
                     src={selectedJob.image}
                     alt={`${selectedJob.title} recruitment poster`}
@@ -366,10 +349,14 @@ export default function Career() {
                   />
                 ) : (
                   <div className="cp-showcase-placeholder">
-                    <span className="cp-placeholder-badge">Poster Coming Soon</span>
-                    <h3>{selectedJob.title}</h3>
+                    <span className="cp-placeholder-badge">
+                      {isLoadingJobs ? 'Loading Openings' : hasOpenings ? 'Poster Coming Soon' : 'No Published Roles'}
+                    </span>
+                    <h3>{selectedTitle}</h3>
                     <p>
-                      The role details are available. The visual job poster will be added once ready.
+                      {hasOpenings
+                        ? 'The role details are available. The visual job poster will be added once ready.'
+                        : selectedDescription}
                     </p>
                   </div>
                 )}
@@ -377,27 +364,27 @@ export default function Career() {
 
               <div className="cp-showcase-details">
                 <p className="cp-section-kicker">Selected Role</p>
-                <h2 className="cp-showcase-title">{selectedJob.title}</h2>
-                <p className="cp-showcase-desc">{selectedJob.description}</p>
+                <h2 className="cp-showcase-title">{selectedTitle}</h2>
+                <p className="cp-showcase-desc">{selectedDescription}</p>
 
                 <div className="cp-showcase-chips">
-                  <span className="cp-chip">{selectedJob.type}</span>
-                  <span className="cp-chip cp-chip--soft">{selectedJob.department}</span>
-                  <span className="cp-chip cp-chip--ghost">{selectedJob.location}</span>
+                  <span className="cp-chip">{selectedType}</span>
+                  <span className="cp-chip cp-chip--soft">{selectedDepartment}</span>
+                  <span className="cp-chip cp-chip--ghost">{selectedLocation}</span>
                 </div>
 
                 <div className="cp-showcase-stats">
                   <div className="cp-showcase-stat">
                     <span className="cp-showcase-stat-label">Department</span>
-                    <strong>{selectedJob.department}</strong>
+                    <strong>{selectedDepartment}</strong>
                   </div>
                   <div className="cp-showcase-stat">
                     <span className="cp-showcase-stat-label">Location</span>
-                    <strong>{selectedJob.location}</strong>
+                    <strong>{selectedLocation}</strong>
                   </div>
                   <div className="cp-showcase-stat">
                     <span className="cp-showcase-stat-label">Employment</span>
-                    <strong>{selectedJob.type}</strong>
+                    <strong>{selectedType}</strong>
                   </div>
                 </div>
 
@@ -417,6 +404,7 @@ export default function Career() {
                     type="button"
                     className="cp-btn cp-btn--solid"
                     onClick={() => scrollToAnchor(applyAnchorRef)}
+                    disabled={!hasOpenings}
                   >
                     Apply for this Role
                     <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
@@ -479,7 +467,7 @@ export default function Career() {
                 <div className="cp-apply-panel-top">
                   <p className="cp-section-kicker">Application</p>
                   <h3 className="cp-apply-panel-title">
-                    Ready to apply for <em>{selectedJob.title}</em> ?
+                    Ready to apply for <em>{selectedTitle}</em> ?
                   </h3>
                   <p className="cp-apply-panel-text">
                     Move toward a career grounded in service, professionalism,
@@ -489,15 +477,15 @@ export default function Career() {
                 </div>
 
                 <div className="cp-apply-panel-chips">
-                  <span className="cp-chip">{selectedJob.type}</span>
-                  <span className="cp-chip cp-chip--soft">{selectedJob.department}</span>
-                  <span className="cp-chip cp-chip--ghost">{selectedJob.location}</span>
+                  <span className="cp-chip">{selectedType}</span>
+                  <span className="cp-chip cp-chip--soft">{selectedDepartment}</span>
+                  <span className="cp-chip cp-chip--ghost">{selectedLocation}</span>
                 </div>
 
                 <div className="cp-apply-role-card">
                   <span className="cp-apply-role-label">Selected opening</span>
-                  <strong className="cp-apply-role-title">{selectedJob.title}</strong>
-                  <p className="cp-apply-role-desc">{selectedJob.description}</p>
+                  <strong className="cp-apply-role-title">{selectedTitle}</strong>
+                  <p className="cp-apply-role-desc">{selectedDescription}</p>
                 </div>
 
                 <div className="cp-apply-actions">
@@ -505,6 +493,7 @@ export default function Career() {
                     type="button"
                     className="cp-btn cp-btn--solid"
                     onClick={() => setIsApplicationModalOpen(true)}
+                    disabled={!hasOpenings}
                   >
                     Submit Application
                   </button>
@@ -521,8 +510,8 @@ export default function Career() {
             <div className="cp-application-dialog-head">
               <div>
                 <p className="cp-section-kicker">Application</p>
-                <h3>{selectedJob.title}</h3>
-                <span>{selectedJob.department} - {selectedJob.location}</span>
+                <h3>{selectedTitle}</h3>
+                <span>{selectedDepartment} - {selectedLocation}</span>
               </div>
               <button
                 type="button"

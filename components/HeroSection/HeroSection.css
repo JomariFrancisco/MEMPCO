@@ -119,10 +119,10 @@
   background:
     linear-gradient(
       90deg,
-      rgba(255, 250, 244, 0.72) 0%,
-      rgba(255, 248, 241, 0.58) 30%,
-      rgba(255, 247, 240, 0.34) 58%,
-      rgba(255, 247, 240, 0.18) 100%
+      rgba(255, 250, 244, 0.32) 0%,
+      rgba(255, 248, 241, 0.26) 28%,
+      rgba(255, 247, 240, 0.36) 58%,
+      rgba(255, 247, 240, 0.56) 100%
     );
 }
 
@@ -138,7 +138,7 @@
 
 .hero--memorial .hero__veil {
   background:
-    radial-gradient(circle at 12% 44%, rgba(255, 255, 255, 0.14) 0%, transparent 22%),
+    radial-gradient(circle at 12% 44%, rgba(255, 255, 255, 0.07) 0%, transparent 22%),
     radial-gradient(circle at 68% 20%, rgba(255, 232, 200, 0.09) 0%, transparent 26%),
     linear-gradient(180deg, rgba(255, 255, 255, 0.035) 0%, transparent 100%);
 }
@@ -663,6 +663,8 @@
 }
 
 .hero__memorial-title {
+  --hero-memorial-title-stroke: 0.72px;
+
   margin: 0;
   color: var(--memorial-brown-deep);
   font-size: clamp(3rem, 5.1vw, 4.85rem);
@@ -672,11 +674,11 @@
   max-width: 11ch;
   text-wrap: balance;
 
-  -webkit-text-stroke: 0.85px rgba(255, 255, 255, 0.88);
-  text-stroke: 0.85px rgba(255, 255, 255, 0.88);
+  -webkit-text-stroke: var(--hero-memorial-title-stroke) rgba(255, 255, 255, 0.82);
+  text-stroke: var(--hero-memorial-title-stroke) rgba(255, 255, 255, 0.82);
   text-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.72),
-    0 10px 24px rgba(47, 27, 18, 0.14);
+    0 1px 0 rgba(255, 255, 255, 0.42),
+    0 10px 22px rgba(47, 27, 18, 0.14);
 }
 
 .hero__memorial-description {
@@ -1097,9 +1099,9 @@
   }
 
   .hero__memorial-title {
+    --hero-memorial-title-stroke: 0.52px;
+
     font-size: clamp(2.9rem, 4.85vw, 4.55rem);
-    -webkit-text-stroke: 0.75px rgba(255, 255, 255, 0.86);
-    text-stroke: 0.75px rgba(255, 255, 255, 0.86);
   }
 
   .hero__memorial-description {
@@ -1156,6 +1158,8 @@
   }
 
   .hero__memorial-title {
+    --hero-memorial-title-stroke: 0.42px;
+
     font-size: clamp(2.65rem, 4.65vw, 4.1rem);
     line-height: 1;
     letter-spacing: -0.05em;
@@ -1193,6 +1197,8 @@
   }
 
   .hero__memorial-title {
+    --hero-memorial-title-stroke: 0.36px;
+
     font-size: clamp(2.35rem, 4.4vw, 3.5rem);
   }
 
@@ -1270,6 +1276,8 @@
   }
 
   .hero__memorial-title {
+    --hero-memorial-title-stroke: 0.32px;
+
     font-size: clamp(2.15rem, 4.8vw, 3.35rem);
   }
 
@@ -1347,12 +1355,12 @@
   }
 
   .hero__memorial-title {
+    --hero-memorial-title-stroke: 0.28px;
+
     max-width: 12ch;
     font-size: clamp(2rem, 8.2vw, 3.1rem);
     line-height: 0.98;
     letter-spacing: -0.05em;
-    -webkit-text-stroke: 0.55px rgba(255, 255, 255, 0.82);
-    text-stroke: 0.55px rgba(255, 255, 255, 0.82);
   }
 
   .hero__memorial-description {
@@ -1678,6 +1686,8 @@
   }
 
   .hero__memorial-title {
+    --hero-memorial-title-stroke: 0.24px;
+
     font-size: clamp(1.75rem, 8.3vw, 2.55rem);
   }
 
@@ -1758,6 +1768,8 @@
   }
 
   .hero__memorial-title {
+    --hero-memorial-title-stroke: 0.2px;
+
     font-size: clamp(1.55rem, 8.2vw, 2.15rem);
   }
 

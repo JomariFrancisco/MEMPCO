@@ -73,7 +73,7 @@ import './admin-dashboard.css';
 ========================= */
 
 const LOGIN_ROUTE = '/LogIn';
-const HRMAX_ROUTE = '/HRMax';
+const HRMAX_ROUTE = 'http://120.28.214.253/hrmax/';
 const MARKETING_ADMIN_ROUTE = '/marketing-admin';
 const HR_ADMIN_ROUTE = '/hr-admin';
 const TRANSITION_DURATION = 560;
@@ -3790,9 +3790,9 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
   const staffOptions = Array.from(
     new Set([currentStaffName, assignedStaff, ...TECHNICIANS].filter((name) => name && name !== 'Unassigned'))
   );
-  const technicianOptions = isEscalationStatus
-    ? [...staffOptions, ...ESCALATION_PARTNERS]
-    : staffOptions;
+  const technicianOptions = Array.from(
+    new Set(isEscalationStatus ? [...staffOptions, ...ESCALATION_PARTNERS] : staffOptions)
+  );
   const visibleTechnician = technicianOptions.includes(draft.technician) ? draft.technician : 'Unassigned';
   const canEditOutcomeFields = !isResolvedLocked && normalizeTicketStatus(draft.status) !== 'in progress';
   const lockedOutcomePlaceholder = 'Available once the ticket is updated away from In Progress.';
