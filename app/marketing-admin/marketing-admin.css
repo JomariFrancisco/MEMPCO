@@ -402,14 +402,32 @@
 }
 
 .ma-drawer-close {
-  display: inline-grid;
-  place-items: center;
-  width: 36px;
-  height: 36px;
-  border: 1px solid rgba(203, 213, 225, 0.9);
-  border-radius: 10px;
-  background: #fff;
-  color: #334155;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #111827;
+  font-size: 1.6rem;
+  line-height: 1;
+  font-weight: 300;
+  opacity: 0.6;
+  cursor: pointer;
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease,
+    color 0.18s ease;
+}
+
+.ma-drawer-close:hover,
+.ma-drawer-close:focus-visible {
+  opacity: 1;
+  color: var(--danger, #dc2626);
+  transform: scale(1.08);
+  outline: none;
 }
 
 .ma-editor {

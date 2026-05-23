@@ -80,13 +80,13 @@ body {
 .ao-history-main-title,
 .ao-section-title,
 .ao-awards-stage-head h2 {
-  color: transparent;
-  background: linear-gradient(90deg, #0b0b0b 0%, #141414 64%, #343434 100%);
+  color: var(--ao-ink);
+  background: none;
   -webkit-background-clip: text;
   background-clip: text;
-  -webkit-text-fill-color: transparent;
+  -webkit-text-fill-color: currentColor;
   overflow: visible;
-  padding-block: 0.03em 0.08em;
+  padding-block: 0.03em 0.2em;
 }
 
 .ao-hero-title em,
@@ -95,12 +95,13 @@ body {
 .ao-awards-stage-head h2 em {
   font-style: normal;
   color: transparent;
-  background: linear-gradient(90deg, var(--ao-red) 0%, var(--ao-red-dark) 62%, #7f1d1d 100%);
+  background: linear-gradient(105deg, #ef2424 0%, #d71920 42%, #a9151b 74%, #7f1d1d 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
   display: inline-block;
-  padding-bottom: 0.05em;
+  line-height: 1.24;
+  padding: 0 0.1em 0.2em 0.02em;
 }
 
 .ao-page,
@@ -546,7 +547,7 @@ body {
 .ao-history-main-title {
   margin: 0;
   font-size: clamp(2rem, 4.4vw, 3.7rem);
-  line-height: 1.08;
+  line-height: 1.24;
   letter-spacing: -0.015em;
   font-weight: 850;
   color: var(--ao-ink);

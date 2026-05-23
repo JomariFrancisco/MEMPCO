@@ -9,10 +9,10 @@ import './board-of-directors.css'
 const directors = [
   {
     id: 1,
-    name: 'Chairperson Name',
+    name: 'Nelida Villanueva Alegre',
     position: 'Chairperson',
-    term: '20XX – 20XX',
-    committee: 'Executive Committee',
+    term: 'Current Term',
+    committee: 'Board of Directors',
     image: '',
     shortDescription:
       "Provides overall leadership to the Board and ensures governance decisions remain aligned with the cooperative's long-term direction.",
@@ -21,10 +21,10 @@ const directors = [
   },
   {
     id: 2,
-    name: 'Vice Chairperson Name',
-    position: 'Vice Chairperson',
-    term: '20XX – 20XX',
-    committee: 'Executive Committee',
+    name: 'Barbara Perez Saavedra',
+    position: 'V-Chairperson',
+    term: 'Current Term',
+    committee: 'Board of Directors',
     image: '',
     shortDescription:
       'Supports the Chairperson and helps sustain leadership continuity, policy oversight, and effective Board coordination.',
@@ -33,94 +33,64 @@ const directors = [
   },
   {
     id: 3,
-    name: 'Secretary Name',
-    position: 'Board Secretary',
-    term: '20XX – 20XX',
-    committee: 'Governance Committee',
+    name: 'Armeline Bernardo Epan',
+    position: 'Director',
+    term: 'Current Term',
+    committee: 'Board of Directors',
     image: '',
     shortDescription:
-      "Ensures proper documentation of meetings, resolutions, and key records of the cooperative's governance activities.",
+      "Contributes to policy oversight, strategic discussion, and member-centered leadership within the Board.",
     fullDescription:
-      'The Board Secretary maintains official records, meeting minutes, Board resolutions, and governance documentation, helping preserve organizational continuity, compliance, and institutional memory.',
+      'As a Director, this Board member contributes to strategic planning, policy review, governance oversight, and decisions that support responsible cooperative growth.',
   },
   {
     id: 4,
-    name: 'Treasurer Name',
-    position: 'Treasurer',
-    term: '20XX – 20XX',
-    committee: 'Finance Committee',
+    name: 'Marivic Reyes Rubio',
+    position: 'Director',
+    term: 'Current Term',
+    committee: 'Board of Directors',
     image: '',
     shortDescription:
-      'Provides oversight on financial stewardship, accountability, and the responsible use of cooperative resources.',
+      'Supports Board deliberations, responsible governance, and decisions that protect the interests of members.',
     fullDescription:
-      'The Treasurer supports the Board in strengthening fiscal discipline, reviewing financial direction, and promoting responsible stewardship of assets, funds, and resources.',
+      'As a Director, this Board member helps guide cooperative priorities through collaborative governance, accountability, and member-focused decision-making.',
   },
   {
     id: 5,
-    name: 'Auditor Name',
-    position: 'Auditor',
-    term: '20XX – 20XX',
-    committee: 'Audit Committee',
+    name: 'Marilyn Laranjo Tee',
+    position: 'Director',
+    term: 'Current Term',
+    committee: 'Board of Directors',
     image: '',
     shortDescription:
-      'Promotes accountability and strong internal control through governance review and compliance monitoring.',
+      'Promotes transparent, accountable, and service-oriented leadership as part of the Board.',
     fullDescription:
-      'The Auditor contributes to the integrity of governance systems by supporting oversight, transparency, accountability, and internal control across cooperative operations and decision-making.',
+      'As a Director, this Board member supports governance review, strategic direction, and cooperative decisions grounded in transparency and accountability.',
   },
   {
     id: 6,
-    name: 'Director Name 01',
-    position: 'Board Member',
-    term: '20XX – 20XX',
-    committee: 'Member Relations Committee',
+    name: 'Ma. Lileth Lledo Mendoza',
+    position: 'Director',
+    term: 'Current Term',
+    committee: 'Board of Directors',
     image: '',
     shortDescription:
       'Supports policy development, strategic discussion, and member-centered leadership within the Board.',
     fullDescription:
-      'This Board Member contributes to strategic planning, policy review, committee work, and member-focused governance while supporting responsible institutional growth.',
+      'As a Director, this Board member contributes to strategic planning, policy review, and member-focused governance while supporting responsible institutional growth.',
   },
   {
     id: 7,
-    name: 'Director Name 02',
-    position: 'Board Member',
-    term: '20XX – 20XX',
-    committee: 'Education Committee',
+    name: 'Florepess Oblimar Naval',
+    position: 'Director',
+    term: 'Current Term',
+    committee: 'Board of Directors',
     image: '',
     shortDescription:
       'Contributes to collaborative governance and supports Board initiatives that strengthen service and sustainability.',
     fullDescription:
-      'This Board Member helps guide the cooperative through collaborative governance, committee participation, and decisions that uphold service quality, accountability, and sustainability.',
+      'As a Director, this Board member helps guide the cooperative through collaborative governance and decisions that uphold service quality, accountability, and sustainability.',
   },
-]
-
-const committees = [
-  {
-    title: 'Executive Committee',
-    description:
-      'Supports leadership continuity, strategic direction, and major governance priorities of the cooperative.',
-  },
-  {
-    title: 'Governance Committee',
-    description:
-      'Promotes policy alignment, governance quality, and institutional accountability.',
-  },
-  {
-    title: 'Finance Committee',
-    description:
-      'Reviews financial stewardship, fiscal discipline, and resource oversight.',
-  },
-  {
-    title: 'Audit Committee',
-    description:
-      'Strengthens compliance, transparency, and internal control mechanisms.',
-  },
-]
-
-const governanceFocus = [
-  'Strategic Direction',
-  'Policy Oversight',
-  'Member-Centered Leadership',
-  'Transparency & Accountability',
 ]
 
 function getInitials(name) {
@@ -170,8 +140,8 @@ function DirectorModal({ director, onClose }) {
   return (
     <div className="bod-modal" onClick={onClose} role="dialog" aria-modal="true">
       <div className="bod-modal-content" onClick={(e) => e.stopPropagation()}>
-        <button className="bod-modal-close" onClick={onClose} aria-label="Close modal">
-          ✕
+        <button type="button" className="bod-modal-close" onClick={onClose} aria-label="Close modal">
+          &times;
         </button>
 
         <div className="bod-modal-image-col">
@@ -273,7 +243,6 @@ function HierarchyChart({ directors, onSelect }) {
 
 export default function BoardOfDirectorsPage() {
   const [selectedDirector, setSelectedDirector] = useState(null)
-  const featuredDirector = directors[0]
 
   return (
     <>
@@ -319,48 +288,33 @@ export default function BoardOfDirectorsPage() {
                 </div>
               </div>
 
-              <div className="bod-hero-card">
-                <div className="bod-hero-card-top">
-                  <span className="bod-spotlight-tag">Featured Leadership</span>
-
-                  <div className="bod-spotlight-symbol">
-                    {getInitials(featuredDirector.name)}
-                  </div>
-                </div>
-
-                <span className="bod-spotlight-position">
-                  {featuredDirector.position}
-                </span>
-
-                <h3>{featuredDirector.name}</h3>
-                <p>{featuredDirector.shortDescription}</p>
-
-                <button
-                  className="bod-card-link"
-                  onClick={() => setSelectedDirector(featuredDirector)}
-                >
-                  View Profile →
-                </button>
+              <div className="bod-hero-aside">
+                <span className="bod-aside-kicker">Board Mandate</span>
+                <h3>Formal governance oversight for member-centered growth.</h3>
+                <p>
+                  The Board provides policy direction, institutional accountability,
+                  and long-term stewardship for the cooperative.
+                </p>
               </div>
             </div>
 
-            <div className="bod-stats">
-              <div className="bod-stat-card">
+            <div className="bod-hero-metrics" aria-label="Board overview">
+              <div>
                 <h3>{String(directors.length).padStart(2, '0')}</h3>
                 <p>Board Members</p>
               </div>
 
-              <div className="bod-stat-card">
-                <h3>{String(committees.length).padStart(2, '0')}</h3>
-                <p>Key Committees</p>
+              <div>
+                <h3>{String(directors.filter((director) => director.position === 'Director').length).padStart(2, '0')}</h3>
+                <p>Directors</p>
               </div>
 
-              <div className="bod-stat-card">
+              <div>
                 <h3>01</h3>
                 <p>Shared Mission</p>
               </div>
 
-              <div className="bod-stat-card">
+              <div>
                 <h3>100%</h3>
                 <p>Member-Focused</p>
               </div>
@@ -387,43 +341,6 @@ export default function BoardOfDirectorsPage() {
           </div>
         </section>
 
-        <section className="bod-focus-section">
-          <div className="bod-container">
-            <div className="bod-section-heading">
-              <span className="bod-section-tag">Core Governance Focus</span>
-              <h2>What the Board <em>Upholds</em></h2>
-            </div>
-
-            <div className="bod-focus-grid">
-              {governanceFocus.map((item, index) => (
-                <div className="bod-focus-card" key={index}>
-                  <span className="bod-focus-number">
-                    {String(index + 1).padStart(2, '0')}
-                  </span>
-                  <h3>{item}</h3>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section className="bod-committee-section">
-          <div className="bod-container">
-            <div className="bod-section-heading">
-              <span className="bod-section-tag">Committee Structure</span>
-              <h2>Governance Support <em>Areas</em></h2>
-            </div>
-
-            <div className="bod-committee-grid">
-              {committees.map((item, index) => (
-                <div className="bod-committee-card" key={index}>
-                  <h3>{item.title}</h3>
-                  <p>{item.description}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
       </main>
 
       <Footer />

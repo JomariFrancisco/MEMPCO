@@ -47,6 +47,19 @@ export default function Career() {
   const [isApplicationModalOpen, setIsApplicationModalOpen] = useState(false);
   const [isSubmittingApplication, setIsSubmittingApplication] = useState(false);
 
+  useEffect(() => {
+    if (!isApplicationModalOpen) return;
+
+    const onKey = (event) => {
+      if (event.key === 'Escape') {
+        setIsApplicationModalOpen(false);
+      }
+    };
+
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [isApplicationModalOpen]);
+
   const showcaseAnchorRef = useRef(null);
   const showcaseStageRef = useRef(null);
   const applyAnchorRef = useRef(null);
@@ -505,7 +518,17 @@ export default function Career() {
       </main>
 
       {isApplicationModalOpen ? (
-        <div className="cp-application-modal" role="dialog" aria-modal="true" aria-label="Submit application">
+        <div
+          className="cp-application-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Submit application"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) {
+              setIsApplicationModalOpen(false);
+            }
+          }}
+        >
           <form className="cp-application-dialog" onSubmit={handleApplicationSubmit}>
             <div className="cp-application-dialog-head">
               <div>
@@ -519,7 +542,7 @@ export default function Career() {
                 onClick={() => setIsApplicationModalOpen(false)}
                 aria-label="Close application form"
               >
-                x
+                &times;
               </button>
             </div>
 

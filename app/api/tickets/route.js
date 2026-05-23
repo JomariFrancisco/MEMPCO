@@ -6,10 +6,15 @@ const TICKET_RETURN_COLUMNS = `
   id,
   owner_id,
   owner_email,
+  ticket_code,
   requester,
   employee_id,
   branch,
   department,
+  custodian,
+  brand,
+  device_type,
+  serial_number,
   support_category,
   concern_type,
   device_name,
@@ -97,6 +102,79 @@ const normalizeAttachments = (attachments) => {
     }));
 };
 
+const BURNOUT_BRANCH_CODES = {
+  'central office': 'MCO',
+  ipil: 'MI',
+  veterans: 'MV',
+  vitali: 'MVT',
+  canelar: 'MCN',
+  culianan: 'MCL',
+  curuan: 'MCRN',
+  pagadian: 'MP',
+  dipolog: 'MD',
+  funeral: 'MLHFDM',
+  'la hermosa': 'MLHFDM',
+  ayala: 'MA',
+};
+
+const normalizeCodePart = (value, fallback) => {
+  const normalized = String(value || '')
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, '');
+
+  return normalized || fallback;
+};
+
+const DEVICE_CODE_ALIASES = {
+  'desktop pc': 'DESKTOP',
+  desktop: 'DESKTOP',
+  laptop: 'LAPTOP',
+  printer: 'PRINTER',
+  scanner: 'SCANNER',
+  monitor: 'MONITOR',
+  ups: 'UPS',
+  router: 'ROUTER',
+  switch: 'SWITCH',
+  server: 'SERVER',
+};
+
+const normalizeDeviceCode = (value, fallback = 'DEVICE') => {
+  const key = String(value || '').trim().toLowerCase();
+  return DEVICE_CODE_ALIASES[key] || normalizeCodePart(value, fallback);
+};
+
+const getBurnoutBranchCode = (branch) =>
+  BURNOUT_BRANCH_CODES[String(branch || '').trim().toLowerCase()] ||
+  normalizeCodePart(branch, 'BR');
+
+const isBurnoutTicket = (form = {}) =>
+  String(form.supportCategory || '').trim().toLowerCase() === 'burnout';
+
+const getNextBurnoutTicketCode = async (supabase, { branch, brand, deviceType }) => {
+  const branchCode = getBurnoutBranchCode(branch);
+  const brandCode = normalizeCodePart(brand, 'BRAND');
+  const deviceCode = normalizeDeviceCode(deviceType);
+
+  const { data, error } = await supabase
+    .from('tickets')
+    .select('ticket_code')
+    .eq('support_category', 'Burnout')
+    .like('ticket_code', `${branchCode}-%`);
+
+  if (error) {
+    throw new Error(error.message || 'Unable to read existing Burnout ticket codes.');
+  }
+
+  const latestNumber = (data || []).reduce((latest, row) => {
+    const match = String(row.ticket_code || '').match(new RegExp(`^${branchCode}-(\\d{5})-`));
+    const number = match ? Number.parseInt(match[1], 10) : 0;
+    return Number.isFinite(number) && number > latest ? number : latest;
+  }, 0);
+
+  return `${branchCode}-${String(latestNumber + 1).padStart(5, '0')}-${brandCode}-${deviceCode}`;
+};
+
 const getBearerToken = (request) => {
   const authorization = request.headers.get('authorization') || '';
   const match = authorization.match(/^Bearer\s+(.+)$/i);
@@ -158,20 +236,47 @@ export async function POST(request) {
     const profile = await getActiveProfile(dbClient, authUser);
     const now = new Date();
     const finalSla = normalizeSlaLevel(form.sla);
+    const burnoutTicket = isBurnoutTicket(form);
+    const deviceType = form.deviceType || form.deviceName || '';
+
+    if (burnoutTicket && !String(form.brand || '').trim()) {
+      throw new Error('Brand & Model is required for Helpdesk Burnout tickets.');
+    }
+
+    if (burnoutTicket && !String(deviceType || '').trim()) {
+      throw new Error('Device type is required for Helpdesk Burnout tickets.');
+    }
+
+    if (burnoutTicket && !String(form.serialNumber || '').trim()) {
+      throw new Error('Serial number is required for Helpdesk Burnout tickets.');
+    }
+
+    const ticketCode = burnoutTicket
+      ? await getNextBurnoutTicketCode(dbClient, {
+          branch: form.branch || profile.branch || profile.office || 'Unspecified',
+          brand: form.brand,
+          deviceType,
+        })
+      : '';
 
     const ticketPayload = {
       owner_id: authUser.id,
       owner_email: profile.email || authUser.email,
+      ticket_code: ticketCode || null,
       requester: profile.full_name || authUser.email || 'Employee',
       employee_id: profile.employee_id || '',
       branch: form.branch || profile.branch || profile.office || 'Unspecified',
       department: form.department || profile.department || 'Unspecified',
+      custodian: form.custodian || '',
+      brand: burnoutTicket ? normalizeCodePart(form.brand, '') : form.brand || '',
+      device_type: burnoutTicket ? normalizeDeviceCode(deviceType, '') : form.deviceType || '',
+      serial_number: String(form.serialNumber || '').trim().toUpperCase(),
       support_category: form.supportCategory || 'Other ICT Support',
-      concern_type: form.concernType || 'Other Technical Concern',
-      device_name: form.deviceName || '',
+      concern_type: form.concernType || (burnoutTicket ? 'Helpdesk Burnout' : 'Other Technical Concern'),
+      device_name: deviceType || '',
       contact_number: form.contactNumber || profile.phone || '',
-      impact: form.impact || '',
-      description: String(form.description || '').trim(),
+      impact: form.impact || (burnoutTicket ? 'Device burnout request' : ''),
+      description: String(form.description || form.remarks || '').trim(),
       sla: finalSla,
       priority: finalSla,
       status: 'Created',
@@ -198,11 +303,27 @@ export async function POST(request) {
       throw new Error('Issue Description is required.');
     }
 
-    const { data, error } = await dbClient
+    let insertResult = await dbClient
       .from('tickets')
       .insert(ticketPayload)
       .select(TICKET_RETURN_COLUMNS)
       .single();
+
+    if (insertResult.error?.code === '23505' && burnoutTicket) {
+      ticketPayload.ticket_code = await getNextBurnoutTicketCode(dbClient, {
+        branch: ticketPayload.branch,
+        brand: ticketPayload.brand,
+        deviceType: ticketPayload.device_type,
+      });
+
+      insertResult = await dbClient
+        .from('tickets')
+        .insert(ticketPayload)
+        .select(TICKET_RETURN_COLUMNS)
+        .single();
+    }
+
+    const { data, error } = insertResult;
 
     if (error) {
       throw new Error(error.message || 'Unable to create ticket in Supabase.');

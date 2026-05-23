@@ -102,19 +102,6 @@ function ChevronDown() {
   );
 }
 
-function CloseIcon() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
-      <path
-        d="M6.5 6.5l9 9M15.5 6.5l-9 9"
-        stroke="currentColor"
-        strokeWidth="1.9"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
 function getTypeLabel(type) {
   if (type === 'event') return 'Event';
   if (type === 'announcement') return 'Announcement';
@@ -642,7 +629,7 @@ export default function News() {
               onClick={closeArticle}
               aria-label="Close article"
             >
-              <CloseIcon />
+              <span aria-hidden="true">&times;</span>
             </button>
 
             <div className="np-modal-image-side">
@@ -712,7 +699,7 @@ export default function News() {
               onClick={() => setIsImageExpanded(false)}
               aria-label="Close full image"
             >
-              <CloseIcon />
+              <span aria-hidden="true">&times;</span>
             </button>
 
             <StoryImage

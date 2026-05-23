@@ -72,7 +72,7 @@ export default function AboutPreview() {
           <div className="ap-media ap-reveal ap-reveal--left" data-reveal>
             <div className="ap-image-card">
               <img
-                src="/About/2.png"
+                src="/About/3.png"
                 alt="MEMPCO members and community"
                 className="ap-image"
               />

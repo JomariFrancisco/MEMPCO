@@ -7,11 +7,8 @@ import './governance.css'
 
 const boardPositions = [
   'Chairperson',
-  'Vice Chairperson',
-  'Board Secretary',
-  'Treasurer',
-  'Auditor',
-  'Board Member (2)',
+  'V-Chairperson',
+  'Director (5)',
 ]
 
 const managementPositions = [

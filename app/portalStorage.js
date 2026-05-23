@@ -3,6 +3,7 @@
 ========================= */
 
 export const SUPPORT_CATEGORIES = [
+  'Burnout',
   'Software Support',
   'Network Support',
   'Hardware Support',
@@ -59,6 +60,20 @@ export const TICKET_STATUSES = [
   'Modified',
   'Resolved',
   'Canceled',
+];
+
+export const BURNOUT_TICKET_STATUSES = [
+  'Submitted',
+  'For Inspection',
+  'Under Burnout',
+  'Passed Burnout',
+  'Ready for Deployment',
+  'Deployed',
+  'Failed Burnout',
+  'Damaged',
+  'For Repair',
+  'For Replacement',
+  'Cancelled',
 ];
 
 export const TECHNICIANS = [
@@ -174,4 +189,25 @@ export const slugify = (value) =>
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/(^-|-$)/g, '');
 
-export const isUnresolved = (status) => !['Resolved', 'Canceled'].includes(status);
+const CLOSED_STATUS_KEYS = [
+  'resolved',
+  'canceled',
+  'cancelled',
+  'passed burnout',
+  'ready for deployment',
+  'deployed',
+  'failed burnout',
+  'damaged',
+  'for repair',
+  'for replacement',
+];
+
+export const isUnresolved = (status) => {
+  const normalized = String(status || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[-_]+/g, ' ')
+    .replace(/\s+/g, ' ');
+
+  return !CLOSED_STATUS_KEYS.includes(normalized);
+};

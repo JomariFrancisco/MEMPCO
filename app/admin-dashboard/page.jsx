@@ -20,6 +20,7 @@ import {
   MessageCircle,
   Monitor,
   Paperclip,
+  Plus,
   Printer,
   Search,
   Send,
@@ -32,6 +33,7 @@ import {
 } from 'lucide-react';
 import {
   BRANCHES,
+  BURNOUT_TICKET_STATUSES,
   DEPARTMENTS,
   ESCALATION_PARTNERS,
   SLA_LEVELS,
@@ -82,11 +84,78 @@ const REPORT_PERIOD_OPTIONS = [
   { key: 'week', label: 'Week', title: 'Tickets by Week', meta: 'Weekly volume' },
   { key: 'month', label: 'Month', title: 'Tickets by Month', meta: 'Monthly trend' },
 ];
+const REPORT_PERIOD_PAGE_SIZE = 8;
 const SELECTED_DAY_TICKET_PAGE_SIZE = 2;
 const PHOTO_MAX_SIZE = 4 * 1024 * 1024;
 const PHOTO_MAX_COUNT = 5;
 const PHOTO_ACCEPT = 'image/jpeg,image/jpg,image/png,image/webp';
 const PHOTO_ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+const DAY_IN_MS = 24 * 60 * 60 * 1000;
+const BURNOUT_STANDARD_MIN_DAYS = 3;
+const BURNOUT_STANDARD_MESSAGE = 'Did not meet the standard procedure date';
+const BURNOUT_ACTIVE_STATUS_KEYS = ['submitted', 'for inspection', 'under burnout'];
+const BURNOUT_MONITORING_STATUS_KEYS = ['under burnout'];
+const BURNOUT_CLOSED_STATUS_KEYS = [
+  'passed burnout',
+  'ready for deployment',
+  'deployed',
+  'failed burnout',
+  'damaged',
+  'for repair',
+  'for replacement',
+  'resolved',
+  'cancelled',
+  'canceled',
+];
+const BURNOUT_STATUS_FALLBACKS = {
+  created: 'Submitted',
+  pending: 'For Inspection',
+  modified: 'For Inspection',
+  'in progress': 'Under Burnout',
+  escalated: 'Under Burnout',
+  'moved date': 'Under Burnout',
+  resolved: 'Passed Burnout',
+  canceled: 'Cancelled',
+  cancelled: 'Cancelled',
+};
+const BURNOUT_TEST_ITEMS = [
+  ['physical-inspection', 'Physical Inspection', 'Check for physical damage, loose parts, or defects', 'No visible defects'],
+  ['power-test', 'Power Test', 'Verify computer powers on properly', 'Booted normally'],
+  ['bios-check', 'BIOS Check', 'Verify BIOS settings and hardware detection', 'All hardware detected'],
+  ['cpu-stress-test', 'CPU Stress Test', 'Run system under load to check CPU stability', 'Stable during stress test'],
+  ['memory-test', 'Memory (RAM) Test', 'Test RAM for errors', 'No memory errors detected'],
+  ['storage-test', 'Storage Test', 'Check SSD/HDD health and read/write performance', 'Storage health 100%'],
+  ['temperature-monitoring', 'Temperature Monitoring', 'Check system temperature during testing', 'Temperature within normal range'],
+  ['usb-ports', 'USB Ports', 'Test USB ports functionality', 'All ports working'],
+  ['keyboard', 'Keyboard', 'Test all keys', 'Fully functional keyboard'],
+  ['mouse-touchpad', 'Mouse / Touchpad', 'Verify functionality', 'Working properly'],
+  ['display-monitor', 'Display / Monitor', 'Check screen quality and dead pixels', 'No dead pixels'],
+  ['network-test', 'Network Test', 'Check LAN / Wi-Fi connectivity', 'LAN connection stable'],
+  ['audio-test', 'Audio Test', 'Check speakers and audio output', 'Clear audio output'],
+  ['camera-test', 'Camera Test (if laptop)', 'Verify webcam functionality', 'Working properly'],
+];
+const BURNOUT_SOFTWARE_ITEMS = [
+  ['operating-system', 'Operating System', 'The main software that runs the computer and allows programs to work.', 'Windows 11 Home Single'],
+  ['windows-update', 'Windows Update', 'Updates that improve security, fix problems, and keep Windows up to date.', 'Updated as of May'],
+  ['device-drivers', 'Device Drivers', 'Software that helps the computer communicate with hardware like printers and network devices.', 'All drivers installed'],
+  ['antivirus-endpoint-security', 'Antivirus/Endpoint Security', 'Software that protects the computer from viruses and other threats.', 'Microsoft Defender Enabled'],
+  ['office-productivity', 'Office Productivity', 'Programs used to create documents, spreadsheets, and presentations.', 'Microsoft Office 2016'],
+  ['pdf-reader', 'PDF Reader', 'Software used to open and read PDF files.', 'Adobe Acrobat Reader'],
+  ['web-browser', 'Web Browser', 'Program used to access websites and online systems.', 'Edge'],
+  ['gpedit-msc', 'GPEdit msc', 'For network setup and connectivity.', 'Connected to MCO Server'],
+];
+const BURNOUT_MONITORING_ITEMS = [
+  ['system-stability', 'System Stability', 'Stable', 'No system crash'],
+  ['system-temperature', 'System Temperature', 'Normal', 'Max temp 95C'],
+  ['unexpected-shutdown', 'Unexpected Shutdown', 'None', 'System stable'],
+  ['error-messages', 'Error Messages', 'None', 'No system error'],
+  ['performance-issues', 'Performance Issues', 'None', 'Smooth performance'],
+];
+const BURNOUT_EVALUATION_ITEMS = [
+  ['hardware-condition', 'Hardware Condition', 'Pass', 'Unit passed burn-in testing and is ready for deployment'],
+  ['software-installation', 'Software Installation', 'Complete', 'Software checklist completed'],
+  ['ready-for-deployment', 'Ready for Deployment', 'Yes', 'Ready for release'],
+];
 
 const MonoIcon = ({ icon: IconComponent }) => (
   <IconComponent className="admin-mono-icon" aria-hidden="true" />
@@ -95,6 +164,8 @@ const MonoIcon = ({ icon: IconComponent }) => (
 const adminTransitionLabels = {
   dashboard: 'Opening admin dashboard...',
   tickets: 'Loading ticket queue...',
+  'support-tickets': 'Loading support tickets...',
+  'burnout-tickets': 'Loading burnout tickets...',
   branches: 'Loading branch monitor...',
   reports: 'Preparing reports...',
   users: 'Loading user management...',
@@ -262,6 +333,11 @@ const Icon = {
       <path d="M2 6a2 2 0 012-2h12a2 2 0 012 2v2a2 2 0 100 4v2a2 2 0 01-2 2H4a2 2 0 01-2-2v-2a2 2 0 100-4V6zm6-1v10h2V5H8z" />
     </svg>
   ),
+  Burnout: () => (
+    <svg className="sidebar-nav-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+      <path d="M6 2a1 1 0 011.67-.74c3.28 2.98 5.9 6.1 5.9 9.67 0 1.1-.33 2.14-.9 3 .92-.73 1.5-1.86 1.5-3.25 0-.79-.17-1.55-.49-2.25a1 1 0 011.55-1.17A7.1 7.1 0 0118 12.8C18 16.37 15.1 19 10.52 19 6.28 19 3 16.48 3 12.3c0-1.7.71-3.36 1.66-4.87C5.58 5.97 6 4.21 6 2zm4.42 14.95c1.57 0 2.72-.92 2.72-2.36 0-1.23-.76-2.46-2.4-4.15-.22 1.16-.75 2.14-1.43 3-.5.64-.82 1.13-.82 1.82 0 1.02.82 1.69 1.93 1.69z" />
+    </svg>
+  ),
   Branches: () => (
     <svg className="sidebar-nav-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
       <path d="M10.707 1.293a1 1 0 00-1.414 0l-7 7A1 1 0 003 10h1v7a1 1 0 001 1h4v-5h2v5h4a1 1 0 001-1v-7h1a1 1 0 00.707-1.707l-7-7z" />
@@ -338,6 +414,20 @@ const isTicketResolved = (ticket) => isTicketStatus(ticket, 'Resolved');
 
 const isTicketInProgress = (ticket) => isTicketStatus(ticket, 'In Progress');
 
+const getBurnoutWorkflowStatus = (status) => {
+  const normalized = normalizeTicketStatus(status);
+
+  return BURNOUT_STATUS_FALLBACKS[normalized] || BURNOUT_TICKET_STATUSES.find(
+    (item) => normalizeTicketStatus(item) === normalized
+  ) || 'Submitted';
+};
+
+const isBurnoutClosedStatus = (status) =>
+  BURNOUT_CLOSED_STATUS_KEYS.includes(normalizeTicketStatus(status));
+
+const isBurnoutMonitoringStatus = (status) =>
+  BURNOUT_MONITORING_STATUS_KEYS.includes(normalizeTicketStatus(status));
+
 const hasAssignedTechnician = (ticket) => {
   const technician = String(ticket?.technician || '').trim().toLowerCase();
 
@@ -350,11 +440,30 @@ const EMPLOYEE_LOCKED_STATUSES = [
   'escalated',
   'resolved',
   'canceled',
+  'for inspection',
+  'under burnout',
+  'passed burnout',
+  'ready for deployment',
+  'deployed',
+  'failed burnout',
+  'damaged',
+  'for repair',
+  'for replacement',
+  'cancelled',
 ];
 
 const getEmployeeTicketLockReason = (ticket) => {
   const status = normalizeTicketStatus(ticket?.status);
 
+  if (status === 'for inspection') return 'Burnout request is already queued for unit inspection.';
+  if (status === 'under burnout') return 'Unit is already under Burnout monitoring.';
+  if (status === 'passed burnout') return 'Unit already passed Burnout testing.';
+  if (status === 'ready for deployment') return 'Unit is ready for deployment.';
+  if (status === 'deployed') return 'Unit was already deployed.';
+  if (status === 'failed burnout') return 'Unit failed Burnout testing.';
+  if (status === 'damaged') return 'Unit was marked as damaged by ICT/Admin.';
+  if (status === 'for repair') return 'Unit was marked for repair by ICT/Admin.';
+  if (status === 'for replacement') return 'Unit was marked for replacement by ICT/Admin.';
   if (status === 'moved date') return 'Moved date was already set by ICT/Admin.';
   if (status === 'in progress') return 'Ticket is already in progress.';
   if (status === 'escalated') return 'Ticket was already escalated.';
@@ -657,13 +766,12 @@ const buildCalendarMonth = (tickets, monthDate) => {
   const monthStart = new Date(year, month, 1);
   const gridStart = new Date(monthStart);
   const counts = new Map();
+  const monthlyTicketEvents = getMonthlyTicketAnchorEvents(tickets, monthStart);
 
   gridStart.setDate(monthStart.getDate() - monthStart.getDay());
 
-  tickets.forEach((ticket) => {
-    getTicketReportEvents(ticket).forEach((event) => {
-      counts.set(event.key, (counts.get(event.key) || 0) + 1);
-    });
+  monthlyTicketEvents.forEach((event) => {
+    counts.set(event.key, (counts.get(event.key) || 0) + 1);
   });
 
   const todayKey = getDateKey(new Date());
@@ -873,6 +981,11 @@ const openPrintDocument = (title, body) => {
           .detail-table th:nth-child(11), .detail-table td:nth-child(11) { width: 6%; }
           .detail-table th:nth-child(12), .detail-table td:nth-child(12) { width: 5%; }
           .detail-table th:nth-child(13), .detail-table td:nth-child(13) { width: 5%; }
+          .burnout-print-section { page-break-inside: auto; }
+          .burnout-print-table { margin-bottom: 7px; font-size: 7.4px; }
+          .burnout-print-table th,
+          .burnout-print-table td { width: auto !important; padding: 3px 4px; }
+          .burnout-print-table th { font-size: 6.8px; }
           .period-detail-table { font-size: 7.4px; line-height: 1.18; }
           .period-detail-table th, .period-detail-table td { padding: 3px 3.5px; }
           .period-detail-table th { font-size: 6.7px; }
@@ -920,8 +1033,87 @@ const openPrintDocument = (title, body) => {
 };
 
 const printResolvedTicket = (ticket) => {
+  const burnoutReport = isBurnoutTicket(ticket) ? normalizeBurnoutReport(ticket) : null;
+  const printTableRows = (rows, columns) =>
+    (rows || []).map((row) => `
+      <tr>
+        ${columns.map(([key]) => `<td>${escapePrintHtml(row[key])}</td>`).join('')}
+      </tr>
+    `).join('');
+  const burnoutSection = burnoutReport
+    ? `
+      <section class="ticket-detail-section burnout-print-section">
+        <h3 class="section-title">Burnout Basic Information</h3>
+        <div class="grid">
+          ${[
+            ['Branch', ticket.branch],
+            ['Brand & Model', ticket.brand],
+            ['Serial Number', ticket.serialNumber],
+            ['Requester', ticket.requester || ticket.ownerEmail || 'Employee'],
+            ['Custodian', ticket.custodian],
+            ['Performed By', burnoutReport.performedBy],
+            ['Department', ticket.department],
+            ['Model / Device', ticket.deviceName || ticket.deviceType],
+            ['Request Date', burnoutReport.requestedDate || ticket.createdAt],
+            ['Start Date', burnoutReport.startDate],
+            ['End Date', burnoutReport.endDate],
+          ].map(([label, value]) => `
+            <div class="field">
+              <span>${escapePrintHtml(label)}</span>
+              <strong>${escapePrintHtml(value || 'Not provided')}</strong>
+            </div>
+          `).join('')}
+        </div>
+
+        <h3 class="section-title">Testing Checklist</h3>
+        <table class="detail-table burnout-print-table">
+          <thead>
+            <tr><th>Test Category</th><th>Test Description</th><th>Status</th><th>Remarks</th></tr>
+          </thead>
+          <tbody>
+            ${printTableRows(burnoutReport.testingChecklist, [['category'], ['description'], ['status'], ['remarks']])}
+          </tbody>
+        </table>
+
+        <h3 class="section-title">Software Installation Checklist</h3>
+        <table class="detail-table burnout-print-table">
+          <thead>
+            <tr><th>Software</th><th>Description</th><th>Installed</th><th>Remarks</th></tr>
+          </thead>
+          <tbody>
+            ${(burnoutReport.softwareChecklist || []).map((row) => `
+              <tr>
+                <td>${escapePrintHtml(row.software)}</td>
+                <td>${escapePrintHtml(row.description)}</td>
+                <td>${escapePrintHtml(row.installed ? 'Yes' : 'No')}</td>
+                <td>${escapePrintHtml(row.remarks)}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+
+        <div class="text-grid">
+          <section>
+            <h3 class="section-title">Burnout Monitoring (3-5 Days)</h3>
+            <table class="detail-table burnout-print-table">
+              <thead><tr><th>Monitoring Item</th><th>Result</th><th>Remarks</th></tr></thead>
+              <tbody>${printTableRows(burnoutReport.monitoring, [['item'], ['result'], ['remarks']])}</tbody>
+            </table>
+          </section>
+          <section>
+            <h3 class="section-title">Final Evaluation</h3>
+            <table class="detail-table burnout-print-table">
+              <thead><tr><th>Evaluation Item</th><th>Status</th><th>Remarks</th></tr></thead>
+              <tbody>${printTableRows(burnoutReport.finalEvaluation, [['item'], ['status'], ['remarks']])}</tbody>
+            </table>
+          </section>
+        </div>
+      </section>
+    `
+    : '';
   const fieldRows = [
-    ['Ticket ID', ticket.id],
+    ['Ticket Code', getTicketDisplayCode(ticket)],
+    ['Record ID', ticket.id],
     ['Status', ticket.status],
     ['SLA', ticket.sla],
     ['Requester', ticket.requester || ticket.ownerEmail || 'Employee'],
@@ -941,7 +1133,7 @@ const printResolvedTicket = (ticket) => {
       ${getPrintLetterhead()}
       <section class="doc-head">
         <h2>Resolved Ticket Report</h2>
-        <div class="meta">Ticket ${escapePrintHtml(ticket.id)}<br />Printed ${escapePrintHtml(new Date().toLocaleString())}</div>
+        <div class="meta">Ticket ${escapePrintHtml(getTicketDisplayCode(ticket))}<br />Printed ${escapePrintHtml(new Date().toLocaleString())}</div>
       </section>
       <section class="grid">
         ${fieldRows.map(([label, value]) => `
@@ -969,10 +1161,11 @@ const printResolvedTicket = (ticket) => {
           <div class="note">${escapePrintHtml(ticket.adminRemarks || 'No remarks recorded.')}</div>
         </section>
       </div>
+      ${burnoutSection}
     </main>
   `;
 
-  openPrintDocument(`Resolved Ticket ${ticket.id}`, body);
+  openPrintDocument(`Resolved Ticket ${getTicketDisplayCode(ticket)}`, body);
 };
 
 const getPeriodBucketForTimestamp = (timestamp, mode) => {
@@ -1060,6 +1253,44 @@ const getReportEventRowsForMonth = (tickets = [], monthDate) => {
     );
 };
 
+const shouldReplaceMonthlyTicketAnchor = (currentEvent, nextEvent) => {
+  if (!currentEvent) return true;
+  if (nextEvent.timestamp !== currentEvent.timestamp) {
+    return nextEvent.timestamp > currentEvent.timestamp;
+  }
+
+  const eventPriority = {
+    resolved: 4,
+    'moved-date': 3,
+    status: 2,
+    submitted: 1,
+  };
+
+  return (eventPriority[nextEvent.type] || 0) > (eventPriority[currentEvent.type] || 0);
+};
+
+const getMonthlyTicketAnchorEvents = (tickets = [], monthDate) => {
+  const ticketEvents = new Map();
+
+  getReportEventRowsForMonth(tickets, monthDate).forEach((event) => {
+    const ticketId = event?.ticket?.id;
+
+    if (!ticketId) return;
+
+    const current = ticketEvents.get(ticketId);
+
+    if (shouldReplaceMonthlyTicketAnchor(current, event)) {
+      ticketEvents.set(ticketId, event);
+    }
+  });
+
+  return [...ticketEvents.values()].sort(
+    (a, b) =>
+      a.timestamp - b.timestamp ||
+      String(a.ticket?.id || '').localeCompare(String(b.ticket?.id || ''))
+  );
+};
+
 const getUniqueTicketsFromPeriodEvents = (events = []) => {
   const ticketMap = new Map();
 
@@ -1135,7 +1366,7 @@ const printReportSummary = ({
   const movedDateCount = detailedEvents.filter((event) => event.type === 'moved-date').length;
   const resolvedEventCount = detailedEvents.filter((event) => event.type === 'resolved').length;
   const periodItems = selectedPeriodKey
-    ? [{ name: selectedPeriodName || title, count: detailedEvents.length }]
+    ? [{ name: selectedPeriodName || title, count: uniqueTickets.length }]
     : (items?.length ? items : buildDateBreakdown(tickets, mode));
   const reportTotal = uniqueTickets.length || total || 0;
   const row = (item, totalCount = reportTotal) => {
@@ -1176,7 +1407,7 @@ const printReportSummary = ({
   const periodPrintColumns = [
     ['Period', (event) => event.periodName],
     ['Event', (event) => event.label],
-    ['Ticket ID', (event) => event.ticket.id],
+    ['Ticket Code', (event) => getTicketDisplayCode(event.ticket)],
     ['Submitted', (event) => getTicketField(event.ticket.createdAt || event.ticket.date)],
     ['Moved Date', (event) => getTicketMovedDateLabel(event.ticket)],
     ['Resolved Date', (event) => getTicketResolvedDateLabel(event.ticket)],
@@ -1266,40 +1497,32 @@ const getTicketField = (value, fallback = 'Not provided') => {
   return normalized || fallback;
 };
 
-const monthlyEventColumns = [
-  ['Ticket ID', (event) => event.ticket.id],
-  ['Report Date', (event) => event.reportDateLabel],
-  ['Submitted', (event) => getTicketField(event.ticket.createdAt || event.ticket.date)],
-  ['Moved Date', (event) => getTicketMovedDateLabel(event.ticket)],
-  ['Resolved Date', (event) => getTicketResolvedDateLabel(event.ticket)],
-  ['Name', (event) => getTicketField(event.ticket.requester || event.ticket.ownerEmail, 'Employee')],
-  ['Employee ID', (event) => getTicketField(event.ticket.employeeId)],
-  ['Branch', (event) => getTicketField(event.ticket.branch, 'Unspecified')],
-  ['Department', (event) => getTicketField(event.ticket.department, 'Unspecified')],
-  ['Category', (event) => getTicketField(event.ticket.supportCategory, 'Unspecified')],
-  ['Concern', (event) => getTicketField(event.ticket.concernType, 'Unspecified')],
-  ['Status', (event) => getTicketField(event.reportStatus, 'Submitted')],
-  ['SLA', (event) => getTicketField(event.ticket.sla, 'Low')],
-  ['Technician', (event) => getTicketField(event.ticket.technician, 'Unassigned')],
-  ['Description', (event) => getTicketField(event.ticket.description, '')],
-  ['Action Taken', (event) => getTicketField(event.ticket.actionTaken, '')],
-  ['Resolution', (event) => getTicketField(event.ticket.resolution, '')],
-  ['Admin Remarks', (event) => getTicketField(event.ticket.adminRemarks, '')],
+const monthlyTicketSummaryColumns = [
+  ['Ticket Code', (ticket) => getTicketDisplayCode(ticket)],
+  ['Submitted', (ticket) => getTicketField(ticket.createdAt || ticket.date)],
+  ['Resolved Date', (ticket) => getTicketResolvedDateLabel(ticket)],
+  ['Requester', (ticket) => getTicketField(ticket.requester || ticket.ownerEmail, 'Employee')],
+  ['Employee ID', (ticket) => getTicketField(ticket.employeeId)],
+  ['Branch', (ticket) => getTicketField(ticket.branch, 'Unspecified')],
+  ['Department', (ticket) => getTicketField(ticket.department, 'Unspecified')],
+  ['Category', (ticket) => getTicketField(ticket.supportCategory, 'Unspecified')],
+  ['Concern', (ticket) => getTicketField(ticket.concernType, 'Unspecified')],
+  ['Status', (ticket) => getTicketField(ticket.status, 'Created')],
+  ['SLA', (ticket) => getTicketField(ticket.sla, 'Low')],
+  ['Technician', (ticket) => getTicketField(ticket.technician, 'Unassigned')],
 ];
 
-const monthlyPrintColumns = monthlyEventColumns.filter(([label]) => label !== 'Submitted').slice(0, 13);
-
-const buildMonthlyEventTableRows = (events, columns) =>
-  events.length
-    ? events.map((event) => `
+const buildMonthlyTicketSummaryRows = (tickets, columns) =>
+  tickets.length
+    ? tickets.map((ticket) => `
         <tr>
-          ${columns.map(([, getValue]) => `<td>${escapePrintHtml(getValue(event))}</td>`).join('')}
+          ${columns.map(([, getValue]) => `<td>${escapePrintHtml(getValue(ticket))}</td>`).join('')}
         </tr>
       `).join('')
-    : `<tr><td colspan="${columns.length}">No ticket events found for this month.</td></tr>`;
+    : `<tr><td colspan="${columns.length}">No tickets found for this month.</td></tr>`;
 
 const printMonthlyConsolidatedReport = (tickets, monthDate) => {
-  const { monthTitle, monthlyTickets, monthlyEvents } = getMonthlyReportData(tickets, monthDate);
+  const { monthTitle, monthlyTickets } = getMonthlyReportData(tickets, monthDate);
   const monthlySummary = buildSummary(monthlyTickets);
   const technicianItems = TECHNICIANS
     .map((name) => ({
@@ -1307,10 +1530,10 @@ const printMonthlyConsolidatedReport = (tickets, monthDate) => {
       count: monthlyTickets.filter((ticket) => (ticket.technician || 'Unassigned') === name).length,
     }))
     .filter((item) => item.count > 0);
-  const statusItems = breakdown(monthlyEvents, 'reportStatus', ['Submitted', ...TICKET_STATUSES]).slice(0, 6);
+  const statusItems = breakdown(monthlyTickets, 'status', TICKET_STATUSES).slice(0, 6);
   const categoryItems = breakdown(monthlyTickets, 'supportCategory', SUPPORT_CATEGORIES).slice(0, 6);
   const branchItems = breakdown(monthlyTickets, 'branch', BRANCHES).slice(0, 6);
-  const row = (item, total = monthlyEvents.length) => {
+  const row = (item, total = monthlyTickets.length) => {
     const percent = total ? Math.round((item.count / total) * 100) : 0;
     return `
       <div class="report-row">
@@ -1324,8 +1547,8 @@ const printMonthlyConsolidatedReport = (tickets, monthDate) => {
     ? technicianItems.map((item) => row(item, monthlyTickets.length)).join('')
     : '<div class="report-row"><span>No ICT assignments</span><strong>0</strong><em>0%</em></div>';
   const statusRows = statusItems.length
-    ? statusItems.map((item) => row(item)).join('')
-    : '<div class="report-row"><span>No status events</span><strong>0</strong><em>0%</em></div>';
+    ? statusItems.map((item) => row(item, monthlyTickets.length)).join('')
+    : '<div class="report-row"><span>No ticket status data</span><strong>0</strong><em>0%</em></div>';
   const categoryRows = categoryItems.length
     ? categoryItems.map((item) => row(item, monthlyTickets.length)).join('')
     : '<div class="report-row"><span>No support category data</span><strong>0</strong><em>0%</em></div>';
@@ -1341,8 +1564,8 @@ const printMonthlyConsolidatedReport = (tickets, monthDate) => {
       </section>
       <section class="grid">
         <div class="field"><span>Total Tickets</span><strong>${escapePrintHtml(monthlySummary.total)}</strong></div>
-        <div class="field"><span>Total Activities</span><strong>${escapePrintHtml(monthlyEvents.length)}</strong></div>
-        <div class="field"><span>Resolved Events</span><strong>${escapePrintHtml(monthlyEvents.filter((event) => event.type === 'resolved').length)}</strong></div>
+        <div class="field"><span>Active Tickets</span><strong>${escapePrintHtml(monthlySummary.active)}</strong></div>
+        <div class="field"><span>Resolved Tickets</span><strong>${escapePrintHtml(monthlySummary.resolved)}</strong></div>
         <div class="field"><span>High / Critical</span><strong>${escapePrintHtml(monthlySummary.critical)}</strong></div>
       </section>
       <section class="consolidated-grid">
@@ -1351,7 +1574,7 @@ const printMonthlyConsolidatedReport = (tickets, monthDate) => {
           <div class="report-list single">${ictRows}</div>
         </div>
         <div>
-          <h3 class="section-title">Status Events</h3>
+          <h3 class="section-title">Ticket Status</h3>
           <div class="report-list single">${statusRows}</div>
         </div>
         <div>
@@ -1364,19 +1587,19 @@ const printMonthlyConsolidatedReport = (tickets, monthDate) => {
         </div>
       </section>
       <section class="ticket-detail-section">
-        <h3 class="section-title">Ticket Event Details</h3>
+        <h3 class="section-title">Ticket Summary</h3>
         <table class="detail-table">
           <thead>
             <tr>
-              ${monthlyPrintColumns.map(([label]) => `<th>${escapePrintHtml(label)}</th>`).join('')}
+              ${monthlyTicketSummaryColumns.map(([label]) => `<th>${escapePrintHtml(label)}</th>`).join('')}
             </tr>
           </thead>
           <tbody>
-            ${buildMonthlyEventTableRows(monthlyEvents, monthlyPrintColumns)}
+            ${buildMonthlyTicketSummaryRows(monthlyTickets, monthlyTicketSummaryColumns)}
           </tbody>
         </table>
       </section>
-      <p class="print-note">Consolidated monthly report prepared by the ICT Department team workload review.</p>
+      <p class="print-note">Monthly summary includes one row per ticket for ICT Department workload review.</p>
     </main>
   `;
 
@@ -1391,15 +1614,14 @@ const escapeCsvCell = (value) => {
 const exportMonthlyConsolidatedReportCsv = (tickets, monthDate) => {
   if (typeof window === 'undefined') return;
 
-  const { monthTitle, monthlyTickets, monthlyEvents } = getMonthlyReportData(tickets, monthDate);
+  const { monthTitle, monthlyTickets } = getMonthlyReportData(tickets, monthDate);
   const monthlySummary = buildSummary(monthlyTickets);
   const summaryRows = [
     ['Report', 'Monthly ICT Consolidated Report'],
     ['Period', monthTitle],
-    ['Unique Tickets', monthlySummary.total],
-    ['Total Activities', monthlyEvents.length],
-    ['Resolved Events', monthlyEvents.filter((event) => event.type === 'resolved').length],
-    ['Active', monthlySummary.active],
+    ['Total Tickets', monthlySummary.total],
+    ['Active Tickets', monthlySummary.active],
+    ['Resolved Tickets', monthlySummary.resolved],
     ['High / Critical', monthlySummary.critical],
     ['Exported', new Date().toLocaleString()],
   ];
@@ -1407,8 +1629,8 @@ const exportMonthlyConsolidatedReportCsv = (tickets, monthDate) => {
     ['Monthly ICT Consolidated Report'],
     ...summaryRows,
     [],
-    monthlyEventColumns.map(([label]) => label),
-    ...monthlyEvents.map((event) => monthlyEventColumns.map(([, getValue]) => getValue(event))),
+    monthlyTicketSummaryColumns.map(([label]) => label),
+    ...monthlyTickets.map((ticket) => monthlyTicketSummaryColumns.map(([, getValue]) => getValue(ticket))),
   ];
   const csv = `\uFEFF${csvRows.map((row) => row.map(escapeCsvCell).join(',')).join('\r\n')}`;
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -1424,16 +1646,376 @@ const exportMonthlyConsolidatedReportCsv = (tickets, monthDate) => {
   URL.revokeObjectURL(url);
 };
 
+const getSafeFilePart = (value, fallback = 'report') => {
+  const normalized = String(value || fallback)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+  return normalized || fallback;
+};
+
+const downloadFile = (blob, fileName) => {
+  if (typeof window === 'undefined') return;
+
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+
+  link.href = url;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+};
+
+const getMonthInputValue = (date) => {
+  const parsed = new Date(date || new Date());
+
+  if (Number.isNaN(parsed.getTime())) return '';
+
+  return `${parsed.getFullYear()}-${String(parsed.getMonth() + 1).padStart(2, '0')}`;
+};
+
+const getMonthDateFromInput = (value) => {
+  const parsed = new Date(`${value || getMonthInputValue(new Date())}-01T00:00:00`);
+
+  if (Number.isNaN(parsed.getTime())) return getTicketCalendarMonth([]);
+
+  parsed.setDate(1);
+  parsed.setHours(0, 0, 0, 0);
+
+  return parsed;
+};
+
+const getMonthlyBurnoutSummaryData = (tickets, monthDate) => {
+  const burnoutTickets = tickets.filter(isBurnoutTicket);
+  const { monthTitle, monthlyTickets } = getMonthlyReportData(burnoutTickets, monthDate);
+  const summary = buildSummary(monthlyTickets);
+  const belowStandardCount = monthlyTickets.filter(isBurnoutBelowStandardProcedure).length;
+  const threeDayMarkCount = monthlyTickets.filter(hasBurnoutReachedThreeDayMark).length;
+
+  return {
+    monthTitle,
+    monthlyTickets,
+    summary,
+    belowStandardCount,
+    threeDayMarkCount,
+  };
+};
+
+const monthlyBurnoutSummaryColumns = [
+  ['Ticket Code', (ticket) => getTicketDisplayCode(ticket)],
+  ['Submitted', (ticket) => getTicketField(ticket.createdAt || ticket.date)],
+  ['Start Date', (ticket) => getTicketField(ticket.burnoutReport?.startDate || ticket.workStartedAt)],
+  ['End Date', (ticket) => getTicketField(ticket.burnoutReport?.endDate || ticket.workEndedAt)],
+  ['Requester', (ticket) => getTicketField(ticket.requester || ticket.ownerEmail, 'Employee')],
+  ['Custodian', (ticket) => getTicketField(ticket.custodian)],
+  ['Branch', (ticket) => getTicketField(ticket.branch, 'Unspecified')],
+  ['Department', (ticket) => getTicketField(ticket.department, 'Unspecified')],
+  ['Brand & Model', (ticket) => getTicketField(ticket.brand)],
+  ['Serial Number', (ticket) => getTicketField(ticket.serialNumber)],
+  ['Device', (ticket) => getTicketField(ticket.deviceName || ticket.deviceType)],
+  ['Status', (ticket) => getTicketField(ticket.status, 'Created')],
+  ['Technician', (ticket) => getTicketField(ticket.technician, 'Unassigned')],
+  ['3-Day Mark', (ticket) => (hasBurnoutReachedThreeDayMark(ticket) ? 'Yes' : 'No')],
+  ['Below Standard', (ticket) => (isBurnoutBelowStandardProcedure(ticket) ? 'Yes' : 'No')],
+];
+
+const printMonthlyBurnoutSummaryReport = (tickets, monthDate) => {
+  const {
+    monthTitle,
+    monthlyTickets,
+    summary,
+    belowStandardCount,
+    threeDayMarkCount,
+  } = getMonthlyBurnoutSummaryData(tickets, monthDate);
+  const body = `
+    <main class="print-page">
+      ${getPrintLetterhead()}
+      <section class="doc-head">
+        <h2>Monthly Burnout Summary Report</h2>
+        <div class="meta">${escapePrintHtml(monthTitle)}<br />Printed ${escapePrintHtml(new Date().toLocaleString())}</div>
+      </section>
+      <section class="grid">
+        <div class="field"><span>Total Burnout Tickets</span><strong>${escapePrintHtml(summary.total)}</strong></div>
+        <div class="field"><span>Active Tickets</span><strong>${escapePrintHtml(summary.active)}</strong></div>
+        <div class="field"><span>Resolved Tickets</span><strong>${escapePrintHtml(summary.resolved)}</strong></div>
+        <div class="field"><span>3-Day Mark</span><strong>${escapePrintHtml(threeDayMarkCount)}</strong></div>
+        <div class="field"><span>Below Standard</span><strong>${escapePrintHtml(belowStandardCount)}</strong></div>
+      </section>
+      <section class="ticket-detail-section">
+        <h3 class="section-title">Burnout Ticket Summary</h3>
+        <table class="detail-table burnout-print-table">
+          <thead>
+            <tr>${monthlyBurnoutSummaryColumns.map(([label]) => `<th>${escapePrintHtml(label)}</th>`).join('')}</tr>
+          </thead>
+          <tbody>
+            ${buildMonthlyTicketSummaryRows(monthlyTickets, monthlyBurnoutSummaryColumns)}
+          </tbody>
+        </table>
+      </section>
+      <p class="print-note">Monthly Burnout summary includes one row per Burnout ticket for the selected month.</p>
+    </main>
+  `;
+
+  openPrintDocument(`Monthly Burnout Summary Report - ${monthTitle}`, body);
+};
+
+const exportMonthlyBurnoutSummaryExcel = (tickets, monthDate) => {
+  if (typeof window === 'undefined') return;
+
+  const {
+    monthTitle,
+    monthlyTickets,
+    summary,
+    belowStandardCount,
+    threeDayMarkCount,
+  } = getMonthlyBurnoutSummaryData(tickets, monthDate);
+  const summaryRows = [
+    ['Report', 'Monthly Burnout Summary Report'],
+    ['Period', monthTitle],
+    ['Total Burnout Tickets', summary.total],
+    ['Active Tickets', summary.active],
+    ['Resolved Tickets', summary.resolved],
+    ['3-Day Mark', threeDayMarkCount],
+    ['Below Standard', belowStandardCount],
+    ['Exported', new Date().toLocaleString()],
+  ].map(([label, value]) => `<tr><td>${escapePrintHtml(label)}</td><td>${escapePrintHtml(value)}</td></tr>`).join('');
+  const ticketRows = buildMonthlyTicketSummaryRows(monthlyTickets, monthlyBurnoutSummaryColumns);
+  const workbook = `\uFEFF<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+    <head>
+      <meta charset="utf-8" />
+      <!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Monthly Burnout</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->
+      <style>
+        body { font-family: Arial, sans-serif; }
+        h1, h2, h3 { color: #111827; }
+        table { border-collapse: collapse; margin-bottom: 16px; width: 100%; }
+        th { background: #ef4444; color: #ffffff; font-weight: 700; }
+        th, td { border: 1px solid #cbd5e1; padding: 8px; mso-number-format: "\\@"; vertical-align: top; }
+      </style>
+    </head>
+    <body>
+      <h1>MEMPCO Monthly Burnout Summary Report</h1>
+      ${buildExcelSection('Summary', summaryRows, ['Field', 'Value'])}
+      ${buildExcelSection(
+        'Burnout Ticket Summary',
+        ticketRows,
+        monthlyBurnoutSummaryColumns.map(([label]) => label)
+      )}
+    </body>
+  </html>`;
+  const blob = new Blob([workbook], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+
+  downloadFile(blob, `monthly-burnout-summary-${getSafeFilePart(monthTitle)}.xls`);
+};
+
+const getBurnoutBasicRows = (ticket, burnoutReport = normalizeBurnoutReport(ticket)) => [
+  ['Ticket Code', getTicketDisplayCode(ticket)],
+  ['Record ID', ticket.id],
+  ['Status', ticket.status],
+  ['Branch', ticket.branch],
+  ['Department', ticket.department],
+  ['Brand & Model', ticket.brand],
+  ['Serial Number', ticket.serialNumber],
+  ['Model / Device', ticket.deviceName || ticket.deviceType],
+  ['Requester', ticket.requester || ticket.ownerEmail || 'Employee'],
+  ['Custodian', ticket.custodian],
+  ['Performed By', burnoutReport.performedBy],
+  ['Request Date', burnoutReport.requestedDate || ticket.createdAt],
+  ['Start Date', burnoutReport.startDate],
+  ['End Date', burnoutReport.endDate],
+];
+
+const buildBurnoutRowsHtml = (rows, columns) =>
+  (rows || []).map((row) => `
+    <tr>
+      ${columns.map(([key, getValue]) => `<td>${escapePrintHtml(getValue ? getValue(row) : row[key])}</td>`).join('')}
+    </tr>
+  `).join('');
+
+const buildBurnoutReportHtml = (ticket) => {
+  const burnoutReport = normalizeBurnoutReport(ticket);
+
+  return `
+    <section class="ticket-detail-section burnout-print-section">
+      <h3 class="section-title">Burnout Basic Information</h3>
+      <div class="grid">
+        ${getBurnoutBasicRows(ticket, burnoutReport).map(([label, value]) => `
+          <div class="field">
+            <span>${escapePrintHtml(label)}</span>
+            <strong>${escapePrintHtml(value || 'Not provided')}</strong>
+          </div>
+        `).join('')}
+      </div>
+
+      <h3 class="section-title">Testing Checklist</h3>
+      <table class="detail-table burnout-print-table">
+        <thead>
+          <tr><th>Test Category</th><th>Test Description</th><th>Status</th><th>Remarks</th></tr>
+        </thead>
+        <tbody>
+          ${buildBurnoutRowsHtml(burnoutReport.testingChecklist, [['category'], ['description'], ['status'], ['remarks']])}
+        </tbody>
+      </table>
+
+      <h3 class="section-title">Software Installation Checklist</h3>
+      <table class="detail-table burnout-print-table">
+        <thead>
+          <tr><th>Software</th><th>Description</th><th>Installed</th><th>Remarks</th></tr>
+        </thead>
+        <tbody>
+          ${buildBurnoutRowsHtml(burnoutReport.softwareChecklist, [
+            ['software'],
+            ['description'],
+            ['installed', (row) => (row.installed ? 'Yes' : 'No')],
+            ['remarks'],
+          ])}
+        </tbody>
+      </table>
+
+      <div class="text-grid">
+        <section>
+          <h3 class="section-title">Burnout Monitoring (3-5 Days)</h3>
+          <table class="detail-table burnout-print-table">
+            <thead><tr><th>Monitoring Item</th><th>Result</th><th>Remarks</th></tr></thead>
+            <tbody>${buildBurnoutRowsHtml(burnoutReport.monitoring, [['item'], ['result'], ['remarks']])}</tbody>
+          </table>
+        </section>
+        <section>
+          <h3 class="section-title">Final Evaluation</h3>
+          <table class="detail-table burnout-print-table">
+            <thead><tr><th>Evaluation Item</th><th>Status</th><th>Remarks</th></tr></thead>
+            <tbody>${buildBurnoutRowsHtml(burnoutReport.finalEvaluation, [['item'], ['status'], ['remarks']])}</tbody>
+          </table>
+        </section>
+      </div>
+    </section>
+  `;
+};
+
+const printBurnoutReports = (tickets = []) => {
+  const printableTickets = tickets.filter(isBurnoutTicket);
+
+  if (!printableTickets.length) {
+    window.alert('No Burnout reports are available to print.');
+    return;
+  }
+
+  const body = `
+    <main class="print-page">
+      ${getPrintLetterhead()}
+      <section class="doc-head">
+        <h2>Burnout Report</h2>
+        <div class="meta">${escapePrintHtml(printableTickets.length)} ticket${printableTickets.length === 1 ? '' : 's'}<br />Printed ${escapePrintHtml(new Date().toLocaleString())}</div>
+      </section>
+      ${printableTickets.map(buildBurnoutReportHtml).join('')}
+    </main>
+  `;
+
+  openPrintDocument('Burnout Report', body);
+};
+
+const printBurnoutReport = (ticket) => printBurnoutReports([ticket]);
+
+const buildExcelSection = (title, rows, headers) => `
+  <h3>${escapePrintHtml(title)}</h3>
+  <table>
+    <thead>
+      <tr>${headers.map((header) => `<th>${escapePrintHtml(header)}</th>`).join('')}</tr>
+    </thead>
+    <tbody>
+      ${rows}
+    </tbody>
+  </table>
+`;
+
+const exportBurnoutReportsExcel = (tickets = []) => {
+  if (typeof window === 'undefined') return;
+
+  const exportTickets = tickets.filter(isBurnoutTicket);
+
+  if (!exportTickets.length) {
+    window.alert('No Burnout reports are available to export.');
+    return;
+  }
+
+  const sections = exportTickets.map((ticket) => {
+    const report = normalizeBurnoutReport(ticket);
+    const basicRows = getBurnoutBasicRows(ticket, report)
+      .map(([label, value]) => `<tr><td>${escapePrintHtml(label)}</td><td>${escapePrintHtml(value || 'Not provided')}</td></tr>`)
+      .join('');
+    const testingRows = buildBurnoutRowsHtml(report.testingChecklist, [['category'], ['description'], ['status'], ['remarks']]);
+    const softwareRows = buildBurnoutRowsHtml(report.softwareChecklist, [
+      ['software'],
+      ['description'],
+      ['installed', (row) => (row.installed ? 'Yes' : 'No')],
+      ['remarks'],
+    ]);
+    const monitoringRows = buildBurnoutRowsHtml(report.monitoring, [['item'], ['result'], ['remarks']]);
+    const evaluationRows = buildBurnoutRowsHtml(report.finalEvaluation, [['item'], ['status'], ['remarks']]);
+
+    return `
+      <h2>${escapePrintHtml(getTicketDisplayCode(ticket))}</h2>
+      ${buildExcelSection('Burnout Basic Information', basicRows, ['Field', 'Value'])}
+      ${buildExcelSection('Testing Checklist', testingRows, ['Test Category', 'Test Description', 'Status', 'Remarks'])}
+      ${buildExcelSection('Software Installation Checklist', softwareRows, ['Software', 'Description', 'Installed', 'Remarks'])}
+      ${buildExcelSection('Burnout Monitoring (3-5 Days)', monitoringRows, ['Monitoring Item', 'Result', 'Remarks'])}
+      ${buildExcelSection('Final Evaluation', evaluationRows, ['Evaluation Item', 'Status', 'Remarks'])}
+      <br />
+    `;
+  }).join('');
+
+  const workbook = `\uFEFF<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+    <head>
+      <meta charset="utf-8" />
+      <!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Burnout Report</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->
+      <style>
+        body { font-family: Arial, sans-serif; }
+        h1, h2, h3 { color: #111827; }
+        table { border-collapse: collapse; margin-bottom: 16px; width: 100%; }
+        th { background: #ef4444; color: #ffffff; font-weight: 700; }
+        th, td { border: 1px solid #cbd5e1; padding: 8px; mso-number-format: "\\@"; vertical-align: top; }
+      </style>
+    </head>
+    <body>
+      <h1>MEMPCO Burnout Report</h1>
+      <p>Exported ${escapePrintHtml(new Date().toLocaleString())}</p>
+      ${sections}
+    </body>
+  </html>`;
+
+  const fileToken = exportTickets.length === 1
+    ? getSafeFilePart(getTicketDisplayCode(exportTickets[0]), 'burnout-report')
+    : `filtered-${new Date().toISOString().slice(0, 10)}`;
+  const blob = new Blob([workbook], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+
+  downloadFile(blob, `burnout-report-${fileToken}.xls`);
+};
+
+const exportBurnoutReportExcel = (ticket) => exportBurnoutReportsExcel([ticket]);
+
 const getStatusRank = (status) => {
   const ranks = {
     Critical: 1,
     Escalated: 2,
     Created: 3,
+    Submitted: 3,
+    'For Inspection': 4,
     Modified: 4,
     Pending: 5,
     'In Progress': 6,
-    Resolved: 7,
-    Canceled: 8,
+    'Under Burnout': 6,
+    'Passed Burnout': 7,
+    'Ready for Deployment': 8,
+    Deployed: 9,
+    'Failed Burnout': 10,
+    Damaged: 11,
+    'For Repair': 12,
+    'For Replacement': 13,
+    Resolved: 14,
+    Canceled: 15,
+    Cancelled: 15,
   };
 
   return ranks[status] || 20;
@@ -1452,12 +2034,17 @@ const getSlaRank = (sla) => {
 
 const getTicketSearchText = (ticket) =>
   [
+    ticket.ticketCode,
     ticket.id,
     ticket.requester,
     ticket.ownerEmail,
     ticket.employeeId,
     ticket.branch,
     ticket.department,
+    ticket.custodian,
+    ticket.brand,
+    ticket.deviceType,
+    ticket.serialNumber,
     ticket.supportCategory,
     ticket.concernType,
     ticket.deviceName,
@@ -1474,6 +2061,185 @@ const getTicketSearchText = (ticket) =>
     .filter(Boolean)
     .join(' ')
     .toLowerCase();
+
+const getTicketDisplayCode = (ticket = {}) => ticket.ticketCode || ticket.id || '';
+
+const createBurnoutRowId = (prefix = 'burnout-row') =>
+  `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+const toDateInputValue = (value) => {
+  if (!value) return '';
+
+  const parsed = new Date(value);
+
+  if (Number.isNaN(parsed.getTime())) return '';
+
+  const year = parsed.getFullYear();
+  const month = String(parsed.getMonth() + 1).padStart(2, '0');
+  const day = String(parsed.getDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
+};
+
+const addDaysToDateInput = (value, days) => {
+  const parsed = value ? new Date(`${value}T00:00:00`) : new Date();
+
+  if (Number.isNaN(parsed.getTime())) return '';
+
+  parsed.setDate(parsed.getDate() + days);
+
+  return toDateInputValue(parsed);
+};
+
+const parseTicketTime = (value) => {
+  if (!value) return 0;
+
+  const parsed = new Date(value).getTime();
+
+  return Number.isNaN(parsed) ? 0 : parsed;
+};
+
+const isBurnoutTicket = (ticket = {}) =>
+  String(ticket.supportCategory || '').trim().toLowerCase() === 'burnout' ||
+  String(ticket.concernType || '').trim().toLowerCase().includes('burnout');
+
+const getBurnoutStartTime = (ticket = {}) => {
+  const workStartedTime = parseTicketTime(ticket.workStartedAt || ticket.work_started_at);
+
+  if (workStartedTime) return workStartedTime;
+
+  const reportStartDate = ticket.burnoutReport?.startDate;
+  const reportStartTime = reportStartDate ? parseTicketTime(`${reportStartDate}T00:00:00`) : 0;
+
+  return reportStartTime;
+};
+
+const getBurnoutElapsedDays = (ticket = {}, endValue = Date.now()) => {
+  const startedAt = getBurnoutStartTime(ticket);
+  const endedAt = typeof endValue === 'number' ? endValue : parseTicketTime(endValue);
+
+  if (!startedAt || !endedAt || endedAt < startedAt) return 0;
+
+  return (endedAt - startedAt) / DAY_IN_MS;
+};
+
+const hasBurnoutReachedThreeDayMark = (ticket = {}, nowValue = Date.now()) =>
+  isBurnoutTicket(ticket) &&
+  isUnresolved(ticket.status) &&
+  getBurnoutElapsedDays(ticket, nowValue) >= BURNOUT_STANDARD_MIN_DAYS;
+
+const isBurnoutBelowStandardProcedure = (ticket = {}, endValue = Date.now()) =>
+  isBurnoutTicket(ticket) &&
+  getBurnoutStartTime(ticket) > 0 &&
+  getBurnoutElapsedDays(ticket, endValue) < BURNOUT_STANDARD_MIN_DAYS;
+
+const normalizeBurnoutRows = (rows, defaults, mapDefault) => {
+  const sourceRows = Array.isArray(rows) && rows.length ? rows : defaults.map(mapDefault);
+
+  return sourceRows.map((row, index) => ({
+    ...mapDefault(defaults[index] || []),
+    ...row,
+    id: row?.id || defaults[index]?.[0] || createBurnoutRowId('burnout'),
+  }));
+};
+
+const buildDefaultBurnoutReport = (ticket = {}, currentUser = {}) => {
+  const requestedDate = toDateInputValue(ticket.createdAt || ticket.date || ticket.lastEmployeeUpdate);
+  const startDate = toDateInputValue(ticket.workStartedAt || new Date());
+
+  return {
+    version: 1,
+    performedBy: currentUser?.name || ticket.technician || '',
+    requestedDate,
+    startDate,
+    endDate: startDate ? addDaysToDateInput(startDate, 5) : '',
+    testingChecklist: BURNOUT_TEST_ITEMS.map(([id, category, description, remarks]) => ({
+      id,
+      category,
+      description,
+      status: 'Pass',
+      remarks,
+    })),
+    softwareChecklist: BURNOUT_SOFTWARE_ITEMS.map(([id, software, description, remarks]) => ({
+      id,
+      software,
+      description,
+      installed: true,
+      remarks,
+    })),
+    monitoring: BURNOUT_MONITORING_ITEMS.map(([id, item, result, remarks]) => ({
+      id,
+      item,
+      result,
+      remarks,
+    })),
+    finalEvaluation: BURNOUT_EVALUATION_ITEMS.map(([id, item, status, remarks]) => ({
+      id,
+      item,
+      status,
+      remarks,
+    })),
+  };
+};
+
+const normalizeBurnoutReport = (ticket = {}, currentUser = {}) => {
+  const defaultReport = buildDefaultBurnoutReport(ticket, currentUser);
+  const savedReport = ticket.burnoutReport && typeof ticket.burnoutReport === 'object'
+    ? ticket.burnoutReport
+    : {};
+  const startDate = savedReport.startDate || defaultReport.startDate;
+
+  return {
+    ...defaultReport,
+    ...savedReport,
+    performedBy: savedReport.performedBy || defaultReport.performedBy,
+    requestedDate: savedReport.requestedDate || defaultReport.requestedDate,
+    startDate,
+    endDate: savedReport.endDate || (startDate ? addDaysToDateInput(startDate, 5) : defaultReport.endDate),
+    testingChecklist: normalizeBurnoutRows(
+      savedReport.testingChecklist,
+      BURNOUT_TEST_ITEMS,
+      ([id, category, description, remarks]) => ({
+        id,
+        category,
+        description,
+        status: 'Pass',
+        remarks,
+      })
+    ),
+    softwareChecklist: normalizeBurnoutRows(
+      savedReport.softwareChecklist,
+      BURNOUT_SOFTWARE_ITEMS,
+      ([id, software, description, remarks]) => ({
+        id,
+        software,
+        description,
+        installed: true,
+        remarks,
+      })
+    ),
+    monitoring: normalizeBurnoutRows(
+      savedReport.monitoring,
+      BURNOUT_MONITORING_ITEMS,
+      ([id, item, result, remarks]) => ({
+        id,
+        item,
+        result,
+        remarks,
+      })
+    ),
+    finalEvaluation: normalizeBurnoutRows(
+      savedReport.finalEvaluation,
+      BURNOUT_EVALUATION_ITEMS,
+      ([id, item, status, remarks]) => ({
+        id,
+        item,
+        status,
+        remarks,
+      })
+    ),
+  };
+};
 
 const buildStatusHistoryEntry = (status, timestamp, user) => {
   const normalizedStatus = normalizeTicketStatus(status);
@@ -1498,7 +2264,7 @@ const buildStatusHistoryEntry = (status, timestamp, user) => {
 
 const getTicketWorkStartedAt = (ticket) =>
   ticket?.workStartedAt ||
-  (normalizeTicketStatus(ticket?.status) === 'in progress'
+  (['in progress', 'under burnout'].includes(normalizeTicketStatus(ticket?.status))
     ? ticket?.adminUpdatedAt || ticket?.lastUpdated || ''
     : '');
 
@@ -1539,6 +2305,11 @@ const formatElapsedTime = (startedAt, endedAt, now = Date.now()) => {
 };
 
 const getActionButtonLabel = (ticket) => {
+  if (isBurnoutTicket(ticket)) {
+    if (isBurnoutClosedStatus(ticket.status)) return 'View Burnout';
+    return getTicketWorkStartedAt(ticket) ? 'Update Burnout' : 'Assess Unit';
+  }
+
   if (isTicketResolved(ticket)) return 'View Ticket';
 
   return getTicketWorkStartedAt(ticket) ? 'Update Ticket' : 'Take Action';
@@ -1552,6 +2323,8 @@ function Sidebar({ active, onNav, onLogout, open, canCreateUsers, canAccessDepar
   const items = [
     { key: 'dashboard', label: 'Dashboard', Icon: Icon.Dashboard },
     { key: 'tickets', label: 'All Tickets', Icon: Icon.Tickets },
+    { key: 'support-tickets', label: 'Support Tickets', Icon: Icon.Tickets },
+    { key: 'burnout-tickets', label: 'Burnout Tickets', Icon: Icon.Burnout },
     { key: 'branches', label: 'Branch Monitor', Icon: Icon.Branches },
     { key: 'reports', label: 'Reports', Icon: Icon.Reports },
     { key: 'users', label: 'Users', Icon: Icon.Users },
@@ -1637,6 +2410,7 @@ function TicketBadges({ ticket }) {
     <div className="ticket-badges admin-inline-badges">
       <span className={`status ${slugify(ticket.status)}`}>{ticket.status}</span>
       <span className={`priority ${slugify(ticket.sla)}`}>{ticket.sla}</span>
+      {hasBurnoutReachedThreeDayMark(ticket) && <span className="status burnout-due">3-Day Mark</span>}
       {(ticket.saarRequired || ticket.saarAttachment?.name) && <span className="status saar">SAAR</span>}
     </div>
   );
@@ -1701,6 +2475,293 @@ function PhotoAttachmentGallery({ photos = [], emptyText = 'No photo attachments
   );
 }
 
+function BurnoutReportEditor({ ticket, report, onChange, readOnly }) {
+  const updateReportField = (field, value) => {
+    const nextReport = { ...report, [field]: value };
+
+    if (field === 'startDate' && (!report.endDate || report.endDate < value)) {
+      nextReport.endDate = addDaysToDateInput(value, 5);
+    }
+
+    onChange(nextReport);
+  };
+
+  const updateReportList = (listKey, rowId, updates) => {
+    onChange({
+      ...report,
+      [listKey]: (report[listKey] || []).map((row) =>
+        row.id === rowId ? { ...row, ...updates } : row
+      ),
+    });
+  };
+
+  const addSoftwareRow = () => {
+    onChange({
+      ...report,
+      softwareChecklist: [
+        ...(report.softwareChecklist || []),
+        {
+          id: createBurnoutRowId('software'),
+          software: '',
+          description: '',
+          installed: false,
+          remarks: '',
+        },
+      ],
+    });
+  };
+
+  const removeSoftwareRow = (rowId) => {
+    onChange({
+      ...report,
+      softwareChecklist: (report.softwareChecklist || []).filter((row) => row.id !== rowId),
+    });
+  };
+
+  return (
+    <section className="burnout-report-panel">
+      <div className="burnout-report-head">
+        <div>
+          <span className="section-kicker">Burnout Process</span>
+          <h4>Burnout Checklist and 3-5 Day Monitoring</h4>
+        </div>
+        <span className="helpdesk-badge">Admin editable</span>
+      </div>
+
+      <div className="burnout-basic-grid">
+        <div className="ticket-meta-cell">
+          <span>Branch</span>
+          <p>{ticket.branch || 'Not provided'}</p>
+        </div>
+        <div className="ticket-meta-cell">
+          <span>Department</span>
+          <p>{ticket.department || 'Not provided'}</p>
+        </div>
+        <div className="ticket-meta-cell">
+          <span>Brand & Model</span>
+          <p>{ticket.brand || 'Not provided'}</p>
+        </div>
+        <div className="ticket-meta-cell">
+          <span>Serial Number</span>
+          <p>{ticket.serialNumber || 'Not provided'}</p>
+        </div>
+        <div className="ticket-meta-cell">
+          <span>Model / Device</span>
+          <p>{ticket.deviceName || ticket.deviceType || 'Not provided'}</p>
+        </div>
+        <div className="ticket-meta-cell">
+          <span>User / Custodian</span>
+          <p>{ticket.custodian || ticket.requester || 'Not provided'}</p>
+        </div>
+        <div className="ticket-meta-cell">
+          <span>Request Date</span>
+          <p>{report.requestedDate || ticket.createdAt || 'Not provided'}</p>
+        </div>
+        <div className="ticket-form-group">
+          <label>Performed By</label>
+          <input
+            className="ticket-field ticket-input"
+            value={report.performedBy || ''}
+            onChange={(e) => updateReportField('performedBy', e.target.value)}
+            readOnly={readOnly}
+            placeholder="ICT staff name"
+          />
+        </div>
+        <div className="ticket-form-group">
+          <label>Start Date</label>
+          <input
+            className="ticket-field ticket-input"
+            type="date"
+            value={report.startDate || ''}
+            onChange={(e) => updateReportField('startDate', e.target.value)}
+            readOnly={readOnly}
+          />
+        </div>
+        <div className="ticket-form-group">
+          <label>End Date</label>
+          <input
+            className="ticket-field ticket-input"
+            type="date"
+            value={report.endDate || ''}
+            onChange={(e) => updateReportField('endDate', e.target.value)}
+            readOnly={readOnly}
+          />
+        </div>
+      </div>
+
+      <div className="burnout-table-block">
+        <h5>Testing Checklist</h5>
+        <div className="burnout-table-scroll">
+          <table className="burnout-check-table">
+            <thead>
+              <tr>
+                <th>Test Category</th>
+                <th>Test Description</th>
+                <th>Status</th>
+                <th>Remarks</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(report.testingChecklist || []).map((item) => (
+                <tr key={item.id}>
+                  <td>{item.category}</td>
+                  <td>{item.description}</td>
+                  <td>
+                    <select
+                      className="ticket-field ticket-select"
+                      value={item.status || 'Pass'}
+                      onChange={(e) => updateReportList('testingChecklist', item.id, { status: e.target.value })}
+                      disabled={readOnly}
+                    >
+                      <option value="Pass">Pass</option>
+                      <option value="Fail">Fail</option>
+                      <option value="N/A">N/A</option>
+                    </select>
+                  </td>
+                  <td>
+                    <input
+                      className="ticket-field ticket-input"
+                      value={item.remarks || ''}
+                      onChange={(e) => updateReportList('testingChecklist', item.id, { remarks: e.target.value })}
+                      readOnly={readOnly}
+                    />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className="burnout-table-block">
+        <div className="burnout-table-title-row">
+          <h5>Software Installation Checklist</h5>
+          {!readOnly && (
+            <button type="button" className="modal-btn print compact" onClick={addSoftwareRow}>
+              <MonoIcon icon={Plus} />
+              Add Software
+            </button>
+          )}
+        </div>
+        <div className="burnout-table-scroll">
+          <table className="burnout-check-table software-table">
+            <thead>
+              <tr>
+                <th>Software</th>
+                <th>Description</th>
+                <th>Installed</th>
+                <th>Remarks</th>
+                {!readOnly && <th>Action</th>}
+              </tr>
+            </thead>
+            <tbody>
+              {(report.softwareChecklist || []).map((item) => (
+                <tr key={item.id}>
+                  <td>
+                    <input
+                      className="ticket-field ticket-input"
+                      value={item.software || ''}
+                      onChange={(e) => updateReportList('softwareChecklist', item.id, { software: e.target.value })}
+                      readOnly={readOnly}
+                      placeholder="Software name"
+                    />
+                  </td>
+                  <td>
+                    <textarea
+                      className="ticket-field ticket-textarea"
+                      value={item.description || ''}
+                      onChange={(e) => updateReportList('softwareChecklist', item.id, { description: e.target.value })}
+                      readOnly={readOnly}
+                      placeholder="Description"
+                    />
+                  </td>
+                  <td>
+                    <label className="burnout-check-toggle">
+                      <input
+                        type="checkbox"
+                        checked={Boolean(item.installed)}
+                        onChange={(e) => updateReportList('softwareChecklist', item.id, { installed: e.target.checked })}
+                        disabled={readOnly}
+                      />
+                      <span>{item.installed ? 'Yes' : 'No'}</span>
+                    </label>
+                  </td>
+                  <td>
+                    <input
+                      className="ticket-field ticket-input"
+                      value={item.remarks || ''}
+                      onChange={(e) => updateReportList('softwareChecklist', item.id, { remarks: e.target.value })}
+                      readOnly={readOnly}
+                      placeholder="Remarks"
+                    />
+                  </td>
+                  {!readOnly && (
+                    <td>
+                      <button
+                        type="button"
+                        className="burnout-row-icon-btn"
+                        onClick={() => removeSoftwareRow(item.id)}
+                        aria-label={`Remove ${item.software || 'software row'}`}
+                        title="Remove software"
+                      >
+                        <MonoIcon icon={Trash2} />
+                      </button>
+                    </td>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className="burnout-compact-grid">
+        <div className="burnout-table-block">
+          <h5>Burnout Monitoring (3-5 Days)</h5>
+          {(report.monitoring || []).map((item) => (
+            <div className="burnout-compact-row" key={item.id}>
+              <strong>{item.item}</strong>
+              <input
+                className="ticket-field ticket-input"
+                value={item.result || ''}
+                onChange={(e) => updateReportList('monitoring', item.id, { result: e.target.value })}
+                readOnly={readOnly}
+              />
+              <input
+                className="ticket-field ticket-input"
+                value={item.remarks || ''}
+                onChange={(e) => updateReportList('monitoring', item.id, { remarks: e.target.value })}
+                readOnly={readOnly}
+              />
+            </div>
+          ))}
+        </div>
+
+        <div className="burnout-table-block">
+          <h5>Final Evaluation</h5>
+          {(report.finalEvaluation || []).map((item) => (
+            <div className="burnout-compact-row" key={item.id}>
+              <strong>{item.item}</strong>
+              <input
+                className="ticket-field ticket-input"
+                value={item.status || ''}
+                onChange={(e) => updateReportList('finalEvaluation', item.id, { status: e.target.value })}
+                readOnly={readOnly}
+              />
+              <input
+                className="ticket-field ticket-input"
+                value={item.remarks || ''}
+                onChange={(e) => updateReportList('finalEvaluation', item.id, { remarks: e.target.value })}
+                readOnly={readOnly}
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function TicketConversationPanel({
   ticket,
   currentUser,
@@ -1756,7 +2817,7 @@ function TicketConversationPanel({
             {ticket?.id ? (
               <>
                 <span className="ticket-chat-title-label">Ticket ID:</span>
-                <span className="ticket-chat-title-id">{ticket.id}</span>
+                <span className="ticket-chat-title-id">{getTicketDisplayCode(ticket)}</span>
               </>
             ) : (
               'Admin and employee communication'
@@ -1768,7 +2829,7 @@ function TicketConversationPanel({
         </span>
         {onClose && (
           <button type="button" className="ticket-chat-close" onClick={onClose} aria-label="Minimize conversation">
-            <MonoIcon icon={X} />
+            &times;
           </button>
         )}
       </div>
@@ -1853,10 +2914,13 @@ function TicketWorkTimer({ ticket, now, compact = false }) {
   if (!startedAt) return null;
 
   const isRunning = isUnresolved(ticket.status) && !endedAt;
+  const timerLabel = isBurnoutTicket(ticket)
+    ? isRunning ? 'Burnout timer' : 'Burnout completed'
+    : isRunning ? 'Work timer' : 'Work completed';
 
   return (
     <div className={`ticket-work-timer${compact ? ' compact' : ''}${isRunning ? ' running' : ' ended'}`}>
-      <span><MonoIcon icon={Clock3} />{isRunning ? 'Work timer' : 'Work completed'}</span>
+      <span><MonoIcon icon={Clock3} />{timerLabel}</span>
       <strong>{formatElapsedTime(startedAt, endedAt, now)}</strong>
       {!compact && (
         <p>
@@ -1910,8 +2974,11 @@ function TicketTable({
   onDeleteTicket,
   canDelete = false,
   compact = false,
+  emptyTitle = 'No tickets found',
+  emptyDescription = 'New employee requests will appear here once submitted.',
   now,
   pagination = null,
+  renderExtraActions = null,
 }) {
   const visibleTickets = pagination ? pagination.tickets : tickets;
 
@@ -1920,8 +2987,8 @@ function TicketTable({
       {tickets.length === 0 && (
         <div className="empty-state">
           <div className="empty-icon"><MonoIcon icon={FileText} /></div>
-          <h4>No tickets found</h4>
-          <p>New employee requests will appear here once submitted.</p>
+          <h4>{emptyTitle}</h4>
+          <p>{emptyDescription}</p>
         </div>
       )}
 
@@ -1932,7 +2999,7 @@ function TicketTable({
               <article key={ticket.id} className="admin-ticket-card">
                 <div className="admin-ticket-card-head">
                   <div className="admin-ticket-title">
-                    <span className="ticket-id">{ticket.id}</span>
+                    <span className="ticket-id">{getTicketDisplayCode(ticket)}</span>
                     <h4>{ticket.concernType || 'Unspecified concern'}</h4>
                     <p>{ticket.createdAt || ticket.date || 'Submitted'}</p>
                   </div>
@@ -1983,12 +3050,14 @@ function TicketTable({
                     {getActionButtonLabel(ticket)}
                   </button>
 
+                  {renderExtraActions?.(ticket)}
+
                   {canDelete && (
                     <button
                       type="button"
                       className="ticket-action-btn danger"
                       onClick={() => onDeleteTicket(ticket)}
-                      aria-label={`Delete ticket ${ticket.id}`}
+                      aria-label={`Delete ticket ${getTicketDisplayCode(ticket)}`}
                     >
                       <MonoIcon icon={Trash2} />
                       Delete
@@ -2016,7 +3085,6 @@ function TicketTable({
 
 function BreakdownItems({
   items,
-  total,
   selectable = false,
   selectedKey = '',
   onSelect,
@@ -2031,7 +3099,6 @@ function BreakdownItems({
       ) : (
         items.map((item) => {
           const itemKey = item.key || item.name;
-          const percent = total ? Math.round((item.count / total) * 100) : 0;
           const isSelected = selectable && itemKey === selectedKey;
           const Tag = selectable ? 'button' : 'div';
           const countText = item.countLabel || `${item.count} ${countLabel}${item.count === 1 ? '' : 's'}`;
@@ -2048,10 +3115,6 @@ function BreakdownItems({
                 <strong>{item.name}</strong>
                 <span>{countText}</span>
               </div>
-
-              <div className="admin-progress-track" aria-hidden="true">
-                <span className="admin-progress-fill" style={{ width: `${percent}%` }} />
-              </div>
             </Tag>
           );
         })
@@ -2060,7 +3123,7 @@ function BreakdownItems({
   );
 }
 
-function BreakdownList({ title, kicker, items, total, className = '' }) {
+function BreakdownList({ title, kicker, items, className = '' }) {
   return (
     <section className={`panel-card glass equal-panel ${className}`.trim()}>
       <div className="section-head">
@@ -2070,7 +3133,7 @@ function BreakdownList({ title, kicker, items, total, className = '' }) {
         </div>
       </div>
 
-      <BreakdownItems items={items} total={total} />
+      <BreakdownItems items={items} />
     </section>
   );
 }
@@ -2192,7 +3255,7 @@ function ReportCalendar({
 
       <aside className="panel-card glass report-calendar-insights">
         <span className="section-kicker">Month Pulse</span>
-        <h3>{calendar.monthTotal} tickets submitted</h3>
+        <h3>{calendar.monthTotal} tickets in report</h3>
 
         <div className="report-insight-list">
           <div className="report-insight-item primary">
@@ -2203,7 +3266,7 @@ function ReportCalendar({
           <div className="report-insight-item">
             <span>Active Days</span>
             <strong>{calendar.activeDays}</strong>
-            <em>days with submissions</em>
+            <em>days with report tickets</em>
           </div>
           <div className="report-insight-item">
             <span>Daily Average</span>
@@ -2227,14 +3290,14 @@ function ReportCalendar({
             selectedDateTickets.length > 0 ? (
               <>
                 <div className="report-selected-ticket-list">
-                  {selectedDatePagedTickets.map((ticket) => (
+                  {selectedDatePagedTickets.map((ticket, index) => (
                     <button
                       type="button"
-                      key={ticket.id}
+                      key={`${ticket.id}-${ticket.reportEventType || 'event'}-${ticket.reportEventTimestamp || index}-${index}`}
                       className="report-selected-ticket"
                       onClick={() => onOpenTicket(ticket)}
                     >
-                      <span>{ticket.id}</span>
+                      <span>{getTicketDisplayCode(ticket)}</span>
                       <strong>{ticket.concernType || ticket.supportCategory || 'Ticket concern'}</strong>
                       <em>
                         {ticket.reportEventLabel || ticket.status} / {ticket.sla}
@@ -2264,10 +3327,10 @@ function ReportCalendar({
                 </div>
               </>
             ) : (
-              <p className="report-selected-empty">No tickets were submitted on this date.</p>
+              <p className="report-selected-empty">No report tickets were found on this date.</p>
             )
           ) : (
-            <p className="report-selected-empty">Choose a calendar date to backtrack submitted tickets.</p>
+            <p className="report-selected-empty">Choose a calendar date to backtrack report tickets.</p>
           )}
         </div>
       </aside>
@@ -2375,7 +3438,7 @@ function DashboardView({ tickets, summary, categorySummary, onGoTo, onOpenTicket
                 urgentTickets.map((ticket) => (
                   <article key={ticket.id} className="admin-watch-card">
                     <div>
-                      <span className="ticket-id">{ticket.id}</span>
+                      <span className="ticket-id">{getTicketDisplayCode(ticket)}</span>
                       <h4>{ticket.concernType || 'Unspecified concern'}</h4>
                       <p>{ticket.branch || 'No branch'} · {ticket.requester || ticket.ownerEmail || 'Employee'}</p>
                     </div>
@@ -2410,7 +3473,7 @@ function DashboardView({ tickets, summary, categorySummary, onGoTo, onOpenTicket
                 movedDateTickets.map((ticket) => (
                   <article key={ticket.id} className="admin-watch-card">
                     <div>
-                      <span className="ticket-id">{ticket.id}</span>
+                      <span className="ticket-id">{getTicketDisplayCode(ticket)}</span>
                       <h4>{ticket.concernType || 'Unspecified concern'}</h4>
                       <p>{ticket.branch || 'No branch'} · {ticket.requester || ticket.ownerEmail || 'Employee'}</p>
                       <p>Moved / Updated: {ticket.adminUpdatedAt || ticket.lastUpdated || 'No moved date recorded'}</p>
@@ -2437,7 +3500,17 @@ function DashboardView({ tickets, summary, categorySummary, onGoTo, onOpenTicket
    TICKETS VIEW
 ========================= */
 
-function TicketsView({ tickets, filteredTickets, filters, setFilters, onOpenTicket, onDeleteTicket, canDeleteTickets, now }) {
+function TicketsView({
+  tickets,
+  filteredTickets,
+  filters,
+  setFilters,
+  onOpenTicket,
+  onDeleteTicket,
+  canDeleteTickets,
+  now,
+  scope = 'all',
+}) {
   const pageSize = 3;
   const [ticketPage, setTicketPage] = useState(1);
   const clearFilters = () => setFilters({ search: '', status: 'All', branch: 'All', category: 'All', sla: 'All' });
@@ -2445,10 +3518,50 @@ function TicketsView({ tickets, filteredTickets, filters, setFilters, onOpenTick
   const currentPage = Math.min(ticketPage, totalPages);
   const pagedTickets = filteredTickets.slice((currentPage - 1) * pageSize, currentPage * pageSize);
   const goToTicketPage = (page) => setTicketPage(Math.min(Math.max(page, 1), totalPages));
+  const isSupportScope = scope === 'support';
+  const ticketCopy = isSupportScope
+    ? {
+        kicker: 'Support Tickets',
+        title: 'Regular ICT support queue.',
+        body:
+          'Review software, hardware, network, account, and other ICT support concerns separately from Burnout deployment checks.',
+        totalLabel: 'Support',
+        emptyTitle: 'No support tickets found',
+        emptyDescription: 'Regular ICT support requests will appear here once submitted.',
+        searchPlaceholder: 'Search support ID, requester, branch, category, concern, device, status...',
+      }
+    : {
+        kicker: 'All Tickets',
+        title: 'Admin ticket queue and action center.',
+        body:
+          'Review employee concerns, update status, assign technicians, add remarks, and record final resolution.',
+        totalLabel: 'Total',
+        emptyTitle: 'No tickets found',
+        emptyDescription: 'New employee requests will appear here once submitted.',
+        searchPlaceholder: 'Search ID, requester, branch, support, concern, device, status...',
+      };
+  const categoryOptions = isSupportScope
+    ? SUPPORT_CATEGORIES.filter((category) => category !== 'Burnout')
+    : SUPPORT_CATEGORIES;
+  const statusFilterOptions = isSupportScope
+    ? TICKET_STATUSES
+    : Array.from(new Set([...TICKET_STATUSES, ...BURNOUT_TICKET_STATUSES]));
+
+  useEffect(() => {
+    if (isSupportScope && filters.category === 'Burnout') {
+      setFilters((prev) => ({ ...prev, category: 'All' }));
+    }
+  }, [isSupportScope, filters.category, setFilters]);
+
+  useEffect(() => {
+    if (isSupportScope && BURNOUT_TICKET_STATUSES.includes(filters.status)) {
+      setFilters((prev) => ({ ...prev, status: 'All' }));
+    }
+  }, [isSupportScope, filters.status, setFilters]);
 
   useEffect(() => {
     setTicketPage(1);
-  }, [filters.search, filters.status, filters.branch, filters.category, filters.sla]);
+  }, [filters.search, filters.status, filters.branch, filters.category, filters.sla, scope]);
 
   useEffect(() => {
     if (ticketPage > totalPages) {
@@ -2460,16 +3573,13 @@ function TicketsView({ tickets, filteredTickets, filters, setFilters, onOpenTick
     <div className="helpdesk-view">
       <section className="panel-card glass helpdesk-banner">
         <div className="helpdesk-banner-copy">
-          <span className="section-kicker">All Tickets</span>
-          <h2>Admin ticket queue and action center.</h2>
-          <p>
-            Review employee concerns, update status, assign technicians, add remarks,
-            and record final resolution.
-          </p>
+          <span className="section-kicker">{ticketCopy.kicker}</span>
+          <h2>{ticketCopy.title}</h2>
+          <p>{ticketCopy.body}</p>
         </div>
 
         <div className="helpdesk-banner-actions">
-          <span className="helpdesk-badge">{tickets.length} Total</span>
+          <span className="helpdesk-badge">{tickets.length} {ticketCopy.totalLabel}</span>
           <span className="helpdesk-badge">{filteredTickets.length} Showing</span>
         </div>
       </section>
@@ -2487,7 +3597,7 @@ function TicketsView({ tickets, filteredTickets, filters, setFilters, onOpenTick
               type="search"
               value={filters.search}
               onChange={(e) => setFilters((prev) => ({ ...prev, search: e.target.value }))}
-              placeholder="Search ID, requester, branch, support, concern, device, status..."
+              placeholder={ticketCopy.searchPlaceholder}
             />
           </div>
 
@@ -2499,7 +3609,7 @@ function TicketsView({ tickets, filteredTickets, filters, setFilters, onOpenTick
               onChange={(e) => setFilters((prev) => ({ ...prev, status: e.target.value }))}
             >
               <option value="All">All Status</option>
-              {TICKET_STATUSES.map((status) => (
+              {statusFilterOptions.map((status) => (
                 <option key={status} value={status}>{status}</option>
               ))}
             </select>
@@ -2527,7 +3637,7 @@ function TicketsView({ tickets, filteredTickets, filters, setFilters, onOpenTick
               onChange={(e) => setFilters((prev) => ({ ...prev, category: e.target.value }))}
             >
               <option value="All">All Categories</option>
-              {SUPPORT_CATEGORIES.map((category) => (
+              {categoryOptions.map((category) => (
                 <option key={category} value={category}>{category}</option>
               ))}
             </select>
@@ -2574,31 +3684,286 @@ function TicketsView({ tickets, filteredTickets, filters, setFilters, onOpenTick
 }
 
 /* =========================
+   BURNOUT REPORT VIEW
+========================= */
+
+function BurnoutReportView({ tickets, onOpenTicket, onDeleteTicket, canDeleteTickets, now }) {
+  const pageSize = 4;
+  const burnoutMonthInputRef = useRef(null);
+  const [ticketPage, setTicketPage] = useState(1);
+  const [filters, setFilters] = useState({
+    search: '',
+    status: 'All',
+    branch: 'All',
+  });
+  const burnoutTickets = useMemo(() => sortTickets(tickets.filter(isBurnoutTicket)), [tickets]);
+  const [burnoutMonth, setBurnoutMonth] = useState(() => getTicketCalendarMonth(tickets.filter(isBurnoutTicket)));
+  const filteredTickets = useMemo(() => {
+    const search = filters.search.toLowerCase().trim();
+
+    return burnoutTickets.filter((ticket) => {
+      const matchesSearch = !search || getTicketSearchText(ticket).includes(search);
+      const matchesStatus = filters.status === 'All' || ticket.status === filters.status;
+      const matchesBranch = filters.branch === 'All' || ticket.branch === filters.branch;
+
+      return matchesSearch && matchesStatus && matchesBranch;
+    });
+  }, [burnoutTickets, filters]);
+  const totalPages = Math.max(1, Math.ceil(filteredTickets.length / pageSize));
+  const currentPage = Math.min(ticketPage, totalPages);
+  const pagedTickets = filteredTickets.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const monthlyBurnoutData = useMemo(
+    () => getMonthlyBurnoutSummaryData(burnoutTickets, burnoutMonth),
+    [burnoutTickets, burnoutMonth]
+  );
+  const activeCount = burnoutTickets.filter((ticket) => isUnresolved(ticket.status)).length;
+  const monitoringCount = burnoutTickets.filter((ticket) => isBurnoutMonitoringStatus(ticket.status)).length;
+  const completedCount = burnoutTickets.filter((ticket) => isBurnoutClosedStatus(ticket.status)).length;
+  const softwareCompleteCount = burnoutTickets.filter((ticket) => {
+    const softwareChecklist = Array.isArray(ticket.burnoutReport?.softwareChecklist)
+      ? ticket.burnoutReport.softwareChecklist
+      : [];
+
+    return softwareChecklist.length > 0 && softwareChecklist.every((item) => item.installed);
+  }).length;
+  const clearFilters = () => setFilters({ search: '', status: 'All', branch: 'All' });
+  const goToTicketPage = (page) => setTicketPage(Math.min(Math.max(page, 1), totalPages));
+  const openBurnoutMonthPicker = () => {
+    const monthInput = burnoutMonthInputRef.current;
+
+    if (!monthInput) return;
+
+    try {
+      if (typeof monthInput.showPicker === 'function') {
+        monthInput.showPicker();
+        return;
+      }
+    } catch {
+      // Fall back to focusing the native input if the browser blocks showPicker.
+    }
+
+    monthInput.focus();
+    monthInput.click();
+  };
+
+  useEffect(() => {
+    setTicketPage(1);
+  }, [filters.search, filters.status, filters.branch]);
+
+  useEffect(() => {
+    if (ticketPage > totalPages) {
+      setTicketPage(totalPages);
+    }
+  }, [ticketPage, totalPages]);
+
+  return (
+    <div className="helpdesk-view burnout-report-view">
+      <section className="panel-card glass helpdesk-banner">
+        <div className="helpdesk-banner-copy">
+          <span className="section-kicker">Burnout Tickets</span>
+          <h2>Dedicated Burnout queue and 3-5 day monitoring.</h2>
+          <p>
+            Track unit condition checks separately from regular ICT support tickets, then open each request to update
+            the checklist, software installation, monitoring, and final evaluation before workstation deployment.
+          </p>
+        </div>
+
+        <div className="helpdesk-banner-actions">
+          <div className="burnout-report-badges" aria-label="Burnout report counts">
+            <span className="helpdesk-badge">{burnoutTickets.length} Burnout</span>
+            <span className="helpdesk-badge">{filteredTickets.length} Showing</span>
+          </div>
+          <div className="burnout-month-actions" aria-label="Monthly Burnout summary actions">
+            <div className="burnout-month-picker">
+              <button
+                type="button"
+                className="burnout-month-trigger"
+                onClick={openBurnoutMonthPicker}
+                aria-label={`Choose Monthly Summary month, currently ${monthlyBurnoutData.monthTitle}`}
+              >
+                <MonoIcon icon={CalendarDays} />
+                <span className="burnout-month-label">Monthly Summary</span>
+                <span className="burnout-month-value">{monthlyBurnoutData.monthTitle}</span>
+              </button>
+              <input
+                ref={burnoutMonthInputRef}
+                className="burnout-month-native"
+                type="month"
+                tabIndex={-1}
+                value={getMonthInputValue(burnoutMonth)}
+                onChange={(event) => setBurnoutMonth(getMonthDateFromInput(event.target.value))}
+                aria-label="Monthly Summary month"
+              />
+            </div>
+            <button
+              type="button"
+              className="report-print-btn"
+              onClick={() => printMonthlyBurnoutSummaryReport(burnoutTickets, burnoutMonth)}
+              disabled={!burnoutTickets.length}
+            >
+              <MonoIcon icon={Printer} />
+              Print Monthly
+            </button>
+            <button
+              type="button"
+              className="report-print-btn"
+              onClick={() => exportMonthlyBurnoutSummaryExcel(burnoutTickets, burnoutMonth)}
+              disabled={!burnoutTickets.length}
+            >
+              <MonoIcon icon={Download} />
+              Export Monthly Excel
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section className="stats-grid burnout-report-stats" aria-label="Burnout report summary">
+        <StatCard icon={FileText} label="Total Burnout" value={burnoutTickets.length} meta="submitted requests" />
+        <StatCard icon={Clock3} label="Active" value={activeCount} meta="not yet resolved" />
+        <StatCard icon={Monitor} label="Monitoring" value={monitoringCount} meta="3-5 day process" />
+        <StatCard icon={ShieldCheck} label="Completed" value={completedCount} meta={`${softwareCompleteCount} software-ready`} />
+        <StatCard
+          icon={CalendarDays}
+          label="Monthly Summary"
+          value={monthlyBurnoutData.monthlyTickets.length}
+          meta={monthlyBurnoutData.monthTitle}
+        />
+      </section>
+
+      <section className="ticket-queue-shell">
+        <div className="admin-filter-grid burnout-filter-grid">
+          <div className="ticket-form-group full search-field-group">
+            <label htmlFor="burnout-search">Search Burnout Tickets</label>
+            <span className="field-leading-icon" aria-hidden="true">
+              <MonoIcon icon={Search} />
+            </span>
+            <input
+              id="burnout-search"
+              className="ticket-field ticket-input"
+              type="search"
+              value={filters.search}
+              onChange={(e) => setFilters((prev) => ({ ...prev, search: e.target.value }))}
+              placeholder="Search ticket code, requester, custodian, brand/model, serial, branch, device..."
+            />
+          </div>
+
+          <div className="ticket-form-group">
+            <label>Status</label>
+            <select
+              className="ticket-field ticket-select"
+              value={filters.status}
+              onChange={(e) => setFilters((prev) => ({ ...prev, status: e.target.value }))}
+            >
+              <option value="All">All Status</option>
+              {BURNOUT_TICKET_STATUSES.map((status) => (
+                <option key={status} value={status}>{status}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="ticket-form-group">
+            <label>Branch</label>
+            <select
+              className="ticket-field ticket-select"
+              value={filters.branch}
+              onChange={(e) => setFilters((prev) => ({ ...prev, branch: e.target.value }))}
+            >
+              <option value="All">All Branches</option>
+              {BRANCHES.map((branch) => (
+                <option key={branch} value={branch}>{branch}</option>
+              ))}
+            </select>
+          </div>
+
+          <button type="button" className="quick-action-btn filter-clear-btn" onClick={clearFilters}>
+            <MonoIcon icon={SlidersHorizontal} />
+            Clear Filters
+          </button>
+        </div>
+
+        <TicketTable
+          tickets={filteredTickets}
+          onOpenTicket={onOpenTicket}
+          onDeleteTicket={onDeleteTicket}
+          canDelete={canDeleteTickets}
+          emptyTitle="No burnout tickets found"
+          emptyDescription="Burnout unit condition checks will appear here once submitted."
+          now={now}
+          renderExtraActions={(ticket) => (
+            <>
+              <button type="button" className="ticket-action-btn" onClick={() => printBurnoutReport(ticket)}>
+                <MonoIcon icon={Printer} />
+                Print
+              </button>
+              <button type="button" className="ticket-action-btn" onClick={() => exportBurnoutReportExcel(ticket)}>
+                <MonoIcon icon={Download} />
+                Excel
+              </button>
+            </>
+          )}
+          pagination={{
+            tickets: pagedTickets,
+            page: currentPage,
+            totalPages,
+            totalItems: filteredTickets.length,
+            pageSize,
+            onPageChange: goToTicketPage,
+          }}
+        />
+      </section>
+    </div>
+  );
+}
+
+/* =========================
    BRANCHES VIEW
 ========================= */
 
 function BranchesView({ branchSummary, tickets, onOpenTicket, onDeleteTicket, canDeleteTickets, now }) {
   const BRANCH_PAGE_SIZE = 2;
-  const BRANCH_SUMMARY_PAGE_SIZE = 2;
+  const BRANCH_SUMMARY_PAGE_SIZE = 6;
   const activeTickets = sortTickets(tickets.filter((ticket) => isUnresolved(ticket.status)));
   const [branchTicketPage, setBranchTicketPage] = useState(1);
   const [branchSummaryPage, setBranchSummaryPage] = useState(1);
   const totalPages = Math.max(1, Math.ceil(activeTickets.length / BRANCH_PAGE_SIZE));
   const currentPage = Math.min(branchTicketPage, totalPages);
-  const branchSummaryTotalPages = Math.max(1, Math.ceil(branchSummary.length / BRANCH_SUMMARY_PAGE_SIZE));
+  const branchStats = BRANCHES.map((branchName) => {
+    const branchTickets = tickets.filter((ticket) => ticket.branch === branchName);
+    const unresolved = branchTickets.filter((ticket) => isUnresolved(ticket.status)).length;
+    const urgent = branchTickets.filter(isSlaWatchTicket).length;
+    const resolved = branchTickets.filter(isTicketResolved).length;
+    const latestTicket = sortTickets(branchTickets)[0] || null;
+
+    return {
+      name: branchName,
+      count: branchTickets.length,
+      unresolved,
+      urgent,
+      resolved,
+      latestTicket,
+    };
+  }).sort((a, b) =>
+    b.urgent - a.urgent ||
+    b.unresolved - a.unresolved ||
+    b.count - a.count ||
+    a.name.localeCompare(b.name)
+  );
+  const branchSummaryTotalPages = Math.max(1, Math.ceil(branchStats.length / BRANCH_SUMMARY_PAGE_SIZE));
   const currentBranchSummaryPage = Math.min(branchSummaryPage, branchSummaryTotalPages);
   const pagedTickets = activeTickets.slice(
     (currentPage - 1) * BRANCH_PAGE_SIZE,
     currentPage * BRANCH_PAGE_SIZE
   );
-  const pagedBranchSummary = branchSummary.slice(
+  const pagedBranchSummary = branchStats.slice(
     (currentBranchSummaryPage - 1) * BRANCH_SUMMARY_PAGE_SIZE,
     currentBranchSummaryPage * BRANCH_SUMMARY_PAGE_SIZE
   );
-  const activeBranchCount = branchSummary.filter((branch) =>
+  const activeBranchCount = branchStats.filter((branch) =>
     tickets.some((ticket) => ticket.branch === branch.name && isUnresolved(ticket.status))
   ).length;
+  const clearBranchCount = Math.max(0, BRANCHES.length - activeBranchCount);
   const urgentCount = activeTickets.filter(isSlaWatchTicket).length;
+  const busiestBranch = branchStats.find((branch) => branch.unresolved > 0) || branchStats[0];
   const goToBranchPage = (page) => setBranchTicketPage(Math.min(Math.max(page, 1), totalPages));
   const goToBranchSummaryPage = (page) =>
     setBranchSummaryPage(Math.min(Math.max(page, 1), branchSummaryTotalPages));
@@ -2617,14 +3982,52 @@ function BranchesView({ branchSummary, tickets, onOpenTicket, onDeleteTicket, ca
 
   return (
     <div className="dashboard-view branch-monitor-view">
+      <section className="branch-monitor-overview" aria-label="Branch monitoring overview">
+        <article className="glass branch-overview-card branch-overview-card--primary">
+          <span className="branch-overview-icon"><MonoIcon icon={Building2} /></span>
+          <div>
+            <span>Branch Coverage</span>
+            <strong>{activeBranchCount}/{BRANCHES.length}</strong>
+            <p>branches with active ICT concerns</p>
+          </div>
+        </article>
+
+        <article className="glass branch-overview-card">
+          <span className="branch-overview-icon"><MonoIcon icon={FileText} /></span>
+          <div>
+            <span>Unresolved</span>
+            <strong>{activeTickets.length}</strong>
+            <p>tickets needing admin action</p>
+          </div>
+        </article>
+
+        <article className="glass branch-overview-card">
+          <span className="branch-overview-icon"><MonoIcon icon={Clock3} /></span>
+          <div>
+            <span>Urgent Watch</span>
+            <strong>{urgentCount}</strong>
+            <p>high or critical SLA items</p>
+          </div>
+        </article>
+
+        <article className="glass branch-overview-card">
+          <span className="branch-overview-icon"><MonoIcon icon={ShieldCheck} /></span>
+          <div>
+            <span>Clear Branches</span>
+            <strong>{clearBranchCount}</strong>
+            <p>{busiestBranch?.unresolved ? `${busiestBranch.name} has the highest load` : 'all branches are clear'}</p>
+          </div>
+        </article>
+      </section>
+
       <section className="panel-card glass branch-monitor-panel">
         <div className="section-head branch-monitor-head">
           <div>
             <span className="section-kicker">Active Branch Requests</span>
-            <h3>Unresolved Tickets</h3>
+            <h3>Branch operations watchlist.</h3>
             <p>
-              View unresolved employee concerns by branch. Use the cards below to open, update,
-              or delete a ticket depending on your admin access.
+              Scan unresolved employee concerns by branch, spot urgent SLA items, and open each request
+              for action without losing the branch-level context.
             </p>
           </div>
 
@@ -2645,15 +4048,23 @@ function BranchesView({ branchSummary, tickets, onOpenTicket, onDeleteTicket, ca
           <>
             <div className="branch-monitor-ticket-grid">
               {pagedTickets.map((ticket) => (
-                <article key={ticket.id} className="branch-monitor-ticket-card">
+                <article
+                  key={ticket.id}
+                  className={`branch-monitor-ticket-card${isSlaWatchTicket(ticket) ? ' is-urgent' : ''}`}
+                >
                   <div className="branch-monitor-ticket-top">
-                    <span className="ticket-id">{ticket.id}</span>
-                    <TicketBadges ticket={ticket} />
+                    <div className="branch-monitor-ticket-identity">
+                      <span className="ticket-id">{getTicketDisplayCode(ticket)}</span>
+                      <strong>{ticket.branch || 'Unspecified branch'}</strong>
+                    </div>
+                    <div className="branch-monitor-ticket-status">
+                      <TicketBadges ticket={ticket} />
+                    </div>
                   </div>
 
                   <div className="branch-monitor-ticket-main">
                     <h4>{ticket.concernType || ticket.supportCategory || 'Unspecified concern'}</h4>
-                    <p>{ticket.branch || 'Unspecified branch'} · {ticket.department || 'No department'}</p>
+                    <p>{ticket.department || 'No department'} / {ticket.supportCategory || 'No category'}</p>
                   </div>
 
                   <div className="branch-monitor-ticket-meta">
@@ -2693,7 +4104,7 @@ function BranchesView({ branchSummary, tickets, onOpenTicket, onDeleteTicket, ca
                         type="button"
                         className="ticket-action-btn danger"
                         onClick={() => onDeleteTicket(ticket)}
-                        aria-label={`Delete ticket ${ticket.id}`}
+                        aria-label={`Delete ticket ${getTicketDisplayCode(ticket)}`}
                       >
                         <MonoIcon icon={Trash2} />
                         Delete
@@ -2727,37 +4138,51 @@ function BranchesView({ branchSummary, tickets, onOpenTicket, onDeleteTicket, ca
         )}
       </section>
 
-      {branchSummary.length > 0 && (
-        <section aria-label="Branch ticket summary">
+      {branchStats.length > 0 && (
+        <section className="branch-summary-section" aria-label="Branch ticket summary">
+          <div className="section-head branch-summary-head">
+            <div>
+              <span className="section-kicker">Branch Health</span>
+              <h3>Ticket load by location.</h3>
+            </div>
+            <span className="branch-summary-range">
+              Showing {((currentBranchSummaryPage - 1) * BRANCH_SUMMARY_PAGE_SIZE) + 1}-{Math.min(currentBranchSummaryPage * BRANCH_SUMMARY_PAGE_SIZE, branchStats.length)} of {branchStats.length}
+            </span>
+          </div>
+
           <div className="branch-monitor-branch-summary">
             {pagedBranchSummary.map((branch) => {
-              const branchTickets = tickets.filter((ticket) => ticket.branch === branch.name);
-              const unresolved = branchTickets.filter((ticket) => isUnresolved(ticket.status)).length;
-              const urgent = branchTickets.filter(isSlaWatchTicket).length;
-              const resolved = branchTickets.filter(isTicketResolved).length;
+              const branchState = branch.urgent > 0 ? 'urgent' : branch.unresolved > 0 ? 'active' : 'clear';
 
               return (
-                <article key={branch.name} className="glass branch-summary-chip-card">
-                  <span>Branch</span>
-                  <strong>{branch.name}</strong>
+                <article key={branch.name} className={`glass branch-summary-chip-card is-${branchState}`}>
+                  <div className="branch-summary-card-head">
+                    <span>{branchState}</span>
+                    <strong>{branch.name}</strong>
+                  </div>
                   <div className="branch-summary-metrics" aria-label={`${branch.name} ticket summary`}>
                     <div>
                       <em>Total</em>
                       <b>{branch.count}</b>
                     </div>
                     <div>
-                      <em>Unresolved</em>
-                      <b>{unresolved}</b>
+                      <em>Active</em>
+                      <b>{branch.unresolved}</b>
                     </div>
                     <div>
                       <em>Resolved</em>
-                      <b>{resolved}</b>
+                      <b>{branch.resolved}</b>
                     </div>
                     <div>
                       <em>Urgent</em>
-                      <b>{urgent}</b>
+                      <b>{branch.urgent}</b>
                     </div>
                   </div>
+                  <p>
+                    {branch.latestTicket
+                      ? `Latest: ${branch.latestTicket.concernType || branch.latestTicket.supportCategory || 'Ticket'}`
+                      : 'No tickets recorded yet'}
+                  </p>
                 </article>
               );
             })}
@@ -2798,6 +4223,7 @@ function ReportsView({ tickets, summary, categorySummary, statusSummary, branchS
   const [selectedCalendarDate, setSelectedCalendarDate] = useState('');
   const [selectedPrintDayKey, setSelectedPrintDayKey] = useState('');
   const [selectedPrintWeekKey, setSelectedPrintWeekKey] = useState('');
+  const [periodPageByMode, setPeriodPageByMode] = useState({ day: 1, week: 1, month: 1 });
   const concernSummary = breakdown(tickets, 'concernType').slice(0, 10);
   const slaSummary = breakdown(tickets, 'sla', SLA_LEVELS);
   const reportActivityRows = useMemo(
@@ -2808,13 +4234,8 @@ function ReportsView({ tickets, summary, categorySummary, statusSummary, branchS
     () => breakdown(reportActivityRows, 'reportStatus', ['Submitted', ...TICKET_STATUSES]),
     [reportActivityRows]
   );
-  const dateSummaries = {
-    day: buildDateBreakdown(tickets, 'day').slice(0, 8),
-    week: buildDateBreakdown(tickets, 'week').slice(0, 8),
-    month: buildDateBreakdown(tickets, 'month').slice(0, 8),
-  };
+  const monthPrintOptions = useMemo(() => buildPeriodPrintOptions(tickets, 'month'), [tickets]);
   const selectedPeriod = REPORT_PERIOD_OPTIONS.find((option) => option.key === periodMode) || REPORT_PERIOD_OPTIONS[0];
-  const selectedDateSummary = dateSummaries[selectedPeriod.key] || [];
   const dayPrintOptions = useMemo(() => buildPeriodPrintOptions(tickets, 'day'), [tickets]);
   const weekPrintOptions = useMemo(() => buildPeriodPrintOptions(tickets, 'week'), [tickets]);
   const selectedPrintOptions = selectedPeriod.key === 'week' ? weekPrintOptions : dayPrintOptions;
@@ -2826,26 +4247,34 @@ function ReportsView({ tickets, summary, categorySummary, statusSummary, branchS
     count: option.ticketCount || option.count,
     countLabel: `${option.ticketCount || option.count} ticket${(option.ticketCount || option.count) === 1 ? '' : 's'}`,
   }));
-  const selectedBreakdownItems = selectedPeriod.key === 'month' ? selectedDateSummary : selectablePeriodItems;
-  const selectedBreakdownTotal = selectedPeriod.key === 'month'
-    ? tickets.length
-    : selectablePeriodItems.reduce((totalCount, item) => totalCount + item.count, 0);
+  const monthPeriodItems = monthPrintOptions.map((option) => ({
+    key: option.key,
+    name: option.name,
+    count: option.ticketCount || option.count,
+    countLabel: `${option.ticketCount || option.count} ticket${(option.ticketCount || option.count) === 1 ? '' : 's'}`,
+  }));
+  const selectedPeriodItems = selectedPeriod.key === 'month' ? monthPeriodItems : selectablePeriodItems;
+  const selectedPeriodPage = periodPageByMode[selectedPeriod.key] || 1;
+  const selectedPeriodTotalPages = Math.max(1, Math.ceil(selectedPeriodItems.length / REPORT_PERIOD_PAGE_SIZE));
+  const safeSelectedPeriodPage = Math.min(selectedPeriodPage, selectedPeriodTotalPages);
+  const selectedBreakdownItems = selectedPeriodItems.slice(
+    (safeSelectedPeriodPage - 1) * REPORT_PERIOD_PAGE_SIZE,
+    safeSelectedPeriodPage * REPORT_PERIOD_PAGE_SIZE
+  );
+  const hasPeriodPages = selectedPeriodTotalPages > 1;
   const activeCalendarMonth = calendarMonth || getTicketCalendarMonth(tickets);
   const selectedDateTickets = selectedCalendarDate
-    ? tickets
-        .flatMap((ticket) =>
-          getTicketReportEvents(ticket)
-            .filter((event) => event.key === selectedCalendarDate)
-            .map((event) => ({
-              ...ticket,
-              reportEventLabel: event.label,
-              reportEventType: event.type,
-              reportEventTimestamp: event.timestamp,
-              reportDate: event.reportDate,
-              reportDateLabel: event.reportDateLabel,
-              reportStatus: event.reportStatus,
-            }))
-        )
+    ? getMonthlyTicketAnchorEvents(tickets, activeCalendarMonth)
+        .filter((event) => event.key === selectedCalendarDate)
+        .map((event) => ({
+          ...event.ticket,
+          reportEventLabel: event.label,
+          reportEventType: event.type,
+          reportEventTimestamp: event.timestamp,
+          reportDate: event.reportDate,
+          reportDateLabel: event.reportDateLabel,
+          reportStatus: event.reportStatus,
+        }))
         .sort((a, b) => b.reportEventTimestamp - a.reportEventTimestamp || normalizeDate(b) - normalizeDate(a))
     : [];
 
@@ -2870,6 +4299,31 @@ function ReportsView({ tickets, summary, categorySummary, statusSummary, branchS
       weekPrintOptions.some((option) => option.key === current) ? current : weekPrintOptions[0].key
     ));
   }, [weekPrintOptions]);
+
+  useEffect(() => {
+    setPeriodPageByMode((current) => {
+      const currentPage = current[selectedPeriod.key] || 1;
+
+      if (currentPage <= selectedPeriodTotalPages) return current;
+
+      return {
+        ...current,
+        [selectedPeriod.key]: selectedPeriodTotalPages,
+      };
+    });
+  }, [selectedPeriod.key, selectedPeriodTotalPages]);
+
+  const changeReportPeriodPage = (step) => {
+    setPeriodPageByMode((current) => {
+      const currentPage = current[selectedPeriod.key] || 1;
+      const nextPage = Math.min(selectedPeriodTotalPages, Math.max(1, currentPage + step));
+
+      return {
+        ...current,
+        [selectedPeriod.key]: nextPage,
+      };
+    });
+  };
 
   const changeCalendarMonth = (step) => {
     setCalendarMonth((current) => {
@@ -2984,13 +4438,38 @@ function ReportsView({ tickets, summary, categorySummary, statusSummary, branchS
           </div>
         </div>
 
-        <BreakdownItems
-          items={selectedBreakdownItems}
-          total={selectedBreakdownTotal}
-          selectable={selectedPeriod.key !== 'month'}
-          selectedKey={selectedPrintKey}
-          onSelect={handleSelectReportPeriod}
-        />
+        <div className={`report-period-strip${hasPeriodPages ? ' has-pages' : ''}`}>
+          {hasPeriodPages && (
+            <button
+              type="button"
+              className="report-period-arrow"
+              onClick={() => changeReportPeriodPage(-1)}
+              disabled={safeSelectedPeriodPage === 1}
+              aria-label={`Previous ${selectedPeriod.label.toLowerCase()} reports`}
+            >
+              <ChevronLeft aria-hidden="true" />
+            </button>
+          )}
+
+          <BreakdownItems
+            items={selectedBreakdownItems}
+            selectable={selectedPeriod.key !== 'month'}
+            selectedKey={selectedPrintKey}
+            onSelect={handleSelectReportPeriod}
+          />
+
+          {hasPeriodPages && (
+            <button
+              type="button"
+              className="report-period-arrow"
+              onClick={() => changeReportPeriodPage(1)}
+              disabled={safeSelectedPeriodPage === selectedPeriodTotalPages}
+              aria-label={`Next ${selectedPeriod.label.toLowerCase()} reports`}
+            >
+              <ChevronRight aria-hidden="true" />
+            </button>
+          )}
+        </div>
       </section>
 
       <ReportCalendar
@@ -3004,12 +4483,12 @@ function ReportsView({ tickets, summary, categorySummary, statusSummary, branchS
       />
 
       <div className="admin-report-grid compact">
-        <BreakdownList title="Workload" kicker="Reports" items={categorySummary.slice(0, 8)} total={tickets.length} className="admin-workload-panel" />
-        <BreakdownList title="Status" kicker="Report" items={statusActivitySummary} total={reportActivityRows.length} />
-        <BreakdownList title="SLA" kicker="Report" items={slaSummary} total={tickets.length} />
-        <BreakdownList title="Support Category" kicker="Report" items={categorySummary.slice(0, 6)} total={tickets.length} />
-        <BreakdownList title="Branch" kicker="Report" items={branchSummary.slice(0, 6)} total={tickets.length} />
-        <BreakdownList title="Concern Type" kicker="Report" items={concernSummary.slice(0, 6)} total={tickets.length} />
+        <BreakdownList title="Workload" kicker="Reports" items={categorySummary.slice(0, 8)} className="admin-workload-panel" />
+        <BreakdownList title="Status" kicker="Report" items={statusActivitySummary} />
+        <BreakdownList title="SLA" kicker="Report" items={slaSummary} />
+        <BreakdownList title="Support Category" kicker="Report" items={categorySummary.slice(0, 6)} />
+        <BreakdownList title="Branch" kicker="Report" items={branchSummary.slice(0, 6)} />
+        <BreakdownList title="Concern Type" kicker="Report" items={concernSummary.slice(0, 6)} />
       </div>
     </div>
   );
@@ -3297,7 +4776,7 @@ function UsersView({ users, canManageUsers, currentUserId, onUsersChanged }) {
               </div>
 
               <button type="button" className="admin-modal-close" onClick={closeEdit} aria-label="Close modal">
-                x
+                &times;
               </button>
             </div>
 
@@ -3757,9 +5236,12 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
   useBodyScrollLock(true);
 
   const hasWorkStarted = Boolean(getTicketWorkStartedAt(ticket));
-  const isResolvedLocked = isTicketResolved(ticket);
-  const isStartMode = !hasWorkStarted && !isResolvedLocked && !isMovedDateTicket(ticket);
-  const statusOptions = isStartMode
+  const isBurnout = isBurnoutTicket(ticket);
+  const isResolvedLocked = isBurnout ? isBurnoutClosedStatus(ticket.status) : isTicketResolved(ticket);
+  const isStartMode = !isBurnout && !hasWorkStarted && !isResolvedLocked && !isMovedDateTicket(ticket);
+  const statusOptions = isBurnout
+    ? BURNOUT_TICKET_STATUSES
+    : isStartMode
     ? ['In Progress']
     : TICKET_STATUSES.filter((status) => status !== 'Created');
   const [formError, setFormError] = useState('');
@@ -3779,12 +5261,13 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
     ? ticket.technician
     : currentStaffName;
   const [draft, setDraft] = useState({
-    status: isStartMode ? 'In Progress' : ticket.status || 'Pending',
+    status: isBurnout ? getBurnoutWorkflowStatus(ticket.status) : isStartMode ? 'In Progress' : ticket.status || 'Pending',
     sla: ticket.sla || 'Low',
     technician: assignedStaff,
     actionTaken: ticket.actionTaken || '',
     adminRemarks: ticket.adminRemarks || '',
     resolution: ticket.resolution || '',
+    burnoutReport: isBurnout ? normalizeBurnoutReport(ticket, currentUser) : null,
   });
   const isEscalationStatus = normalizeTicketStatus(draft.status) === 'escalated';
   const staffOptions = Array.from(
@@ -3794,8 +5277,10 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
     new Set(isEscalationStatus ? [...staffOptions, ...ESCALATION_PARTNERS] : staffOptions)
   );
   const visibleTechnician = technicianOptions.includes(draft.technician) ? draft.technician : 'Unassigned';
-  const canEditOutcomeFields = !isResolvedLocked && normalizeTicketStatus(draft.status) !== 'in progress';
-  const lockedOutcomePlaceholder = 'Available once the ticket is updated away from In Progress.';
+  const canEditOutcomeFields = !isResolvedLocked && (isBurnout || normalizeTicketStatus(draft.status) !== 'in progress');
+  const lockedOutcomePlaceholder = isBurnout
+    ? 'Available while the Burnout record is still active.'
+    : 'Available once the ticket is updated away from In Progress.';
   const canSendConversationMessage = canTicketAcceptMessages(ticket);
   const shouldShowConversation = isTicketBeingHandled(ticket) || ticketMessages.length > 0;
   const isChatOpen = shouldShowConversation && !isChatMinimized;
@@ -3925,6 +5410,14 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
   const updateDraft = (field, value) => {
     setFormError('');
     setDraft((prev) => {
+      if (isBurnout && field === 'status') {
+        return {
+          ...prev,
+          status: value,
+          technician: value === 'Submitted' ? prev.technician : (prev.technician || currentStaffName),
+        };
+      }
+
       if (field === 'status' && value === 'In Progress') {
         return {
           ...prev,
@@ -3944,11 +5437,16 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
     });
   };
 
+  const updateBurnoutReport = (nextReport) => {
+    setFormError('');
+    setDraft((prev) => ({ ...prev, burnoutReport: nextReport }));
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
 
     if (isResolvedLocked) {
-      setFormError('Resolved tickets are locked and cannot be changed.');
+      setFormError(isBurnout ? 'Completed Burnout records are locked and cannot be changed.' : 'Resolved tickets are locked and cannot be changed.');
       return;
     }
 
@@ -3978,7 +5476,7 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
 
     const timestamp = new Date().toLocaleString();
     const existingMovedDateValue = hasTimeInDateLabel(ticket.dateLabel) ? ticket.dateLabel : '';
-    const movedDateValue = draftStatus === 'moved date' ? existingMovedDateValue || timestamp : ticket.dateLabel;
+    const movedDateValue = !isBurnout && draftStatus === 'moved date' ? existingMovedDateValue || timestamp : ticket.dateLabel;
     const nextTicketSnapshot = {
       ...ticket,
       ...sanitizedDraft,
@@ -4018,7 +5516,7 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
         <div className="admin-modal-head ticket-action-head">
           <div>
             <div className="ticket-action-title-row">
-              <span className="ticket-id">{ticket.id}</span>
+              <span className="ticket-id">{getTicketDisplayCode(ticket)}</span>
               <div className="ticket-action-title-copy">
                 <h3>{ticket.concernType}</h3>
                 <p>{ticket.branch} - {ticket.department}</p>
@@ -4027,22 +5525,34 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
           </div>
 
           <button type="button" className="admin-modal-close" onClick={onClose} aria-label="Close modal">
-            ×
+            &times;
           </button>
         </div>
 
         <div className="admin-workflow-box ticket-action-status-panel">
           <div className="ticket-action-workflow-copy">
-            <span className="section-kicker">{isResolvedLocked ? 'Locked Ticket' : isStartMode ? 'Start Work' : 'Ticket Timer'}</span>
+            <span className="section-kicker">
+              {isBurnout
+                ? isResolvedLocked ? 'Closed Burnout' : 'Burnout Workflow'
+                : isResolvedLocked ? 'Locked Ticket' : isStartMode ? 'Start Work' : 'Ticket Timer'}
+            </span>
             <h4>
-              {isResolvedLocked
+              {isBurnout
+                ? isResolvedLocked
+                  ? 'This Burnout record has a final unit status.'
+                  : 'Track the unit condition before workstation deployment.'
+                : isResolvedLocked
                 ? 'This ticket has been resolved.'
                 : isStartMode
                   ? 'Set this ticket to In Progress first.'
                   : 'Work session is being tracked.'}
             </h4>
             <p>
-              {isResolvedLocked
+              {isBurnout
+                ? isResolvedLocked
+                  ? 'Final Burnout statuses are read-only for audit consistency.'
+                  : 'Use Under Burnout for the 3-day minimum monitoring window; mark Damaged, For Repair, or For Replacement when the unit fails inspection.'
+                : isResolvedLocked
                 ? 'Resolved tickets are read-only for editing.'
                 : isStartMode
                   ? 'Saving as In Progress starts the work timer.'
@@ -4054,6 +5564,10 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
         </div>
 
         <div className="admin-modal-grid ticket-action-info-grid">
+          <div className="ticket-meta-cell">
+            <span>Ticket Code</span>
+            <p>{getTicketDisplayCode(ticket)}</p>
+          </div>
           <div className="ticket-meta-cell">
             <span>Requester</span>
             <p>{ticket.requester || ticket.ownerEmail || 'Employee'}</p>
@@ -4074,6 +5588,24 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
             <span>Device / System</span>
             <p>{ticket.deviceName || 'Not provided'}</p>
           </div>
+          {ticket.brand && (
+            <div className="ticket-meta-cell">
+              <span>Brand & Model</span>
+              <p>{ticket.brand}</p>
+            </div>
+          )}
+          {ticket.serialNumber && (
+            <div className="ticket-meta-cell">
+              <span>Serial Number</span>
+              <p>{ticket.serialNumber}</p>
+            </div>
+          )}
+          {ticket.custodian && (
+            <div className="ticket-meta-cell">
+              <span>Custodian</span>
+              <p>{ticket.custodian}</p>
+            </div>
+          )}
           <div className="ticket-meta-cell">
             <span>Contact</span>
             <p>{ticket.contactNumber || 'Not provided'}</p>
@@ -4169,12 +5701,12 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
           </div>
 
           <div className="ticket-form-group">
-            <label>Resolution Notes</label>
+            <label>{isBurnout ? 'Burnout / Deployment Notes' : 'Resolution Notes'}</label>
             <textarea
               className="ticket-field ticket-textarea admin-small-textarea"
               value={draft.resolution}
               onChange={(e) => updateDraft('resolution', e.target.value)}
-              placeholder={canEditOutcomeFields ? 'Write final resolution once completed...' : lockedOutcomePlaceholder}
+              placeholder={canEditOutcomeFields ? (isBurnout ? 'Write unit condition, pass/fail, repair, replacement, or deployment notes...' : 'Write final resolution once completed...') : lockedOutcomePlaceholder}
               readOnly={!canEditOutcomeFields}
             />
           </div>
@@ -4206,6 +5738,15 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
           </div>
         )}
 
+        {isBurnout && (
+          <BurnoutReportEditor
+            ticket={ticket}
+            report={draft.burnoutReport}
+            onChange={updateBurnoutReport}
+            readOnly={isResolvedLocked}
+          />
+        )}
+
         {formError && <div className="form-error">{formError}</div>}
 
         <div className="modal-footer">
@@ -4216,7 +5757,7 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
             </button>
           )}
 
-          {isResolvedLocked && (
+          {!isBurnout && isResolvedLocked && (
             <button type="button" className="modal-btn print" onClick={() => printResolvedTicket(ticket)}>
               <MonoIcon icon={Printer} />
               Print Ticket
@@ -4229,7 +5770,7 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
           {!isResolvedLocked && (
             <button type="submit" className="modal-btn confirm">
               <MonoIcon icon={ShieldCheck} />
-              {isStartMode ? 'Start Ticket' : 'Save Ticket Update'}
+              {isBurnout ? 'Save Burnout Update' : isStartMode ? 'Start Ticket' : 'Save Ticket Update'}
             </button>
           )}
         </div>
@@ -4286,6 +5827,7 @@ export default function AdminDashboardPage() {
   const [tickets, setTickets] = useState([]);
   const [users, setUsers] = useState([]);
   const [selectedTicket, setSelectedTicket] = useState(null);
+  const burnoutThreeDayNotifiedRef = useRef(new Set());
   const [authChecked, setAuthChecked] = useState(false);
   const [isInactiveBlocked, setIsInactiveBlocked] = useState(false);
   const [lastSynced, setLastSynced] = useState('');
@@ -4492,6 +6034,30 @@ Current role: ${activeUser.role || 'No role found'}`
   }, [isPageTransitioning, transitionLabel]);
 
   useEffect(() => {
+    if (!authChecked || !admin || !tickets.length) return;
+
+    const dueNotifications = tickets
+      .filter((ticket) => hasBurnoutReachedThreeDayMark(ticket, timerNow))
+      .filter((ticket) => !burnoutThreeDayNotifiedRef.current.has(ticket.id))
+      .map((ticket) => {
+        burnoutThreeDayNotifiedRef.current.add(ticket.id);
+
+        return {
+          id: `burnout-three-day-${ticket.id}-${Date.now()}`,
+          ticketId: ticket.id,
+          title: 'Burnout reached 3-day mark',
+          body: `${getTicketDisplayCode(ticket)} has reached the minimum 3-day Burnout procedure window.`,
+          createdAt: new Date().toLocaleString(),
+          read: false,
+        };
+      });
+
+    if (dueNotifications.length) {
+      setNotifications((current) => [...dueNotifications, ...current].slice(0, 12));
+    }
+  }, [authChecked, admin, tickets, timerNow]);
+
+  useEffect(() => {
     const hasRunningWorkTimer = tickets.some((ticket) => {
       const startedAt = getTicketWorkStartedAt(ticket);
       const endedAt = getTicketWorkEndedAt(ticket);
@@ -4512,10 +6078,10 @@ Current role: ${activeUser.role || 'No role found'}`
 
   const summary = useMemo(() => buildSummary(tickets), [tickets]);
 
-  const filteredTickets = useMemo(() => {
+  const applyTicketFilters = (sourceTickets) => {
     const search = filters.search.toLowerCase().trim();
 
-    return sortTickets(tickets)
+    return sortTickets(sourceTickets)
       .filter((ticket) => {
         const matchesSearch = !search || getTicketSearchText(ticket).includes(search);
         const matchesStatus = filters.status === 'All' || ticket.status === filters.status;
@@ -4531,7 +6097,11 @@ Current role: ${activeUser.role || 'No role found'}`
 
         return statusCompare || slaCompare || normalizeDate(b) - normalizeDate(a);
       });
-  }, [tickets, filters]);
+  };
+
+  const supportTickets = useMemo(() => sortTickets(tickets.filter((ticket) => !isBurnoutTicket(ticket))), [tickets]);
+  const filteredTickets = useMemo(() => applyTicketFilters(tickets), [tickets, filters]);
+  const filteredSupportTickets = useMemo(() => applyTicketFilters(supportTickets), [supportTickets, filters]);
 
   const categorySummary = useMemo(() => breakdown(tickets, 'supportCategory', SUPPORT_CATEGORIES), [tickets]);
   const statusSummary = useMemo(() => breakdown(tickets, 'status', TICKET_STATUSES), [tickets]);
@@ -4600,7 +6170,7 @@ Current role: ${activeUser.role || 'No role found'}`
 
       if (isTicketLockedByOther(lockedTicket, admin.id)) {
         window.alert(
-          `Ticket ${ticket.id} is already being worked on by ${lockedTicket.lockedByName || 'another IT staff'}.`
+          `Ticket ${getTicketDisplayCode(ticket)} is already being worked on by ${lockedTicket.lockedByName || 'another IT staff'}.`
         );
         await loadData();
         return;
@@ -4636,9 +6206,15 @@ Current role: ${activeUser.role || 'No role found'}`
 
   const handleSaveTicket = async (ticketId, updates) => {
     const currentTicket = tickets.find((ticket) => ticket.id === ticketId);
+    const isCurrentBurnout = isBurnoutTicket(currentTicket);
+    const isCurrentFinalBurnout = isCurrentBurnout && isBurnoutClosedStatus(currentTicket?.status);
 
-    if (isTicketResolved(currentTicket)) {
-      window.alert(`Ticket ${ticketId} is resolved and cannot be changed.`);
+    if (isTicketResolved(currentTicket) || isCurrentFinalBurnout) {
+      window.alert(
+        isCurrentFinalBurnout
+          ? `Burnout ticket ${ticketId} already has a final unit status and cannot be changed.`
+          : `Ticket ${ticketId} is resolved and cannot be changed.`
+      );
       setSelectedTicket(null);
       void loadData();
       return;
@@ -4666,6 +6242,14 @@ Current role: ${activeUser.role || 'No role found'}`
     }
 
     if (nextStatus === 'in progress') {
+      if (!currentTicket?.workStartedAt || currentTicket?.workEndedAt) {
+        nextUpdates.workStartedAt = timestamp;
+      }
+
+      nextUpdates.workEndedAt = '';
+    }
+
+    if (isCurrentBurnout && nextStatus === 'under burnout') {
       if (!currentTicket?.workStartedAt || currentTicket?.workEndedAt) {
         nextUpdates.workStartedAt = timestamp;
       }
@@ -4703,10 +6287,26 @@ Current role: ${activeUser.role || 'No role found'}`
       nextUpdates.lastUpdated = timestamp;
     }
 
+    if (isCurrentBurnout && isBurnoutClosedStatus(updates.status)) {
+      if (!currentTicket?.workStartedAt) {
+        nextUpdates.workStartedAt = currentTicket?.createdAt || currentTicket?.date || timestamp;
+      }
+
+      nextUpdates.workEndedAt = timestamp;
+      nextUpdates.adminUpdatedAt = timestamp;
+      nextUpdates.lastUpdated = timestamp;
+    }
+
     const nextTicketSnapshot = {
       ...(currentTicket || {}),
       ...nextUpdates,
     };
+    const isBurnoutPassStatus = ['passed burnout', 'ready for deployment', 'deployed'].includes(nextStatus);
+    const shouldSendBurnoutStandardMessage =
+      isCurrentBurnout &&
+      isBurnoutPassStatus &&
+      Boolean(currentTicket?.workStartedAt || nextUpdates.workStartedAt) &&
+      isBurnoutBelowStandardProcedure(nextTicketSnapshot, timestamp);
     const shouldLockEmployeeEdit = isEmployeeLockedTicket(nextTicketSnapshot);
 
     nextUpdates.employeeEditLocked = shouldLockEmployeeEdit;
@@ -4724,6 +6324,25 @@ Current role: ${activeUser.role || 'No role found'}`
     }
 
     try {
+      if (shouldSendBurnoutStandardMessage) {
+        try {
+          const existingMessages = await getTicketMessages(ticketId).catch(() => []);
+          const alreadySent = existingMessages.some(
+            (message) => String(message.message || '').trim() === BURNOUT_STANDARD_MESSAGE
+          );
+
+          if (!alreadySent) {
+            await createTicketMessage(ticketId, {
+              sender: admin,
+              message: BURNOUT_STANDARD_MESSAGE,
+              attachments: [],
+            });
+          }
+        } catch (messageError) {
+          console.warn('[Burnout Standard Message Error]', messageError);
+        }
+      }
+
       await updateTicket(ticketId, {
         ...nextUpdates,
         lockedBy: null,
@@ -4749,7 +6368,7 @@ Current role: ${activeUser.role || 'No role found'}`
     }
 
     const confirmed = window.confirm(
-      `SUPER ADMIN DELETE: Delete ticket ${ticket.id}? This can be resolved, moved, in progress, or any status. This action cannot be undone.`
+      `SUPER ADMIN DELETE: Delete ticket ${getTicketDisplayCode(ticket)}? This can be resolved, moved, in progress, or any status. This action cannot be undone.`
     );
 
     if (!confirmed) return;
@@ -4910,8 +6529,33 @@ Current role: ${activeUser.role || 'No role found'}`
                 <TicketsView
                   tickets={tickets}
                   filteredTickets={filteredTickets}
+                  scope="all"
                   filters={filters}
                   setFilters={setFilters}
+                  onOpenTicket={handleOpenTicket}
+                  onDeleteTicket={handleDeleteTicket}
+                  canDeleteTickets={canDeleteTickets}
+                  now={timerNow}
+                />
+              )}
+
+              {activeSection === 'support-tickets' && (
+                <TicketsView
+                  tickets={supportTickets}
+                  filteredTickets={filteredSupportTickets}
+                  scope="support"
+                  filters={filters}
+                  setFilters={setFilters}
+                  onOpenTicket={handleOpenTicket}
+                  onDeleteTicket={handleDeleteTicket}
+                  canDeleteTickets={canDeleteTickets}
+                  now={timerNow}
+                />
+              )}
+
+              {activeSection === 'burnout-tickets' && (
+                <BurnoutReportView
+                  tickets={tickets}
                   onOpenTicket={handleOpenTicket}
                   onDeleteTicket={handleDeleteTicket}
                   canDeleteTickets={canDeleteTickets}
@@ -4985,7 +6629,6 @@ Current role: ${activeUser.role || 'No role found'}`
       )}
 
       {isPageTransitioning && <PortalTransitionLoader label={transitionLabel} />}
-
     </>
   );
 }

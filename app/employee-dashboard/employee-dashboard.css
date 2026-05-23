@@ -3028,15 +3028,33 @@ button {
 }
 
 .ticket-chat-close {
-  width: 30px;
-  height: 30px;
-  border: 1px solid rgba(226, 232, 240, 0.78);
-  border-radius: var(--radius-md);
-  background: rgba(255, 255, 255, 0.88);
-  color: var(--muted);
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #111827;
+  font-size: 1.6rem;
+  line-height: 1;
+  font-weight: 300;
+  opacity: 0.6;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease,
+    color 0.18s ease;
+}
+
+.ticket-chat-close:hover,
+.ticket-chat-close:focus-visible {
+  opacity: 1;
+  color: var(--danger, #dc2626);
+  transform: scale(1.08);
+  outline: none;
+  background: transparent;
 }
 
 .ticket-message-composer.locked {
@@ -3838,18 +3856,31 @@ button {
 .employee-ticket-modal .admin-modal-close {
   width: 34px;
   height: 34px;
-  border: 1px solid rgba(226, 232, 240, 0.78);
-  border-radius: var(--radius-md);
-  background: #fff;
-  color: #334155;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #111827;
+  font-size: 1.6rem;
+  line-height: 1;
+  font-weight: 300;
+  opacity: 0.6;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease,
+    color 0.18s ease;
 }
 
-.employee-ticket-modal .admin-modal-close .admin-mono-icon {
-  width: 18px;
-  height: 18px;
+.employee-ticket-modal .admin-modal-close:hover,
+.employee-ticket-modal .admin-modal-close:focus-visible {
+  opacity: 1;
+  color: var(--danger, #dc2626);
+  transform: scale(1.08);
+  outline: none;
+  background: transparent;
 }
 
 .employee-ticket-modal .ticket-action-status-panel {
@@ -4827,6 +4858,8 @@ button {
 }
 
 .other-service-category-select {
+  width: min(100%, calc(50% - 0.45rem));
+  min-height: 48px;
   font-weight: 850;
   color: #0f172a;
 }
@@ -4899,6 +4932,10 @@ button {
 }
 
 @media (max-width: 640px) {
+  .other-service-category-select {
+    width: 100%;
+  }
+
   .other-service-card .ticket-meta-grid {
     grid-template-columns: 1fr;
   }

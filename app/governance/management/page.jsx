@@ -320,33 +320,6 @@ const branchManagers = [
   },
 ]
 
-const operationalFocus = [
-  {
-    id: '01',
-    number: '01',
-    title: 'Strategic Alignment',
-    description: "Management ensures that operational execution remains aligned with MEMPCO's goals, policies, and cooperative direction.",
-  },
-  {
-    id: '02',
-    number: '02',
-    title: 'Operational Leadership',
-    description: 'Clear leadership across divisions, areas, and branch-based units supports coordinated and accountable service delivery.',
-  },
-  {
-    id: '03',
-    number: '03',
-    title: 'Branch Coordination',
-    description: 'Area and unit leadership help translate institutional plans into responsive, localized operations.',
-  },
-  {
-    id: '04',
-    number: '04',
-    title: 'Sustainable Growth',
-    description: 'Management supports institutional efficiency, service quality, and long-term operational resilience.',
-  },
-]
-
 /* ─── Small components ──────────────────────────────────── */
 
 function Avatar({ initials, size = 'md' }) {
@@ -394,11 +367,11 @@ function Modal({ leader, onClose }) {
 
   return (
     <div className="mgmt-modal" onClick={onClose} role="dialog" aria-modal="true">
-      <button type="button" className="mgmt-modal-close" onClick={onClose} aria-label="Close">
-        ×
-      </button>
-
       <div className="mgmt-modal-card" onClick={(e) => e.stopPropagation()}>
+        <button type="button" className="mgmt-modal-close" onClick={onClose} aria-label="Close">
+          &times;
+        </button>
+
         <div className="mgmt-modal-photo-wrap">
           {photo && !imageError ? (
             <img
@@ -475,11 +448,6 @@ export default function ManagementPage() {
                 <p className="mgmt-hero-subtitle">
                   Clear structure, coordinated execution, and member-centered operational leadership across the organization.
                 </p>
-
-                <p className="mgmt-hero-desc">
-                  MEMPCO's management structure provides executive, divisional, area, and branch-based leadership that supports efficient operations, coordinated service delivery, and institutional continuity across all operating units.
-                </p>
-
                 <div className="mgmt-hero-actions">
                   <a href="#management-structure" className="mgmt-btn-primary">
                     View Structure
@@ -490,61 +458,34 @@ export default function ManagementPage() {
                 </div>
               </div>
 
-              <div className="mgmt-hero-card">
-                <div className="mgmt-hero-card-top">
-                  <span className="mgmt-tag">Leadership Overview</span>
-                  <div className="mgmt-spotlight-avatar">{ceo.initials}</div>
-                </div>
-
-                <p className="mgmt-spotlight-name">{ceo.name}</p>
-                <span className="mgmt-tag">{ceo.label}</span>
-                <h3>{ceo.title}</h3>
-
-                <button type="button" className="mgmt-card-link" onClick={() => setSelected(ceo)}>
-                  View Profile →
-                </button>
-
-                <div className="mgmt-hero-highlights">
-                  <div className="mgmt-hl">
-                    <strong>01</strong>
-                    <span>Chief Executive Officer</span>
-                  </div>
-
-                  <div className="mgmt-hl">
-                    <strong>04</strong>
-                    <span>Division Chiefs</span>
-                  </div>
-
-                  <div className="mgmt-hl">
-                    <strong>02</strong>
-                    <span>Area Managers</span>
-                  </div>
-
-                  <div className="mgmt-hl">
-                    <strong>11</strong>
-                    <span>Branch / Unit Leaders</span>
-                  </div>
-                </div>
+              <div className="mgmt-hero-aside">
+                <span className="mgmt-aside-kicker">Management Mandate</span>
+                <h3>Coordinated execution across divisions, areas, and branches.</h3>
+                <p>
+                  Management translates institutional direction into organized
+                  operations, accountable service delivery, and continuity across
+                  all operating units.
+                </p>
               </div>
             </div>
 
-            <div className="mgmt-stats">
-              <div className="mgmt-stat">
+            <div className="mgmt-hero-metrics" aria-label="Management overview">
+              <div>
                 <h3>01</h3>
                 <p>Chief Executive Officer</p>
               </div>
 
-              <div className="mgmt-stat">
+              <div>
                 <h3>04</h3>
                 <p>Division Chiefs</p>
               </div>
 
-              <div className="mgmt-stat">
+              <div>
                 <h3>02</h3>
                 <p>Area Managers</p>
               </div>
 
-              <div className="mgmt-stat">
+              <div>
                 <h3>11</h3>
                 <p>Branch / Unit Leaders</p>
               </div>
@@ -636,24 +577,6 @@ export default function ManagementPage() {
         </section>
 
         {/* ── Operational Focus ─────────────────────────────── */}
-        <section className="focus-section">
-          <div className="mgmt-container">
-            <div className="mgmt-section-head">
-              <span className="mgmt-tag">Management Focus</span>
-              <h2>How Leadership Supports <em>Operations</em></h2>
-            </div>
-
-            <div className="focus-grid">
-              {operationalFocus.map((item) => (
-                <div key={item.id} className="focus-card">
-                  <span className="focus-num">{item.number}</span>
-                  <h3>{item.title}</h3>
-                  <p>{item.description}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
       </main>
 
       <Footer />

@@ -41,7 +41,7 @@
   background-clip: border-box;
   -webkit-text-fill-color: currentColor;
   overflow: visible;
-  padding-block: 0.04em 0.18em;
+  padding-block: 0.04em 0.22em;
 }
 
 .ap-title-main {
@@ -58,14 +58,14 @@
 
 .ap-title em {
   color: transparent;
-  background: linear-gradient(90deg, var(--ap-red) 0%, var(--ap-red-dk) 62%, #7f1d1d 100%);
+  background: linear-gradient(105deg, #ef2424 0%, #d71920 42%, #a9151b 74%, #7f1d1d 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
   display: inline-block;
   overflow: visible;
-  line-height: 1.18;
-  padding: 0 0.12em 0.16em 0;
+  line-height: 1.24;
+  padding: 0 0.1em 0.2em 0.02em;
 }
 
 /* Glow blobs */

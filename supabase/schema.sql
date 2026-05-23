@@ -355,10 +355,15 @@ create table if not exists public.tickets (
   id text primary key default public.generate_ticket_id(),
   owner_id uuid references public.profiles(id) on delete cascade,
   owner_email text,
+  ticket_code text,
   requester text,
   employee_id text,
   branch text,
   department text,
+  custodian text,
+  brand text,
+  device_type text,
+  serial_number text,
   support_category text,
   concern_type text,
   device_name text,
@@ -375,6 +380,7 @@ create table if not exists public.tickets (
   saar_required boolean not null default false,
   saar_attachment jsonb,
   photo_attachments jsonb not null default '[]'::jsonb,
+  burnout_report jsonb not null default '{}'::jsonb,
   date_label text,
   last_employee_update text,
   admin_updated_at text,
@@ -392,10 +398,15 @@ create table if not exists public.tickets (
 alter table public.tickets
 add column if not exists owner_id uuid references public.profiles(id) on delete cascade,
 add column if not exists owner_email text,
+add column if not exists ticket_code text,
 add column if not exists requester text,
 add column if not exists employee_id text,
 add column if not exists branch text,
 add column if not exists department text,
+add column if not exists custodian text,
+add column if not exists brand text,
+add column if not exists device_type text,
+add column if not exists serial_number text,
 add column if not exists support_category text,
 add column if not exists concern_type text,
 add column if not exists device_name text,
@@ -412,6 +423,7 @@ add column if not exists resolution text not null default '',
 add column if not exists saar_required boolean not null default false,
 add column if not exists saar_attachment jsonb,
 add column if not exists photo_attachments jsonb not null default '[]'::jsonb,
+add column if not exists burnout_report jsonb not null default '{}'::jsonb,
 add column if not exists date_label text,
 add column if not exists last_employee_update text,
 add column if not exists admin_updated_at text,
@@ -435,9 +447,14 @@ where t.owner_id is null
 update public.tickets
 set
   owner_email = coalesce(nullif(owner_email, ''), 'missing-owner-' || id || '@mempco.local'),
+  ticket_code = nullif(ticket_code, ''),
   requester = coalesce(nullif(requester, ''), owner_email, 'Employee'),
   branch = coalesce(nullif(branch, ''), 'Unspecified'),
   department = coalesce(nullif(department, ''), 'Unspecified'),
+  custodian = coalesce(custodian, ''),
+  brand = coalesce(brand, ''),
+  device_type = coalesce(device_type, ''),
+  serial_number = coalesce(serial_number, ''),
   support_category = coalesce(nullif(support_category, ''), 'Other ICT Support'),
   concern_type = coalesce(nullif(concern_type, ''), 'Other Technical Concern'),
   device_name = coalesce(device_name, ''),
@@ -453,6 +470,7 @@ set
   resolution = coalesce(resolution, ''),
   saar_required = coalesce(saar_required, false),
   photo_attachments = coalesce(photo_attachments, '[]'::jsonb),
+  burnout_report = coalesce(burnout_report, '{}'::jsonb),
   created_at = coalesce(created_at, now()),
   updated_at = coalesce(updated_at, now());
 
@@ -483,6 +501,8 @@ alter column resolution set not null,
 alter column saar_required set not null,
 alter column photo_attachments set default '[]'::jsonb,
 alter column photo_attachments set not null,
+alter column burnout_report set default '{}'::jsonb,
+alter column burnout_report set not null,
 alter column created_at set not null,
 alter column updated_at set not null;
 
@@ -519,6 +539,11 @@ begin
 
   new.support_category := coalesce(nullif(new.support_category, ''), 'Other ICT Support');
   new.concern_type := coalesce(nullif(new.concern_type, ''), 'Other Technical Concern');
+  new.ticket_code := nullif(new.ticket_code, '');
+  new.custodian := coalesce(new.custodian, '');
+  new.brand := upper(coalesce(new.brand, ''));
+  new.device_type := upper(coalesce(new.device_type, ''));
+  new.serial_number := upper(coalesce(new.serial_number, ''));
   new.device_name := coalesce(new.device_name, '');
   new.contact_number := coalesce(new.contact_number, '');
   new.description := coalesce(new.description, '');
@@ -540,6 +565,7 @@ begin
   new.resolution := coalesce(new.resolution, '');
   new.saar_required := coalesce(new.saar_required, false);
   new.photo_attachments := coalesce(new.photo_attachments, '[]'::jsonb);
+  new.burnout_report := coalesce(new.burnout_report, '{}'::jsonb);
   new.updated_at := now();
 
   return new;
@@ -566,6 +592,10 @@ create index if not exists tickets_created_at_idx on public.tickets (created_at 
 create index if not exists tickets_updated_at_idx on public.tickets (updated_at desc);
 create index if not exists tickets_locked_by_idx on public.tickets (locked_by);
 create index if not exists tickets_lock_expires_at_idx on public.tickets (lock_expires_at);
+create unique index if not exists tickets_ticket_code_unique_idx on public.tickets (ticket_code) where ticket_code is not null;
+create unique index if not exists tickets_burnout_branch_number_unique_idx
+on public.tickets ((substring(ticket_code from '^[^-]+-[0-9]{5}')))
+where support_category = 'Burnout' and ticket_code is not null;
 
 -- =====================================================
 -- TICKET RLS

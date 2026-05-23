@@ -972,7 +972,7 @@ export default function MarketingAdminPage() {
                   <p>{MARKETING_PLACEMENT_LABELS[activePost.placement]} / {statusLabels[activePost.status]}</p>
                 </div>
                 <button type="button" className="ma-drawer-close" onClick={() => setEditorOpen(false)} aria-label="Close editor">
-                  <X aria-hidden="true" />
+                  &times;
                 </button>
               </div>
 

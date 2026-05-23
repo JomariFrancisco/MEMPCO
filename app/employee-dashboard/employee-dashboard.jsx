@@ -121,12 +121,7 @@ const getConcernOptionsForCategory = (category = '') => HELPDESK_CATEGORY_CONCER
 const OTHER_SERVICES_STORAGE_KEY = 'mempcop-employee-other-services';
 const OTHER_SERVICE_CATEGORIES = [
   'Burnout',
-  'Office Equipment Request',
-  'Facilities / Maintenance Request',
-  'Custodial Assistance',
-  'Asset / Equipment Request',
-  'Document / Records Request',
-  'Other Company Service',
+  'Other',
 ];
 
 const createOtherServiceId = () => {
@@ -139,9 +134,13 @@ const createOtherServiceId = () => {
 const getNewOtherServiceForm = (user = {}) => ({
   branch: user.branch || user.office || '',
   custodian: '',
+  brand: '',
+  model: '',
+  serialNumber: '',
   deviceName: '',
   department: user.department || '',
   supportCategory: '',
+  requestedService: '',
   remarks: '',
 });
 
@@ -152,8 +151,14 @@ const getOtherServiceRemarksPlaceholder = (category = '') => {
     return 'Write the burnout details, affected device, location, and assistance needed.';
   }
 
+  if (category === 'Other') {
+    return 'Write the service details, preferred location, schedule, or special instructions.';
+  }
+
   return `Write additional details about the ${category} request.`;
 };
+
+const getTicketDisplayCode = (ticket = {}) => ticket.ticketCode || ticket.id || '';
 
 const ANNOUNCEMENTS = [
   {
@@ -1177,7 +1182,7 @@ function TicketConversationPanel({
             {ticket?.id ? (
               <>
                 <span className="ticket-chat-title-label">Ticket ID:</span>
-                <span className="ticket-chat-title-id">{ticket.id}</span>
+                <span className="ticket-chat-title-id">{getTicketDisplayCode(ticket)}</span>
               </>
             ) : (
               'Employee and ICT communication'
@@ -1189,7 +1194,7 @@ function TicketConversationPanel({
         </span>
         {onClose && (
           <button type="button" className="ticket-chat-close" onClick={onClose} aria-label="Minimize conversation">
-            <MonoIcon icon={X} />
+            &times;
           </button>
         )}
       </div>
@@ -1317,7 +1322,7 @@ function EmployeeTicketDetailModal({
         <div className="admin-modal-head ticket-action-head">
           <div>
             <div className="ticket-action-title-row">
-              <span className="ticket-id">{ticket.id}</span>
+              <span className="ticket-id">{getTicketDisplayCode(ticket)}</span>
               <div className="ticket-action-title-copy">
                 <h3>{ticket.concernType}</h3>
                 <p>{ticket.branch} - {ticket.department}</p>
@@ -1326,7 +1331,7 @@ function EmployeeTicketDetailModal({
           </div>
 
           <button type="button" className="admin-modal-close" onClick={onClose} aria-label="Close modal">
-            <MonoIcon icon={X} />
+            &times;
           </button>
         </div>
 
@@ -1348,6 +1353,10 @@ function EmployeeTicketDetailModal({
         {/* Info grid — mirrors admin ticket-action-info-grid */}
         <div className="admin-modal-grid ticket-action-info-grid">
           <div className="ticket-meta-cell">
+            <span>Ticket Code</span>
+            <p>{getTicketDisplayCode(ticket)}</p>
+          </div>
+          <div className="ticket-meta-cell">
             <span>Branch</span>
             <p>{ticket.branch || 'Not specified'}</p>
           </div>
@@ -1367,6 +1376,24 @@ function EmployeeTicketDetailModal({
             <span>Device / System</span>
             <p>{ticket.deviceName || 'Not specified'}</p>
           </div>
+          {ticket.brand && (
+            <div className="ticket-meta-cell">
+              <span>Brand & Model</span>
+              <p>{ticket.brand}</p>
+            </div>
+          )}
+          {ticket.serialNumber && (
+            <div className="ticket-meta-cell">
+              <span>Serial Number</span>
+              <p>{ticket.serialNumber}</p>
+            </div>
+          )}
+          {ticket.custodian && (
+            <div className="ticket-meta-cell">
+              <span>Custodian</span>
+              <p>{ticket.custodian}</p>
+            </div>
+          )}
           <div className="ticket-meta-cell">
             <span>Contact</span>
             <p>{ticket.contactNumber || 'Not specified'}</p>
@@ -1638,7 +1665,7 @@ function DashboardView({ user, tickets, openTickets, onGoTo }) {
                 <div className="ticket-header">
                   <div className="ticket-header-left">
                     <h4>{latestTicket.concernType || 'Helpdesk Ticket'}</h4>
-                    <span className="ticket-id">{latestTicket.id}</span>
+                    <span className="ticket-id">{getTicketDisplayCode(latestTicket)}</span>
                   </div>
                   <span className="ticket-date">{latestSubmittedDate}</span>
                 </div>
@@ -1717,7 +1744,7 @@ function DashboardView({ user, tickets, openTickets, onGoTo }) {
             <div className="dashboard-other-services-note">
               <strong>Other Services</strong>
               <p>
-                Non-ICT requests are handled separately under Other Services. Available categories include {OTHER_SERVICE_CATEGORIES.slice(0, 3).join(', ')} and more.
+                Use Burnout for unit preparation requests, or choose Other and type the exact service you need.
               </p>
               <button type="button" className="quick-action-btn" onClick={() => onGoTo('otherServices')}>
                 <MonoIcon icon={Wrench} />
@@ -2421,7 +2448,7 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
                     <div className="ticket-header">
                       <div className="ticket-header-left">
                         <h4>{ticket.concernType}</h4>
-                        <span className="ticket-id">{ticket.id}</span>
+                        <span className="ticket-id">{getTicketDisplayCode(ticket)}</span>
                       </div>
                       <span className="ticket-date">{ticket.date}</span>
                     </div>
@@ -2815,11 +2842,15 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
    OTHER SERVICES VIEW
 ========================= */
 
-function OtherServicesView({ user }) {
+function OtherServicesView({ user, reloadTickets }) {
   const [form, setForm] = useState(() => getNewOtherServiceForm(user));
   const [requests, setRequests] = useState([]);
   const [formError, setFormError] = useState('');
   const [successNotice, setSuccessNotice] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const isBurnoutRequest = form.supportCategory === 'Burnout';
+  const isOtherRequest = form.supportCategory === 'Other';
+  const requestedServiceLabel = String(form.requestedService || '').trim();
 
   useBodyScrollLock(Boolean(successNotice));
 
@@ -2844,7 +2875,22 @@ function OtherServicesView({ user }) {
 
   const handleChange = (field, value) => {
     setFormError('');
-    setForm((current) => ({ ...current, [field]: value }));
+    setForm((current) => {
+      if (field === 'supportCategory') {
+        return {
+          ...current,
+          supportCategory: value,
+          custodian: value === 'Burnout' ? current.custodian : '',
+          brand: value === 'Burnout' ? current.brand : '',
+          model: value === 'Burnout' ? current.model : '',
+          serialNumber: value === 'Burnout' ? current.serialNumber : '',
+          deviceName: '',
+          requestedService: value === 'Other' ? current.requestedService : '',
+        };
+      }
+
+      return { ...current, [field]: value };
+    });
   };
 
   const saveRequests = (nextRequests) => {
@@ -2855,15 +2901,13 @@ function OtherServicesView({ user }) {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     const requiredFields = [
-      ['branch', 'Branch or Location'],
-      ['custodian', 'Custodian'],
-      ['deviceName', 'Device'],
-      ['department', 'Department'],
-      ['supportCategory', 'Support Category'],
+      ['branch', isBurnoutRequest ? 'Branch / Location to be Assigned' : 'Branch or Location'],
+      ['department', isBurnoutRequest ? 'Department of the custodian' : 'Department'],
+      ['supportCategory', 'Service Type'],
     ];
 
     const missing = requiredFields.find(([field]) => !String(form[field] || '').trim());
@@ -2873,19 +2917,106 @@ function OtherServicesView({ user }) {
       return;
     }
 
-    const newRequest = {
-      id: createOtherServiceId(),
-      ...form,
-      status: 'Submitted',
-      date: new Date().toLocaleString(),
-    };
+    if (isOtherRequest && !requestedServiceLabel) {
+      setFormError('Requested service is required.');
+      return;
+    }
 
-    saveRequests([newRequest, ...requests]);
-    setForm(getNewOtherServiceForm(user));
-    setSuccessNotice({
-      title: 'Other Service Submitted',
-      message: `Your ${form.supportCategory} request was submitted successfully and saved in Other Services.`,
-    });
+    if (isBurnoutRequest && !String(form.custodian || '').trim()) {
+      setFormError('Custodian is required for Helpdesk Burnout.');
+      return;
+    }
+
+    if (isBurnoutRequest && !String(form.brand || '').trim()) {
+      setFormError('Brand is required for Helpdesk Burnout.');
+      return;
+    }
+
+    if (isBurnoutRequest && !String(form.model || '').trim()) {
+      setFormError('Model is required for Helpdesk Burnout.');
+      return;
+    }
+
+    if (isBurnoutRequest && !String(form.serialNumber || '').trim()) {
+      setFormError('Serial number is required for Helpdesk Burnout.');
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const submittedAt = new Date().toLocaleString();
+      let savedRequest;
+
+      if (isBurnoutRequest) {
+        const brandModel = `${String(form.brand || '').trim()} ${String(form.model || '').trim()}`.trim();
+        const description = [
+          'Helpdesk Burnout Request',
+          `Custodian: ${form.custodian}`,
+          `Brand: ${form.brand}`,
+          `Model: ${form.model}`,
+          `Serial Number: ${form.serialNumber}`,
+          'Service Type: Burnout',
+          `Branch / Location to be Assigned: ${form.branch}`,
+          `Department of the custodian: ${form.department}`,
+          `Remarks: ${form.remarks || 'None'}`,
+        ].join('\n');
+
+        const ticket = await createTicket({
+          user,
+          form: {
+            ...form,
+            brand: brandModel,
+            model: form.model,
+            deviceType: 'Unit',
+            deviceName: 'Unit',
+            serialNumber: form.serialNumber,
+            supportCategory: 'Burnout',
+            concernType: 'Helpdesk Burnout',
+            description,
+            sla: 'Low',
+            impact: 'Device burnout request',
+            lastEmployeeUpdate: submittedAt,
+          },
+        });
+
+        savedRequest = {
+          id: ticket.ticketCode || ticket.id,
+          ticketId: ticket.id,
+          ticketCode: ticket.ticketCode,
+          ...form,
+          brand: brandModel,
+          status: 'Submitted',
+          date: submittedAt,
+        };
+
+        await reloadTickets?.();
+      } else {
+        savedRequest = {
+          id: createOtherServiceId(),
+          ...form,
+          supportCategory: requestedServiceLabel || form.supportCategory,
+          serviceType: form.supportCategory,
+          requestedService: requestedServiceLabel,
+          status: 'Submitted',
+          date: submittedAt,
+        };
+      }
+
+      saveRequests([savedRequest, ...requests]);
+      setForm(getNewOtherServiceForm(user));
+      setFormError('');
+      setSuccessNotice({
+        title: isBurnoutRequest ? 'Helpdesk Burnout Submitted' : 'Other Service Submitted',
+        message: isBurnoutRequest
+          ? `Your Helpdesk Burnout ticket ${savedRequest.id} was submitted successfully.`
+          : `Your ${requestedServiceLabel || form.supportCategory} request was submitted successfully and saved in Other Services.`,
+      });
+    } catch (error) {
+      setFormError(error.message || 'Unable to submit request. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -2900,7 +3031,7 @@ function OtherServicesView({ user }) {
         </div>
 
         <div className="helpdesk-banner-actions">
-          <span className="helpdesk-badge">{OTHER_SERVICE_CATEGORIES.length} Categories</span>
+          <span className="helpdesk-badge">Burnout / Other</span>
           <span className="helpdesk-badge">{requests.length} Request{requests.length === 1 ? '' : 's'}</span>
         </div>
       </section>
@@ -2915,8 +3046,27 @@ function OtherServicesView({ user }) {
 
         <form className="ticket-form-wrap" onSubmit={handleSubmit}>
           <div className="ticket-form-grid other-service-grid">
+            <div className="ticket-form-group full other-service-category-row">
+              <label htmlFor="other-category">Service Type</label>
+              <select
+                id="other-category"
+                className="ticket-field ticket-select other-service-category-select"
+                value={form.supportCategory}
+                onChange={(e) => handleChange('supportCategory', e.target.value)}
+                required
+              >
+                <option value="" disabled>Select other service</option>
+                {OTHER_SERVICE_CATEGORIES.map((category) => (
+                  <option key={category} value={category}>{category}</option>
+                ))}
+              </select>
+              <span className="ticket-form-hint">Choose Burnout for unit preparation, or Other for requests like cabling.</span>
+            </div>
+
             <div className="ticket-form-group">
-              <label htmlFor="other-branch">Branch / Location</label>
+              <label htmlFor="other-branch">
+                {isBurnoutRequest ? 'Branch / Location to be Assigned' : 'Branch / Location'}
+              </label>
               <select
                 id="other-branch"
                 className="ticket-field ticket-select"
@@ -2931,37 +3081,83 @@ function OtherServicesView({ user }) {
               </select>
             </div>
 
-            <div className="ticket-form-group">
-              <label htmlFor="other-custodian">Custodian</label>
-              <input
-                id="other-custodian"
-                className="ticket-field ticket-input"
-                type="text"
-                value={form.custodian}
-                onChange={(e) => handleChange('custodian', e.target.value)}
-                placeholder="Name of custodian"
-                required
-              />
-            </div>
+            {isBurnoutRequest && (
+              <div className="ticket-form-group">
+                <label htmlFor="other-custodian">Custodian</label>
+                <input
+                  id="other-custodian"
+                  className="ticket-field ticket-input"
+                  type="text"
+                  value={form.custodian}
+                  onChange={(e) => handleChange('custodian', e.target.value)}
+                  placeholder="Name of custodian"
+                  required
+                />
+              </div>
+            )}
+
+            {isOtherRequest && (
+              <div className="ticket-form-group">
+                <label htmlFor="other-requested-service">Requested Service</label>
+                <input
+                  id="other-requested-service"
+                  className="ticket-field ticket-input"
+                  type="text"
+                  value={form.requestedService}
+                  onChange={(e) => handleChange('requestedService', e.target.value)}
+                  placeholder="Example: Cabling, office transfer, maintenance support"
+                  maxLength={120}
+                  required
+                />
+                <span className="ticket-form-hint">Enter the exact service you need if it is not Burnout.</span>
+              </div>
+            )}
+
+            {isBurnoutRequest && (
+              <>
+                <div className="ticket-form-group">
+                  <label htmlFor="other-brand">Brand</label>
+                  <input
+                    id="other-brand"
+                    className="ticket-field ticket-input"
+                    type="text"
+                    value={form.brand}
+                    onChange={(e) => handleChange('brand', e.target.value)}
+                    placeholder="ASUS, HP, LENOVO, EPSON"
+                    required
+                  />
+                </div>
+
+                <div className="ticket-form-group">
+                  <label htmlFor="other-model">Model</label>
+                  <input
+                    id="other-model"
+                    className="ticket-field ticket-input"
+                    type="text"
+                    value={form.model}
+                    onChange={(e) => handleChange('model', e.target.value)}
+                    placeholder="ThinkPad T14, LaserJet M404, etc."
+                    required
+                  />
+                </div>
+
+                <div className="ticket-form-group">
+                  <label htmlFor="other-serial">Serial Number</label>
+                  <input
+                    id="other-serial"
+                    className="ticket-field ticket-input"
+                    type="text"
+                    value={form.serialNumber}
+                    onChange={(e) => handleChange('serialNumber', e.target.value)}
+                    placeholder="Enter asset serial number"
+                    required
+                  />
+                </div>
+              </>
+            )}
 
             <div className="ticket-form-group">
-              <label htmlFor="other-device">Device</label>
-              <select
-                id="other-device"
-                className="ticket-field ticket-select"
-                value={form.deviceName}
-                onChange={(e) => handleChange('deviceName', e.target.value)}
-                required
-              >
-                <option value="" disabled>Select device</option>
-                {DEVICE_OPTIONS.map((device) => (
-                  <option key={device} value={device}>{device}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="ticket-form-group">
-              <label htmlFor="other-department">Department</label>
+              <label htmlFor="other-department">{isBurnoutRequest ? 'Department of the custodian' : 'Department'}</label>
               <select
                 id="other-department"
                 className="ticket-field ticket-select"
@@ -2974,23 +3170,6 @@ function OtherServicesView({ user }) {
                   <option key={dept} value={dept}>{dept}</option>
                 ))}
               </select>
-            </div>
-
-            <div className="ticket-form-group full other-service-category-row">
-              <label htmlFor="other-category">Support Category</label>
-              <select
-                id="other-category"
-                className="ticket-field ticket-select other-service-category-select"
-                value={form.supportCategory}
-                onChange={(e) => handleChange('supportCategory', e.target.value)}
-                required
-              >
-                <option value="" disabled>Select other service</option>
-                {OTHER_SERVICE_CATEGORIES.map((category) => (
-                  <option key={category} value={category}>{category}</option>
-                ))}
-              </select>
-              <span className="ticket-form-hint">Choose the proper company service. Burnout is one option under Other Services.</span>
             </div>
 
             <div className="ticket-form-group full">
@@ -3008,9 +3187,9 @@ function OtherServicesView({ user }) {
 
           {formError && <div className="form-error">{formError}</div>}
 
-          <button type="submit" className="auth-submit-btn">
+          <button type="submit" className="auth-submit-btn" disabled={isSubmitting}>
             <MonoIcon icon={Send} />
-            Submit Other Service
+            {isSubmitting ? 'Submitting...' : 'Submit Other Service'}
           </button>
         </form>
       </section>
@@ -3030,24 +3209,40 @@ function OtherServicesView({ user }) {
                 <div className="ticket-header">
                   <div className="ticket-header-left">
                     <h4>{request.supportCategory}</h4>
-                    <span className="ticket-id">{request.id}</span>
+                    <span className="ticket-id">{request.ticketCode || request.id}</span>
                   </div>
                   <span className="ticket-date">{request.date}</span>
                 </div>
 
                 <div className="ticket-meta-grid">
                   <div className="ticket-meta-cell">
-                    <span>Branch</span>
+                    <span>{request.supportCategory === 'Burnout' ? 'Assigned Location' : 'Branch'}</span>
                     <p>{request.branch}</p>
                   </div>
-                  <div className="ticket-meta-cell">
-                    <span>Custodian</span>
-                    <p>{request.custodian}</p>
-                  </div>
-                  <div className="ticket-meta-cell">
-                    <span>Device</span>
-                    <p>{request.deviceName}</p>
-                  </div>
+                  {request.custodian && (
+                    <div className="ticket-meta-cell">
+                      <span>Custodian</span>
+                      <p>{request.custodian}</p>
+                    </div>
+                  )}
+                  {request.deviceName && (
+                    <div className="ticket-meta-cell">
+                      <span>{request.supportCategory === 'Burnout' ? 'Asset Type / Device' : 'Device'}</span>
+                      <p>{request.deviceName}</p>
+                    </div>
+                  )}
+                  {request.brand && (
+                    <div className="ticket-meta-cell">
+                      <span>Brand & Model</span>
+                      <p>{request.brand}</p>
+                    </div>
+                  )}
+                  {request.serialNumber && (
+                    <div className="ticket-meta-cell">
+                      <span>Serial Number</span>
+                      <p>{request.serialNumber}</p>
+                    </div>
+                  )}
                   <div className="ticket-meta-cell">
                     <span>Department</span>
                     <p>{request.department}</p>
@@ -3327,7 +3522,7 @@ export default function EmployeeDashboardPage() {
               )}
 
               {activeSection === 'otherServices' && (
-                <OtherServicesView user={user} />
+                <OtherServicesView user={user} reloadTickets={() => loadTickets(user)} />
               )}
             </section>
           </div>

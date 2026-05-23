@@ -1241,17 +1241,32 @@ html {
 }
 
 .cp-application-close {
-  display: inline-grid;
-  width: 36px;
-  height: 36px;
-  place-items: center;
-  border: 1px solid rgba(220, 38, 38, 0.14);
-  border-radius: 12px;
-  background: #fff;
-  color: var(--ink);
-  font: inherit;
-  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #111827;
+  font-size: 1.6rem;
+  line-height: 1;
+  font-weight: 300;
+  opacity: 0.6;
   cursor: pointer;
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease,
+    color 0.18s ease;
+}
+
+.cp-application-close:hover,
+.cp-application-close:focus-visible {
+  opacity: 1;
+  color: var(--red, #dc2626);
+  transform: scale(1.08);
+  outline: none;
 }
 
 .cp-application-dialog-actions {
