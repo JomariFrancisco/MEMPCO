@@ -13,8 +13,9 @@ import {
 import { createClient } from '@/lib/supabase/server';
 
 const BASE_PROFILE_COLUMNS =
-  'id, role, full_name, employee_id, department, branch, office, email, phone, status, created_at';
+  'id, role, full_name, employee_id, department, branch, office, email, phone, status, created_at, updated_at';
 const PROFILE_COLUMNS = `${BASE_PROFILE_COLUMNS}, designation`;
+const AUDIT_COLUMNS = 'id, user_id, actor_id, actor_name, action, summary, changes, created_at';
 
 const normalizeCreateUserError = (error) => {
   const message = error?.message || '';
@@ -38,6 +39,28 @@ const isMissingDesignationColumnError = (error) =>
   error?.code === '42703' ||
   error?.code === 'PGRST204' ||
   error?.message?.toLowerCase().includes('designation');
+
+const isMissingAuditTableError = (error) =>
+  error?.code === '42P01' ||
+  error?.code === 'PGRST205' ||
+  error?.message?.toLowerCase().includes('user_account_audit_logs');
+
+const normalizePortalRole = (role = '') =>
+  String(role || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[-\s]+/g, '_');
+
+const isPrivilegedRole = (role = '') => {
+  const normalizedRole = normalizePortalRole(role);
+  return normalizedRole === 'admin' || normalizedRole === 'superadmin';
+};
+
+const getActorName = (auth) =>
+  auth?.profile?.full_name || auth?.user?.email || 'Super Admin';
+
+const getProfileName = (profile = {}) =>
+  profile.full_name || profile.email || 'portal account';
 
 const withoutDesignation = (profileRow) => {
   const { designation, ...row } = profileRow;
@@ -78,11 +101,15 @@ const authorizeSuperadmin = async () => {
 
   const { data: adminProfile, error: profileError } = await supabase
     .from('profiles')
-    .select('role')
+    .select('role, full_name, email, status')
     .eq('id', user.id)
     .maybeSingle();
 
-  if (profileError || adminProfile?.role !== 'superadmin') {
+  if (
+    profileError ||
+    adminProfile?.role !== 'superadmin' ||
+    String(adminProfile?.status || 'Active').trim().toLowerCase() !== 'active'
+  ) {
     return {
       response: NextResponse.json(
         { error: 'Super admin access required.' },
@@ -91,8 +118,155 @@ const authorizeSuperadmin = async () => {
     };
   }
 
-  return { user };
+  return { user, profile: adminProfile };
 };
+
+const readProfileById = async (supabaseAdmin, id) => {
+  const result = await supabaseAdmin
+    .from('profiles')
+    .select(PROFILE_COLUMNS)
+    .eq('id', id)
+    .maybeSingle();
+
+  if (!result.error || !isMissingDesignationColumnError(result.error)) {
+    return result;
+  }
+
+  return supabaseAdmin
+    .from('profiles')
+    .select(BASE_PROFILE_COLUMNS)
+    .eq('id', id)
+    .maybeSingle();
+};
+
+const assertNoDuplicateProfile = async (supabaseAdmin, account, excludeId = '') => {
+  const normalizedEmail = account.email.trim();
+  const normalizedEmployeeId = account.employeeId.trim();
+
+  const { data: emailProfiles, error: emailError } = await supabaseAdmin
+    .from('profiles')
+    .select('id, email')
+    .ilike('email', normalizedEmail)
+    .limit(1);
+
+  if (emailError) {
+    throw new Error(emailError.message || 'Unable to verify duplicate email.');
+  }
+
+  const emailProfile = emailProfiles?.[0];
+
+  if (emailProfile?.id && emailProfile.id !== excludeId) {
+    throw new Error('An account with this email already exists.');
+  }
+
+  const { data: employeeProfiles, error: employeeError } = await supabaseAdmin
+    .from('profiles')
+    .select('id, employee_id')
+    .eq('employee_id', normalizedEmployeeId)
+    .limit(1);
+
+  if (employeeError) {
+    throw new Error(employeeError.message || 'Unable to verify duplicate employee ID.');
+  }
+
+  const employeeProfile = employeeProfiles?.[0];
+
+  if (employeeProfile?.id && employeeProfile.id !== excludeId) {
+    throw new Error('An account with this employee ID already exists.');
+  }
+};
+
+const getProfileChanges = (before = {}, after = {}) => {
+  const fields = [
+    ['full_name', 'Name'],
+    ['employee_id', 'Employee ID'],
+    ['department', 'Department'],
+    ['branch', 'Branch'],
+    ['designation', 'Job Title'],
+    ['email', 'Email'],
+    ['phone', 'Phone'],
+    ['role', 'Role'],
+    ['status', 'Status'],
+  ];
+
+  return fields.reduce((changes, [key, label]) => {
+    const from = String(before?.[key] || '');
+    const to = String(after?.[key] || '');
+
+    if (from !== to) {
+      changes[key] = { label, from, to };
+    }
+
+    return changes;
+  }, {});
+};
+
+const summarizeProfileChanges = (changes) => {
+  const labels = Object.values(changes || {}).map((change) => change.label);
+
+  if (!labels.length) return 'Account reviewed with no profile changes.';
+  if (labels.length === 1) return `${labels[0]} updated.`;
+  if (labels.length <= 3) return `${labels.join(', ')} updated.`;
+
+  return `${labels.slice(0, 3).join(', ')} and ${labels.length - 3} more fields updated.`;
+};
+
+const writeAuditLog = async (supabaseAdmin, auth, { userId, action, summary, changes = {} }) => {
+  const { error } = await supabaseAdmin
+    .from('user_account_audit_logs')
+    .insert({
+      user_id: userId,
+      actor_id: auth.user.id,
+      actor_name: getActorName(auth),
+      action,
+      summary,
+      changes,
+    });
+
+  if (error && !isMissingAuditTableError(error)) {
+    console.warn('[User Audit Log Error]', error);
+  }
+};
+
+export async function GET(request) {
+  try {
+    const auth = await authorizeSuperadmin();
+    if (auth.response) return auth.response;
+
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get('userId');
+
+    if (!userId) {
+      return NextResponse.json({ logs: [] });
+    }
+
+    const supabaseAdmin = hasSupabaseAdminConfig() ? createAdminClient() : await createClient();
+    const { data, error } = await supabaseAdmin
+      .from('user_account_audit_logs')
+      .select(AUDIT_COLUMNS)
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(30);
+
+    if (error) {
+      if (isMissingAuditTableError(error)) {
+        return NextResponse.json({ logs: [] });
+      }
+
+      return NextResponse.json(
+        { error: error.message || 'Unable to load user audit trail.' },
+        { status: 400 }
+      );
+    }
+
+    return NextResponse.json({ logs: data || [] });
+  } catch (error) {
+    return NextResponse.json(
+      { error: error.message || 'Unable to load user audit trail.' },
+      { status: 500 }
+    );
+  }
+}
 
 export async function POST(request) {
   try {
@@ -109,6 +283,7 @@ export async function POST(request) {
     }
 
     const supabaseAdmin = createAdminClient();
+    await assertNoDuplicateProfile(supabaseAdmin, account);
 
     const { data: created, error: createError } =
       await supabaseAdmin.auth.admin.createUser({
@@ -141,6 +316,16 @@ export async function POST(request) {
       );
     }
 
+    await writeAuditLog(supabaseAdmin, auth, {
+      userId: created.user.id,
+      action: 'created',
+      summary: `Account created for ${account.name}.`,
+      changes: {
+        role: { label: 'Role', from: '', to: account.role },
+        status: { label: 'Status', from: '', to: 'Active' },
+      },
+    });
+
     return NextResponse.json({ profile }, { status: 201 });
   } catch (error) {
     const status = error.name === 'ValidationError' ? 400 : 500;
@@ -166,6 +351,13 @@ export async function PATCH(request) {
       );
     }
 
+    if (account.id === auth.user.id && account.status !== 'Active') {
+      return NextResponse.json(
+        { error: 'You cannot lock, deactivate, or mark your own superadmin account for setup.' },
+        { status: 400 }
+      );
+    }
+
     if (!hasSupabaseAdminConfig()) {
       const supabase = await createClient();
 
@@ -176,11 +368,10 @@ export async function PATCH(request) {
         );
       }
 
-      const { data: existingProfile, error: existingProfileError } = await supabase
-        .from('profiles')
-        .select('email')
-        .eq('id', account.id)
-        .maybeSingle();
+      const { data: existingProfile, error: existingProfileError } = await readProfileById(
+        supabase,
+        account.id
+      );
 
       if (existingProfileError) {
         return NextResponse.json(
@@ -199,6 +390,19 @@ export async function PATCH(request) {
         );
       }
 
+      await assertNoDuplicateProfile(supabase, account, account.id);
+
+      const roleChanged = normalizePortalRole(existingProfile.role) !== normalizePortalRole(account.role);
+      const privilegedRoleChange =
+        roleChanged && (isPrivilegedRole(existingProfile.role) || isPrivilegedRole(account.role));
+
+      if (privilegedRoleChange && !account.confirmPrivilegedRoleChange) {
+        return NextResponse.json(
+          { error: 'Confirm this privileged role change before saving.' },
+          { status: 400 }
+        );
+      }
+
       const profileRow = toPortalProfileRow(account, account.id);
       const { data: profile, error: updateError } = await saveProfileRow(
         supabase,
@@ -213,10 +417,42 @@ export async function PATCH(request) {
         );
       }
 
+      const changes = getProfileChanges(existingProfile, profile);
+      await writeAuditLog(supabase, auth, {
+        userId: account.id,
+        action: 'updated',
+        summary: summarizeProfileChanges(changes),
+        changes,
+      });
+
       return NextResponse.json({ profile });
     }
 
     const supabaseAdmin = createAdminClient();
+    const { data: existingProfile, error: existingProfileError } = await readProfileById(
+      supabaseAdmin,
+      account.id
+    );
+
+    if (existingProfileError || !existingProfile) {
+      return NextResponse.json(
+        { error: existingProfileError?.message || 'Unable to find the user profile to update.' },
+        { status: 400 }
+      );
+    }
+
+    await assertNoDuplicateProfile(supabaseAdmin, account, account.id);
+
+    const roleChanged = normalizePortalRole(existingProfile.role) !== normalizePortalRole(account.role);
+    const privilegedRoleChange =
+      roleChanged && (isPrivilegedRole(existingProfile.role) || isPrivilegedRole(account.role));
+
+    if (privilegedRoleChange && !account.confirmPrivilegedRoleChange) {
+      return NextResponse.json(
+        { error: 'Confirm this privileged role change before saving.' },
+        { status: 400 }
+      );
+    }
 
     const authUpdates = {
       email: account.email,
@@ -252,6 +488,16 @@ export async function PATCH(request) {
         { status: 400 }
       );
     }
+
+    const changes = getProfileChanges(existingProfile, profile);
+    await writeAuditLog(supabaseAdmin, auth, {
+      userId: account.id,
+      action: account.password ? 'updated_password' : 'updated',
+      summary: account.password
+        ? `${summarizeProfileChanges(changes)} Password was reset by admin.`
+        : summarizeProfileChanges(changes),
+      changes,
+    });
 
     return NextResponse.json({ profile });
   } catch (error) {
@@ -290,6 +536,15 @@ export async function DELETE(request) {
     }
 
     const supabaseAdmin = createAdminClient();
+    const { data: existingProfile } = await readProfileById(supabaseAdmin, id);
+
+    await writeAuditLog(supabaseAdmin, auth, {
+      userId: id,
+      action: 'deleted',
+      summary: `Account deleted for ${getProfileName(existingProfile || {})}.`,
+      changes: {},
+    });
+
     const { error } = await supabaseAdmin.auth.admin.deleteUser(id);
 
     if (error) {

@@ -100,6 +100,8 @@ alter column updated_at set not null;
 
 create index if not exists profiles_email_idx on public.profiles (lower(email));
 create index if not exists profiles_role_idx on public.profiles (role);
+create unique index if not exists profiles_email_unique_idx on public.profiles (lower(email));
+create unique index if not exists profiles_employee_id_unique_idx on public.profiles (lower(employee_id)) where employee_id is not null and employee_id <> '';
 
 -- =====================================================
 -- AUTO PROFILE CREATION
@@ -272,6 +274,45 @@ set search_path = public
 as $$
   select public.has_portal_role(array['hr_admin']);
 $$;
+
+-- =====================================================
+-- USER ACCOUNT AUDIT LOGS
+-- =====================================================
+
+create table if not exists public.user_account_audit_logs (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references public.profiles(id) on delete set null,
+  actor_id uuid references public.profiles(id) on delete set null,
+  actor_name text,
+  action text not null,
+  summary text not null,
+  changes jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now()
+);
+
+alter table public.user_account_audit_logs
+add column if not exists user_id uuid references public.profiles(id) on delete set null,
+add column if not exists actor_id uuid references public.profiles(id) on delete set null,
+add column if not exists actor_name text,
+add column if not exists action text not null default 'updated',
+add column if not exists summary text not null default 'Account updated',
+add column if not exists changes jsonb not null default '{}'::jsonb,
+add column if not exists created_at timestamptz not null default now();
+
+alter table public.user_account_audit_logs enable row level security;
+
+drop policy if exists "Superadmins can read user audit logs" on public.user_account_audit_logs;
+create policy "Superadmins can read user audit logs"
+on public.user_account_audit_logs for select
+using (public.is_superadmin());
+
+drop policy if exists "Superadmins can insert user audit logs" on public.user_account_audit_logs;
+create policy "Superadmins can insert user audit logs"
+on public.user_account_audit_logs for insert
+with check (public.is_superadmin());
+
+create index if not exists user_account_audit_logs_user_created_idx
+on public.user_account_audit_logs (user_id, created_at desc);
 
 -- =====================================================
 -- PROFILE RLS
@@ -1565,6 +1606,7 @@ using (bucket_id = 'job-resumes' and public.is_superadmin());
 grant usage on schema public to anon, authenticated;
 
 grant select, insert, update, delete on public.profiles to authenticated;
+grant select, insert on public.user_account_audit_logs to authenticated;
 grant select, insert, update, delete on public.tickets to authenticated;
 grant select, insert, update, delete on public.ticket_messages to authenticated;
 grant select, insert, update, delete on public.user_notifications to authenticated;

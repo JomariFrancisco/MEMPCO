@@ -50,7 +50,9 @@ import {
   INACTIVE_ACCOUNT_MESSAGE,
   isAdminRole,
   isInactivePortalUser,
+  listPortalUserAuditLogs,
   listPortalUsers,
+  sendPasswordResetEmail,
   signOutPortal,
   updatePortalUser,
 } from '@/lib/auth/portalAuth';
@@ -404,6 +406,32 @@ const normalizePortalRole = (role = '') =>
     .trim()
     .toLowerCase()
     .replace(/[-_\s]+/g, '');
+
+const USER_ACCOUNT_STATUSES = [
+  'Active',
+  'Pending Setup',
+  'Password Reset Required',
+  'Locked',
+  'Inactive',
+];
+
+const ROLE_LABELS = {
+  employee: 'Employee',
+  admin: 'ICT Admin',
+  marketing_admin: 'Marketing Admin',
+  hr_admin: 'HR Admin',
+  superadmin: 'Super Admin',
+};
+
+const formatRoleLabel = (role = '') => ROLE_LABELS[role] || role || 'Employee';
+
+const normalizeComparable = (value = '') =>
+  String(value || '').trim().toLowerCase();
+
+const isPrivilegedPortalRole = (role = '') => {
+  const normalizedRole = normalizePortalRole(role);
+  return normalizedRole === 'admin' || normalizedRole === 'superadmin';
+};
 
 const isTicketStatus = (ticket, status) =>
   normalizeTicketStatus(ticket?.status) === normalizeTicketStatus(status);
@@ -2280,6 +2308,91 @@ const isTicketLockActive = (ticket) => {
 const isTicketLockedByOther = (ticket, userId) =>
   isTicketLockActive(ticket) && ticket.lockedBy && ticket.lockedBy !== userId;
 
+const formatTicketLockTime = (value) => {
+  const parsed = new Date(value || '');
+
+  if (Number.isNaN(parsed.getTime())) return '';
+
+  return parsed.toLocaleTimeString('en-PH', {
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+};
+
+const getTicketHandlingState = (ticket = {}) => {
+  const activeLock = isTicketLockActive(ticket);
+  const lockOwner = String(ticket.lockedByName || '').trim() || 'IT staff';
+  const assignedTechnician = hasAssignedTechnician(ticket) ? ticket.technician : '';
+  const startedAt = getTicketWorkStartedAt(ticket);
+  const endedAt = getTicketWorkEndedAt(ticket);
+  const status = normalizeTicketStatus(ticket.status);
+  const closedStatuses = [
+    'resolved',
+    'canceled',
+    'cancelled',
+    'passed burnout',
+    'ready for deployment',
+    'deployed',
+    'failed burnout',
+    'damaged',
+    'for repair',
+    'for replacement',
+  ];
+  const isClosed = closedStatuses.includes(status) || (!isUnresolved(ticket.status) && Boolean(startedAt));
+
+  if (activeLock) {
+    const lockExpiry = formatTicketLockTime(ticket.lockExpiresAt);
+
+    return {
+      tone: 'live',
+      icon: Wrench,
+      title: 'Being handled now',
+      detail: `Opened by ${lockOwner}`,
+      meta: lockExpiry ? `Reserved until ${lockExpiry}` : 'Live admin lock',
+    };
+  }
+
+  if (endedAt || isClosed) {
+    return {
+      tone: 'done',
+      icon: ShieldCheck,
+      title: 'Work completed',
+      detail: assignedTechnician ? `Handled by ${assignedTechnician}` : 'ICT action recorded',
+      meta: endedAt ? `Ended ${endedAt}` : ticket.lastUpdated || ticket.adminUpdatedAt || '',
+    };
+  }
+
+  if (!isTicketBeingHandled(ticket)) return null;
+
+  if (status === 'for inspection') {
+    return {
+      tone: 'queued',
+      icon: Clock3,
+      title: 'Queued for inspection',
+      detail: assignedTechnician ? `Assigned to ${assignedTechnician}` : 'ICT review is underway',
+      meta: startedAt ? `Started ${startedAt}` : ticket.lastUpdated || '',
+    };
+  }
+
+  if (status === 'under burnout') {
+    return {
+      tone: 'live',
+      icon: Monitor,
+      title: 'Under burnout monitoring',
+      detail: assignedTechnician ? `Assigned to ${assignedTechnician}` : 'Unit is being monitored',
+      meta: startedAt ? `Started ${startedAt}` : ticket.lastUpdated || '',
+    };
+  }
+
+  return {
+    tone: status === 'escalated' ? 'escalated' : 'active',
+    icon: status === 'escalated' ? ExternalLink : Wrench,
+    title: status === 'moved date' ? 'Scheduled work' : 'Being catered',
+    detail: assignedTechnician ? `Assigned to ${assignedTechnician}` : 'ICT has started work',
+    meta: startedAt ? `Started ${startedAt}` : ticket.lastUpdated || '',
+  };
+};
+
 const getTimeValue = (value) => {
   const parsed = new Date(value || '').getTime();
   return Number.isNaN(parsed) ? 0 : parsed;
@@ -2412,6 +2525,41 @@ function TicketBadges({ ticket }) {
       <span className={`priority ${slugify(ticket.sla)}`}>{ticket.sla}</span>
       {hasBurnoutReachedThreeDayMark(ticket) && <span className="status burnout-due">3-Day Mark</span>}
       {(ticket.saarRequired || ticket.saarAttachment?.name) && <span className="status saar">SAAR</span>}
+    </div>
+  );
+}
+
+function TicketHandlingIndicator({ ticket, compact = false, inline = false }) {
+  const handlingState = getTicketHandlingState(ticket);
+
+  if (!handlingState) return null;
+
+  const fullHandlingLabel = [
+    handlingState.title,
+    handlingState.detail,
+    handlingState.meta,
+  ].filter(Boolean).join('\n');
+
+  return (
+    <div
+      className={[
+        'ticket-handling-indicator',
+        handlingState.tone,
+        compact ? 'compact' : '',
+        inline ? 'inline' : '',
+      ].filter(Boolean).join(' ')}
+      aria-label={fullHandlingLabel.replace(/\n/g, '. ')}
+      data-handling-summary={fullHandlingLabel}
+      title={fullHandlingLabel}
+    >
+      <span className="ticket-handling-icon">
+        <MonoIcon icon={handlingState.icon} />
+      </span>
+      <div className="ticket-handling-copy">
+        <strong>{handlingState.title}</strong>
+        <p>{handlingState.detail}</p>
+      </div>
+      {handlingState.meta && <span className="ticket-handling-meta">{handlingState.meta}</span>}
     </div>
   );
 }
@@ -3006,6 +3154,8 @@ function TicketTable({
 
                   <TicketBadges ticket={ticket} />
                 </div>
+
+                <TicketHandlingIndicator ticket={ticket} compact={compact} />
 
                 <div className="admin-ticket-summary-grid">
                   <div>
@@ -4067,6 +4217,8 @@ function BranchesView({ branchSummary, tickets, onOpenTicket, onDeleteTicket, ca
                     <p>{ticket.department || 'No department'} / {ticket.supportCategory || 'No category'}</p>
                   </div>
 
+                  <TicketHandlingIndicator ticket={ticket} compact />
+
                   <div className="branch-monitor-ticket-meta">
                     <div>
                       <span>Requester</span>
@@ -4506,15 +4658,30 @@ function UsersView({ users, canManageUsers, currentUserId, onUsersChanged }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showEditPassword, setShowEditPassword] = useState(false);
   const [userSearch, setUserSearch] = useState('');
+  const [userStatusFilter, setUserStatusFilter] = useState('All');
   const [userPage, setUserPage] = useState(1);
+  const [auditLogs, setAuditLogs] = useState([]);
+  const [isAuditLoading, setIsAuditLoading] = useState(false);
   useBodyScrollLock(Boolean(editingUser));
+
+  const findDuplicateUser = (draft, field) => {
+    const value = normalizeComparable(draft?.[field]);
+    if (!value) return null;
+
+    return users.find((user) => (
+      user.id !== draft.id &&
+      normalizeComparable(user[field]) === value
+    ));
+  };
 
   const filteredUsers = useMemo(() => {
     const keyword = userSearch.trim().toLowerCase();
 
-    if (!keyword) return users;
-
     return users.filter((user) => {
+      const status = user.status || 'Active';
+      if (userStatusFilter !== 'All' && status !== userStatusFilter) return false;
+      if (!keyword) return true;
+
       const searchable = [
         user.name,
         user.email,
@@ -4533,7 +4700,7 @@ function UsersView({ users, canManageUsers, currentUserId, onUsersChanged }) {
 
       return searchable.includes(keyword);
     });
-  }, [users, userSearch]);
+  }, [users, userSearch, userStatusFilter]);
 
   const userTotalPages = Math.max(1, Math.ceil(filteredUsers.length / USERS_PAGE_SIZE));
   const safeUserPage = Math.min(userPage, userTotalPages);
@@ -4544,7 +4711,7 @@ function UsersView({ users, canManageUsers, currentUserId, onUsersChanged }) {
 
   useEffect(() => {
     setUserPage(1);
-  }, [userSearch, users.length]);
+  }, [userSearch, userStatusFilter, users.length]);
 
   useEffect(() => {
     if (userPage > userTotalPages) {
@@ -4561,6 +4728,24 @@ function UsersView({ users, canManageUsers, currentUserId, onUsersChanged }) {
     setEditForm(toUserEditForm(user));
     setMessage({ type: '', text: '' });
     setShowEditPassword(false);
+    setAuditLogs([]);
+    setIsAuditLoading(true);
+
+    listPortalUserAuditLogs(user.id)
+      .then((logs) => setAuditLogs(logs))
+      .catch((error) => {
+        setAuditLogs([
+          {
+            id: 'audit-error',
+            action: 'unavailable',
+            summary: error.message || 'Audit trail is not available yet.',
+            actorName: 'System',
+            createdAt: '',
+            changes: {},
+          },
+        ]);
+      })
+      .finally(() => setIsAuditLoading(false));
   };
 
   const updateEditForm = (field, value) => {
@@ -4570,6 +4755,7 @@ function UsersView({ users, canManageUsers, currentUserId, onUsersChanged }) {
   const closeEdit = () => {
     setEditingUser(null);
     setEditForm(null);
+    setAuditLogs([]);
   };
 
   const handleEditSubmit = async (e) => {
@@ -4578,7 +4764,38 @@ function UsersView({ users, canManageUsers, currentUserId, onUsersChanged }) {
     setMessage({ type: '', text: '' });
 
     try {
-      await updatePortalUser(editForm);
+      const duplicateEmail = findDuplicateUser(editForm, 'email');
+      const duplicateEmployeeId = findDuplicateUser(editForm, 'employeeId');
+
+      if (duplicateEmail) {
+        throw new Error(`Email already belongs to ${duplicateEmail.name || duplicateEmail.email}.`);
+      }
+
+      if (duplicateEmployeeId) {
+        throw new Error(`Employee ID already belongs to ${duplicateEmployeeId.name || duplicateEmployeeId.email}.`);
+      }
+
+      const roleChanged = normalizePortalRole(editingUser.role) !== normalizePortalRole(editForm.role);
+      const privilegedRoleChange =
+        roleChanged && (isPrivilegedPortalRole(editingUser.role) || isPrivilegedPortalRole(editForm.role));
+      let confirmPrivilegedRoleChange = false;
+
+      if (privilegedRoleChange) {
+        confirmPrivilegedRoleChange = window.confirm(
+          `Confirm privileged role change for ${editingUser.name || editingUser.email} from ${formatRoleLabel(editingUser.role)} to ${formatRoleLabel(editForm.role)}?`
+        );
+
+        if (!confirmPrivilegedRoleChange) {
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
+      await updatePortalUser({
+        ...editForm,
+        confirmPrivilegedRoleChange,
+        confirmOwnAccountChange: editForm.id === currentUserId,
+      });
       await onUsersChanged();
       setMessage({ type: 'success', text: 'User account updated.' });
       closeEdit();
@@ -4624,6 +4841,81 @@ function UsersView({ users, canManageUsers, currentUserId, onUsersChanged }) {
     }
   };
 
+  const editDuplicateEmail = editForm ? findDuplicateUser(editForm, 'email') : null;
+  const editDuplicateEmployeeId = editForm ? findDuplicateUser(editForm, 'employeeId') : null;
+  const editRoleChanged = editingUser && editForm
+    ? normalizePortalRole(editingUser.role) !== normalizePortalRole(editForm.role)
+    : false;
+  const editPrivilegedRoleChange = Boolean(
+    editingUser &&
+      editForm &&
+      editRoleChanged &&
+      (isPrivilegedPortalRole(editingUser.role) || isPrivilegedPortalRole(editForm.role))
+  );
+
+  const handleStatusAction = async (user, status) => {
+    if (user.id === currentUserId && status !== 'Active') {
+      setMessage({ type: 'error', text: 'You cannot lock or deactivate your own superadmin account.' });
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `${status} account for ${user.name || user.email}?`
+    );
+
+    if (!confirmed) return;
+
+    setIsSubmitting(true);
+    setMessage({ type: '', text: '' });
+
+    try {
+      await updatePortalUser({
+        ...toUserEditForm(user),
+        status,
+        confirmOwnAccountChange: user.id === currentUserId,
+      });
+      await onUsersChanged();
+      setEditingUser((current) => (current?.id === user.id ? { ...current, status } : current));
+      setEditForm((current) => (current?.id === user.id ? { ...current, status } : current));
+      setMessage({ type: 'success', text: `Account marked as ${status}.` });
+    } catch (error) {
+      setMessage({ type: 'error', text: error.message || 'Unable to update account status.' });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleSendReset = async (user) => {
+    const confirmed = window.confirm(
+      `Send a password reset email to ${user.email}?`
+    );
+
+    if (!confirmed) return;
+
+    setIsSubmitting(true);
+    setMessage({ type: '', text: '' });
+
+    try {
+      await sendPasswordResetEmail(user.email);
+      await updatePortalUser({
+        ...toUserEditForm(user),
+        status: 'Password Reset Required',
+      });
+      await onUsersChanged();
+      setEditingUser((current) =>
+        current?.id === user.id ? { ...current, status: 'Password Reset Required' } : current
+      );
+      setEditForm((current) =>
+        current?.id === user.id ? { ...current, status: 'Password Reset Required' } : current
+      );
+      setMessage({ type: 'success', text: 'Password reset email sent and account marked for reset.' });
+    } catch (error) {
+      setMessage({ type: 'error', text: error.message || 'Unable to send password reset email.' });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="dashboard-view">
       <section className="panel-card glass hero-panel">
@@ -4662,7 +4954,20 @@ function UsersView({ users, canManageUsers, currentUserId, onUsersChanged }) {
             </div>
           </label>
 
-          
+          <label className="ticket-form-group admin-user-status-filter" htmlFor="admin-user-status-filter">
+            <span>Status</span>
+            <select
+              id="admin-user-status-filter"
+              className="ticket-field ticket-select"
+              value={userStatusFilter}
+              onChange={(e) => setUserStatusFilter(e.target.value)}
+            >
+              <option value="All">All Statuses</option>
+              {USER_ACCOUNT_STATUSES.map((status) => (
+                <option key={status} value={status}>{status}</option>
+              ))}
+            </select>
+          </label>
         </div>
 
         <div className="admin-table-wrap users-table-wrap">
@@ -4689,13 +4994,13 @@ function UsersView({ users, canManageUsers, currentUserId, onUsersChanged }) {
                       <span>{user.createdAt || 'Registered'}</span>
                     </div>
                   </td>
-                  <td>{user.role}</td>
+                  <td>{formatRoleLabel(user.role)}</td>
                   <td>{user.email}</td>
                   <td>{user.employeeId}</td>
                   <td>{user.department}</td>
                   <td>{user.branch || user.office}</td>
                   <td>
-                    <span className={`status ${(user.status || 'Active').toLowerCase()}`}>
+                    <span className={`status ${slugify(user.status || 'Active')}`}>
                       {user.status || 'Active'}
                     </span>
                   </td>
@@ -4708,15 +5013,28 @@ function UsersView({ users, canManageUsers, currentUserId, onUsersChanged }) {
                           onClick={() => beginEdit(user)}
                           disabled={isSubmitting}
                         >
-                          Edit
+                          View
+                        </button>
+                        <button
+                          type="button"
+                          className="user-action-btn"
+                          onClick={() => handleSendReset(user)}
+                          disabled={isSubmitting || !user.email}
+                        >
+                          Reset
                         </button>
                         <button
                           type="button"
                           className="user-action-btn danger"
-                          onClick={() => handleDelete(user)}
+                          onClick={() =>
+                            handleStatusAction(
+                              user,
+                              (user.status || 'Active') === 'Inactive' ? 'Active' : 'Inactive'
+                            )
+                          }
                           disabled={isSubmitting || user.id === currentUserId}
                         >
-                          Delete
+                          {(user.status || 'Active') === 'Inactive' ? 'Activate' : 'Deactivate'}
                         </button>
                       </div>
                     </td>
@@ -4767,12 +5085,12 @@ function UsersView({ users, canManageUsers, currentUserId, onUsersChanged }) {
 
       {editingUser && editForm && (
         <div className="modal-overlay" role="dialog" aria-modal="true" aria-label="Edit user account">
-          <form className="modal-box glass admin-modal-box user-edit-modal" onSubmit={handleEditSubmit}>
+          <form className="modal-box glass admin-modal-box user-edit-modal user-detail-drawer" onSubmit={handleEditSubmit}>
             <div className="admin-modal-head">
               <div>
-                <span className="section-kicker">Edit User</span>
+                <span className="section-kicker">User Account</span>
                 <h3>{editingUser.name}</h3>
-                <p>Update profile details, role, status, or set a new password.</p>
+                <p>Review profile details, account controls, security status, and audit history.</p>
               </div>
 
               <button type="button" className="admin-modal-close" onClick={closeEdit} aria-label="Close modal">
@@ -4780,7 +5098,100 @@ function UsersView({ users, canManageUsers, currentUserId, onUsersChanged }) {
               </button>
             </div>
 
-            <div className="ticket-form-grid">
+            <div className="user-detail-layout">
+              <aside className="user-detail-sidebar">
+                <div className="user-profile-summary">
+                  <span className="user-avatar">{editingUser.initials || 'ME'}</span>
+                  <div>
+                    <strong>{editingUser.name || 'Unnamed account'}</strong>
+                    <p>{editingUser.email}</p>
+                  </div>
+                </div>
+
+                <div className="user-detail-facts">
+                  <div>
+                    <span>Role</span>
+                    <strong>{formatRoleLabel(editingUser.role)}</strong>
+                  </div>
+                  <div>
+                    <span>Status</span>
+                    <strong>{editingUser.status || 'Active'}</strong>
+                  </div>
+                  <div>
+                    <span>Created</span>
+                    <strong>{editingUser.createdAt || 'Not recorded'}</strong>
+                  </div>
+                  <div>
+                    <span>Last Updated</span>
+                    <strong>{editingUser.updatedAt || 'Not recorded'}</strong>
+                  </div>
+                </div>
+
+                <div className="user-quick-actions">
+                  <button
+                    type="button"
+                    className="user-action-btn"
+                    onClick={() => handleSendReset(editingUser)}
+                    disabled={isSubmitting || !editingUser.email}
+                  >
+                    Reset Password
+                  </button>
+                  <button
+                    type="button"
+                    className="user-action-btn"
+                    onClick={() => handleStatusAction(editingUser, 'Locked')}
+                    disabled={isSubmitting || editingUser.id === currentUserId || editingUser.status === 'Locked'}
+                  >
+                    Lock
+                  </button>
+                  <button
+                    type="button"
+                    className="user-action-btn danger"
+                    onClick={() =>
+                      handleStatusAction(
+                        editingUser,
+                        (editingUser.status || 'Active') === 'Inactive' ? 'Active' : 'Inactive'
+                      )
+                    }
+                    disabled={isSubmitting || editingUser.id === currentUserId}
+                  >
+                    {(editingUser.status || 'Active') === 'Inactive' ? 'Reactivate' : 'Deactivate'}
+                  </button>
+                </div>
+
+                <div className="user-audit-panel">
+                  <div className="user-audit-head">
+                    <span className="section-kicker">Audit Trail</span>
+                    <strong>{auditLogs.length} events</strong>
+                  </div>
+
+                  {isAuditLoading ? (
+                    <p className="user-audit-empty">Loading account history...</p>
+                  ) : auditLogs.length ? (
+                    <div className="user-audit-list">
+                      {auditLogs.map((log) => (
+                        <article key={log.id} className="user-audit-item">
+                          <strong>{log.summary}</strong>
+                          <p>{log.actorName || 'System'}{log.createdAt ? ` / ${log.createdAt}` : ''}</p>
+                        </article>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="user-audit-empty">No audit events recorded yet.</p>
+                  )}
+                </div>
+              </aside>
+
+              <div className="user-detail-main">
+                {(editDuplicateEmail || editDuplicateEmployeeId || editPrivilegedRoleChange) && (
+                  <div className="admin-alert users-alert warning">
+                    {editDuplicateEmail && `Email already belongs to ${editDuplicateEmail.name || editDuplicateEmail.email}. `}
+                    {editDuplicateEmployeeId && `Employee ID already belongs to ${editDuplicateEmployeeId.name || editDuplicateEmployeeId.email}. `}
+                    {editPrivilegedRoleChange && 'Privileged role changes require explicit confirmation when saving.'}
+                  </div>
+                )}
+
+                <div className="ticket-form-grid">
               <div className="ticket-form-group">
                 <label htmlFor="edit-name">Full Name</label>
                 <input
@@ -4889,11 +5300,9 @@ function UsersView({ users, canManageUsers, currentUserId, onUsersChanged }) {
                   disabled={editForm.id === currentUserId}
                   required
                 >
-                  <option value="employee">Employee</option>
-                  <option value="admin">ICT Admin</option>
-                  <option value="marketing_admin">Marketing Admin</option>
-                  <option value="hr_admin">HR Admin</option>
-                  <option value="superadmin">Super Admin</option>
+                  {Object.entries(ROLE_LABELS).map(([role, label]) => (
+                    <option key={role} value={role}>{label}</option>
+                  ))}
                 </select>
               </div>
 
@@ -4952,15 +5361,27 @@ function UsersView({ users, canManageUsers, currentUserId, onUsersChanged }) {
                   className="ticket-field ticket-select"
                   value={editForm.status}
                   onChange={(e) => updateEditForm('status', e.target.value)}
+                  disabled={editForm.id === currentUserId}
                   required
                 >
-                  <option value="Active">Active</option>
-                  <option value="Inactive">Inactive</option>
+                  {USER_ACCOUNT_STATUSES.map((status) => (
+                    <option key={status} value={status}>{status}</option>
+                  ))}
                 </select>
+              </div>
+            </div>
               </div>
             </div>
 
             <div className="modal-footer">
+              <button
+                type="button"
+                className="modal-btn danger"
+                onClick={() => handleDelete(editingUser)}
+                disabled={isSubmitting || editingUser.id === currentUserId}
+              >
+                Delete Account
+              </button>
               <button type="button" className="modal-btn cancel" onClick={closeEdit} disabled={isSubmitting}>
                 Cancel
               </button>
@@ -4975,14 +5396,36 @@ function UsersView({ users, canManageUsers, currentUserId, onUsersChanged }) {
   );
 }
 
-function CreateUserView({ onCreated }) {
+function CreateUserView({ users = [], onCreated }) {
   const [form, setForm] = useState(emptyCreateUserForm);
   const [message, setMessage] = useState({ type: '', text: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showCreatePassword, setShowCreatePassword] = useState(false);
 
+  const duplicateEmail = normalizeComparable(form.email)
+    ? users.find((user) => normalizeComparable(user.email) === normalizeComparable(form.email))
+    : null;
+  const duplicateEmployeeId = normalizeComparable(form.employeeId)
+    ? users.find((user) => normalizeComparable(user.employeeId) === normalizeComparable(form.employeeId))
+    : null;
+
   const updateForm = (field, value) => {
     setForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const generateTemporaryPassword = () => {
+    const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
+    const symbols = '!@#$%';
+    const password = Array.from({ length: 10 }, () =>
+      alphabet[Math.floor(Math.random() * alphabet.length)]
+    ).join('') + symbols[Math.floor(Math.random() * symbols.length)] + '7';
+
+    setForm((prev) => ({
+      ...prev,
+      password,
+      confirmPassword: password,
+    }));
+    setShowCreatePassword(true);
   };
 
   const handleSubmit = async (e) => {
@@ -4993,6 +5436,14 @@ function CreateUserView({ onCreated }) {
     try {
       if (!/^\d{3}$/.test(form.employeeId)) {
         throw new Error('Employee ID must be the last three digits only.');
+      }
+
+      if (duplicateEmail) {
+        throw new Error(`Email already belongs to ${duplicateEmail.name || duplicateEmail.email}.`);
+      }
+
+      if (duplicateEmployeeId) {
+        throw new Error(`Employee ID already belongs to ${duplicateEmployeeId.name || duplicateEmployeeId.email}.`);
       }
 
       await createPortalUser(form);
@@ -5040,6 +5491,13 @@ function CreateUserView({ onCreated }) {
           {message.text && (
             <div className={`admin-alert ${message.type}`}>
               {message.text}
+            </div>
+          )}
+
+          {(duplicateEmail || duplicateEmployeeId) && (
+            <div className="admin-alert warning">
+              {duplicateEmail && `Email already belongs to ${duplicateEmail.name || duplicateEmail.email}. `}
+              {duplicateEmployeeId && `Employee ID already belongs to ${duplicateEmployeeId.name || duplicateEmployeeId.email}.`}
             </div>
           )}
 
@@ -5137,7 +5595,12 @@ function CreateUserView({ onCreated }) {
             </div>
 
             <div className="ticket-form-group create-password-field">
-              <label htmlFor="create-password">Password</label>
+              <div className="field-label-row">
+                <label htmlFor="create-password">Password</label>
+                <button type="button" className="text-tool-btn" onClick={generateTemporaryPassword}>
+                  Generate
+                </button>
+              </div>
               <div className="password-field-wrap">
                 <input
                   id="create-password"
@@ -5208,11 +5671,9 @@ function CreateUserView({ onCreated }) {
                 onChange={(e) => updateForm('role', e.target.value)}
                 required
               >
-                <option value="employee">Employee</option>
-                <option value="admin">ICT Admin</option>
-                <option value="marketing_admin">Marketing Admin</option>
-                <option value="hr_admin">HR Admin</option>
-                <option value="superadmin">Super Admin</option>
+                {Object.entries(ROLE_LABELS).map(([role, label]) => (
+                  <option key={role} value={role}>{label}</option>
+                ))}
               </select>
             </div>
           </div>
@@ -5560,7 +6021,10 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
             </p>
           </div>
 
-          <TicketWorkTimer ticket={ticket} now={now} compact={!getTicketWorkStartedAt(ticket)} />
+          <div className="ticket-action-status-tools">
+            <TicketHandlingIndicator ticket={ticket} compact inline />
+            <TicketWorkTimer ticket={ticket} now={now} compact={!getTicketWorkStartedAt(ticket)} />
+          </div>
         </div>
 
         <div className="admin-modal-grid ticket-action-info-grid">
@@ -6596,6 +7060,7 @@ Current role: ${activeUser.role || 'No role found'}`
 
               {activeSection === 'create-user' && canCreateUsers && (
                 <CreateUserView
+                  users={users}
                   onCreated={() => loadData({ includeUsers: true })}
                 />
               )}
