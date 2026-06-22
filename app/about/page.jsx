@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import Navbar from '@/components/Navbar/Navbar';
 import Footer from '@/components/Footer/Footer';
@@ -26,7 +26,7 @@ const HERO_PANELS = [
 
 const HISTORY = [
   {
-    period: '1999–2001',
+    period: '1999\u00A0–\u00A02001',
     title: 'Origins from PCFC',
     description:
       'MEMPCO traces its beginnings from the PCFC Grameen Model, starting with microfinancing support for women entrepreneurs in Zamboanga City.',
@@ -717,24 +717,22 @@ function useControlledSectionSnap(sectionRefs, historyRef) {
 
 export default function About() {
   const [heroIn, setHeroIn] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(0);
 
   const heroRef = useRef(null);
+  const historyRef = useRef(null);
   const principlesRef = useRef(null);
   const awardsRef = useRef(null);
   const structureRef = useRef(null);
   const footerRef = useRef(null);
 
-  const { historyRef, activeIndex } = useHistoryCarousel(
-    HISTORY.length,
-    heroRef
-  );
+  const showPreviousHistory = () => {
+    setActiveIndex((current) => Math.max(0, current - 1));
+  };
 
-  const sectionRefs = useMemo(
-    () => [heroRef, historyRef, principlesRef, awardsRef, structureRef, footerRef],
-    [historyRef]
-  );
-
-  useControlledSectionSnap(sectionRefs, historyRef);
+  const showNextHistory = () => {
+    setActiveIndex((current) => Math.min(HISTORY.length - 1, current + 1));
+  };
 
   useEffect(() => {
     const timer = setTimeout(() => setHeroIn(true), 60);
@@ -834,8 +832,21 @@ export default function About() {
                     and community impact.
                   </p>
 
-                  <div className="ao-history-progress" aria-hidden="true">
-                    <span>{String(activeIndex + 1).padStart(2, '0')}</span>
+                  <div className="ao-history-progress" aria-label="History navigation">
+                    <button
+                      type="button"
+                      className="ao-history-arrow"
+                      onClick={showPreviousHistory}
+                      disabled={activeIndex === 0}
+                      aria-label="View previous history milestone"
+                    >
+                      <svg viewBox="0 0 16 16" aria-hidden="true">
+                        <path d="M10 3.5 5.5 8l4.5 4.5" />
+                      </svg>
+                    </button>
+                    <span aria-live="polite">
+                      {String(activeIndex + 1).padStart(2, '0')}
+                    </span>
                     <div className="ao-history-progress-line">
                       <i
                         style={{
@@ -844,6 +855,17 @@ export default function About() {
                       />
                     </div>
                     <span>{String(HISTORY.length).padStart(2, '0')}</span>
+                    <button
+                      type="button"
+                      className="ao-history-arrow"
+                      onClick={showNextHistory}
+                      disabled={activeIndex === HISTORY.length - 1}
+                      aria-label="View next history milestone"
+                    >
+                      <svg viewBox="0 0 16 16" aria-hidden="true">
+                        <path d="M6 3.5 10.5 8 6 12.5" />
+                      </svg>
+                    </button>
                   </div>
                 </div>
 

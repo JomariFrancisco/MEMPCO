@@ -6,7 +6,7 @@
 .partners {
   position: relative;
   width: 100%;
-  padding: 5.25rem 0 5rem;
+  padding: 3rem 0 2rem;
   overflow: hidden;
   isolation: isolate;
   background: transparent;
@@ -19,11 +19,11 @@
 
 .partners-title,
 .partners-title__main {
-  color: transparent;
-  background: linear-gradient(90deg, #0b0b0b 0%, #141414 64%, #343434 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: #111111;
+  background: none;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+  -webkit-text-fill-color: currentColor;
   overflow: visible;
 }
 
@@ -92,7 +92,7 @@
   text-align: center;
   gap: 0;
   max-width: 800px;
-  margin: 0 auto 3.2rem;
+  margin: 0 auto 1rem;
   padding: 0 1rem;
 }
 
@@ -106,7 +106,7 @@
   border: 1px solid rgba(220, 38, 38, 0.12);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  font-size: 0.7rem;
+  font-size: 0.84rem;
   font-weight: 700;
   letter-spacing: 0.2em;
   text-transform: uppercase;
@@ -116,12 +116,12 @@
 }
 
 .partners-title {
-  margin: 0 0 1rem;
-  font-size: clamp(2.2rem, 4.5vw, 4rem);
-  font-weight: 800;
-  line-height: 1.08;
-  letter-spacing: -0.055em;
-  color: #141414;
+  margin: 0;
+  font-size: clamp(2rem, 3.4vw, 3.15rem);
+  font-weight: 700;
+  line-height: 1.12;
+  letter-spacing: -0.035em;
+  color: #111111;
   white-space: normal;
   text-wrap: balance;
   padding-block: 0.03em 0.08em;
@@ -138,7 +138,7 @@
 .partners-subtitle {
   max-width: 600px;
   margin: 0 auto;
-  font-size: clamp(0.96rem, 1.3vw, 1.05rem);
+  font-size: clamp(1.152rem, 1.56vw, 1.26rem);
   line-height: 1.78;
   color: #6b7280;
 }
@@ -149,7 +149,7 @@
 .partners-stage {
   position: relative;
   width: 100%;
-  height: 480px;
+  height: 350px;
   perspective: 900px;
   perspective-origin: 50% 46%;
   transform-style: preserve-3d;
@@ -208,8 +208,8 @@
    CARD POSITIONING
 ================================ */
 .partner-card {
-  --card-width: 268px;
-  --card-height: 336px;
+  --card-width: 220px;
+  --card-height: 270px;
   --x: 0px;
   --scale: 1;
   --rotate: 0deg;
@@ -299,7 +299,7 @@
   position: relative;
   width: 100%;
   height: 100%;
-  padding: 1.6rem 1.2rem 1.4rem;
+  padding: 1.15rem 1rem;
   border-radius: 28px;
   overflow: hidden;
   display: flex;
@@ -375,8 +375,8 @@
 ================================ */
 .partner-card__logo-wrap {
   position: relative;
-  width: 158px;
-  height: 158px;
+  width: 124px;
+  height: 124px;
   border-radius: 50%;
   display: grid;
   place-items: center;
@@ -434,7 +434,7 @@
 }
 
 .partner-card.is-left {
-  --x: -280px;
+  --x: -235px;
   --scale: 0.78;
   --rotate: 44deg;
   --z: -200px;
@@ -444,7 +444,7 @@
 }
 
 .partner-card.is-right {
-  --x: 280px;
+  --x: 235px;
   --scale: 0.78;
   --rotate: -44deg;
   --z: -200px;
@@ -453,7 +453,7 @@
 }
 
 .partner-card.is-far-left {
-  --x: -440px;
+  --x: -375px;
   --scale: 0.52;
   --rotate: 60deg;
   --z: -360px;
@@ -464,7 +464,7 @@
 }
 
 .partner-card.is-far-right {
-  --x: 440px;
+  --x: 375px;
   --scale: 0.52;
   --rotate: -60deg;
   --z: -360px;
@@ -592,21 +592,21 @@
 ================================ */
 @media (max-width: 1100px) {
   .partners {
-    padding: 4.5rem 0 4rem;
+    padding: 2.6rem 0 1.75rem;
   }
 
   .partners-stage {
-    height: 420px;
+    height: 330px;
   }
 
   .partner-card {
-    --card-width: 240px;
-    --card-height: 300px;
+    --card-width: 210px;
+    --card-height: 260px;
   }
 
   .partner-card__logo-wrap {
-    width: 140px;
-    height: 140px;
+    width: 118px;
+    height: 118px;
   }
 
   .partner-card.is-left {
@@ -640,7 +640,7 @@
 
 @media (max-width: 768px) {
   .partners {
-    padding: 3.4rem 0 3rem;
+    padding: 2.25rem 0 1.5rem;
   }
 
   .partners__shell {
@@ -648,20 +648,20 @@
   }
 
   .partners-header {
-    margin-bottom: 2rem;
+    margin-bottom: 0.75rem;
   }
 
   .partners-title {
-    font-size: clamp(1.7rem, 6.8vw, 2.8rem);
+    font-size: clamp(2rem, 6vw, 2.4rem);
     white-space: normal;
   }
 
   .partners-subtitle {
-    font-size: 0.96rem;
+    font-size: 1.152rem;
   }
 
   .partners-stage {
-    height: 360px;
+    height: 300px;
   }
 
   .partner-card {
@@ -708,7 +708,7 @@
 
 @media (max-width: 480px) {
   .partners {
-    padding: 3rem 0 2.5rem;
+    padding: 2rem 0 1.25rem;
   }
 
   .partners__shell {
@@ -716,17 +716,17 @@
   }
 
   .partners-title {
-    font-size: clamp(1.45rem, 6.2vw, 2.1rem);
+    font-size: 2rem;
     white-space: normal;
   }
 
   .partners-subtitle {
-    font-size: 0.92rem;
+    font-size: 1.104rem;
     margin-top: 0.75rem;
   }
 
   .partners-stage {
-    height: 310px;
+    height: 280px;
   }
 
   .partner-card {

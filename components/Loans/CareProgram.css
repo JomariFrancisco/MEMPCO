@@ -61,7 +61,7 @@
 }
 
 .cp-section-kicker {
-  font-size: 0.78rem;
+  font-size: 0.936rem;
   font-weight: 700;
   letter-spacing: 0.22em;
   text-transform: uppercase;
@@ -79,7 +79,7 @@
 }
 
 .cp-section-text {
-  font-size: 1rem;
+  font-size: 1.2rem;
   line-height: 1.8;
   color: var(--muted);
   max-width: 620px;
@@ -102,7 +102,7 @@
   justify-content: flex-start;
   gap: 0.45rem;
   margin-bottom: 1.75rem;
-  font-size: 1.2rem;
+  font-size: 1.44rem;
   font-weight: 500;
   color: var(--muted);
   flex-wrap: wrap;
@@ -121,7 +121,7 @@
   display: block;
   width: 100%;
   text-align: center;
-  font-size: 0.78rem;
+  font-size: 0.936rem;
   font-weight: 700;
   letter-spacing: 0.22em;
   text-transform: uppercase;
@@ -147,7 +147,7 @@
 }
 
 .cp-hero-tagline {
-  font-size: clamp(1.04rem, 2vw, 1.28rem);
+  font-size: clamp(1.248rem, 2.4vw, 1.536rem);
   line-height: 1.75;
   color: var(--muted);
   text-align: center;
@@ -170,7 +170,7 @@
   background: rgba(255, 255, 255, 0.88);
   border: 1px solid var(--red-border);
   color: var(--ink-2);
-  font-size: 0.88rem;
+  font-size: 1.056rem;
   font-weight: 600;
   letter-spacing: -0.01em;
   box-shadow: var(--shadow-soft);
@@ -205,7 +205,7 @@
 }
 
 .cp-stat-value {
-  font-size: clamp(1.5rem, 3vw, 2.35rem);
+  font-size: clamp(1.8rem, 3.6vw, 2.82rem);
   font-weight: 700;
   letter-spacing: -0.05em;
   line-height: 1;
@@ -213,7 +213,7 @@
 }
 
 .cp-stat-label {
-  font-size: 0.82rem;
+  font-size: 0.984rem;
   line-height: 1.5;
   color: var(--muted);
   max-width: 150px;
@@ -287,7 +287,7 @@
   border-radius: 999px;
   background: var(--red);
   color: #fff;
-  font-size: 0.76rem;
+  font-size: 0.912rem;
   font-weight: 800;
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -295,7 +295,7 @@
 }
 
 .cp-amount-name {
-  font-size: clamp(1.25rem, 2.5vw, 1.85rem);
+  font-size: clamp(1.5rem, 3vw, 2.22rem);
   font-weight: 700;
   letter-spacing: -0.035em;
   line-height: 1.15;
@@ -304,7 +304,7 @@
 }
 
 .cp-amount-desc {
-  font-size: 0.97rem;
+  font-size: 1.164rem;
   line-height: 1.75;
   color: var(--muted);
   max-width: 580px;
@@ -320,7 +320,7 @@
 }
 
 .cp-amount-label {
-  font-size: 0.72rem;
+  font-size: 0.864rem;
   font-weight: 700;
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -328,7 +328,7 @@
 }
 
 .cp-amount-value {
-  font-size: clamp(1.45rem, 3vw, 2.35rem);
+  font-size: clamp(1.74rem, 3.6vw, 2.82rem);
   font-weight: 700;
   letter-spacing: -0.05em;
   line-height: 1;
@@ -336,7 +336,7 @@
 }
 
 .cp-amount-sub {
-  font-size: 0.82rem;
+  font-size: 0.984rem;
   line-height: 1.6;
   color: var(--muted);
 }
@@ -347,7 +347,7 @@
 }
 
 .cp-features-label {
-  font-size: 0.78rem;
+  font-size: 0.936rem;
   font-weight: 700;
   letter-spacing: 0.22em;
   text-transform: uppercase;
@@ -381,7 +381,7 @@
 
 .cp-feature-num {
   display: block;
-  font-size: 0.7rem;
+  font-size: 0.84rem;
   font-weight: 800;
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -398,7 +398,7 @@
 }
 
 .cp-feature-text {
-  font-size: 0.9rem;
+  font-size: 1.08rem;
   line-height: 1.7;
   color: var(--muted);
 }
@@ -420,7 +420,7 @@
 }
 
 .cp-note-kicker {
-  font-size: 0.78rem;
+  font-size: 0.936rem;
   font-weight: 700;
   letter-spacing: 0.22em;
   text-transform: uppercase;
@@ -438,7 +438,7 @@
 }
 
 .cp-note-text {
-  font-size: 1rem;
+  font-size: 1.2rem;
   line-height: 1.8;
   color: rgba(255, 255, 255, 0.84);
   max-width: 700px;
@@ -498,7 +498,7 @@
 
   .cp-breadcrumb {
     margin-bottom: 2rem;
-    font-size: 0.95rem;
+    font-size: 1.14rem;
   }
 
   .cp-hero-title {
@@ -506,7 +506,7 @@
   }
 
   .cp-hero-tagline {
-    font-size: 1rem;
+    font-size: 1.2rem;
     margin-bottom: 2rem;
   }
 
@@ -515,7 +515,7 @@
   }
 
   .cp-hero-badge {
-    font-size: 0.82rem;
+    font-size: 0.984rem;
     padding: 0.45rem 0.85rem;
   }
 

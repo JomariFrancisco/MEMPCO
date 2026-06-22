@@ -67,13 +67,10 @@ export const BURNOUT_TICKET_STATUSES = [
   'For Inspection',
   'Under Burnout',
   'Passed Burnout',
-  'Ready for Deployment',
-  'Deployed',
   'Failed Burnout',
   'Damaged',
   'For Repair',
   'For Replacement',
-  'Cancelled',
 ];
 
 export const TECHNICIANS = [

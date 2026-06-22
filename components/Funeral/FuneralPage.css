@@ -144,7 +144,7 @@ body {
 }
 
 .fun-section-kicker {
-  font-size: 1rem;
+  font-size: 1.2rem;
   font-weight: 700;
   letter-spacing: 0.22em;
   text-transform: uppercase;
@@ -162,7 +162,7 @@ body {
 }
 
 .fun-section-text {
-  font-size: 1rem;
+  font-size: 1.2rem;
   line-height: 1.8;
   color: var(--muted);
   max-width: 620px;
@@ -207,7 +207,7 @@ body {
   justify-content: flex-start;
   gap: 0.45rem;
   margin-bottom: 1.2rem;
-  font-size: 1.2rem;
+  font-size: 1.44rem;
   font-weight: 500;
   color: var(--muted);
   flex-wrap: wrap;
@@ -225,7 +225,7 @@ body {
 .fun-eyebrow {
   display: block;
   width: 100%;
-  font-size: 0.78rem;
+  font-size: 0.936rem;
   font-weight: 700;
   letter-spacing: 0.22em;
   text-transform: uppercase;
@@ -276,7 +276,7 @@ body {
 }
 
 .fun-hero-link-kicker {
-  font-size: 0.72rem;
+  font-size: 0.864rem;
   font-weight: 700;
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -340,7 +340,7 @@ body {
   border: 1px solid rgba(107, 52, 16, 0.18);
   color: #fffaf2;
   text-decoration: none;
-  font-size: 0.92rem;
+  font-size: 1.104rem;
   font-weight: 700;
   letter-spacing: -0.01em;
   box-shadow: 0 18px 36px rgba(74, 34, 8, 0.16);
@@ -412,7 +412,7 @@ body {
   background: rgba(255, 250, 241, 0.14);
   border: 1px solid rgba(255, 250, 241, 0.16);
   color: var(--gold);
-  font-size: 0.7rem;
+  font-size: 0.84rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -427,7 +427,7 @@ body {
 }
 
 .fun-showcase-card p {
-  font-size: 0.83rem;
+  font-size: 0.996rem;
   line-height: 1.55;
   color: rgba(255, 250, 241, 0.78);
 }
@@ -472,14 +472,14 @@ body {
 .fun-stat:nth-child(4) .fun-stat-value { color: var(--brown-800); }
 
 .fun-stat-value {
-  font-size: clamp(1.55rem, 3vw, 2.35rem);
+  font-size: clamp(1.86rem, 3.6vw, 2.82rem);
   font-weight: 700;
   letter-spacing: -0.05em;
   line-height: 1;
 }
 
 .fun-stat-label {
-  font-size: 0.83rem;
+  font-size: 0.996rem;
   line-height: 1.5;
   color: var(--muted);
   max-width: 160px;
@@ -561,7 +561,7 @@ body {
 }
 
 .fun-overview-card p {
-  font-size: 0.92rem;
+  font-size: 1.104rem;
   line-height: 1.72;
   color: var(--muted);
   flex: 1;
@@ -640,7 +640,7 @@ body {
   border-radius: 999px;
   background: var(--accent);
   color: #fffdf8;
-  font-size: 0.76rem;
+  font-size: 0.912rem;
   font-weight: 800;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -662,7 +662,7 @@ body {
   border-radius: 999px;
   padding: 0.5rem 0.86rem;
   font: inherit;
-  font-size: 0.8rem;
+  font-size: 0.96rem;
   line-height: 1.35;
   font-weight: 600;
   cursor: pointer;
@@ -696,7 +696,7 @@ body {
 }
 
 .fun-package-name {
-  font-size: clamp(1.2rem, 2.3vw, 1.78rem);
+  font-size: clamp(1.44rem, 2.76vw, 2.136rem);
   font-weight: 700;
   letter-spacing: -0.035em;
   line-height: 1.15;
@@ -705,7 +705,7 @@ body {
 }
 
 .fun-package-desc {
-  font-size: 0.97rem;
+  font-size: 1.164rem;
   line-height: 1.72;
   color: var(--muted);
   max-width: 760px;
@@ -721,7 +721,7 @@ body {
 }
 
 .fun-package-price-label {
-  font-size: 0.72rem;
+  font-size: 0.864rem;
   font-weight: 700;
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -731,7 +731,7 @@ body {
 .fun-package-price {
   display: block;
   min-width: 165px;
-  font-size: clamp(1.35rem, 2.8vw, 2.1rem);
+  font-size: clamp(1.62rem, 3.36vw, 2.52rem);
   font-weight: 700;
   letter-spacing: -0.05em;
   line-height: 1;
@@ -779,7 +779,7 @@ body {
   background: rgba(255, 255, 255, 0.9);
   border: 1px solid rgba(74, 34, 8, 0.06);
   color: var(--ink-2);
-  font-size: 0.96rem;
+  font-size: 1.152rem;
   line-height: 1.68;
   transition: background 0.18s ease, border-color 0.18s ease;
 }
@@ -852,7 +852,7 @@ body {
 }
 
 .fun-rate-card p {
-  font-size: 0.96rem;
+  font-size: 1.152rem;
   line-height: 1.5;
   font-weight: 700;
 }
@@ -898,7 +898,7 @@ body {
 }
 
 .fun-chapel-card span {
-  font-size: 0.88rem;
+  font-size: 1.056rem;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -913,7 +913,7 @@ body {
 }
 
 .fun-chapel-card li {
-  font-size: 0.92rem;
+  font-size: 1.104rem;
   line-height: 1.6;
   color: rgba(255, 250, 242, 0.88);
 }
@@ -962,7 +962,7 @@ body {
 }
 
 .fun-necro-list li {
-  font-size: 1.06rem;
+  font-size: 1.272rem;
   line-height: 1.6;
   color: rgba(255, 250, 241, 0.9);
 }
@@ -1037,7 +1037,7 @@ body {
 }
 
 .fun-urn-card li {
-  font-size: 0.93rem;
+  font-size: 1.116rem;
   line-height: 1.66;
   color: var(--ink-2);
 }
@@ -1068,7 +1068,7 @@ body {
   color: #fffaf2;
   border: 1px solid rgba(107, 52, 16, 0.16);
   box-shadow: 0 16px 34px rgba(74, 34, 8, 0.12);
-  font-size: 0.92rem;
+  font-size: 1.104rem;
   line-height: 1.4;
   font-weight: 600;
   transition:
@@ -1107,7 +1107,7 @@ body {
 }
 
 .fun-note-kicker {
-  font-size: 0.78rem;
+  font-size: 0.936rem;
   font-weight: 700;
   letter-spacing: 0.22em;
   text-transform: uppercase;
@@ -1125,7 +1125,7 @@ body {
 }
 
 .fun-note-text {
-  font-size: 1rem;
+  font-size: 1.2rem;
   line-height: 1.8;
   color: rgba(255, 248, 237, 0.86);
   max-width: 680px;
@@ -1248,7 +1248,7 @@ body {
 
   .fun-breadcrumb {
     margin-bottom: 1rem;
-    font-size: 0.92rem;
+    font-size: 1.104rem;
   }
 
   .fun-hero-title {

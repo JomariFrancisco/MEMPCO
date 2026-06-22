@@ -44,7 +44,7 @@
   border: 1px solid rgba(220, 38, 38, 0.18);
   background: rgba(220, 38, 38, 0.06);
   color: #dc2626;
-  font-size: 0.75rem;
+  font-size: 0.9rem;
   font-weight: 900;
 }
 
@@ -83,7 +83,7 @@
   margin: 0 0 0.55rem;
   padding: 0 1rem;
   color: rgba(255, 255, 255, 0.48);
-  font-size: 0.68rem;
+  font-size: 0.816rem;
   font-weight: 850;
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -124,7 +124,7 @@
   background: transparent;
   color: #111827;
   font: inherit;
-  font-size: 0.88rem;
+  font-size: 1.056rem;
 }
 
 .marketing-search input::placeholder {
@@ -148,7 +148,7 @@
   background: rgba(255, 255, 255, 0.92);
   color: #334155;
   font: inherit;
-  font-size: 0.78rem;
+  font-size: 0.936rem;
   font-weight: 850;
   outline: none;
 }
@@ -235,7 +235,7 @@
   border-radius: 999px;
   background: rgba(100, 116, 139, 0.1);
   color: #475569;
-  font-size: 0.68rem;
+  font-size: 0.816rem;
   font-weight: 900;
   line-height: 1;
   letter-spacing: 0.04em;
@@ -261,7 +261,7 @@
   min-width: 0;
   overflow: hidden;
   color: #111827;
-  font-size: 0.82rem;
+  font-size: 0.984rem;
   line-height: 1.2;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -271,7 +271,7 @@
   min-width: 0;
   overflow: hidden;
   color: #94a3b8;
-  font-size: 0.72rem;
+  font-size: 0.864rem;
   line-height: 1.2;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -317,7 +317,7 @@
   border-radius: 999px;
   background: #fff;
   color: #dc2626;
-  font-size: 1rem;
+  font-size: 1.2rem;
   font-weight: 950;
 }
 
@@ -329,7 +329,7 @@
 .marketing-pagination span {
   min-width: 104px;
   color: #334155;
-  font-size: 0.86rem;
+  font-size: 1.032rem;
   font-weight: 900;
   text-align: center;
 }
@@ -397,7 +397,7 @@
 .ma-profile-head p {
   margin: 0.18rem 0 0;
   color: #64748b;
-  font-size: 0.76rem;
+  font-size: 0.912rem;
   line-height: 1.25;
 }
 
@@ -411,7 +411,7 @@
   border: none;
   background: transparent;
   color: #111827;
-  font-size: 1.6rem;
+  font-size: 1.92rem;
   line-height: 1;
   font-weight: 300;
   opacity: 0.6;
@@ -454,7 +454,7 @@
 .ma-field > span,
 .ma-check span {
   color: rgba(220, 38, 38, 0.82);
-  font-size: 0.66rem;
+  font-size: 0.792rem;
   font-weight: 850;
   line-height: 1.2;
   text-transform: uppercase;
@@ -470,7 +470,7 @@
   background: #fff;
   color: #111827;
   font: inherit;
-  font-size: 0.82rem;
+  font-size: 0.984rem;
   line-height: 1.35;
   outline: none;
 }
@@ -523,14 +523,14 @@
 
 .ma-upload-box strong {
   color: #111827;
-  font-size: 0.82rem;
+  font-size: 0.984rem;
   line-height: 1.25;
 }
 
 .ma-upload-box span {
   margin-top: 0.14rem;
   color: #64748b;
-  font-size: 0.72rem;
+  font-size: 0.864rem;
   line-height: 1.25;
 }
 
@@ -594,7 +594,7 @@
   padding: 0.45rem 0.65rem;
   background: #fff;
   color: #334155;
-  font-size: 0.78rem;
+  font-size: 0.936rem;
   font-weight: 900;
   display: inline-flex;
   align-items: center;

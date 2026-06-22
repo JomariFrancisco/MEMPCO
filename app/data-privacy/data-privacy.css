@@ -1,0 +1,72 @@
+:root {
+  --privacy-ink: #5f6670;
+  --privacy-title: #111111;
+  --privacy-line: rgba(17, 17, 17, 0.12);
+  --privacy-red: #d91f26;
+}
+
+.privacy-page,
+.privacy-page * {
+  box-sizing: border-box;
+}
+
+.privacy-page {
+  min-height: 100vh;
+  padding: 8.5rem 1.25rem 5rem;
+  color: var(--privacy-ink);
+  background: #fafafa;
+  font-family:
+    "SF Pro Display", "SF Pro Text", -apple-system, BlinkMacSystemFont,
+    "Helvetica Neue", "Segoe UI", sans-serif;
+}
+
+.privacy-document {
+  width: min(1380px, 100%);
+  margin: 0 auto;
+  padding: clamp(2rem, 4vw, 3.5rem);
+  border: 1px solid rgba(217, 31, 38, 0.14);
+  background: #ffffff;
+  box-shadow: 0 16px 40px rgba(17, 17, 17, 0.04);
+}
+
+.privacy-document h1 {
+  margin: 0 0 1.5rem;
+  color: var(--privacy-title);
+  font-size: clamp(1.45rem, 2.2vw, 2rem);
+  font-weight: 750;
+  line-height: 1.2;
+  letter-spacing: -0.025em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.privacy-document p {
+  margin: 0 0 1.25rem;
+  color: var(--privacy-ink);
+  font-size: clamp(1rem, 1.15vw, 1.12rem);
+  line-height: 1.9;
+  text-align: justify;
+}
+
+.privacy-document__contact {
+  margin-top: 1.75rem !important;
+  padding-top: 1.25rem;
+  color: #333942 !important;
+  border-top: 1px solid var(--privacy-line);
+  font-weight: 600;
+}
+
+@media (max-width: 640px) {
+  .privacy-page {
+    padding: 7rem 0.75rem 3rem;
+  }
+
+  .privacy-document {
+    padding: 1.5rem 1.15rem;
+  }
+
+  .privacy-document p {
+    line-height: 1.75;
+    text-align: left;
+  }
+}

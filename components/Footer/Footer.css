@@ -132,7 +132,7 @@ a.ft-contact-item:hover {
 }
 
 .ft-contact-label {
-  font-size: 0.76rem;
+  font-size: 0.912rem;
   font-weight: 800;
   line-height: 1.2;
   color: var(--ink-2);
@@ -141,7 +141,7 @@ a.ft-contact-item:hover {
 
 .ft-contact-value {
   overflow-wrap: anywhere;
-  font-size: 0.82rem;
+  font-size: 0.984rem;
   line-height: 1.32;
   color: var(--muted);
 }
@@ -163,16 +163,15 @@ a.ft-contact-item:hover {
   gap: 0.52rem;
 }
 
-.ft-logo {
+.ft-logo-image {
   display: block;
-  font-size: 1.35rem;
-  font-weight: 800;
-  letter-spacing: -0.06em;
-  color: var(--red);
+  width: min(100%, 210px);
+  height: auto;
+  object-fit: contain;
 }
 
 .ft-tagline {
-  font-size: 0.82rem;
+  font-size: 0.984rem;
   line-height: 1.45;
   color: var(--muted);
   max-width: 260px;
@@ -241,7 +240,7 @@ a.ft-contact-item:hover {
   display: inline-flex;
   align-items: center;
   max-width: 100%;
-  font-size: 0.82rem;
+  font-size: 0.984rem;
   font-weight: 500;
   line-height: 1.42;
   color: var(--muted);
@@ -269,7 +268,7 @@ a.ft-contact-item:hover {
 }
 
 .ft-copy {
-  font-size: 0.78rem;
+  font-size: 0.936rem;
   color: var(--subtle);
 }
 
@@ -282,7 +281,7 @@ a.ft-contact-item:hover {
 }
 
 .ft-legal-link {
-  font-size: 0.78rem;
+  font-size: 0.936rem;
   font-weight: 500;
   color: var(--muted);
   text-decoration: none;
@@ -377,13 +376,13 @@ a.ft-contact-item:hover {
     text-align: center;
   }
 
-  .ft-logo {
-    font-size: 1.28rem;
+  .ft-logo-image {
+    width: min(100%, 205px);
   }
 
   .ft-tagline {
     max-width: 100%;
-    font-size: 0.8rem;
+    font-size: 0.96rem;
     line-height: 1.45;
   }
 
@@ -412,7 +411,7 @@ a.ft-contact-item:hover {
 
   .ft-copy,
   .ft-legal-link {
-    font-size: 0.76rem;
+    font-size: 0.912rem;
   }
 }
 
@@ -442,7 +441,7 @@ a.ft-contact-item:hover {
 
   .ft-contact-value,
   .ft-col-link {
-    font-size: 0.74rem;
+    font-size: 0.888rem;
     line-height: 1.35;
   }
 
@@ -481,11 +480,11 @@ a.ft-contact-item:hover {
   }
 
   .ft-contact-label {
-    font-size: 0.68rem;
+    font-size: 0.816rem;
   }
 
   .ft-contact-value {
-    font-size: 0.68rem;
+    font-size: 0.816rem;
   }
 
   .ft-top {
@@ -493,7 +492,7 @@ a.ft-contact-item:hover {
   }
 
   .ft-col-link {
-    font-size: 0.7rem;
+    font-size: 0.84rem;
   }
 
   .ft-col-heading {

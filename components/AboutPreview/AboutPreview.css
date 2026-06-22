@@ -187,7 +187,7 @@
 }
 
 .ap-media-badge strong {
-  font-size: 1.15rem;
+  font-size: 1.38rem;
   font-weight: 800;
   letter-spacing: -0.03em;
   color: var(--ap-red);
@@ -195,7 +195,7 @@
 }
 
 .ap-media-badge span {
-  font-size: 0.68rem;
+  font-size: 0.816rem;
   font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -238,7 +238,7 @@
   border: 1px solid rgba(220,38,38,0.12);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  font-size: 0.7rem;
+  font-size: 0.84rem;
   font-weight: 700;
   letter-spacing: 0.2em;
   text-transform: uppercase;
@@ -265,7 +265,7 @@
 /* Body */
 .ap-body {
   margin: 0;
-  font-size: clamp(0.88rem, 1.1vw, 0.96rem);
+  font-size: clamp(1.056rem, 1.32vw, 1.152rem);
   line-height: 1.65;
   color: var(--ap-muted);
   max-width: 580px;
@@ -323,7 +323,7 @@
 
 .ap-highlight__label {
   display: block;
-  font-size: 0.66rem;
+  font-size: 0.792rem;
   font-weight: 800;
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -333,7 +333,7 @@
 
 .ap-highlight__text {
   margin: 0;
-  font-size: 1rem;
+  font-size: 1.2rem;
   line-height: 1.68;
   color: var(--ap-ink-2);
   font-weight: 700;
@@ -349,7 +349,7 @@
 }
 
 .ap-values__label {
-  font-size: 0.78rem;
+  font-size: 0.936rem;
   font-weight: 600;
   color: var(--ap-muted);
   letter-spacing: 0.01em;
@@ -371,7 +371,7 @@
   background: rgba(220,38,38,0.07);
   border: 1px solid rgba(220,38,38,0.14);
   color: var(--ap-red);
-  font-size: 0.75rem;
+  font-size: 0.9rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -416,7 +416,7 @@
 }
 
 .ap-stat strong {
-  font-size: 1.45rem;
+  font-size: 1.74rem;
   font-weight: 800;
   letter-spacing: -0.04em;
   color: var(--ap-ink);
@@ -424,7 +424,7 @@
 }
 
 .ap-stat span {
-  font-size: 0.66rem;
+  font-size: 0.792rem;
   font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -458,7 +458,7 @@
   border-radius: 999px;
   background: linear-gradient(135deg, var(--ap-red) 0%, var(--ap-red-dk) 100%);
   color: #fff;
-  font-size: 0.9rem;
+  font-size: 1.08rem;
   font-weight: 700;
   text-decoration: none;
   box-shadow: 0 10px 24px rgba(220,38,38,0.22);
@@ -508,7 +508,7 @@
   background: rgba(255,255,255,0.72);
   border: 1px solid var(--ap-border);
   color: var(--ap-ink);
-  font-size: 0.9rem;
+  font-size: 1.08rem;
   font-weight: 700;
   text-decoration: none;
   backdrop-filter: blur(12px);

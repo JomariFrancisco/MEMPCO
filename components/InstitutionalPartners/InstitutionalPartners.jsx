@@ -201,15 +201,7 @@ export default function InstitutionalPartners() {
         <div className="partners-header">
           <span className="partners-eyebrow">Network</span>
 
-          <h2 className="partners-title">
-            <span className="partners-title__main">Institutional</span>{' '}
-            <span className="partners-title__accent">Partner</span>
-          </h2>
-
-          <p className="partners-subtitle">
-            We collaborate with respected institutions that reinforce MEMPCO&apos;s
-            credibility, service quality, and long-term value for our members.
-          </p>
+          <h2 className="partners-title">Affiliates</h2>
         </div>
 
         <div className="partners-stage-wrap">

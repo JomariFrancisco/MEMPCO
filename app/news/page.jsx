@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Navbar from '@/components/Navbar/Navbar';
 import Footer from '@/components/Footer/Footer';
 import { createClient } from '@/lib/supabase/client';
@@ -11,29 +11,6 @@ import {
 import './news.css';
 
 const CATEGORIES = ['All', 'News', 'Events', 'Announcement'];
-
-const ORBIT_CATEGORIES = [
-  {
-    label: 'Official News',
-    category: 'News',
-    className: 'np-hero-float-item--news',
-  },
-  {
-    label: 'Cooperative Events',
-    category: 'Events',
-    className: 'np-hero-float-item--events',
-  },
-  {
-    label: 'Public Announcements',
-    category: 'Announcement',
-    className: 'np-hero-float-item--announcement',
-  },
-  {
-    label: 'Community Updates',
-    category: 'All',
-    className: 'np-hero-float-item--community',
-  },
-];
 
 const getSafeImageSrc = (value) => {
   if (typeof value !== 'string') return null;
@@ -88,20 +65,6 @@ function ArrowIcon() {
   );
 }
 
-function ChevronDown() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
-      <path
-        d="M5.5 8.5l5.5 5.5 5.5-5.5"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
 function getTypeLabel(type) {
   if (type === 'event') return 'Event';
   if (type === 'announcement') return 'Announcement';
@@ -109,13 +72,10 @@ function getTypeLabel(type) {
 }
 
 export default function News() {
-  const heroRef = useRef(null);
-
   const [activeCategory, setActiveCategory] = useState('All');
   const [selectedArticle, setSelectedArticle] = useState(null);
   const [isImageExpanded, setIsImageExpanded] = useState(false);
   const [pageReady, setPageReady] = useState(false);
-  const [orbitRotation, setOrbitRotation] = useState(0);
   const [newsItems, setNewsItems] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -220,46 +180,6 @@ export default function News() {
   }, []);
 
   useEffect(() => {
-    const updateOrbit = () => {
-      const hero = heroRef.current;
-      if (!hero) return;
-
-      const rect = hero.getBoundingClientRect();
-      const viewportHeight = window.innerHeight || 1;
-      const totalTravel = rect.height + viewportHeight;
-      const travelled = Math.min(Math.max(viewportHeight - rect.top, 0), totalTravel);
-      const progress = totalTravel > 0 ? travelled / totalTravel : 0;
-      const nextRotation = progress * 95;
-
-      setOrbitRotation((prev) =>
-        Math.abs(prev - nextRotation) > 0.35 ? nextRotation : prev
-      );
-    };
-
-    let ticking = false;
-
-    const onScroll = () => {
-      if (ticking) return;
-
-      ticking = true;
-      window.requestAnimationFrame(() => {
-        updateOrbit();
-        ticking = false;
-      });
-    };
-
-    updateOrbit();
-
-    window.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('resize', onScroll);
-
-    return () => {
-      window.removeEventListener('scroll', onScroll);
-      window.removeEventListener('resize', onScroll);
-    };
-  }, []);
-
-  useEffect(() => {
     const revealItems = document.querySelectorAll('.np-reveal');
 
     const observer = new IntersectionObserver(
@@ -311,43 +231,9 @@ export default function News() {
       <main className={`np${pageReady ? ' np--ready' : ''}`}>
         <div className="np-page-transition" aria-hidden="true" />
 
-        <section className="np-hero" ref={heroRef}>
-          <div className="np-hero-bg">
-            <div
-              className="np-hero-orbit"
-              style={{ '--orbit-rotate': `${orbitRotation}deg` }}
-              aria-label="Quick category filters"
-            >
-              {ORBIT_CATEGORIES.map((item) => (
-                <span
-                  className={`np-hero-float-item ${item.className}`}
-                  key={item.label}
-                >
-                  <span className="np-hero-float-keep">
-                    <button
-                      type="button"
-                      className={`np-hero-float${
-                        activeCategory === item.category ? ' np-hero-float--active' : ''
-                      }`}
-                      onClick={() => setActiveCategory(item.category)}
-                      aria-pressed={activeCategory === item.category}
-                    >
-                      <span className="np-hero-float-dot" aria-hidden="true" />
-                      {item.label}
-                    </button>
-                  </span>
-                </span>
-              ))}
-            </div>
-          </div>
-
+        <section className="np-hero">
           <div className="np-wrap">
             <div className="np-hero-inner">
-              <div className="np-hero-badge">
-                <span className="np-hero-badge-dot" aria-hidden="true" />
-                MEMPCO Updates
-              </div>
-
               <h1 className="np-hero-title">
                 <span>News &amp;</span> <em>Events</em>
               </h1>
@@ -356,23 +242,6 @@ export default function News() {
                 Explore official MEMPCO news, cooperative events, and public
                 announcements from across the organization.
               </p>
-
-              <div className="np-hero-stats">
-                <div className="np-hero-stat">
-                  <strong>{loading ? '...' : newsItems.length}</strong>
-                  <span>Stories</span>
-                </div>
-                <div className="np-hero-stat-sep" aria-hidden="true" />
-                <div className="np-hero-stat">
-                  <strong>{new Date().getFullYear()}</strong>
-                  <span>Latest</span>
-                </div>
-                <div className="np-hero-stat-sep" aria-hidden="true" />
-                <div className="np-hero-stat">
-                  <strong>3</strong>
-                  <span>Categories</span>
-                </div>
-              </div>
 
               <nav className="np-tabs" aria-label="Filter by category">
                 {CATEGORIES.map((cat) => (
@@ -390,10 +259,6 @@ export default function News() {
                 ))}
               </nav>
             </div>
-          </div>
-
-          <div className="np-hero-scroll-hint" aria-hidden="true">
-            <ChevronDown />
           </div>
         </section>
 

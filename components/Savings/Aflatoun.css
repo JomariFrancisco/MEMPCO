@@ -72,7 +72,7 @@
   justify-content: left;
   gap: 0.45rem;
   margin-bottom: 3.5rem;
-  font-size: 1.2rem;
+  font-size: 1.44rem;
   font-weight: 500;
   color: var(--muted);
 }
@@ -82,7 +82,7 @@
 
 .af-eyebrow {
   display: block;
-  font-size: 0.78rem;
+  font-size: 0.936rem;
   font-weight: 700;
   letter-spacing: 0.22em;
   text-transform: uppercase;
@@ -100,7 +100,7 @@
 }
 
 .af-hero-tagline {
-  font-size: clamp(1.05rem, 2vw, 1.4rem);
+  font-size: clamp(1.26rem, 2.4vw, 1.68rem);
   font-weight: 400;
   line-height: 1.55;
   color: var(--muted);
@@ -171,7 +171,7 @@
 .af-stat:last-child { border-right: none; }
 
 .af-stat-value {
-  font-size: clamp(1.75rem, 3.5vw, 2.75rem);
+  font-size: clamp(2.1rem, 4.2vw, 3.3rem);
   font-weight: 700;
   letter-spacing: -0.04em;
   color: var(--ink);
@@ -179,7 +179,7 @@
 }
 
 .af-stat-label {
-  font-size: 0.82rem;
+  font-size: 0.984rem;
   color: var(--muted);
   letter-spacing: 0.01em;
   line-height: 1.45;
@@ -203,7 +203,7 @@
 }
 
 .af-details-kicker {
-  font-size: 0.78rem;
+  font-size: 0.936rem;
   font-weight: 700;
   letter-spacing: 0.22em;
   text-transform: uppercase;
@@ -221,7 +221,7 @@
 }
 
 .af-details-body {
-  font-size: 1.05rem;
+  font-size: 1.26rem;
   line-height: 1.82;
   color: var(--muted);
 }
@@ -265,7 +265,7 @@
 }
 
 .af-feature-name {
-  font-size: 0.95rem;
+  font-size: 1.14rem;
   font-weight: 600;
   color: var(--ink);
   margin-bottom: 0.18rem;
@@ -273,7 +273,7 @@
 }
 
 .af-feature-desc {
-  font-size: 0.88rem;
+  font-size: 1.056rem;
   line-height: 1.62;
   color: var(--muted);
 }
@@ -293,7 +293,7 @@
 }
 
 .af-detail-card-num {
-  font-size: 0.72rem;
+  font-size: 0.864rem;
   font-weight: 700;
   letter-spacing: 0.18em;
   color: var(--red);
@@ -309,7 +309,7 @@
 }
 
 .af-detail-card-text {
-  font-size: 0.92rem;
+  font-size: 1.104rem;
   line-height: 1.72;
   color: var(--muted);
 }
@@ -325,7 +325,7 @@
 }
 
 .af-pillars-kicker {
-  font-size: 0.78rem;
+  font-size: 0.936rem;
   font-weight: 700;
   letter-spacing: 0.22em;
   text-transform: uppercase;
@@ -343,7 +343,7 @@
 }
 
 .af-pillars-sub {
-  font-size: 1rem;
+  font-size: 1.2rem;
   color: var(--muted);
   max-width: 500px;
   margin: 0 auto 3rem;
@@ -368,14 +368,14 @@
 }
 
 .af-pillar-num {
-  font-size: 0.72rem;
+  font-size: 0.864rem;
   font-weight: 700;
   letter-spacing: 0.18em;
   color: var(--green);
 }
 
 .af-pillar-name {
-  font-size: 0.9rem;
+  font-size: 1.08rem;
   font-weight: 600;
   color: var(--ink);
   line-height: 1.35;
@@ -392,7 +392,7 @@
 }
 
 .af-why-kicker {
-  font-size: 0.78rem;
+  font-size: 0.936rem;
   font-weight: 700;
   letter-spacing: 0.22em;
   text-transform: uppercase;
@@ -424,7 +424,7 @@
 }
 
 .af-why-card-num {
-  font-size: 0.72rem;
+  font-size: 0.864rem;
   font-weight: 700;
   letter-spacing: 0.18em;
   color: var(--red);
@@ -440,7 +440,7 @@
 }
 
 .af-why-card-text {
-  font-size: 0.9rem;
+  font-size: 1.08rem;
   line-height: 1.72;
   color: var(--muted);
 }

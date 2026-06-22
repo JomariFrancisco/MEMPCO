@@ -7,26 +7,12 @@ import './HeroSection.css';
 
 const FIRST_VISUAL_VISIBLE_MS = 5000;
 const VISUAL_FADE_MS = 900;
-const SECOND_SLIDE_VISIBLE_MS = 10500;
+const FEATURE_SLIDE_VISIBLE_MS = 9000;
 
 const SERVICE_TAGS = [
   'Savings & Credit',
   'Allied Services',
   'Cooperative Laboratory',
-];
-
-const MARQUEE_ITEMS = [
-  'Regular Savings',
-  "KKT - Kinabukasan Ko'To",
-  'Time Deposit',
-  'Business Loan',
-  'Providential Loan',
-  'Insurance',
-  'Transportation',
-  'Funeral Services',
-  'Wellness & Diagnostics',
-  'Aflatoun Savings',
-  'Youth Savings',
 ];
 
 const TAGLINE_PHRASES = [
@@ -41,11 +27,6 @@ const HERO_VISUALS = {
     src: '/Hero/24Years&Logo.png',
     alt: 'MEMPCO - 24 Years in Service',
     imageClass: 'hero__visual-image hero__visual-image--anniversary',
-  },
-  logo: {
-    src: '/Logos/LOGO 1.png',
-    alt: 'MEMPCO Logo',
-    imageClass: 'hero__visual-image hero__visual-image--logo',
   },
 };
 
@@ -62,6 +43,32 @@ const SECOND_HERO = {
     'Guided by care, respect, and the cooperative spirit of service, La Hermosa Funeraria De MEMPCO provides meaningful support when it matters most.',
   highlights: ['Compassionate care', 'Dignified assistance', 'Family-centered service'],
 };
+
+const INSURANCE_HERO = {
+  logoSrc: '/Services/COOPAssurance.svg',
+  logoAlt: 'COOP Assurance logo',
+  tagline: 'Protection built around members',
+  title: 'Insurance for every chapter.',
+  description:
+    'Practical protection options for members, families, loans, and property—delivered with the confidence and care of a cooperative.',
+  details:
+    'Explore dependable coverage designed to make important decisions clearer and help members prepare for the unexpected.',
+  highlights: ['Member protection', 'Family coverage', 'Loan assurance'],
+};
+
+const MLC_HERO = {
+  logoSrc: '/MLC/MLC.svg',
+  logoAlt: 'MEMPCO Laboratory Cooperative logo',
+  tagline: 'Young minds. Stronger futures.',
+  title: 'Build the habit of saving early.',
+  description:
+    'MEMPCO Laboratory Cooperative helps young members discover financial discipline, leadership, and the value of cooperation.',
+  details:
+    'Through youth-centered savings and learning opportunities, MLC turns small beginnings into confident financial futures.',
+  highlights: ['Youth savings', 'Financial learning', 'Cooperative leadership'],
+};
+
+const SLIDE_CLASS_NAMES = ['hero--main', 'hero--memorial', 'hero--insurance', 'hero--mlc'];
 
 /* Particle system */
 
@@ -143,7 +150,6 @@ export default function HeroSection() {
   const progressRef = useRef(null);
 
   const [activeSlide, setActiveSlide] = useState(0);
-  const [activeVisual, setActiveVisual] = useState('anniversary');
   const [isVisualVisible, setIsVisualVisible] = useState(true);
   const [typedTagline, setTypedTagline] = useState('');
 
@@ -157,7 +163,6 @@ export default function HeroSection() {
     };
 
     if (activeSlide === 0) {
-      setActiveVisual('anniversary');
       setIsVisualVisible(true);
 
       addTimer(() => {
@@ -165,22 +170,13 @@ export default function HeroSection() {
       }, FIRST_VISUAL_VISIBLE_MS);
 
       addTimer(() => {
-        setActiveVisual('logo');
+        setActiveSlide((current) => (current + 1) % SLIDE_CLASS_NAMES.length);
         setIsVisualVisible(true);
       }, FIRST_VISUAL_VISIBLE_MS + VISUAL_FADE_MS);
-
-      addTimer(() => {
-        setIsVisualVisible(false);
-      }, FIRST_VISUAL_VISIBLE_MS + VISUAL_FADE_MS + FIRST_VISUAL_VISIBLE_MS);
-
-      addTimer(() => {
-        setActiveSlide(1);
-        setIsVisualVisible(true);
-      }, FIRST_VISUAL_VISIBLE_MS + VISUAL_FADE_MS + FIRST_VISUAL_VISIBLE_MS + VISUAL_FADE_MS);
     } else {
       addTimer(() => {
-        setActiveSlide(0);
-      }, SECOND_SLIDE_VISIBLE_MS);
+        setActiveSlide((current) => (current + 1) % SLIDE_CLASS_NAMES.length);
+      }, FEATURE_SLIDE_VISIBLE_MS);
     }
 
     return () => {
@@ -335,13 +331,12 @@ export default function HeroSection() {
     };
   }, []);
 
-  const marqueeItems = [...MARQUEE_ITEMS, ...MARQUEE_ITEMS];
-  const currentVisual = HERO_VISUALS[activeVisual];
+  const currentVisual = HERO_VISUALS.anniversary;
 
   return (
     <section
       ref={sectionRef}
-      className={`hero ${activeSlide === 1 ? 'hero--memorial' : 'hero--main'}`}
+      className={`hero ${SLIDE_CLASS_NAMES[activeSlide]}`}
       id="home"
       style={{ '--hero-memorial-bg': `url("${SECOND_HERO.backgroundSrc}")` }}
     >
@@ -352,6 +347,8 @@ export default function HeroSection() {
       <div className="hero__bg" aria-hidden="true">
         <div className={`hero__backdrop hero__backdrop--main ${activeSlide === 0 ? 'is-active' : ''}`} />
         <div className={`hero__backdrop hero__backdrop--memorial ${activeSlide === 1 ? 'is-active' : ''}`} />
+        <div className={`hero__backdrop hero__backdrop--insurance ${activeSlide === 2 ? 'is-active' : ''}`} />
+        <div className={`hero__backdrop hero__backdrop--mlc ${activeSlide === 3 ? 'is-active' : ''}`} />
         <div className="hero__overlay" />
         <div className="hero__veil" />
         <div className="hero__grid" />
@@ -404,21 +401,6 @@ export default function HeroSection() {
                 </div>
               </div>
 
-              <div className="hero__marquee" aria-hidden="true">
-                <div className="hero__marquee-track">
-                  {[0, 1].map((copy) => (
-                    <div key={copy} className="hero__marquee-inner">
-                      {marqueeItems.map((item, i) => (
-                        <span key={`${copy}-${i}`} className="hero__marquee-item">
-                          {item}
-                          <span className="hero__marquee-dot" />
-                        </span>
-                      ))}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
               <div className="hero__services">
                 {SERVICE_TAGS.map((label) => (
                   <span key={label} className="hero__service-chip">
@@ -456,6 +438,66 @@ export default function HeroSection() {
                 <div className="hero__memorial-highlights" aria-label="LHFDM highlights">
                   {SECOND_HERO.highlights.map((item) => (
                     <span key={item} className="hero__memorial-highlight">
+                      {item}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div
+            className={`hero__slide hero__slide--feature hero__slide--insurance ${activeSlide === 2 ? 'is-active' : ''}`}
+            aria-hidden={activeSlide !== 2}
+          >
+            <div className="hero__feature">
+              <div className="hero__feature-media">
+                <img
+                  src={INSURANCE_HERO.logoSrc}
+                  alt={INSURANCE_HERO.logoAlt}
+                  className="hero__feature-logo hero__feature-logo--insurance"
+                />
+              </div>
+
+              <div className="hero__feature-copy">
+                <p className="hero__feature-tagline">{INSURANCE_HERO.tagline}</p>
+                <h1 className="hero__feature-title">{INSURANCE_HERO.title}</h1>
+                <p className="hero__feature-description">{INSURANCE_HERO.description}</p>
+                <p className="hero__feature-details">{INSURANCE_HERO.details}</p>
+
+                <div className="hero__feature-highlights" aria-label="Insurance highlights">
+                  {INSURANCE_HERO.highlights.map((item) => (
+                    <span key={item} className="hero__feature-highlight">
+                      {item}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div
+            className={`hero__slide hero__slide--feature hero__slide--mlc ${activeSlide === 3 ? 'is-active' : ''}`}
+            aria-hidden={activeSlide !== 3}
+          >
+            <div className="hero__feature">
+              <div className="hero__feature-media">
+                <img
+                  src={MLC_HERO.logoSrc}
+                  alt={MLC_HERO.logoAlt}
+                  className="hero__feature-logo hero__feature-logo--mlc"
+                />
+              </div>
+
+              <div className="hero__feature-copy">
+                <p className="hero__feature-tagline">{MLC_HERO.tagline}</p>
+                <h1 className="hero__feature-title">{MLC_HERO.title}</h1>
+                <p className="hero__feature-description">{MLC_HERO.description}</p>
+                <p className="hero__feature-details">{MLC_HERO.details}</p>
+
+                <div className="hero__feature-highlights" aria-label="MLC highlights">
+                  {MLC_HERO.highlights.map((item) => (
+                    <span key={item} className="hero__feature-highlight">
                       {item}
                     </span>
                   ))}

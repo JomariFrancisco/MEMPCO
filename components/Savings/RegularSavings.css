@@ -97,7 +97,7 @@
   justify-content: left;
   gap: 0.45rem;
   margin-bottom: 3.5rem;
-  font-size: 1.2rem;
+  font-size: 1.44rem;
   font-weight: 500;
   letter-spacing: 0.01em;
   color: var(--muted);
@@ -109,7 +109,7 @@
 /* eyebrow */
 .rs-eyebrow {
   display: block;
-  font-size: 0.78rem;
+  font-size: 0.936rem;
   font-weight: 700;
   letter-spacing: 0.22em;
   text-transform: uppercase;
@@ -129,7 +129,7 @@
 
 /* hero sub */
 .rs-hero-tagline {
-  font-size: clamp(1.1rem, 2.2vw, 1.5rem);
+  font-size: clamp(1.32rem, 2.64vw, 1.8rem);
   font-weight: 400;
   line-height: 1.5;
   color: var(--muted);
@@ -196,7 +196,7 @@
 .rs-stat:last-child { border-right: none; }
 
 .rs-stat-value {
-  font-size: clamp(2rem, 4vw, 3rem);
+  font-size: clamp(2.4rem, 4.8vw, 3.6rem);
   font-weight: 700;
   letter-spacing: -0.04em;
   color: var(--ink);
@@ -206,7 +206,7 @@
 .rs-stat-value span { color: var(--red); }
 
 .rs-stat-label {
-  font-size: 0.82rem;
+  font-size: 0.984rem;
   color: var(--muted);
   letter-spacing: 0.01em;
   line-height: 1.4;
@@ -232,7 +232,7 @@
 .rs-details-copy {}
 
 .rs-details-kicker {
-  font-size: 0.78rem;
+  font-size: 0.936rem;
   font-weight: 700;
   letter-spacing: 0.22em;
   text-transform: uppercase;
@@ -250,7 +250,7 @@
 }
 
 .rs-details-body {
-  font-size: 1.05rem;
+  font-size: 1.26rem;
   line-height: 1.82;
   color: var(--muted);
 }
@@ -305,7 +305,7 @@
 .rs-feature-text {}
 
 .rs-feature-name {
-  font-size: 0.95rem;
+  font-size: 1.14rem;
   font-weight: 600;
   color: var(--ink);
   margin-bottom: 0.18rem;
@@ -313,7 +313,7 @@
 }
 
 .rs-feature-desc {
-  font-size: 0.88rem;
+  font-size: 1.056rem;
   line-height: 1.6;
   color: var(--muted);
 }
@@ -333,7 +333,7 @@
 }
 
 .rs-detail-card-num {
-  font-size: 0.72rem;
+  font-size: 0.864rem;
   font-weight: 700;
   letter-spacing: 0.18em;
   color: var(--red);
@@ -349,7 +349,7 @@
 }
 
 .rs-detail-card-text {
-  font-size: 0.92rem;
+  font-size: 1.104rem;
   line-height: 1.7;
   color: var(--muted);
 }
@@ -364,7 +364,7 @@
 }
 
 .rs-why-kicker {
-  font-size: 0.78rem;
+  font-size: 0.936rem;
   font-weight: 700;
   letter-spacing: 0.22em;
   text-transform: uppercase;
@@ -396,7 +396,7 @@
 }
 
 .rs-why-card-num {
-  font-size: 0.72rem;
+  font-size: 0.864rem;
   font-weight: 700;
   letter-spacing: 0.18em;
   color: var(--red);
@@ -412,7 +412,7 @@
 }
 
 .rs-why-card-text {
-  font-size: 0.9rem;
+  font-size: 1.08rem;
   line-height: 1.72;
   color: var(--muted);
 }
@@ -444,7 +444,7 @@
   }
 
   .rs-hero-tagline {
-    font-size: 1.05rem;
+    font-size: 1.26rem;
   }
 
   .rs-product-stage {

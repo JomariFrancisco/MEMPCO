@@ -158,7 +158,7 @@ export default function Footer() {
 
         <div className="ft-top">
           <div className="ft-brand">
-            <span className="ft-logo">MEMPCO</span>
+            <img src="/Logos/L1.png" alt="MEMPCO" className="ft-logo-image" />
             <p className="ft-tagline">
               Empowering members through trusted cooperative services and
               sustainable community growth.

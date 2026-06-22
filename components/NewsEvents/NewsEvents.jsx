@@ -286,9 +286,7 @@ export default function NewsEvents() {
         <header className="ne-header ne-reveal ne-reveal--up" data-reveal>
           <span className="ne-eyebrow">MEMPCO Bulletin</span>
 
-          <h2 className="ne-title">
-            <span className="ne-title-main">News &amp;</span> <em>Events</em>
-          </h2>
+          <h2 className="ne-title">News &amp; Events</h2>
 
           <p className="ne-subtitle">
             Stay updated with the latest MEMPCO recognitions, community

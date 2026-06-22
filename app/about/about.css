@@ -231,6 +231,7 @@ body {
   position: relative;
   z-index: 2;
   width: min(1240px, calc(100% - 4rem));
+  height: 100%;
   display: grid;
   grid-template-columns: minmax(0, 1.15fr) minmax(340px, 420px);
   gap: clamp(2rem, 4vw, 4.5rem);
@@ -249,8 +250,11 @@ body {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
+  align-self: end;
   max-width: 760px;
   min-width: 0;
+  padding-bottom: 0;
+  transform: translateY(-40%);
 }
 
 .ao-eyebrow {
@@ -263,7 +267,7 @@ body {
   border: 1px solid rgba(220, 38, 38, 0.1);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  font-size: 0.72rem;
+  font-size: 0.864rem;
   font-weight: 700;
   letter-spacing: 0.2em;
   text-transform: uppercase;
@@ -273,7 +277,8 @@ body {
 }
 
 .ao-hero-title {
-  margin: -1.4rem 0 2.2rem;
+  margin: 0 0 0.25rem;
+  transform: translateY(30%);
   color: #111111;
   font-size: clamp(3rem, 5.4vw, 5.4rem);
   font-weight: 850;
@@ -309,9 +314,9 @@ body {
 
 .ao-hero-sub {
   max-width: 690px;
-  margin: 0 0 1.8rem;
+  margin: 0 0 0.95rem;
   color: #334155;
-  font-size: clamp(1.02rem, 1.45vw, 1.16rem);
+  font-size: clamp(1.224rem, 1.74vw, 1.392rem);
   font-weight: 600;
   line-height: 1.78;
   text-shadow:
@@ -333,7 +338,7 @@ body {
   min-height: 48px;
   padding: 0 1.3rem;
   border-radius: 999px;
-  font-size: 0.92rem;
+  font-size: 1.104rem;
   font-weight: 700;
   letter-spacing: 0.01em;
   text-decoration: none;
@@ -357,6 +362,7 @@ body {
 
 .ao-hero-panel {
   display: grid;
+  align-self: start;
   gap: 1rem;
   min-width: 0;
 }
@@ -380,7 +386,7 @@ body {
 }
 
 .ao-hero-panel-num {
-  font-size: 0.74rem;
+  font-size: 0.888rem;
   font-weight: 700;
   letter-spacing: 0.18em;
   color: var(--ao-red);
@@ -395,7 +401,7 @@ body {
 }
 
 .ao-hero-panel-text {
-  font-size: 0.92rem;
+  font-size: 1.104rem;
   line-height: 1.65;
   color: var(--ao-muted);
   margin: 0;
@@ -449,7 +455,7 @@ body {
 }
 
 .ao-section-kicker {
-  font-size: 0.9rem;
+  font-size: 1.08rem;
   font-weight: 700;
   letter-spacing: 0.22em;
   text-transform: uppercase;
@@ -469,7 +475,7 @@ body {
 .ao-section-description {
   max-width: 760px;
   margin: 1rem auto 0;
-  font-size: 1.04rem;
+  font-size: 1.248rem;
   line-height: 1.8;
   color: var(--ao-muted);
 }
@@ -558,7 +564,7 @@ body {
 .ao-history-main-copy {
   margin: 1.1rem 0 0;
   color: var(--ao-muted);
-  font-size: 1rem;
+  font-size: 1.2rem;
   line-height: 1.85;
   max-width: 310px;
 }
@@ -572,9 +578,58 @@ body {
 
 .ao-history-progress span {
   color: var(--ao-red);
-  font-size: 0.74rem;
+  font-size: 0.888rem;
   font-weight: 800;
   letter-spacing: 0.16em;
+}
+
+.ao-history-arrow {
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid rgba(17, 24, 39, 0.14);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.72);
+  color: #111111;
+  font: inherit;
+  font-size: 1.15rem;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    color 0.2s ease,
+    border-color 0.2s ease,
+    background 0.2s ease,
+    transform 0.2s ease;
+}
+
+.ao-history-arrow:hover:not(:disabled) {
+  color: var(--ao-red);
+  border-color: rgba(220, 38, 38, 0.35);
+  background: #ffffff;
+  transform: translateY(-1px);
+}
+
+.ao-history-arrow:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.ao-history-arrow:focus-visible {
+  outline: 3px solid rgba(220, 38, 38, 0.2);
+  outline-offset: 2px;
+}
+
+.ao-history-arrow svg {
+  display: block;
+  width: 1rem;
+  height: 1rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .ao-history-progress-line {
@@ -670,7 +725,7 @@ body {
 .ao-history-node-period {
   margin: 0;
   color: var(--ao-red);
-  font-size: clamp(3rem, 5.6vw, 5.8rem);
+  font-size: clamp(3.6rem, 6.72vw, 6.96rem);
   line-height: 1.06;
   letter-spacing: -0.08em;
   font-weight: 900;
@@ -690,7 +745,7 @@ body {
   max-width: 760px;
   margin: 0.75rem 0 0;
   color: var(--ao-muted);
-  font-size: clamp(0.98rem, 1.25vw, 1.1rem);
+  font-size: clamp(1.176rem, 1.5vw, 1.32rem);
   line-height: 1.85;
   font-weight: 500;
 }
@@ -709,7 +764,7 @@ body {
   position: relative;
   padding-left: 1rem;
   color: var(--ao-ink-2);
-  font-size: 0.86rem;
+  font-size: 1.032rem;
   line-height: 1.55;
   font-weight: 700;
 }
@@ -815,7 +870,7 @@ body {
   line-height: 1.08;
   letter-spacing: -0.07em;
   text-transform: uppercase;
-  color: var(--ao-red);
+  color: #111111;
   font-weight: 900;
 }
 
@@ -833,7 +888,7 @@ body {
   max-width: 610px;
   margin: 0.95rem 0 0;
   color: var(--ao-muted);
-  font-size: 0.96rem;
+  font-size: 1.152rem;
   line-height: 1.7;
 }
 
@@ -849,7 +904,7 @@ body {
 .ao-values-heading h3 {
   max-width: 760px;
   margin: 0;
-  color: var(--ao-red);
+  color: #111111;
   font-size: clamp(1.28rem, 2.2vw, 1.8rem);
   line-height: 1.18;
   letter-spacing: -0.04em;
@@ -939,7 +994,7 @@ body {
   border-radius: 999px;
   background: rgba(220,38,38,0.08);
   border: 1px solid rgba(220,38,38,0.1);
-  font-size: 0.7rem;
+  font-size: 0.84rem;
   font-weight: 900;
   letter-spacing: 0.16em;
   color: var(--ao-red);
@@ -948,7 +1003,7 @@ body {
 .ao-principles-value-card h4 {
   width: 100%;
   margin: 0;
-  color: var(--ao-red);
+  color: #111111;
   font-size: clamp(1.45rem, 1.9vw, 1.82rem);
   line-height: 1.12;
   letter-spacing: -0.05em;
@@ -970,7 +1025,7 @@ body {
   width: 100%;
   margin: 0.8rem 0 0;
   color: var(--ao-muted);
-  font-size: 0.92rem;
+  font-size: 1.104rem;
   line-height: 1.64;
 }
 
@@ -1000,7 +1055,7 @@ body {
 .ao-awards-stage-topline p {
   margin: 0;
   color: var(--ao-red);
-  font-size: 0.72rem;
+  font-size: 0.864rem;
   font-weight: 800;
   letter-spacing: 0.25em;
   text-transform: uppercase;
@@ -1052,7 +1107,7 @@ body {
   margin: 1rem auto 0;
   max-width: 640px;
   color: var(--ao-muted);
-  font-size: 0.98rem;
+  font-size: 1.176rem;
   line-height: 1.75;
 }
 
@@ -1156,7 +1211,7 @@ body {
   position: relative;
   z-index: 1;
   color: rgba(220,38,38,0.72);
-  font-size: 0.72rem;
+  font-size: 0.864rem;
   font-weight: 800;
   letter-spacing: 0.13em;
   text-transform: uppercase;
@@ -1179,7 +1234,7 @@ body {
   display: inline-block;
   margin-bottom: 0.8rem;
   color: var(--ao-red);
-  font-size: 0.68rem;
+  font-size: 0.816rem;
   font-weight: 800;
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -1198,7 +1253,7 @@ body {
 .ao-award-card p {
   margin: 0.9rem 0 0;
   color: var(--ao-muted);
-  font-size: 0.9rem;
+  font-size: 1.08rem;
   line-height: 1.68;
 }
 
@@ -1219,7 +1274,7 @@ body {
   min-height: 32px;
   padding: 0 0.72rem;
   border-radius: 999px;
-  font-size: 0.7rem;
+  font-size: 0.84rem;
   font-weight: 800;
   letter-spacing: 0.11em;
   text-transform: uppercase;
@@ -1290,7 +1345,7 @@ body {
   min-height: 32px;
   padding: 0 0.85rem;
   border-radius: 999px;
-  font-size: 0.72rem;
+  font-size: 0.864rem;
   font-weight: 800;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -1309,7 +1364,7 @@ body {
 
 .ao-structure-card p {
   margin: 0.9rem 0 1rem;
-  font-size: 0.95rem;
+  font-size: 1.14rem;
   line-height: 1.78;
   color: var(--ao-muted);
 }
@@ -1326,7 +1381,7 @@ body {
   border-bottom: 1px solid rgba(15,23,42,0.08);
   color: var(--ao-ink);
   line-height: 1.65;
-  font-size: 0.93rem;
+  font-size: 1.116rem;
   font-weight: 600;
 }
 
@@ -1358,7 +1413,7 @@ body {
   text-decoration: none;
   background: linear-gradient(135deg, #dc2626, #ef4444);
   box-shadow: 0 12px 26px rgba(220,38,38,0.18);
-  font-size: 0.92rem;
+  font-size: 1.104rem;
   font-weight: 700;
   transition:
     transform 0.3s ease,
@@ -1431,7 +1486,7 @@ body {
   }
 
   .ao-award-card p {
-    font-size: 0.87rem;
+    font-size: 1.044rem;
   }
 }
 
@@ -1441,12 +1496,16 @@ body {
   }
 
   .ao-hero-shell {
+    height: auto;
     grid-template-columns: 1fr;
     gap: 2rem;
   }
 
   .ao-hero-copy {
+    align-self: auto;
     max-width: 760px;
+    padding-bottom: 0;
+    transform: none;
   }
 
   .ao-hero-panel {
@@ -1493,7 +1552,7 @@ body {
   }
 
   .ao-history-node-period {
-    font-size: clamp(2.8rem, 7vw, 5.2rem);
+    font-size: clamp(3.36rem, 8.4vw, 6.24rem);
   }
 
   .ao-history-node-list {
@@ -1599,7 +1658,7 @@ body {
   .ao-eyebrow {
     min-height: 34px;
     padding: 0 0.9rem;
-    font-size: 0.66rem;
+    font-size: 0.792rem;
     margin-bottom: 1.1rem;
     letter-spacing: 0.16em;
   }
@@ -1607,15 +1666,15 @@ body {
   .ao-hero-title {
     font-size: clamp(2.35rem, 12vw, 4rem);
     line-height: 1.08;
-    margin-bottom: 1rem;
+    margin-bottom: 0.25rem;
     letter-spacing: -0.055em;
     white-space: normal;
   }
 
   .ao-hero-sub {
-    font-size: 0.98rem;
+    font-size: 1.176rem;
     line-height: 1.72;
-    margin-bottom: 1.4rem;
+    margin-bottom: 0.85rem;
   }
 
   .ao-hero-actions {
@@ -1642,7 +1701,7 @@ body {
   }
 
   .ao-section-kicker {
-    font-size: 0.72rem;
+    font-size: 0.864rem;
     letter-spacing: 0.18em;
   }
 
@@ -1652,7 +1711,7 @@ body {
   }
 
   .ao-section-description {
-    font-size: 0.96rem;
+    font-size: 1.152rem;
     line-height: 1.7;
   }
 
@@ -1678,7 +1737,7 @@ body {
   .ao-history-main-copy {
     max-width: 100%;
     margin-top: 0.85rem;
-    font-size: 0.92rem;
+    font-size: 1.104rem;
     line-height: 1.65;
   }
 
@@ -1693,7 +1752,7 @@ body {
   }
 
   .ao-history-node-period {
-    font-size: clamp(2.25rem, 12vw, 3.4rem);
+    font-size: clamp(2.7rem, 14.4vw, 4.08rem);
     letter-spacing: -0.065em;
   }
 
@@ -1705,7 +1764,7 @@ body {
 
   .ao-history-node-desc {
     margin-top: 0.6rem;
-    font-size: 0.84rem;
+    font-size: 1.008rem;
     line-height: 1.62;
     display: -webkit-box;
     -webkit-line-clamp: 5;
@@ -1719,7 +1778,7 @@ body {
   }
 
   .ao-history-node-list li {
-    font-size: 0.74rem;
+    font-size: 0.888rem;
     line-height: 1.42;
   }
 
@@ -1825,41 +1884,45 @@ body {
   }
 
   .ao-history-main-copy {
-    font-size: 0.92rem;
+    font-size: 1.104rem;
     line-height: 1.7;
   }
 
   .ao-history-viewport {
-    overflow: visible;
+    overflow: hidden;
   }
 
   .ao-history-rail {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 1.4rem;
-    transform: none !important;
-    transition: none;
+    display: flex;
+    gap: 0;
+    transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
   }
 
   .ao-history-node {
-    min-width: 0;
+    flex: 0 0 100%;
+    min-width: 100%;
     width: 100%;
-    opacity: 1;
-    transform: none;
+    opacity: 0.25;
+    transform: translateX(18px);
     padding: 0.4rem 0 0 0.85rem;
   }
 
   .ao-history-node[aria-hidden='true'] {
+    opacity: 0.25;
+  }
+
+  .ao-history-node.is-active {
     opacity: 1;
+    transform: translateX(0);
   }
 
   .ao-history-node-period {
-    font-size: clamp(2rem, 11vw, 3rem);
+    font-size: clamp(2.4rem, 13.2vw, 3.6rem);
   }
 
   .ao-history-node-desc {
     display: block;
-    font-size: 0.9rem;
+    font-size: 1.08rem;
     line-height: 1.65;
     overflow: visible;
     -webkit-line-clamp: unset;
@@ -1871,7 +1934,7 @@ body {
   }
 
   .ao-history-node-list li {
-    font-size: 0.78rem;
+    font-size: 0.936rem;
   }
 
   .ao-principle-card,
@@ -1893,7 +1956,7 @@ body {
   .ao-principles-value-card p,
   .ao-structure-card p,
   .ao-award-card p {
-    font-size: 0.92rem;
+    font-size: 1.104rem;
   }
 
   .ao-award-card-copy {
@@ -1925,7 +1988,7 @@ body {
   }
 
   .ao-eyebrow {
-    font-size: 0.6rem;
+    font-size: 0.72rem;
     letter-spacing: 0.14em;
   }
 
@@ -1935,7 +1998,7 @@ body {
   }
 
   .ao-hero-sub {
-    font-size: 0.92rem;
+    font-size: 1.104rem;
     line-height: 1.65;
   }
 
@@ -1952,7 +2015,7 @@ body {
 
   .ao-section-description,
   .ao-awards-stage-head p {
-    font-size: 0.9rem;
+    font-size: 1.08rem;
   }
 
   .ao-history-stage {
@@ -1968,7 +2031,7 @@ body {
   }
 
   .ao-history-node-period {
-    font-size: clamp(1.85rem, 12vw, 2.65rem);
+    font-size: clamp(2.22rem, 14.4vw, 3.18rem);
     letter-spacing: -0.055em;
   }
 
@@ -1977,11 +2040,11 @@ body {
   }
 
   .ao-history-node-desc {
-    font-size: 0.84rem;
+    font-size: 1.008rem;
   }
 
   .ao-history-node-list li {
-    font-size: 0.74rem;
+    font-size: 0.888rem;
   }
 
   .ao-principle-card,
@@ -2042,7 +2105,7 @@ body {
   }
 
   .ao-history-node-period {
-    font-size: clamp(1.7rem, 11vw, 2.3rem);
+    font-size: clamp(2.04rem, 13.2vw, 2.76rem);
   }
 
   .ao-award-thumb {
@@ -2051,7 +2114,7 @@ body {
 
   .ao-award-card-year,
   .ao-award-card-tag {
-    font-size: 0.64rem;
+    font-size: 0.768rem;
     letter-spacing: 0.08em;
   }
 }

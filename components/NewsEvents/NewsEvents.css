@@ -97,7 +97,7 @@
   border: 1px solid rgba(220, 38, 38, 0.12);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  font-size: 0.7rem;
+  font-size: 0.84rem;
   font-weight: 800;
   letter-spacing: 0.2em;
   text-transform: uppercase;
@@ -106,7 +106,7 @@
 }
 
 .ne-kicker {
-  font-size: 0.68rem;
+  font-size: 0.816rem;
   font-weight: 800;
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -114,7 +114,7 @@
 }
 
 .ne-date {
-  font-size: 0.78rem;
+  font-size: 0.936rem;
   color: var(--ne-subtle);
   white-space: nowrap;
 }
@@ -133,7 +133,7 @@
   gap: 0.35rem;
   width: fit-content;
   margin-top: auto;
-  font-size: 0.84rem;
+  font-size: 1.008rem;
   font-weight: 800;
   color: var(--ne-red);
   text-decoration: none;
@@ -170,15 +170,15 @@
 
 .ne-title {
   margin: 0 0 1rem;
-  font-size: clamp(2.6rem, 4.5vw, 4.2rem);
-  font-weight: 850;
-  line-height: 1.08;
-  letter-spacing: -0.06em;
-  color: transparent;
-  background: linear-gradient(90deg, #0b0b0b 0%, #141414 64%, #343434 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
+  font-size: clamp(2rem, 3.4vw, 3.15rem);
+  font-weight: 700;
+  line-height: 1.12;
+  letter-spacing: -0.035em;
+  color: #111111;
+  background: none;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+  -webkit-text-fill-color: currentColor;
   overflow: visible;
   padding-block: 0.03em 0.08em;
   text-wrap: balance;
@@ -208,7 +208,7 @@
 .ne-subtitle {
   max-width: 680px;
   margin: 0 0 1.6rem;
-  font-size: clamp(0.96rem, 1.3vw, 1.05rem);
+  font-size: clamp(1.152rem, 1.56vw, 1.26rem);
   line-height: 1.78;
   color: var(--ne-muted);
 }
@@ -224,7 +224,7 @@
   background: rgba(220, 38, 38, 0.055);
   border: 1px solid rgba(220, 38, 38, 0.18);
   color: var(--ne-red);
-  font-size: 0.9rem;
+  font-size: 1.08rem;
   font-weight: 800;
   text-decoration: none;
   transition:
@@ -324,7 +324,7 @@
   background: rgba(255, 255, 255, 0.86);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  font-size: 0.66rem;
+  font-size: 0.792rem;
   font-weight: 850;
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -357,7 +357,7 @@
 
 .ne-featured__excerpt {
   margin: 0;
-  font-size: 1rem;
+  font-size: 1.2rem;
   line-height: 1.78;
   color: var(--ne-muted);
 }
@@ -381,7 +381,7 @@
   overflow: hidden;
   background: linear-gradient(135deg, var(--ne-red) 0%, var(--ne-red-dk) 100%);
   color: #fff;
-  font-size: 0.88rem;
+  font-size: 1.056rem;
   font-weight: 800;
   text-decoration: none;
   box-shadow: 0 8px 22px rgba(220, 38, 38, 0.22);
@@ -442,7 +442,7 @@
   background: rgba(255, 255, 255, 0.74);
   border: 1px solid var(--ne-border);
   color: var(--ne-ink);
-  font-size: 0.88rem;
+  font-size: 1.056rem;
   font-weight: 800;
   text-decoration: none;
   backdrop-filter: blur(12px);
@@ -565,7 +565,7 @@
 
 .ne-card__excerpt {
   margin: 0;
-  font-size: 0.88rem;
+  font-size: 1.056rem;
   line-height: 1.72;
   color: var(--ne-muted);
 }
@@ -592,7 +592,7 @@
 }
 
 .ne-updates__label {
-  font-size: 0.68rem;
+  font-size: 0.816rem;
   font-weight: 850;
   letter-spacing: 0.2em;
   text-transform: uppercase;
@@ -602,7 +602,7 @@
 
 .ne-updates__desc {
   margin: 0;
-  font-size: 0.84rem;
+  font-size: 1.008rem;
   line-height: 1.55;
   color: var(--ne-muted);
 }
@@ -642,7 +642,7 @@
   border-radius: 999px;
   background: rgba(220, 38, 38, 0.07);
   border: 1px solid rgba(220, 38, 38, 0.12);
-  font-size: 0.6rem;
+  font-size: 0.72rem;
   font-weight: 800;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -652,7 +652,7 @@
 
 .ne-update-item__text {
   flex: 1;
-  font-size: 0.9rem;
+  font-size: 1.08rem;
   font-weight: 650;
   color: var(--ne-ink-2);
   line-height: 1.5;
@@ -727,11 +727,11 @@
   }
 
   .ne-title {
-    font-size: 2.45rem;
+    font-size: 2rem;
   }
 
   .ne-subtitle {
-    font-size: 0.94rem;
+    font-size: 1.128rem;
   }
 
   .ne-grid {
@@ -757,7 +757,7 @@
   }
 
   .ne-featured__excerpt {
-    font-size: 0.94rem;
+    font-size: 1.128rem;
   }
 
   .ne-featured__actions {

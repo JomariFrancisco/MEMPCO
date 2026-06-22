@@ -101,7 +101,7 @@
   justify-content: flex-start;
   gap: 0.45rem;
   margin-bottom: 3rem;
-  font-size: 1.2rem;
+  font-size: 1.44rem;
   font-weight: 500;
   color: var(--muted);
 }
@@ -116,7 +116,7 @@
 
 .wp-eyebrow {
   display: block;
-  font-size: 0.78rem;
+  font-size: 0.936rem;
   font-weight: 700;
   letter-spacing: 0.22em;
   text-transform: uppercase;
@@ -138,7 +138,7 @@
 }
 
 .wp-hero-tagline {
-  font-size: clamp(1.05rem, 2vw, 1.35rem);
+  font-size: clamp(1.26rem, 2.4vw, 1.62rem);
   font-weight: 400;
   line-height: 1.6;
   color: var(--muted);
@@ -179,14 +179,14 @@
 }
 
 .wp-section-chip-name {
-  font-size: 1.05rem;
+  font-size: 1.26rem;
   font-weight: 700;
   letter-spacing: -0.01em;
   color: var(--ink);
 }
 
 .wp-section-chip-meta {
-  font-size: 0.82rem;
+  font-size: 0.984rem;
   color: var(--red);
   font-weight: 600;
 }
@@ -220,7 +220,7 @@
 }
 
 .wp-stat-value {
-  font-size: clamp(1.35rem, 3vw, 2.15rem);
+  font-size: clamp(1.62rem, 3.6vw, 2.58rem);
   font-weight: 700;
   letter-spacing: -0.04em;
   color: var(--ink);
@@ -228,7 +228,7 @@
 }
 
 .wp-stat-label {
-  font-size: 0.8rem;
+  font-size: 0.96rem;
   color: var(--muted);
   line-height: 1.45;
   max-width: 150px;
@@ -245,7 +245,7 @@
 }
 
 .wp-intro-kicker {
-  font-size: 0.78rem;
+  font-size: 0.936rem;
   font-weight: 700;
   letter-spacing: 0.22em;
   text-transform: uppercase;
@@ -263,7 +263,7 @@
 }
 
 .wp-intro-sub {
-  font-size: 1rem;
+  font-size: 1.2rem;
   color: var(--muted);
   max-width: 560px;
   margin: 0 auto;
@@ -303,7 +303,7 @@
 }
 
 .wp-detail-eyebrow {
-  font-size: 0.72rem;
+  font-size: 0.864rem;
   font-weight: 700;
   letter-spacing: 0.22em;
   text-transform: uppercase;
@@ -321,7 +321,7 @@
 }
 
 .wp-detail-desc {
-  font-size: 0.95rem;
+  font-size: 1.14rem;
   line-height: 1.75;
   color: var(--muted);
   max-width: 620px;
@@ -335,7 +335,7 @@
   border-radius: 999px;
   background: var(--red-faint);
   border: 1px solid var(--red-border);
-  font-size: 0.78rem;
+  font-size: 0.936rem;
   font-weight: 600;
   color: var(--red);
 }
@@ -349,7 +349,7 @@
 }
 
 .wp-detail-panel-label {
-  font-size: 0.72rem;
+  font-size: 0.864rem;
   font-weight: 700;
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -357,7 +357,7 @@
 }
 
 .wp-detail-panel-value {
-  font-size: clamp(1.45rem, 3vw, 2.25rem);
+  font-size: clamp(1.74rem, 3.6vw, 2.7rem);
   font-weight: 700;
   letter-spacing: -0.04em;
   color: var(--red);
@@ -365,7 +365,7 @@
 }
 
 .wp-detail-panel-sub {
-  font-size: 0.82rem;
+  font-size: 0.984rem;
   color: var(--muted);
   text-align: right;
 }
@@ -375,7 +375,7 @@
 }
 
 .wp-detail-list-label {
-  font-size: 0.72rem;
+  font-size: 0.864rem;
   font-weight: 700;
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -401,7 +401,7 @@
 }
 
 .wp-detail-name {
-  font-size: 0.95rem;
+  font-size: 1.14rem;
   font-weight: 600;
   color: var(--ink);
   margin-bottom: 0.18rem;
@@ -409,13 +409,13 @@
 }
 
 .wp-detail-note {
-  font-size: 0.84rem;
+  font-size: 1.008rem;
   color: var(--muted);
   line-height: 1.5;
 }
 
 .wp-detail-value {
-  font-size: 0.95rem;
+  font-size: 1.14rem;
   font-weight: 700;
   color: var(--ink);
   text-align: right;
@@ -433,7 +433,7 @@
 }
 
 .wp-process-kicker {
-  font-size: 0.78rem;
+  font-size: 0.936rem;
   font-weight: 700;
   letter-spacing: 0.22em;
   text-transform: uppercase;
@@ -465,7 +465,7 @@
 }
 
 .wp-process-step {
-  font-size: 0.78rem;
+  font-size: 0.936rem;
   font-weight: 700;
   letter-spacing: 0.22em;
   text-transform: uppercase;
@@ -482,7 +482,7 @@
 }
 
 .wp-process-card-text {
-  font-size: 0.92rem;
+  font-size: 1.104rem;
   line-height: 1.75;
   color: var(--muted);
 }
@@ -503,7 +503,7 @@
 }
 
 .wp-note-kicker {
-  font-size: 0.78rem;
+  font-size: 0.936rem;
   font-weight: 700;
   letter-spacing: 0.22em;
   text-transform: uppercase;
@@ -521,7 +521,7 @@
 }
 
 .wp-note-text {
-  font-size: 1rem;
+  font-size: 1.2rem;
   color: rgba(255, 255, 255, 0.82);
   max-width: 620px;
   margin: 0 auto;
@@ -623,7 +623,7 @@
   }
 
   .wp-breadcrumb {
-    font-size: 0.95rem;
+    font-size: 1.14rem;
     flex-wrap: wrap;
   }
 }

@@ -365,11 +365,9 @@ export default function Services() {
             <header className="sp-list-header">
               <p className="sp-section-kicker">All Services</p>
               <h2 className="sp-list-title">
-                <span className="sp-list-title-main">{ALL_CARDS.length}</span>{' '}
-                <em>services.</em>
-                <br />
-                <span className="sp-list-title-main">Three</span>{' '}
-                <em>pillars.</em>
+                <span className="sp-list-title-main">
+                  3 Pillars, {ALL_CARDS.length} Services
+                </span>
               </h2>
               <p className="sp-list-sub">
                 A complete reference of every MEMPCO service, organized by pillar

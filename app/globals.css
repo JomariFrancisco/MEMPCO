@@ -186,3 +186,43 @@ main {
   flex-direction: column;
   width: 100%;
 }
+
+/* Eyebrow labels are intentionally removed across the entire website. */
+:where([class*='eyebrow']) {
+  display: none !important;
+}
+
+/*
+ * Keep page and section titles consistently black, including title accents
+ * that previously used clipped gradients or transparent text fills.
+ */
+:where(
+  main h1,
+  main h2,
+  [class*='hero-title'],
+  [class*='section-title']
+):not(
+  .hero *,
+  .ins-hero *,
+  .tp-hero *,
+  .wp-hero *,
+  .fun-hero *,
+  .mlc-hero *
+),
+:where(
+  main h1,
+  main h2,
+  [class*='hero-title'],
+  [class*='section-title']
+):not(
+  .hero *,
+  .ins-hero *,
+  .tp-hero *,
+  .wp-hero *,
+  .fun-hero *,
+  .mlc-hero *
+) :where(span, em, strong) {
+  color: #111111 !important;
+  background-image: none !important;
+  -webkit-text-fill-color: #111111 !important;
+}

@@ -52,7 +52,6 @@ import {
   isInactivePortalUser,
   listPortalUserAuditLogs,
   listPortalUsers,
-  sendPasswordResetEmail,
   signOutPortal,
   updatePortalUser,
 } from '@/lib/auth/portalAuth';
@@ -94,6 +93,7 @@ const PHOTO_ACCEPT = 'image/jpeg,image/jpg,image/png,image/webp';
 const PHOTO_ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 const BURNOUT_STANDARD_MIN_DAYS = 3;
+const BURNOUT_TARGET_DAYS = 5;
 const BURNOUT_STANDARD_MESSAGE = 'Did not meet the standard procedure date';
 const BURNOUT_ACTIVE_STATUS_KEYS = ['submitted', 'for inspection', 'under burnout'];
 const BURNOUT_MONITORING_STATUS_KEYS = ['under burnout'];
@@ -117,6 +117,8 @@ const BURNOUT_STATUS_FALLBACKS = {
   escalated: 'Under Burnout',
   'moved date': 'Under Burnout',
   resolved: 'Passed Burnout',
+  'ready for deployment': 'Ready for Deployment',
+  deployed: 'Deployed',
   canceled: 'Cancelled',
   cancelled: 'Cancelled',
 };
@@ -154,9 +156,8 @@ const BURNOUT_MONITORING_ITEMS = [
   ['performance-issues', 'Performance Issues', 'None', 'Smooth performance'],
 ];
 const BURNOUT_EVALUATION_ITEMS = [
-  ['hardware-condition', 'Hardware Condition', 'Pass', 'Unit passed burn-in testing and is ready for deployment'],
+  ['hardware-condition', 'Hardware Condition', 'Pass', 'Unit passed burn-in testing and is ready for turnover to admin'],
   ['software-installation', 'Software Installation', 'Complete', 'Software checklist completed'],
-  ['ready-for-deployment', 'Ready for Deployment', 'Yes', 'Ready for release'],
 ];
 
 const MonoIcon = ({ icon: IconComponent }) => (
@@ -240,6 +241,11 @@ const emptyCreateUserForm = {
   confirmPassword: '',
 };
 
+const USER_EDIT_STATUSES = ['Active', 'Inactive', 'Locked'];
+
+const normalizeUserEditStatus = (status = '') =>
+  USER_EDIT_STATUSES.includes(status) ? status : 'Active';
+
 const toUserEditForm = (user) => ({
   id: user.id,
   name: user.name || '',
@@ -250,7 +256,7 @@ const toUserEditForm = (user) => ({
   email: user.email || '',
   phone: user.phone || '',
   role: user.role || 'employee',
-  status: user.status || 'Active',
+  status: normalizeUserEditStatus(user.status || 'Active'),
   password: '',
   confirmPassword: '',
 });
@@ -658,6 +664,41 @@ const formatReportTimestamp = (timestamp, fallback = 'Not recorded') => {
   if (!timestamp) return fallback;
 
   return new Date(timestamp).toLocaleString();
+};
+
+const parsePortalTimestamp = (value) => {
+  if (!value) return null;
+
+  const normalized = String(value).replace(/(\.\d{3})\d+/, '$1');
+  const parsed = new Date(normalized);
+
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
+const formatCompactDateTime = (value, fallback = 'Not recorded') => {
+  const parsed = parsePortalTimestamp(value);
+
+  if (!parsed) return value || fallback;
+
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(parsed);
+};
+
+const formatCompactDate = (value, fallback = 'Not recorded') => {
+  const parsed = parsePortalTimestamp(value);
+
+  if (!parsed) return value || fallback;
+
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  }).format(parsed);
 };
 
 const getTicketMovedDateLabel = (ticket) =>
@@ -1722,6 +1763,7 @@ const getMonthlyBurnoutSummaryData = (tickets, monthDate) => {
   const summary = buildSummary(monthlyTickets);
   const belowStandardCount = monthlyTickets.filter(isBurnoutBelowStandardProcedure).length;
   const threeDayMarkCount = monthlyTickets.filter(hasBurnoutReachedThreeDayMark).length;
+  const fiveDayMarkCount = monthlyTickets.filter(hasBurnoutReachedFiveDayMark).length;
 
   return {
     monthTitle,
@@ -1729,6 +1771,7 @@ const getMonthlyBurnoutSummaryData = (tickets, monthDate) => {
     summary,
     belowStandardCount,
     threeDayMarkCount,
+    fiveDayMarkCount,
   };
 };
 
@@ -1747,6 +1790,7 @@ const monthlyBurnoutSummaryColumns = [
   ['Status', (ticket) => getTicketField(ticket.status, 'Created')],
   ['Technician', (ticket) => getTicketField(ticket.technician, 'Unassigned')],
   ['3-Day Mark', (ticket) => (hasBurnoutReachedThreeDayMark(ticket) ? 'Yes' : 'No')],
+  ['5-Day Mark', (ticket) => (hasBurnoutReachedFiveDayMark(ticket) ? 'Yes' : 'No')],
   ['Below Standard', (ticket) => (isBurnoutBelowStandardProcedure(ticket) ? 'Yes' : 'No')],
 ];
 
@@ -1757,6 +1801,7 @@ const printMonthlyBurnoutSummaryReport = (tickets, monthDate) => {
     summary,
     belowStandardCount,
     threeDayMarkCount,
+    fiveDayMarkCount,
   } = getMonthlyBurnoutSummaryData(tickets, monthDate);
   const body = `
     <main class="print-page">
@@ -1770,6 +1815,7 @@ const printMonthlyBurnoutSummaryReport = (tickets, monthDate) => {
         <div class="field"><span>Active Tickets</span><strong>${escapePrintHtml(summary.active)}</strong></div>
         <div class="field"><span>Resolved Tickets</span><strong>${escapePrintHtml(summary.resolved)}</strong></div>
         <div class="field"><span>3-Day Mark</span><strong>${escapePrintHtml(threeDayMarkCount)}</strong></div>
+        <div class="field"><span>5-Day Mark</span><strong>${escapePrintHtml(fiveDayMarkCount)}</strong></div>
         <div class="field"><span>Below Standard</span><strong>${escapePrintHtml(belowStandardCount)}</strong></div>
       </section>
       <section class="ticket-detail-section">
@@ -1799,6 +1845,7 @@ const exportMonthlyBurnoutSummaryExcel = (tickets, monthDate) => {
     summary,
     belowStandardCount,
     threeDayMarkCount,
+    fiveDayMarkCount,
   } = getMonthlyBurnoutSummaryData(tickets, monthDate);
   const summaryRows = [
     ['Report', 'Monthly Burnout Summary Report'],
@@ -1807,6 +1854,7 @@ const exportMonthlyBurnoutSummaryExcel = (tickets, monthDate) => {
     ['Active Tickets', summary.active],
     ['Resolved Tickets', summary.resolved],
     ['3-Day Mark', threeDayMarkCount],
+    ['5-Day Mark', fiveDayMarkCount],
     ['Below Standard', belowStandardCount],
     ['Exported', new Date().toLocaleString()],
   ].map(([label, value]) => `<tr><td>${escapePrintHtml(label)}</td><td>${escapePrintHtml(value)}</td></tr>`).join('');
@@ -2153,8 +2201,13 @@ const getBurnoutElapsedDays = (ticket = {}, endValue = Date.now()) => {
 
 const hasBurnoutReachedThreeDayMark = (ticket = {}, nowValue = Date.now()) =>
   isBurnoutTicket(ticket) &&
-  isUnresolved(ticket.status) &&
+  BURNOUT_ACTIVE_STATUS_KEYS.includes(normalizeTicketStatus(ticket.status)) &&
   getBurnoutElapsedDays(ticket, nowValue) >= BURNOUT_STANDARD_MIN_DAYS;
+
+const hasBurnoutReachedFiveDayMark = (ticket = {}, nowValue = Date.now()) =>
+  isBurnoutTicket(ticket) &&
+  BURNOUT_ACTIVE_STATUS_KEYS.includes(normalizeTicketStatus(ticket.status)) &&
+  getBurnoutElapsedDays(ticket, nowValue) >= BURNOUT_TARGET_DAYS;
 
 const isBurnoutBelowStandardProcedure = (ticket = {}, endValue = Date.now()) =>
   isBurnoutTicket(ticket) &&
@@ -2404,11 +2457,16 @@ const formatElapsedTime = (startedAt, endedAt, now = Date.now()) => {
 
   const end = getTimeValue(endedAt) || now;
   const totalSeconds = Math.max(0, Math.floor((end - start) / 1000));
-  const hours = Math.floor(totalSeconds / 3600);
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
   const seconds = totalSeconds % 60;
   const paddedMinutes = String(minutes).padStart(2, '0');
   const paddedSeconds = String(seconds).padStart(2, '0');
+
+  if (days > 0) {
+    return `${days}d ${hours}h ${paddedMinutes}m ${paddedSeconds}s`;
+  }
 
   if (hours > 0) {
     return `${hours}h ${paddedMinutes}m ${paddedSeconds}s`;
@@ -2519,11 +2577,15 @@ function StatCard({ icon, label, value, meta }) {
 }
 
 function TicketBadges({ ticket }) {
+  const reachedFiveDayMark = hasBurnoutReachedFiveDayMark(ticket);
+  const reachedThreeDayMark = hasBurnoutReachedThreeDayMark(ticket);
+
   return (
     <div className="ticket-badges admin-inline-badges">
       <span className={`status ${slugify(ticket.status)}`}>{ticket.status}</span>
       <span className={`priority ${slugify(ticket.sla)}`}>{ticket.sla}</span>
-      {hasBurnoutReachedThreeDayMark(ticket) && <span className="status burnout-due">3-Day Mark</span>}
+      {reachedFiveDayMark && <span className="status burnout-overdue">5-Day Mark</span>}
+      {!reachedFiveDayMark && reachedThreeDayMark && <span className="status burnout-due">3-Day Mark</span>}
       {(ticket.saarRequired || ticket.saarAttachment?.name) && <span className="status saar">SAAR</span>}
     </div>
   );
@@ -3076,6 +3138,34 @@ function TicketWorkTimer({ ticket, now, compact = false }) {
           {endedAt ? ` · Ended ${endedAt}` : ''}
         </p>
       )}
+    </div>
+  );
+}
+
+function TicketStatusTools({
+  ticket,
+  now,
+  compact = false,
+  timerCompact = compact,
+  inline = false,
+  className = '',
+}) {
+  const hasIndicator = Boolean(getTicketHandlingState(ticket));
+  const hasTimer = Boolean(getTicketWorkStartedAt(ticket));
+
+  if (!hasIndicator && !hasTimer) return null;
+
+  return (
+    <div
+      className={[
+        'ticket-status-tools',
+        className,
+        compact ? 'compact' : '',
+        (!hasIndicator || !hasTimer) ? 'solo' : '',
+      ].filter(Boolean).join(' ')}
+    >
+      <TicketHandlingIndicator ticket={ticket} compact={compact} inline={inline} />
+      <TicketWorkTimer ticket={ticket} now={now} compact={timerCompact} />
     </div>
   );
 }
@@ -3674,7 +3764,7 @@ function TicketsView({
         kicker: 'Support Tickets',
         title: 'Regular ICT support queue.',
         body:
-          'Review software, hardware, network, account, and other ICT support concerns separately from Burnout deployment checks.',
+          'Review software, hardware, network, account, and other ICT support concerns separately from Burnout turnover checks.',
         totalLabel: 'Support',
         emptyTitle: 'No support tickets found',
         emptyDescription: 'Regular ICT support requests will appear here once submitted.',
@@ -3914,7 +4004,7 @@ function BurnoutReportView({ tickets, onOpenTicket, onDeleteTicket, canDeleteTic
           <h2>Dedicated Burnout queue and 3-5 day monitoring.</h2>
           <p>
             Track unit condition checks separately from regular ICT support tickets, then open each request to update
-            the checklist, software installation, monitoring, and final evaluation before workstation deployment.
+            the checklist, software installation, monitoring, and final evaluation before turnover to admin.
           </p>
         </div>
 
@@ -4885,37 +4975,6 @@ function UsersView({ users, canManageUsers, currentUserId, onUsersChanged }) {
     }
   };
 
-  const handleSendReset = async (user) => {
-    const confirmed = window.confirm(
-      `Send a password reset email to ${user.email}?`
-    );
-
-    if (!confirmed) return;
-
-    setIsSubmitting(true);
-    setMessage({ type: '', text: '' });
-
-    try {
-      await sendPasswordResetEmail(user.email);
-      await updatePortalUser({
-        ...toUserEditForm(user),
-        status: 'Password Reset Required',
-      });
-      await onUsersChanged();
-      setEditingUser((current) =>
-        current?.id === user.id ? { ...current, status: 'Password Reset Required' } : current
-      );
-      setEditForm((current) =>
-        current?.id === user.id ? { ...current, status: 'Password Reset Required' } : current
-      );
-      setMessage({ type: 'success', text: 'Password reset email sent and account marked for reset.' });
-    } catch (error) {
-      setMessage({ type: 'error', text: error.message || 'Unable to send password reset email.' });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   return (
     <div className="dashboard-view">
       <section className="panel-card glass hero-panel">
@@ -4962,7 +5021,7 @@ function UsersView({ users, canManageUsers, currentUserId, onUsersChanged }) {
               value={userStatusFilter}
               onChange={(e) => setUserStatusFilter(e.target.value)}
             >
-              <option value="All">All Statuses</option>
+              <option value="All">All Status</option>
               {USER_ACCOUNT_STATUSES.map((status) => (
                 <option key={status} value={status}>{status}</option>
               ))}
@@ -5014,14 +5073,6 @@ function UsersView({ users, canManageUsers, currentUserId, onUsersChanged }) {
                           disabled={isSubmitting}
                         >
                           View
-                        </button>
-                        <button
-                          type="button"
-                          className="user-action-btn"
-                          onClick={() => handleSendReset(user)}
-                          disabled={isSubmitting || !user.email}
-                        >
-                          Reset
                         </button>
                         <button
                           type="button"
@@ -5115,27 +5166,19 @@ function UsersView({ users, canManageUsers, currentUserId, onUsersChanged }) {
                   </div>
                   <div>
                     <span>Status</span>
-                    <strong>{editingUser.status || 'Active'}</strong>
+                    <strong>{normalizeUserEditStatus(editingUser.status || 'Active')}</strong>
                   </div>
                   <div>
                     <span>Created</span>
-                    <strong>{editingUser.createdAt || 'Not recorded'}</strong>
+                    <strong title={editingUser.createdAt || ''}>{formatCompactDate(editingUser.createdAt)}</strong>
                   </div>
                   <div>
                     <span>Last Updated</span>
-                    <strong>{editingUser.updatedAt || 'Not recorded'}</strong>
+                    <strong title={editingUser.updatedAt || ''}>{formatCompactDate(editingUser.updatedAt)}</strong>
                   </div>
                 </div>
 
                 <div className="user-quick-actions">
-                  <button
-                    type="button"
-                    className="user-action-btn"
-                    onClick={() => handleSendReset(editingUser)}
-                    disabled={isSubmitting || !editingUser.email}
-                  >
-                    Reset Password
-                  </button>
                   <button
                     type="button"
                     className="user-action-btn"
@@ -5172,7 +5215,14 @@ function UsersView({ users, canManageUsers, currentUserId, onUsersChanged }) {
                       {auditLogs.map((log) => (
                         <article key={log.id} className="user-audit-item">
                           <strong>{log.summary}</strong>
-                          <p>{log.actorName || 'System'}{log.createdAt ? ` / ${log.createdAt}` : ''}</p>
+                          <p>
+                            <span>{log.actorName || 'System'}</span>
+                            {log.createdAt && (
+                              <time dateTime={log.createdAt} title={log.createdAt}>
+                                {formatCompactDateTime(log.createdAt)}
+                              </time>
+                            )}
+                          </p>
                         </article>
                       ))}
                     </div>
@@ -5364,7 +5414,7 @@ function UsersView({ users, canManageUsers, currentUserId, onUsersChanged }) {
                   disabled={editForm.id === currentUserId}
                   required
                 >
-                  {USER_ACCOUNT_STATUSES.map((status) => (
+                  {USER_EDIT_STATUSES.map((status) => (
                     <option key={status} value={status}>{status}</option>
                   ))}
                 </select>
@@ -5700,8 +5750,9 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
   const isBurnout = isBurnoutTicket(ticket);
   const isResolvedLocked = isBurnout ? isBurnoutClosedStatus(ticket.status) : isTicketResolved(ticket);
   const isStartMode = !isBurnout && !hasWorkStarted && !isResolvedLocked && !isMovedDateTicket(ticket);
+  const burnoutWorkflowStatus = isBurnout ? getBurnoutWorkflowStatus(ticket.status) : '';
   const statusOptions = isBurnout
-    ? BURNOUT_TICKET_STATUSES
+    ? Array.from(new Set([burnoutWorkflowStatus, ...BURNOUT_TICKET_STATUSES].filter(Boolean)))
     : isStartMode
     ? ['In Progress']
     : TICKET_STATUSES.filter((status) => status !== 'Created');
@@ -5722,7 +5773,7 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
     ? ticket.technician
     : currentStaffName;
   const [draft, setDraft] = useState({
-    status: isBurnout ? getBurnoutWorkflowStatus(ticket.status) : isStartMode ? 'In Progress' : ticket.status || 'Pending',
+    status: isBurnout ? burnoutWorkflowStatus : isStartMode ? 'In Progress' : ticket.status || 'Pending',
     sla: ticket.sla || 'Low',
     technician: assignedStaff,
     actionTaken: ticket.actionTaken || '',
@@ -6001,7 +6052,7 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
               {isBurnout
                 ? isResolvedLocked
                   ? 'This Burnout record has a final unit status.'
-                  : 'Track the unit condition before workstation deployment.'
+                  : 'Track the unit condition before turnover to admin.'
                 : isResolvedLocked
                 ? 'This ticket has been resolved.'
                 : isStartMode
@@ -6012,7 +6063,7 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
               {isBurnout
                 ? isResolvedLocked
                   ? 'Final Burnout statuses are read-only for audit consistency.'
-                  : 'Use Under Burnout for the 3-day minimum monitoring window; mark Damaged, For Repair, or For Replacement when the unit fails inspection.'
+                  : 'Use Under Burnout for the 3-day minimum monitoring window; mark Passed Burnout when the unit is ready for admin turnover, or mark the appropriate failed unit status.'
                 : isResolvedLocked
                 ? 'Resolved tickets are read-only for editing.'
                 : isStartMode
@@ -6021,10 +6072,14 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
             </p>
           </div>
 
-          <div className="ticket-action-status-tools">
-            <TicketHandlingIndicator ticket={ticket} compact inline />
-            <TicketWorkTimer ticket={ticket} now={now} compact={!getTicketWorkStartedAt(ticket)} />
-          </div>
+          <TicketStatusTools
+            ticket={ticket}
+            now={now}
+            compact
+            timerCompact={!getTicketWorkStartedAt(ticket)}
+            inline
+            className="ticket-action-status-tools"
+          />
         </div>
 
         <div className="admin-modal-grid ticket-action-info-grid">
@@ -6165,12 +6220,12 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
           </div>
 
           <div className="ticket-form-group">
-            <label>{isBurnout ? 'Burnout / Deployment Notes' : 'Resolution Notes'}</label>
+            <label>{isBurnout ? 'Burnout Notes' : 'Resolution Notes'}</label>
             <textarea
               className="ticket-field ticket-textarea admin-small-textarea"
               value={draft.resolution}
               onChange={(e) => updateDraft('resolution', e.target.value)}
-              placeholder={canEditOutcomeFields ? (isBurnout ? 'Write unit condition, pass/fail, repair, replacement, or deployment notes...' : 'Write final resolution once completed...') : lockedOutcomePlaceholder}
+              placeholder={canEditOutcomeFields ? (isBurnout ? 'Write unit condition, pass/fail, repair, replacement, or turnover notes...' : 'Write final resolution once completed...') : lockedOutcomePlaceholder}
               readOnly={!canEditOutcomeFields}
             />
           </div>
@@ -6228,9 +6283,6 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
             </button>
           )}
 
-          <button type="button" className="modal-btn cancel" onClick={onClose}>
-            Cancel
-          </button>
           {!isResolvedLocked && (
             <button type="submit" className="modal-btn confirm">
               <MonoIcon icon={ShieldCheck} />
@@ -6292,6 +6344,7 @@ export default function AdminDashboardPage() {
   const [users, setUsers] = useState([]);
   const [selectedTicket, setSelectedTicket] = useState(null);
   const burnoutThreeDayNotifiedRef = useRef(new Set());
+  const burnoutFiveDayNotifiedRef = useRef(new Set());
   const [authChecked, setAuthChecked] = useState(false);
   const [isInactiveBlocked, setIsInactiveBlocked] = useState(false);
   const [lastSynced, setLastSynced] = useState('');
@@ -6500,8 +6553,9 @@ Current role: ${activeUser.role || 'No role found'}`
   useEffect(() => {
     if (!authChecked || !admin || !tickets.length) return;
 
-    const dueNotifications = tickets
+    const threeDayNotifications = tickets
       .filter((ticket) => hasBurnoutReachedThreeDayMark(ticket, timerNow))
+      .filter((ticket) => !hasBurnoutReachedFiveDayMark(ticket, timerNow))
       .filter((ticket) => !burnoutThreeDayNotifiedRef.current.has(ticket.id))
       .map((ticket) => {
         burnoutThreeDayNotifiedRef.current.add(ticket.id);
@@ -6515,6 +6569,22 @@ Current role: ${activeUser.role || 'No role found'}`
           read: false,
         };
       });
+    const fiveDayNotifications = tickets
+      .filter((ticket) => hasBurnoutReachedFiveDayMark(ticket, timerNow))
+      .filter((ticket) => !burnoutFiveDayNotifiedRef.current.has(ticket.id))
+      .map((ticket) => {
+        burnoutFiveDayNotifiedRef.current.add(ticket.id);
+
+        return {
+          id: `burnout-five-day-${ticket.id}-${Date.now()}`,
+          ticketId: ticket.id,
+          title: 'Burnout reached 5-day mark',
+          body: `${getTicketDisplayCode(ticket)} has reached the 5-day Burnout target without a pass status.`,
+          createdAt: new Date().toLocaleString(),
+          read: false,
+        };
+      });
+    const dueNotifications = [...fiveDayNotifications, ...threeDayNotifications];
 
     if (dueNotifications.length) {
       setNotifications((current) => [...dueNotifications, ...current].slice(0, 12));
@@ -6693,6 +6763,7 @@ Current role: ${activeUser.role || 'No role found'}`
     const currentStaffName = admin?.name || 'Unassigned';
     const nextStatus = normalizeTicketStatus(updates.status);
     const currentStatus = normalizeTicketStatus(currentTicket?.status);
+    const isBurnoutPassStatus = nextStatus === 'passed burnout';
 
     if (!nextUpdates.technician || nextUpdates.technician === 'Unassigned') {
       nextUpdates.technician = currentStaffName;
@@ -6713,7 +6784,7 @@ Current role: ${activeUser.role || 'No role found'}`
       nextUpdates.workEndedAt = '';
     }
 
-    if (isCurrentBurnout && nextStatus === 'under burnout') {
+    if (isCurrentBurnout && (nextStatus === 'under burnout' || isBurnoutPassStatus)) {
       if (!currentTicket?.workStartedAt || currentTicket?.workEndedAt) {
         nextUpdates.workStartedAt = timestamp;
       }
@@ -6765,7 +6836,6 @@ Current role: ${activeUser.role || 'No role found'}`
       ...(currentTicket || {}),
       ...nextUpdates,
     };
-    const isBurnoutPassStatus = ['passed burnout', 'ready for deployment', 'deployed'].includes(nextStatus);
     const shouldSendBurnoutStandardMessage =
       isCurrentBurnout &&
       isBurnoutPassStatus &&

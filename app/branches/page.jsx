@@ -55,6 +55,7 @@ const branchesData = [
     province: '',
     address: 'Unit A, B & C, Sia and Sons Bldg., Mayor Jaldon St., Canelar, Zamboanga City, 7000',
     phone: '(062) 308-5304 / (062) 993-9751',
+    facility: 'With ATM Machine',
     services: ['Savings & Credit', 'Allied Services', 'Member Support'],
     image: '',
     mapLink: 'https://maps.app.goo.gl/RwzTAWGn8x4FAjLK9',
@@ -85,6 +86,7 @@ const branchesData = [
     province: '',
     address: 'MEMPCO Bldg., MCLL Highway, Culianan, Zamboanga City, 7000',
     phone: '(062) 993-9756 / (062) 310-6575',
+    facility: 'With ATM Machine',
     services: ['Savings & Credit', 'Allied Services', 'Member Support'],
     image: '',
     mapLink: 'https://maps.app.goo.gl/tQYv3cp76tHNhyDCA',
@@ -130,6 +132,7 @@ const branchesData = [
     province: '',
     address: 'MEMPCO Bldg., Zone VI, Ayala, Zamboanga City, 7000',
     phone: '(062) 993-8665 / (062) 308-2691',
+    facility: 'With ATM Machine',
     services: ['Savings & Credit', 'Allied Services', 'Member Support'],
     image: '',
     mapLink: 'https://maps.app.goo.gl/ip7jXeDEdF1ebngE9',
@@ -255,7 +258,12 @@ function ResultCard({ branch, active, hovered, onClick, onMouseEnter, onMouseLea
       onBlur={onMouseLeave}
     >
       <div className="locator-result-content">
-        <h3>{branch.name}</h3>
+        <div className="locator-result-title-row">
+          <h3>{branch.name}</h3>
+          {branch.facility && (
+            <span className="locator-atm-badge">ATM</span>
+          )}
+        </div>
         <p>{branch.address}</p>
         <div className="locator-result-meta">
           {branch.area} · {branch.category}
@@ -515,12 +523,6 @@ export default function BranchesPage() {
 
                   <div className="locator-branch-card">
                     <div className="locator-branch-card-top">
-                      <div className="locator-branch-media">
-                        <img
-                          src={activeBranch.image || '/LOGO%201.png'}
-                          alt={activeBranch.image ? activeBranch.name : 'MEMPCO logo'}
-                        />
-                      </div>
                       <div className="locator-branch-copy">
                         <span className="locator-branch-badge">{activeBranch.area}</span>
                         <h3>{activeBranch.name}</h3>
@@ -544,14 +546,12 @@ export default function BranchesPage() {
                         <p>{activeBranch.category}</p>
                       </div>
 
-                      <div className="locator-detail-card">
-                        <span>Services</span>
-                        <div className="locator-service-tags">
-                          {activeBranch.services.map((s) => (
-                            <span key={s} className="locator-service-tag">{s}</span>
-                          ))}
+                      {activeBranch.facility && (
+                        <div className="locator-detail-card locator-detail-card--facility">
+                          <span>Facility</span>
+                          <p>{activeBranch.facility}</p>
                         </div>
-                      </div>
+                      )}
                     </div>
                   </div>
                 </>

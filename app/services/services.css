@@ -96,7 +96,7 @@ html {
 }
 
 .sp-section-kicker {
-  font-size: 0.9rem;
+  font-size: 1.08rem;
   font-weight: 700;
   letter-spacing: 0.22em;
   text-transform: uppercase;
@@ -169,7 +169,7 @@ html {
   border: 1px solid rgba(220, 38, 38, 0.1);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  font-size: 0.72rem;
+  font-size: 0.864rem;
   font-weight: 700;
   letter-spacing: 0.2em;
   text-transform: uppercase;
@@ -200,7 +200,7 @@ html {
 }
 
 .sp-hero-sub {
-  font-size: clamp(1.06rem, 1.7vw, 1.24rem);
+  font-size: clamp(1.272rem, 2.04vw, 1.488rem);
   line-height: 1.75;
   color: var(--muted);
   max-width: 700px;
@@ -222,7 +222,7 @@ html {
   min-height: 48px;
   padding: 0 1.3rem;
   border-radius: 999px;
-  font-size: 0.92rem;
+  font-size: 1.104rem;
   font-weight: 700;
   letter-spacing: 0.01em;
   text-decoration: none;
@@ -268,14 +268,14 @@ html {
 }
 
 .sp-hero-meta-num {
-  font-size: 1.6rem;
+  font-size: 1.92rem;
   font-weight: 700;
   letter-spacing: -0.04em;
   color: var(--ink);
 }
 
 .sp-hero-meta-label {
-  font-size: 0.8rem;
+  font-size: 0.96rem;
   line-height: 1.45;
   color: var(--muted);
 }
@@ -309,14 +309,14 @@ html {
 }
 
 .sp-hero-panel-num {
-  font-size: 0.74rem;
+  font-size: 0.888rem;
   font-weight: 700;
   letter-spacing: 0.18em;
   color: var(--red);
 }
 
 .sp-hero-panel-count {
-  font-size: 0.78rem;
+  font-size: 0.936rem;
   font-weight: 600;
   color: var(--subtle);
 }
@@ -330,7 +330,7 @@ html {
 }
 
 .sp-hero-panel-text {
-  font-size: 0.92rem;
+  font-size: 1.104rem;
   line-height: 1.65;
   color: var(--muted);
 }
@@ -391,7 +391,7 @@ html {
 }
 
 .sp-tab-num {
-  font-size: 0.78rem;
+  font-size: 0.936rem;
   font-weight: 700;
   letter-spacing: 0.16em;
   color: var(--subtle);
@@ -412,7 +412,7 @@ html {
 }
 
 .sp-tab-label {
-  font-size: 1.1rem;
+  font-size: 1.32rem;
   font-weight: 650;
   color: var(--ink);
   white-space: nowrap;
@@ -421,12 +421,12 @@ html {
 }
 
 .sp-tab-count {
-  font-size: 0.94rem;
+  font-size: 1.128rem;
   color: var(--muted);
 }
 
 .sp-tab-hint {
-  font-size: 0.9rem;
+  font-size: 1.08rem;
   color: var(--subtle);
   letter-spacing: 0.02em;
   padding-left: 0.15rem;
@@ -446,7 +446,7 @@ html {
 }
 
 .sp-carousel-sub {
-  font-size: 1.05rem;
+  font-size: 1.26rem;
   color: var(--muted);
   letter-spacing: 0.01em;
 }
@@ -525,7 +525,7 @@ html {
 }
 
 .fc-pillar-badge {
-  font-size: 0.72rem;
+  font-size: 0.864rem;
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -537,7 +537,7 @@ html {
 }
 
 .fc-eyebrow {
-  font-size: 0.72rem;
+  font-size: 0.864rem;
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -563,7 +563,7 @@ html {
 }
 
 .fc-name {
-  font-size: clamp(1.35rem, 1.85vw, 1.65rem);
+  font-size: clamp(1.62rem, 2.22vw, 1.98rem);
   font-weight: 700;
   line-height: 1.16;
   letter-spacing: -0.03em;
@@ -571,14 +571,14 @@ html {
 }
 
 .fc-tagline {
-  font-size: 0.98rem;
+  font-size: 1.176rem;
   font-weight: 500;
   opacity: 0.82;
   line-height: 1.55;
 }
 
 .fc-desc {
-  font-size: 0.95rem;
+  font-size: 1.14rem;
   line-height: 1.72;
   opacity: 0.94;
   margin-bottom: 1.15rem;
@@ -600,7 +600,7 @@ html {
   display: flex;
   align-items: flex-start;
   gap: 0.52rem;
-  font-size: 0.9rem;
+  font-size: 1.08rem;
   line-height: 1.55;
   opacity: 0.92;
 }
@@ -631,7 +631,7 @@ html {
   display: inline-flex;
   align-items: center;
   gap: 0.42rem;
-  font-size: 0.92rem;
+  font-size: 1.104rem;
   font-weight: 700;
   text-decoration: none;
   letter-spacing: 0.02em;
@@ -651,7 +651,7 @@ html {
 }
 
 .fc-cta-muted {
-  font-size: 0.88rem;
+  font-size: 1.056rem;
   opacity: 0.62;
   letter-spacing: 0.04em;
 }
@@ -705,6 +705,7 @@ html {
 
 .sp-list-title-main {
   display: inline-block;
+  white-space: nowrap;
   color: transparent;
   background: linear-gradient(90deg, #0b0b0b 0%, #141414 64%, #343434 100%);
   -webkit-background-clip: text;
@@ -722,7 +723,7 @@ html {
 }
 
 .sp-list-sub {
-  font-size: 1.08rem;
+  font-size: 1.296rem;
   line-height: 1.82;
   color: var(--muted);
 }
@@ -743,14 +744,14 @@ html {
 }
 
 .sp-list-num {
-  font-size: 0.76rem;
+  font-size: 0.912rem;
   font-weight: 700;
   letter-spacing: 0.18em;
   color: var(--red);
 }
 
 .sp-list-group-name {
-  font-size: 1.08rem;
+  font-size: 1.296rem;
   font-weight: 700;
   color: var(--ink);
   letter-spacing: -0.01em;
@@ -833,7 +834,7 @@ html {
 }
 
 .sp-list-eyebrow {
-  font-size: 0.74rem;
+  font-size: 0.888rem;
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -843,7 +844,7 @@ html {
 }
 
 .sp-list-service-name {
-  font-size: 1.05rem;
+  font-size: 1.26rem;
   font-weight: 550;
   color: var(--ink);
   flex: 1;
@@ -978,7 +979,7 @@ html {
   .sp-eyebrow {
     min-height: 34px;
     padding: 0 0.9rem;
-    font-size: 0.66rem;
+    font-size: 0.792rem;
     margin-bottom: 1.1rem;
   }
 
@@ -994,7 +995,7 @@ html {
   }
 
   .sp-hero-sub {
-    font-size: 0.98rem;
+    font-size: 1.176rem;
     line-height: 1.72;
     margin-bottom: 1.4rem;
   }
@@ -1043,15 +1044,15 @@ html {
   }
 
   .sp-tab-label {
-    font-size: 0.98rem;
+    font-size: 1.176rem;
   }
 
   .sp-tab-count {
-    font-size: 0.82rem;
+    font-size: 0.984rem;
   }
 
   .sp-tab-hint {
-    font-size: 0.84rem;
+    font-size: 1.008rem;
   }
 
   .sp-carousel-col {
@@ -1064,7 +1065,7 @@ html {
   }
 
   .sp-carousel-sub {
-    font-size: 0.94rem;
+    font-size: 1.128rem;
   }
 
   .fan-stage {
@@ -1084,29 +1085,29 @@ html {
 
   .fc-pillar-badge,
   .fc-eyebrow {
-    font-size: 0.66rem;
+    font-size: 0.792rem;
   }
 
   .fc-name {
-    font-size: 1.1rem;
+    font-size: 1.32rem;
   }
 
   .fc-tagline {
-    font-size: 0.84rem;
+    font-size: 1.008rem;
   }
 
   .fc-desc {
-    font-size: 0.8rem;
+    font-size: 0.96rem;
     -webkit-line-clamp: 3;
   }
 
   .fc-details li {
-    font-size: 0.74rem;
+    font-size: 0.888rem;
   }
 
   .fc-cta,
   .fc-cta-muted {
-    font-size: 0.76rem;
+    font-size: 0.912rem;
   }
 
   .sp-list-screen {
@@ -1126,7 +1127,7 @@ html {
   }
 
   .sp-list-sub {
-    font-size: 0.96rem;
+    font-size: 1.152rem;
   }
 
   .sp-list-columns {
@@ -1134,17 +1135,21 @@ html {
     gap: 1.6rem;
   }
 
+  .sp-list-title-main {
+    white-space: normal;
+  }
+
   .sp-list-group-name {
-    font-size: 1rem;
+    font-size: 1.2rem;
   }
 
   .sp-list-service-name {
-    font-size: 0.95rem;
+    font-size: 1.14rem;
   }
 
   .sp-list-eyebrow {
     width: 76px;
-    font-size: 0.68rem;
+    font-size: 0.816rem;
   }
 
   .sp-list-arrow {
@@ -1411,7 +1416,7 @@ html {
 
 /* list section color matching while keeping exact layout */
 .sp-list-inner {
-  width: min(1360px, calc(100% - 5rem));
+  width: min(1120px, calc(100% - 5rem));
   display: flex;
   flex-direction: column;
   gap: 2rem;
@@ -1426,7 +1431,7 @@ html {
 .sp-list-columns {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1.35rem;
+  gap: 1.1rem;
   align-items: start;
   width: 100%;
   min-width: 0;
@@ -1468,16 +1473,21 @@ html {
 .sp-list-row {
   position: relative;
   display: grid;
-  grid-template-columns: 92px minmax(0, 1fr) 34px;
+  grid-template-columns: minmax(0, 1fr) 34px;
   align-items: center;
-  gap: 0.9rem;
-  padding: 0.95rem 0;
+  gap: 0.65rem;
+  width: 100%;
+  height: 62px;
+  padding: 0.55rem 0.75rem;
   border-bottom: 1px solid transparent;
   min-width: 0;
   isolation: isolate;
 }
 
 .sp-list-row::before {
+  left: 0;
+  right: 0;
+  height: 100%;
   background:
     linear-gradient(
       180deg,
@@ -1491,6 +1501,11 @@ html {
     0 2px 4px rgba(17, 24, 39, 0.03),
     0 10px 18px rgba(17, 24, 39, 0.06),
     0 18px 30px var(--group-shadow);
+}
+
+.sp-list-row::after {
+  left: 0.35rem;
+  right: 0.35rem;
 }
 
 .sp-list-row:hover::before {
@@ -1510,14 +1525,14 @@ html {
 }
 
 .sp-list-service-name {
-  font-size: 1.05rem;
+  font-size: 1.134rem;
   font-weight: 550;
   color: var(--ink);
   min-width: 0;
-  white-space: normal;
-  overflow: visible;
-  text-overflow: unset;
-  line-height: 1.45;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.3;
   padding-right: 0.35rem;
 }
 
@@ -1536,7 +1551,7 @@ html {
 
 @media (max-width: 1180px) {
   .sp-list-inner {
-    width: min(1360px, calc(100% - 5rem));
+    width: min(1040px, calc(100% - 3rem));
     gap: 2rem;
     padding: 0;
     overflow: visible;
@@ -1553,7 +1568,8 @@ html {
   }
 
   .sp-list-row {
-    grid-template-columns: 82px minmax(0, 1fr) 34px;
+    grid-template-columns: minmax(0, 1fr) 34px;
+    height: 60px;
   }
 
   .sp-list-eyebrow {
@@ -1561,7 +1577,7 @@ html {
   }
 
   .sp-list-service-name {
-    font-size: 0.95rem;
+    font-size: 1.026rem;
   }
 }
 
@@ -1578,18 +1594,19 @@ html {
   }
 
   .sp-list-row {
-    grid-template-columns: 74px minmax(0, 1fr) 32px;
+    grid-template-columns: minmax(0, 1fr) 32px;
     gap: 0.75rem;
-    align-items: start;
+    align-items: center;
+    height: 58px;
   }
 
   .sp-list-eyebrow {
-    font-size: 0.68rem;
+    font-size: 0.816rem;
   }
 
   .sp-list-service-name {
-    font-size: 0.95rem;
-    line-height: 1.4;
+    font-size: 1.026rem;
+    line-height: 1.3;
   }
 
   .sp-list-arrow {

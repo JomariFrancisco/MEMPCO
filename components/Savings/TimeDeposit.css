@@ -98,7 +98,7 @@
   justify-content: left;
   gap: 0.45rem;
   margin-bottom: 3.5rem;
-  font-size: 1.2rem;
+  font-size: 1.44rem;
   font-weight: 500;
   color: var(--muted);
 }
@@ -108,7 +108,7 @@
 
 .td-eyebrow {
   display: block;
-  font-size: 0.78rem;
+  font-size: 0.936rem;
   font-weight: 700;
   letter-spacing: 0.22em;
   text-transform: uppercase;
@@ -126,7 +126,7 @@
 }
 
 .td-hero-tagline {
-  font-size: clamp(1.05rem, 2vw, 1.4rem);
+  font-size: clamp(1.26rem, 2.4vw, 1.68rem);
   font-weight: 400;
   line-height: 1.55;
   color: var(--muted);
@@ -197,7 +197,7 @@
 .td-stat:last-child { border-right: none; }
 
 .td-stat-value {
-  font-size: clamp(1.75rem, 3.5vw, 2.75rem);
+  font-size: clamp(2.1rem, 4.2vw, 3.3rem);
   font-weight: 700;
   letter-spacing: -0.04em;
   color: var(--ink);
@@ -207,7 +207,7 @@
 .td-stat-value .accent { color: var(--red); }
 
 .td-stat-label {
-  font-size: 0.82rem;
+  font-size: 0.984rem;
   color: var(--muted);
   letter-spacing: 0.01em;
   line-height: 1.45;
@@ -231,7 +231,7 @@
 }
 
 .td-details-kicker {
-  font-size: 0.78rem;
+  font-size: 0.936rem;
   font-weight: 700;
   letter-spacing: 0.22em;
   text-transform: uppercase;
@@ -249,7 +249,7 @@
 }
 
 .td-details-body {
-  font-size: 1.05rem;
+  font-size: 1.26rem;
   line-height: 1.82;
   color: var(--muted);
 }
@@ -293,7 +293,7 @@
 }
 
 .td-feature-name {
-  font-size: 0.95rem;
+  font-size: 1.14rem;
   font-weight: 600;
   color: var(--ink);
   margin-bottom: 0.18rem;
@@ -301,7 +301,7 @@
 }
 
 .td-feature-desc {
-  font-size: 0.88rem;
+  font-size: 1.056rem;
   line-height: 1.62;
   color: var(--muted);
 }
@@ -321,7 +321,7 @@
 }
 
 .td-detail-card-num {
-  font-size: 0.72rem;
+  font-size: 0.864rem;
   font-weight: 700;
   letter-spacing: 0.18em;
   color: var(--red);
@@ -337,7 +337,7 @@
 }
 
 .td-detail-card-text {
-  font-size: 0.92rem;
+  font-size: 1.104rem;
   line-height: 1.72;
   color: var(--muted);
 }
@@ -357,7 +357,7 @@
 }
 
 .td-callout-kicker {
-  font-size: 0.78rem;
+  font-size: 0.936rem;
   font-weight: 700;
   letter-spacing: 0.22em;
   text-transform: uppercase;
@@ -366,7 +366,7 @@
 }
 
 .td-callout-quote {
-  font-size: clamp(1.25rem, 3vw, 2rem);
+  font-size: clamp(1.5rem, 3.6vw, 2.4rem);
   font-weight: 500;
   font-style: italic;
   line-height: 1.55;
@@ -377,7 +377,7 @@
 }
 
 .td-callout-sub {
-  font-size: 0.95rem;
+  font-size: 1.14rem;
   color: var(--muted);
   max-width: 480px;
   margin: 0 auto;
@@ -394,7 +394,7 @@
 }
 
 .td-why-kicker {
-  font-size: 0.78rem;
+  font-size: 0.936rem;
   font-weight: 700;
   letter-spacing: 0.22em;
   text-transform: uppercase;
@@ -426,7 +426,7 @@
 }
 
 .td-why-card-num {
-  font-size: 0.72rem;
+  font-size: 0.864rem;
   font-weight: 700;
   letter-spacing: 0.18em;
   color: var(--red);
@@ -442,7 +442,7 @@
 }
 
 .td-why-card-text {
-  font-size: 0.9rem;
+  font-size: 1.08rem;
   line-height: 1.72;
   color: var(--muted);
 }

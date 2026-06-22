@@ -131,7 +131,7 @@ body {
   gap: 0.5rem;
   margin-bottom: 1.5rem;
   color: var(--muted);
-  font-size: 0.85rem;
+  font-size: 1.02rem;
   font-weight: 600;
 }
 
@@ -156,7 +156,7 @@ body {
   background: rgba(220, 38, 38, 0.07);
   border: 1px solid var(--red-border);
   color: var(--red);
-  font-size: 0.7rem;
+  font-size: 0.84rem;
   font-weight: 700;
   letter-spacing: 0.2em;
   text-transform: uppercase;
@@ -179,7 +179,7 @@ body {
 .gov-hero-subtitle {
   margin: 1.1rem 0 0;
   color: var(--ink-2);
-  font-size: 1.18rem;
+  font-size: 1.416rem;
   font-weight: 600;
   line-height: 1.5;
   letter-spacing: -0.02em;
@@ -189,7 +189,7 @@ body {
 .gov-hero-description {
   margin: 0.9rem 0 0;
   color: var(--muted);
-  font-size: 0.98rem;
+  font-size: 1.176rem;
   line-height: 1.84;
   max-width: 680px;
 }
@@ -210,7 +210,7 @@ body {
   padding: 0 1.4rem;
   border-radius: 999px;
   text-decoration: none;
-  font-size: 0.88rem;
+  font-size: 1.056rem;
   font-weight: 700;
   letter-spacing: 0.01em;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
@@ -281,7 +281,7 @@ body {
 .gov-stat-card p {
   margin: 0;
   color: var(--muted);
-  font-size: 0.8rem;
+  font-size: 0.96rem;
   font-weight: 600;
 }
 
@@ -369,7 +369,7 @@ body {
   background: linear-gradient(135deg, rgba(220, 38, 38, 0.1), rgba(220, 38, 38, 0.2));
   border: 1px solid var(--red-border);
   color: var(--red);
-  font-size: 1.15rem;
+  font-size: 1.38rem;
   font-weight: 800;
   letter-spacing: -0.04em;
 }
@@ -389,7 +389,7 @@ body {
   background: rgba(255, 255, 255, 0.72);
   border: 1px solid rgba(220, 38, 38, 0.08);
   color: var(--ink-2);
-  font-size: 0.95rem;
+  font-size: 1.14rem;
   font-weight: 600;
   line-height: 1.45;
 }
@@ -436,7 +436,7 @@ body {
 @media (max-width: 560px) {
   .gov-breadcrumb {
     margin-bottom: 1rem;
-    font-size: 0.78rem;
+    font-size: 0.936rem;
   }
 
   .gov-hero-content h1 {
@@ -459,6 +459,6 @@ body {
   .gov-list-item {
     min-height: 48px;
     padding: 0.82rem 0.9rem;
-    font-size: 0.9rem;
+    font-size: 1.08rem;
   }
 }

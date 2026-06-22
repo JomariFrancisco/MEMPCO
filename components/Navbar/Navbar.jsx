@@ -14,6 +14,7 @@ export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [aboutOpen, setAboutOpen] = useState(false)
   const [servicesOpen, setServicesOpen] = useState(false)
+  const [contactOpen, setContactOpen] = useState(false)
   const [governanceOpen, setGovernanceOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const [currentHash, setCurrentHash] = useState('')
@@ -21,14 +22,7 @@ export default function Navbar() {
   const [openServiceGroup, setOpenServiceGroup] = useState(null)
   const [openNestedServiceGroup, setOpenNestedServiceGroup] = useState(null)
 
-  const [indicatorStyle, setIndicatorStyle] = useState({
-    left: 0,
-    width: 0,
-    opacity: 0,
-  })
-
   const pathname = usePathname()
-  const navMenuRef = useRef(null)
   const navbarRef = useRef(null)
 
   const isActive = (path, exact = false) => {
@@ -48,7 +42,7 @@ export default function Navbar() {
 
   const isAboutActive =
     isActive('/about') ||
-    isActive('/branches') ||
+    isActive('/data-privacy') ||
     isGovernanceActive
 
   const isRegularSavingsActive = pathname === '/services/savings/regular-savings'
@@ -101,43 +95,16 @@ export default function Navbar() {
     openServiceGroup === 'allied'
 
   const isCareerActive = isActive(CAREER_PATH)
-
-  const moveIndicatorToElement = (element) => {
-    if (!element || !navMenuRef.current || window.innerWidth <= 900) {
-      setIndicatorStyle((prev) => ({ ...prev, opacity: 0 }))
-      return
-    }
-
-    const menuRect = navMenuRef.current.getBoundingClientRect()
-    const elementRect = element.getBoundingClientRect()
-
-    setIndicatorStyle({
-      left: elementRect.left - menuRect.left,
-      width: elementRect.width,
-      opacity: 1,
-    })
-  }
-
-  const resetIndicator = () => {
-    if (!navMenuRef.current || window.innerWidth <= 900) {
-      setIndicatorStyle((prev) => ({ ...prev, opacity: 0 }))
-      return
-    }
-
-    const activeElement = navMenuRef.current.querySelector(
-      '.nav-link.active, .nav-trigger.active'
-    )
-
-    if (activeElement) {
-      moveIndicatorToElement(activeElement)
-    } else {
-      setIndicatorStyle((prev) => ({ ...prev, opacity: 0 }))
-    }
-  }
+  const isMembershipActive = isActive('/membership')
+  const isContactActive =
+    isActive('/branches') ||
+    isCareerActive ||
+    contactOpen
 
   const closeDropdowns = () => {
     setAboutOpen(false)
     setServicesOpen(false)
+    setContactOpen(false)
     setGovernanceOpen(false)
     setOpenServiceGroup(null)
     setOpenNestedServiceGroup(null)
@@ -156,6 +123,7 @@ export default function Navbar() {
   const toggleAbout = () => {
     setAboutOpen((prev) => !prev)
     setServicesOpen(false)
+    setContactOpen(false)
     setGovernanceOpen(false)
     setOpenServiceGroup(null)
     setOpenNestedServiceGroup(null)
@@ -164,7 +132,17 @@ export default function Navbar() {
   const toggleServices = () => {
     setServicesOpen((prev) => !prev)
     setAboutOpen(false)
+    setContactOpen(false)
     setGovernanceOpen(false)
+  }
+
+  const toggleContact = () => {
+    setContactOpen((prev) => !prev)
+    setAboutOpen(false)
+    setServicesOpen(false)
+    setGovernanceOpen(false)
+    setOpenServiceGroup(null)
+    setOpenNestedServiceGroup(null)
   }
 
   const toggleGovernance = () => {
@@ -254,31 +232,9 @@ export default function Navbar() {
   }, [])
 
   useEffect(() => {
-    const updateIndicator = () => {
-      requestAnimationFrame(() => {
-        resetIndicator()
-      })
-    }
-
-    updateIndicator()
-    window.addEventListener('resize', updateIndicator)
-
-    return () => window.removeEventListener('resize', updateIndicator)
-  }, [
-    pathname,
-    currentHash,
-    aboutOpen,
-    servicesOpen,
-    governanceOpen,
-    openServiceGroup,
-    openNestedServiceGroup,
-  ])
-
-  useEffect(() => {
     const handleClickOutside = (event) => {
       if (navbarRef.current && !navbarRef.current.contains(event.target)) {
         closeDropdowns()
-        resetIndicator()
       }
     }
 
@@ -301,28 +257,26 @@ export default function Navbar() {
 
       <nav ref={navbarRef} className={`navbar ${scrolled ? 'scrolled' : 'top'}`}>
         <div className="navbar-container">
-          <ul
-            ref={navMenuRef}
-            className={`nav-menu ${menuOpen ? 'active' : ''}`}
-            onMouseLeave={resetIndicator}
-          >
-            <li className="nav-item">
+          <Link href="/" onClick={handleNavigation} className="navbar-brand" aria-label="MEMPCO home">
+            <img src="/Logos/L1.png" alt="MEMPCO" className="navbar-brand__logo" />
+          </Link>
+
+          <ul className={`nav-menu ${menuOpen ? 'active' : ''}`}>
+            <li className="nav-item nav-item--home">
               <Link
                 href="/"
                 onClick={handleNavigation}
-                onMouseEnter={(e) => moveIndicatorToElement(e.currentTarget)}
                 className={`nav-link ${isActive('/', true) ? 'active' : ''}`}
               >
                 Home
               </Link>
             </li>
 
-            <li className={`nav-item nav-dropdown ${aboutOpen ? 'open' : ''}`}>
+            <li className={`nav-item nav-item--about nav-dropdown ${aboutOpen ? 'open' : ''}`}>
               <button
                 type="button"
                 className={`nav-trigger ${isAboutActive ? 'active' : ''}`}
                 onClick={toggleAbout}
-                onMouseEnter={(e) => moveIndicatorToElement(e.currentTarget)}
                 aria-expanded={aboutOpen}
               >
                 <span>About</span>
@@ -330,54 +284,34 @@ export default function Navbar() {
               </button>
 
               <ul className="nav-dropdown-menu about-dropdown-menu">
-                <li>
-                  <Link
-                    href="/about"
-                    onClick={handleNavigation}
-                    className={`dropdown-link ${pathname === '/about' ? 'active' : ''}`}
-                  >
-                    Overview
+                <li className="about-mega__column">
+                  <Link href="/about" onClick={handleNavigation} className="about-mega__heading">
+                    About MEMPCO
                   </Link>
+                  <ul className="about-mega__links">
+                    <li><Link href="/about" onClick={handleNavigation}>Overview</Link></li>
+                  </ul>
                 </li>
 
-                <li>
-                  <Link
-                    href="/branches"
-                    onClick={handleNavigation}
-                    className={`dropdown-link ${isActive('/branches') ? 'active' : ''}`}
-                  >
-                    Offices
+                <li className="about-mega__column">
+                  <Link href="/governance" onClick={handleNavigation} className="about-mega__heading">
+                    Governance
                   </Link>
+                  <ul className="about-mega__links">
+                    <li><Link href="/governance" onClick={handleNavigation}>Governance Overview</Link></li>
+                    <li><Link href="/governance/board-of-directors" onClick={handleNavigation}>Board of Directors</Link></li>
+                    <li><Link href="/governance/management" onClick={handleNavigation}>Management</Link></li>
+                  </ul>
                 </li>
 
-                <li className={`dropdown-accordion ${governanceOpen ? 'open' : ''}`}>
-                  <button
-                    type="button"
-                    className={`dropdown-group-toggle ${isGovernanceActive ? 'active' : ''}`}
-                    onClick={toggleGovernance}
-                  >
-                    <span>Governance</span>
-                    <span className="dropdown-mini-arrow"></span>
-                  </button>
-
-                  <ul className="dropdown-submenu">
+                <li className="about-mega__column">
+                  <Link href="/data-privacy" onClick={handleNavigation} className="about-mega__heading">
+                    Policies
+                  </Link>
+                  <ul className="about-mega__links">
                     <li>
-                      <Link
-                        href="/governance/board-of-directors"
-                        onClick={handleNavigation}
-                        className={`dropdown-sublink ${isBoardActive ? 'active' : ''}`}
-                      >
-                        Board of Directors
-                      </Link>
-                    </li>
-
-                    <li>
-                      <Link
-                        href="/governance/management"
-                        onClick={handleNavigation}
-                        className={`dropdown-sublink ${isManagementActive ? 'active' : ''}`}
-                      >
-                        Management
+                      <Link href="/data-privacy" onClick={handleNavigation}>
+                        Data Privacy Policy
                       </Link>
                     </li>
                   </ul>
@@ -385,23 +319,21 @@ export default function Navbar() {
               </ul>
             </li>
 
-            <li className="nav-item">
+            <li className="nav-item nav-item--news">
               <Link
                 href="/news"
                 onClick={handleNavigation}
-                onMouseEnter={(e) => moveIndicatorToElement(e.currentTarget)}
                 className={`nav-link ${isActive('/news') ? 'active' : ''}`}
               >
                 News &amp; Events
               </Link>
             </li>
 
-            <li className={`nav-item nav-dropdown ${servicesOpen ? 'open' : ''}`}>
+            <li className={`nav-item nav-item--services nav-dropdown ${servicesOpen ? 'open' : ''}`}>
               <button
                 type="button"
                 className={`nav-trigger ${isServicesActive ? 'active' : ''}`}
                 onClick={toggleServices}
-                onMouseEnter={(e) => moveIndicatorToElement(e.currentTarget)}
                 aria-expanded={servicesOpen}
               >
                 <span>Services</span>
@@ -409,237 +341,96 @@ export default function Navbar() {
               </button>
 
               <ul className="nav-dropdown-menu services-dropdown-menu">
-                <li>
-                  <Link
-                    href="/services"
-                    onClick={handleNavigation}
-                    className={`dropdown-link ${
-                      pathname === '/services' && !currentHash ? 'active' : ''
-                    }`}
-                  >
-                    All Services
+                <li className="services-mega__column">
+                  <Link href="/services" onClick={handleNavigation} className="services-mega__heading">
+                    Savings
                   </Link>
-                </li>
-
-                <li
-                  className={`dropdown-accordion ${
-                    openServiceGroup === 'savings-credit' ? 'open' : ''
-                  }`}
-                >
-                  <button
-                    type="button"
-                    className={`dropdown-group-toggle ${
-                      isSavingsCreditActive ? 'active' : ''
-                    }`}
-                    onClick={() => toggleServiceGroup('savings-credit')}
-                  >
-                    <span>Savings &amp; Credit</span>
-                    <span className="dropdown-mini-arrow"></span>
-                  </button>
-
-                  <ul className="dropdown-submenu">
-                    <li
-                      className={`dropdown-nested ${
-                        openNestedServiceGroup === 'savings' ? 'open' : ''
-                      }`}
-                    >
-                      <button
-                        type="button"
-                        className={`dropdown-nested-toggle ${
-                          isSavingsActive ? 'active' : ''
-                        }`}
-                        onClick={() => toggleNestedServiceGroup('savings')}
-                      >
-                        <span>Savings</span>
-                        <span className="dropdown-mini-arrow"></span>
-                      </button>
-
-                      <ul className="dropdown-nested-menu">
-                        <li>
-                          <Link
-                            href="/services/savings/regular-savings"
-                            onClick={handleMenuClose}
-                            className={`dropdown-sublink ${
-                              isRegularSavingsActive ? 'active' : ''
-                            }`}
-                          >
-                            Regular Savings
-                          </Link>
-                        </li>
-
-                        <li>
-                          <Link
-                            href="/services/savings/kkt"
-                            onClick={handleMenuClose}
-                            className={`dropdown-sublink ${isKktActive ? 'active' : ''}`}
-                          >
-                            KKT (Kinabukasan Ko&apos;To)
-                          </Link>
-                        </li>
-
-                        <li>
-                          <Link
-                            href="/services/savings/time-deposit"
-                            onClick={handleMenuClose}
-                            className={`dropdown-sublink ${
-                              isTimeDepositActive ? 'active' : ''
-                            }`}
-                          >
-                            Time Deposit
-                          </Link>
-                        </li>
-                      </ul>
-                    </li>
-
-                    <li
-                      className={`dropdown-nested ${
-                        openNestedServiceGroup === 'loans' ? 'open' : ''
-                      }`}
-                    >
-                      <button
-                        type="button"
-                        className={`dropdown-nested-toggle ${
-                          isLoansActive ? 'active' : ''
-                        }`}
-                        onClick={() => toggleNestedServiceGroup('loans')}
-                      >
-                        <span>Loan</span>
-                        <span className="dropdown-mini-arrow"></span>
-                      </button>
-
-                      <ul className="dropdown-nested-menu">
-                        <li>
-                          <Link
-                            href="/services/loans/care-program"
-                            onClick={handleMenuClose}
-                            className={`dropdown-sublink ${
-                              isCareProgramActive ? 'active' : ''
-                            }`}
-                          >
-                            CARE Program
-                          </Link>
-                        </li>
-
-                        <li>
-                          <Link
-                            href="/services/loans/business-loan"
-                            onClick={handleMenuClose}
-                            className={`dropdown-sublink ${
-                              isBusinessLoanActive ? 'active' : ''
-                            }`}
-                          >
-                            Business Loan
-                          </Link>
-                        </li>
-
-                        <li>
-                          <Link
-                            href="/services/loans/providential-loan"
-                            onClick={handleMenuClose}
-                            className={`dropdown-sublink ${
-                              isProvidentialLoanActive ? 'active' : ''
-                            }`}
-                          >
-                            Providential Loan
-                          </Link>
-                        </li>
-                      </ul>
-                    </li>
+                  <ul className="services-mega__links">
+                    <li><Link href="/services/savings/regular-savings" onClick={handleMenuClose}>Regular Savings</Link></li>
+                    <li><Link href="/services/savings/kkt" onClick={handleMenuClose}>KKT Savings</Link></li>
+                    <li><Link href="/services/savings/time-deposit" onClick={handleMenuClose}>Time Deposit</Link></li>
+                    <li><Link href="/services/savings/aflatoun-savings" onClick={handleMenuClose}>Aflatoun Savings</Link></li>
+                    <li><Link href="/services/savings/youth-savings" onClick={handleMenuClose}>Youth Savings</Link></li>
                   </ul>
                 </li>
 
-                <li
-                  className={`dropdown-accordion ${
-                    openServiceGroup === 'allied' ? 'open' : ''
-                  }`}
-                >
-                  <button
-                    type="button"
-                    className={`dropdown-group-toggle ${isAlliedActive ? 'active' : ''}`}
-                    onClick={() => toggleServiceGroup('allied')}
-                  >
-                    <span>Allied Services</span>
-                    <span className="dropdown-mini-arrow"></span>
-                  </button>
-
-                  <ul className="dropdown-submenu">
-                    <li>
-                      <Link
-                        href="/services/insurance"
-                        onClick={handleMenuClose}
-                        className={`dropdown-sublink ${isInsuranceActive ? 'active' : ''}`}
-                      >
-                        Insurance
-                      </Link>
-                    </li>
-
-                    <li>
-                      <Link
-                        href="/services/transportation"
-                        onClick={handleMenuClose}
-                        className={`dropdown-sublink ${
-                          isTransportationActive ? 'active' : ''
-                        }`}
-                      >
-                        Transportation
-                      </Link>
-                    </li>
-
-                    <li>
-                      <Link
-                        href="/services/funeral"
-                        onClick={handleMenuClose}
-                        className={`dropdown-sublink ${isFuneralActive ? 'active' : ''}`}
-                      >
-                        Funeral
-                      </Link>
-                    </li>
-
-                    <li>
-                      <Link
-                        href="/services/wellness"
-                        onClick={handleMenuClose}
-                        className={`dropdown-sublink ${
-                          isWellnessDiagnosticsActive ? 'active' : ''
-                        }`}
-                      >
-                        Wellness &amp; Diagnostics
-                      </Link>
-                    </li>
+                <li className="services-mega__column">
+                  <Link href="/services" onClick={handleNavigation} className="services-mega__heading">
+                    Loans
+                  </Link>
+                  <ul className="services-mega__links">
+                    <li><Link href="/services/loans/care-program" onClick={handleMenuClose}>CARE Program</Link></li>
+                    <li><Link href="/services/loans/business-loan" onClick={handleMenuClose}>Business Loan</Link></li>
+                    <li><Link href="/services/loans/providential-loan" onClick={handleMenuClose}>Providential Loan</Link></li>
                   </ul>
                 </li>
 
-                <li>
-                  <Link
-                    href={MLC_PATH}
-                    onClick={handleMenuClose}
-                    className={`dropdown-link ${isLaboratoryActive ? 'active' : ''}`}
-                  >
-                    MEMPCO Laboratory Cooperative
+                <li className="services-mega__column">
+                  <Link href="/services" onClick={handleNavigation} className="services-mega__heading">
+                    Allied Services
                   </Link>
+                  <ul className="services-mega__links">
+                    <li><Link href="/services/insurance" onClick={handleMenuClose}>Insurance</Link></li>
+                    <li><Link href="/services/transportation" onClick={handleMenuClose}>Transportation</Link></li>
+                    <li><Link href="/services/funeral" onClick={handleMenuClose}>Funeral Services</Link></li>
+                    <li><Link href="/services/wellness" onClick={handleMenuClose}>Wellness &amp; Diagnostics</Link></li>
+                  </ul>
+                </li>
+
+                <li className="services-mega__column">
+                  <Link href={MLC_PATH} onClick={handleMenuClose} className="services-mega__heading">
+                    Laboratory Cooperative
+                  </Link>
+                  <ul className="services-mega__links">
+                    <li><Link href={MLC_PATH} onClick={handleMenuClose}>MEMPCO Laboratory Cooperative</Link></li>
+                    <li><Link href="/services" onClick={handleNavigation}>View All Services</Link></li>
+                  </ul>
                 </li>
               </ul>
             </li>
 
-            <li className="nav-item">
+            <li className="nav-item nav-item--membership">
               <Link
-                href={CAREER_PATH}
+                href="/membership"
                 onClick={handleNavigation}
-                onMouseEnter={(e) => moveIndicatorToElement(e.currentTarget)}
-                className={`nav-link ${isCareerActive ? 'active' : ''}`}
+                className={`nav-link ${isMembershipActive ? 'active' : ''}`}
               >
-                Career
+                Membership
               </Link>
             </li>
 
-            <span
-              className="nav-indicator"
-              style={{
-                left: `${indicatorStyle.left}px`,
-                width: `${indicatorStyle.width}px`,
-                opacity: indicatorStyle.opacity,
-              }}
-            ></span>
+            <li className={`nav-item nav-item--contact nav-dropdown ${contactOpen ? 'open' : ''}`}>
+              <button
+                type="button"
+                className={`nav-trigger ${isContactActive ? 'active' : ''}`}
+                onClick={toggleContact}
+                aria-expanded={contactOpen}
+              >
+                <span>Contact Us</span>
+                <span className="arrow"></span>
+              </button>
+
+              <ul className="nav-dropdown-menu contact-dropdown-menu">
+                <li className="contact-mega__column">
+                  <Link href="/branches" onClick={handleNavigation} className="contact-mega__heading">
+                    Visit MEMPCO
+                  </Link>
+                  <ul className="contact-mega__links">
+                    <li><Link href="/branches" onClick={handleNavigation}>Branches and ATMs</Link></li>
+                  </ul>
+                </li>
+
+                <li className="contact-mega__column">
+                  <Link href={CAREER_PATH} onClick={handleNavigation} className="contact-mega__heading">
+                    Work With Us
+                  </Link>
+                  <ul className="contact-mega__links">
+                    <li><Link href={CAREER_PATH} onClick={handleNavigation}>Career</Link></li>
+                  </ul>
+                </li>
+              </ul>
+            </li>
+
           </ul>
 
           <button

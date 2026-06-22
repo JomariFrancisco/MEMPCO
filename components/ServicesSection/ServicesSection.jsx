@@ -141,10 +141,6 @@ export default function ServicesSection() {
                 <ArrowIcon />
               </span>
             </Link>
-
-            <Link href="/services" className="services-header-cta services-header-cta--ghost">
-              View All
-            </Link>
           </div>
         </div>
 

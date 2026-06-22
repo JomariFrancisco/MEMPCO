@@ -183,7 +183,7 @@ body {
 }
 
 .mlc-section-kicker {
-  font-size: 0.98rem;
+  font-size: 1.176rem;
   font-weight: 700;
   letter-spacing: 0.22em;
   text-transform: uppercase;
@@ -201,7 +201,7 @@ body {
 }
 
 .mlc-section-text {
-  font-size: 1rem;
+  font-size: 1.2rem;
   line-height: 1.8;
   color: var(--muted);
   max-width: 100%;
@@ -248,7 +248,7 @@ body {
   justify-content: flex-start;
   gap: 0.45rem;
   margin-bottom: 1.2rem;
-  font-size: 1.06rem;
+  font-size: 1.272rem;
   font-weight: 500;
   color: var(--muted);
   flex-wrap: wrap;
@@ -266,7 +266,7 @@ body {
 .mlc-eyebrow {
   display: block;
   width: 100%;
-  font-size: 0.78rem;
+  font-size: 0.936rem;
   font-weight: 700;
   letter-spacing: 0.22em;
   text-transform: uppercase;
@@ -301,14 +301,14 @@ body {
   display: block;
   margin: 0 0 1.45rem;
   color: var(--logo-orange-dark);
-  font-size: clamp(1rem, 1.45vw, 1.22rem);
+  font-size: clamp(1.2rem, 1.74vw, 1.464rem);
   font-weight: 600;
   line-height: 1.45;
   letter-spacing: -0.01em;
 }
 
 .mlc-hero-text {
-  font-size: 1.02rem;
+  font-size: 1.224rem;
   line-height: 1.86;
   color: var(--muted);
   max-width: 700px;
@@ -346,7 +346,7 @@ body {
 }
 
 .mlc-hero-link-kicker {
-  font-size: 0.72rem;
+  font-size: 0.864rem;
   font-weight: 700;
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -470,7 +470,7 @@ body {
 }
 
 .mlc-showcase-card p {
-  font-size: 0.84rem;
+  font-size: 1.008rem;
   line-height: 1.58;
   color: rgba(255, 250, 244, 0.88);
 }
@@ -506,7 +506,7 @@ body {
   border: 1px solid rgba(255, 122, 26, 0.2);
   color: #fffaf4;
   text-decoration: none;
-  font-size: 0.92rem;
+  font-size: 1.104rem;
   font-weight: 700;
   letter-spacing: -0.01em;
   box-shadow: 0 18px 36px rgba(138, 67, 16, 0.16);
@@ -582,14 +582,14 @@ body {
 }
 
 .mlc-stat-value {
-  font-size: clamp(1.55rem, 3vw, 2.35rem);
+  font-size: clamp(1.86rem, 3.6vw, 2.82rem);
   font-weight: 700;
   letter-spacing: -0.05em;
   line-height: 1;
 }
 
 .mlc-stat-label {
-  font-size: 0.83rem;
+  font-size: 0.996rem;
   line-height: 1.5;
   color: var(--muted);
   max-width: 160px;
@@ -668,7 +668,7 @@ body {
 }
 
 .mlc-purpose-card p {
-  font-size: 0.92rem;
+  font-size: 1.104rem;
   line-height: 1.74;
   color: var(--muted);
 }
@@ -761,7 +761,7 @@ body {
   border-radius: 999px;
   background: var(--accent);
   color: #fffdf8;
-  font-size: 0.76rem;
+  font-size: 0.912rem;
   font-weight: 800;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -776,7 +776,7 @@ body {
   background: rgba(255, 255, 255, 0.88);
   border: 1px solid var(--accent-border);
   color: var(--ink-2);
-  font-size: 0.8rem;
+  font-size: 0.96rem;
   font-weight: 600;
 }
 
@@ -790,7 +790,7 @@ body {
 }
 
 .mlc-program-desc {
-  font-size: 0.97rem;
+  font-size: 1.164rem;
   line-height: 1.72;
   color: var(--muted);
 }
@@ -835,7 +835,7 @@ body {
   background: rgba(255, 255, 255, 0.92);
   border: 1px solid rgba(138, 67, 16, 0.06);
   color: var(--ink-2);
-  font-size: 0.95rem;
+  font-size: 1.14rem;
   line-height: 1.68;
   transition: background 0.18s ease, border-color 0.18s ease;
 }
@@ -888,7 +888,7 @@ body {
 }
 
 .mlc-program-membership-head span {
-  font-size: 0.78rem;
+  font-size: 0.936rem;
   font-weight: 700;
   color: var(--accent);
   text-transform: uppercase;
@@ -903,7 +903,7 @@ body {
 
 .mlc-program-membership-grid small {
   display: block;
-  font-size: 0.7rem;
+  font-size: 0.84rem;
   color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.12em;
@@ -912,7 +912,7 @@ body {
 
 .mlc-program-membership-grid strong {
   display: block;
-  font-size: 0.96rem;
+  font-size: 1.152rem;
   color: var(--ink);
   font-weight: 700;
 }
@@ -927,7 +927,7 @@ body {
 }
 
 .mlc-program-footer p {
-  font-size: 0.88rem;
+  font-size: 1.056rem;
   line-height: 1.6;
   color: var(--muted);
 }
@@ -942,7 +942,7 @@ body {
   background: var(--button-bg);
   color: #fffdf8;
   text-decoration: none;
-  font-size: 0.82rem;
+  font-size: 0.984rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -1020,7 +1020,7 @@ body {
 }
 
 .mlc-membership-table-grid--head span {
-  font-size: 0.76rem;
+  font-size: 0.912rem;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.12em;
@@ -1031,7 +1031,7 @@ body {
   padding: 1.1rem 1.15rem;
   border-right: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
-  font-size: 0.94rem;
+  font-size: 1.128rem;
   line-height: 1.45;
   color: var(--ink-2);
   transition: background 0.18s ease;
@@ -1115,7 +1115,7 @@ body {
 .mlc-join-list li {
   position: relative;
   padding-left: 1.5rem;
-  font-size: 0.96rem;
+  font-size: 1.152rem;
   line-height: 1.72;
   color: var(--ink-2);
 }
@@ -1151,7 +1151,7 @@ body {
 .mlc-join-note span {
   display: inline-block;
   margin-bottom: 0.45rem;
-  font-size: 0.74rem;
+  font-size: 0.888rem;
   font-weight: 800;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -1159,7 +1159,7 @@ body {
 }
 
 .mlc-join-note p {
-  font-size: 0.92rem;
+  font-size: 1.104rem;
   line-height: 1.65;
   color: var(--ink-2);
 }
@@ -1229,7 +1229,7 @@ body {
   background: rgba(255, 255, 255, 0.92);
   color: var(--accent);
   border: 1px solid rgba(138, 67, 16, 0.08);
-  font-size: 0.76rem;
+  font-size: 0.912rem;
   font-weight: 800;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -1246,7 +1246,7 @@ body {
 }
 
 .mlc-highlight-partner {
-  font-size: 0.84rem;
+  font-size: 1.008rem;
   line-height: 1.55;
   font-weight: 700;
   color: var(--ink-2);
@@ -1254,7 +1254,7 @@ body {
 }
 
 .mlc-highlight-text {
-  font-size: 0.91rem;
+  font-size: 1.092rem;
   line-height: 1.72;
   color: var(--muted);
   margin-bottom: 0.9rem;
@@ -1268,7 +1268,7 @@ body {
 }
 
 .mlc-highlight-list li {
-  font-size: 0.9rem;
+  font-size: 1.08rem;
   line-height: 1.62;
   color: var(--ink-2);
 }
@@ -1320,7 +1320,7 @@ body {
   border-radius: 999px;
   background: var(--accent-soft);
   color: var(--accent);
-  font-size: 0.76rem;
+  font-size: 0.912rem;
   font-weight: 800;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -1337,7 +1337,7 @@ body {
 }
 
 .mlc-campaign-card p {
-  font-size: 0.94rem;
+  font-size: 1.128rem;
   line-height: 1.72;
   color: var(--muted);
   margin-bottom: 1rem;
@@ -1359,7 +1359,7 @@ body {
   background: rgba(255, 255, 255, 0.94);
   border: 1px solid rgba(138, 67, 16, 0.08);
   color: var(--ink-2);
-  font-size: 0.78rem;
+  font-size: 0.936rem;
   font-weight: 600;
   transition: border-color 0.18s ease, background 0.18s ease;
 }
@@ -1422,7 +1422,7 @@ body {
   background: rgba(255, 250, 244, 0.16);
   border: 1px solid rgba(255, 250, 244, 0.24);
   color: #fffaf4;
-  font-size: 0.86rem;
+  font-size: 1.032rem;
   font-weight: 600;
   line-height: 1.4;
   transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
@@ -1497,7 +1497,7 @@ body {
 }
 
 .mlc-advocacy-card p {
-  font-size: 0.9rem;
+  font-size: 1.08rem;
   line-height: 1.68;
   color: var(--muted);
   flex: 1;
@@ -1528,7 +1528,7 @@ body {
 }
 
 .mlc-note-kicker {
-  font-size: 0.78rem;
+  font-size: 0.936rem;
   font-weight: 700;
   letter-spacing: 0.22em;
   text-transform: uppercase;
@@ -1546,7 +1546,7 @@ body {
 }
 
 .mlc-note-text {
-  font-size: 1rem;
+  font-size: 1.2rem;
   line-height: 1.8;
   color: rgba(65, 38, 5, 0.8);
   max-width: 720px;
@@ -1661,7 +1661,7 @@ body {
 
   .mlc-membership-table-grid span::before {
     display: block;
-    font-size: 0.68rem;
+    font-size: 0.816rem;
     font-weight: 800;
     letter-spacing: 0.12em;
     text-transform: uppercase;
@@ -1711,7 +1711,7 @@ body {
 
   .mlc-breadcrumb {
     margin-bottom: 1rem;
-    font-size: 0.92rem;
+    font-size: 1.104rem;
   }
 
   .mlc-hero-title {
@@ -1721,11 +1721,11 @@ body {
 
   .mlc-hero-tagline {
     margin-bottom: 1.1rem;
-    font-size: 0.96rem;
+    font-size: 1.152rem;
   }
 
   .mlc-hero-text {
-    font-size: 0.95rem;
+    font-size: 1.14rem;
   }
 
   .mlc-logo-stage {

@@ -122,7 +122,7 @@
   border: 1px solid rgba(220, 38, 38, 0.1);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  font-size: 0.72rem;
+  font-size: 0.864rem;
   font-weight: 700;
   letter-spacing: 0.2em;
   text-transform: uppercase;
@@ -149,7 +149,7 @@
   max-width: 760px;
   margin: 0 auto;
   color: var(--services-muted);
-  font-size: clamp(1rem, 1.35vw, 1.1rem);
+  font-size: clamp(1.2rem, 1.62vw, 1.32rem);
   line-height: 1.78;
 }
 
@@ -170,7 +170,7 @@
   min-height: 50px;
   padding: 0 1.3rem;
   border-radius: 999px;
-  font-size: 0.92rem;
+  font-size: 1.104rem;
   font-weight: 700;
   letter-spacing: 0.01em;
   text-decoration: none;
@@ -209,20 +209,6 @@
 
 .services-header-cta--solid:hover {
   box-shadow: 0 18px 34px rgba(220, 38, 38, 0.28);
-}
-
-.services-header-cta--ghost {
-  background: rgba(255, 255, 255, 0.78);
-  color: var(--services-ink);
-  border: 1px solid rgba(17, 24, 39, 0.09);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-}
-
-.services-header-cta--ghost:hover {
-  background: #fff;
-  border-color: rgba(220,38,38,0.18);
-  box-shadow: 0 8px 18px rgba(17,24,39,0.07);
 }
 
 .services-cta-icon {
@@ -292,7 +278,7 @@
 }
 
 .services-stat strong {
-  font-size: 1.55rem;
+  font-size: 1.86rem;
   font-weight: 800;
   letter-spacing: -0.04em;
   color: var(--services-ink);
@@ -300,7 +286,7 @@
 }
 
 .services-stat span {
-  font-size: 0.68rem;
+  font-size: 0.816rem;
   font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -410,7 +396,7 @@
 }
 
 .service-card__number {
-  font-size: 0.72rem;
+  font-size: 0.864rem;
   font-weight: 800;
   letter-spacing: 0.18em;
   color: var(--services-subtle);
@@ -425,7 +411,7 @@
   border-radius: 999px;
   background: rgba(220, 38, 38, 0.06);
   border: 1px solid rgba(220, 38, 38, 0.08);
-  font-size: 0.64rem;
+  font-size: 0.768rem;
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -497,7 +483,7 @@
 .service-card__body p {
   margin: 0;
   color: var(--services-muted);
-  font-size: 0.94rem;
+  font-size: 1.128rem;
   line-height: 1.74;
 }
 
@@ -550,7 +536,7 @@
   align-items: flex-start;
   gap: 0.55rem;
   color: var(--services-ink);
-  font-size: 0.92rem;
+  font-size: 1.104rem;
   font-weight: 600;
   line-height: 1.45;
 }
@@ -578,7 +564,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
-  font-size: 0.9rem;
+  font-size: 1.08rem;
   font-weight: 700;
   text-decoration: none;
   color: var(--services-red);
@@ -641,7 +627,7 @@
   }
 
   .services-eyebrow {
-    font-size: 0.66rem;
+    font-size: 0.792rem;
   }
 
   .section-title {
@@ -660,7 +646,7 @@
     width: auto;
     min-height: 44px;
     padding: 0 1.1rem;
-    font-size: 0.85rem;
+    font-size: 1.02rem;
   }
 
   .services-grid {
@@ -723,7 +709,7 @@
     width: auto;
     min-height: 42px;
     padding: 0 0.95rem;
-    font-size: 0.82rem;
+    font-size: 0.984rem;
   }
 
   .services-stats {

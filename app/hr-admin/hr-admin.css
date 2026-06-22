@@ -98,7 +98,7 @@
 .hr-section-head p {
   margin: 0;
   color: #64748b;
-  font-size: 0.85rem;
+  font-size: 1.02rem;
   font-weight: 650;
   line-height: 1.45;
   text-align: right;
@@ -236,21 +236,21 @@
 
 .hr-command-metric span {
   color: #64748b;
-  font-size: 0.76rem;
+  font-size: 0.912rem;
   font-weight: 900;
   line-height: 1.2;
 }
 
 .hr-command-metric strong {
   color: #111827;
-  font-size: 2rem;
+  font-size: 2.4rem;
   font-weight: 950;
   line-height: 1;
 }
 
 .hr-command-metric small {
   color: #64748b;
-  font-size: 0.76rem;
+  font-size: 0.912rem;
   font-weight: 700;
   line-height: 1.35;
 }
@@ -258,7 +258,7 @@
 .hr-command-metric em {
   align-self: end;
   color: #dc2626;
-  font-size: 0.73rem;
+  font-size: 0.876rem;
   font-style: normal;
   font-weight: 950;
 }
@@ -296,13 +296,13 @@
 
 .hr-command-section-head strong {
   color: #111827;
-  font-size: 0.9rem;
+  font-size: 1.08rem;
   font-weight: 950;
 }
 
 .hr-command-section-head span {
   color: #64748b;
-  font-size: 0.75rem;
+  font-size: 0.9rem;
   font-weight: 850;
   text-align: right;
 }
@@ -352,7 +352,7 @@
 .hr-focus-row strong,
 .hr-ops-row strong {
   color: #111827;
-  font-size: 0.88rem;
+  font-size: 1.056rem;
   font-weight: 950;
   line-height: 1.2;
   overflow: hidden;
@@ -363,7 +363,7 @@
 .hr-focus-row small,
 .hr-ops-row small {
   color: #64748b;
-  font-size: 0.78rem;
+  font-size: 0.936rem;
   font-weight: 700;
   line-height: 1.3;
   overflow: hidden;
@@ -381,7 +381,7 @@
   border-radius: 999px;
   background: #f8fafc;
   color: #64748b;
-  font-size: 0.72rem;
+  font-size: 0.864rem;
   font-weight: 950;
 }
 
@@ -401,7 +401,7 @@
 
 .hr-ops-row em {
   color: #334155;
-  font-size: 0.76rem;
+  font-size: 0.912rem;
   font-style: normal;
   font-weight: 950;
   text-align: right;
@@ -417,7 +417,7 @@
   border-radius: 8px;
   background: #f8fafc;
   color: #64748b;
-  font-size: 0.82rem;
+  font-size: 0.984rem;
   font-weight: 850;
   text-align: center;
 }
@@ -475,7 +475,7 @@
 
 .hr-panel-kicker {
   color: #dc2626;
-  font-size: 0.72rem;
+  font-size: 0.864rem;
   font-weight: 900;
   line-height: 1.2;
   text-transform: uppercase;
@@ -501,7 +501,7 @@
   background: #fff;
   color: #334155;
   font: inherit;
-  font-size: 0.84rem;
+  font-size: 1.008rem;
   font-weight: 900;
   cursor: pointer;
   transition:
@@ -584,7 +584,7 @@
   background: #fff;
   color: #111827;
   font: inherit;
-  font-size: 0.92rem;
+  font-size: 1.104rem;
 }
 
 .hr-search input {
@@ -606,7 +606,7 @@
 
 .hr-labeled-control > span {
   color: #64748b;
-  font-size: 0.72rem;
+  font-size: 0.864rem;
   font-weight: 900;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -652,7 +652,7 @@
 
 .hr-sort-control span {
   color: #64748b;
-  font-size: 0.72rem;
+  font-size: 0.864rem;
   font-weight: 900;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -728,13 +728,13 @@
 .hr-opening-card-main strong,
 .hr-application-row-main strong {
   color: #111827;
-  font-size: 0.96rem;
+  font-size: 1.152rem;
   line-height: 1.22;
 }
 
 .hr-opening-card-main em {
   color: #94a3b8;
-  font-size: 0.73rem;
+  font-size: 0.876rem;
   font-style: normal;
   font-weight: 800;
 }
@@ -777,7 +777,7 @@
   background: #f8fafc;
   color: #334155;
   font: inherit;
-  font-size: 0.78rem;
+  font-size: 0.936rem;
   font-weight: 900;
   cursor: pointer;
   transition:
@@ -813,7 +813,7 @@
   padding-top: 0.85rem;
   border-top: 1px solid #e2e8f0;
   color: #334155;
-  font-size: 0.84rem;
+  font-size: 1.008rem;
   font-weight: 900;
 }
 
@@ -827,7 +827,7 @@
   background: #fff;
   color: #dc2626;
   font: inherit;
-  font-size: 1rem;
+  font-size: 1.2rem;
   font-weight: 950;
   cursor: pointer;
   transition:
@@ -857,7 +857,7 @@
   border-radius: 999px;
   background: #f1f5f9;
   color: #475569;
-  font-size: 0.72rem;
+  font-size: 0.864rem;
   font-weight: 900;
 }
 
@@ -931,7 +931,7 @@
   border-radius: 8px;
   background: #fff1f1;
   color: #dc2626;
-  font-size: 0.78rem;
+  font-size: 0.936rem;
   font-weight: 950;
 }
 
@@ -943,13 +943,13 @@
 
 .hr-editor-section-head strong {
   color: #111827;
-  font-size: 0.95rem;
+  font-size: 1.14rem;
   font-weight: 950;
 }
 
 .hr-editor-section-head small {
   color: #64748b;
-  font-size: 0.8rem;
+  font-size: 0.96rem;
   font-weight: 700;
   line-height: 1.35;
 }
@@ -1003,7 +1003,7 @@
   place-items: center;
   gap: 0.34rem;
   color: #94a3b8;
-  font-size: 0.8rem;
+  font-size: 0.96rem;
   font-weight: 850;
 }
 
@@ -1015,7 +1015,7 @@
 
 .hr-job-preview-copy > span {
   color: #dc2626;
-  font-size: 0.72rem;
+  font-size: 0.864rem;
   font-weight: 950;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -1043,7 +1043,7 @@
   border-radius: 999px;
   background: #f8fafc;
   color: #475569;
-  font-size: 0.74rem;
+  font-size: 0.888rem;
   font-weight: 850;
 }
 
@@ -1051,7 +1051,7 @@
   display: -webkit-box;
   margin: 0;
   color: #64748b;
-  font-size: 0.84rem;
+  font-size: 1.008rem;
   font-weight: 650;
   line-height: 1.55;
   overflow: hidden;
@@ -1072,7 +1072,7 @@
 .hr-publish-checklist strong {
   grid-column: 1 / -1;
   color: #111827;
-  font-size: 0.84rem;
+  font-size: 1.008rem;
   font-weight: 950;
 }
 
@@ -1084,7 +1084,7 @@
   border-radius: 8px;
   background: #fff;
   color: #64748b;
-  font-size: 0.72rem;
+  font-size: 0.864rem;
   font-weight: 900;
 }
 
@@ -1121,7 +1121,7 @@
 
 .hr-field span {
   color: #334155;
-  font-size: 0.78rem;
+  font-size: 0.936rem;
   font-weight: 900;
 }
 
@@ -1192,11 +1192,11 @@
 
 .hr-poster-placeholder strong {
   color: #334155;
-  font-size: 0.92rem;
+  font-size: 1.104rem;
 }
 
 .hr-poster-placeholder small {
-  font-size: 0.78rem;
+  font-size: 0.936rem;
 }
 
 .hr-poster-controls {
@@ -1239,7 +1239,7 @@
 .hr-poster-controls small {
   flex-basis: 100%;
   color: #64748b;
-  font-size: 0.8rem;
+  font-size: 0.96rem;
   line-height: 1.45;
 }
 
@@ -1297,7 +1297,7 @@
   background: #fff;
   color: #334155;
   font: inherit;
-  font-size: 0.78rem;
+  font-size: 0.936rem;
   font-weight: 850;
   cursor: pointer;
   transition:
@@ -1316,7 +1316,7 @@
   border-radius: 999px;
   background: #f1f5f9;
   color: #111827;
-  font-size: 0.72rem;
+  font-size: 0.864rem;
 }
 
 .hr-filter-pill:hover,
@@ -1376,7 +1376,7 @@
 .hr-applicant-record-copy small {
   overflow: hidden;
   color: #94a3b8;
-  font-size: 0.72rem;
+  font-size: 0.864rem;
   font-weight: 850;
   letter-spacing: 0.03em;
   text-overflow: ellipsis;
@@ -1398,7 +1398,7 @@
 
 .hr-application-row-meta small {
   color: #64748b;
-  font-size: 0.76rem;
+  font-size: 0.912rem;
 }
 
 .hr-application-detail {
@@ -1429,7 +1429,7 @@
   border-radius: 8px;
   background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
   color: #fff;
-  font-size: 1rem;
+  font-size: 1.2rem;
   font-weight: 950;
   box-shadow: 0 12px 22px rgba(220, 38, 38, 0.18);
 }
@@ -1453,7 +1453,7 @@
   margin: 0.18rem 0 0;
   overflow: hidden;
   color: #64748b;
-  font-size: 0.82rem;
+  font-size: 0.984rem;
   font-weight: 750;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1482,14 +1482,14 @@
   border-radius: 8px;
   background: #f8fafc;
   color: #475569;
-  font-size: 0.82rem;
+  font-size: 0.984rem;
   font-weight: 850;
   line-height: 1.45;
 }
 
 .hr-muted-note {
   color: #94a3b8;
-  font-size: 0.82rem;
+  font-size: 0.984rem;
   font-weight: 800;
 }
 
@@ -1542,7 +1542,7 @@
 
 .hr-report-card strong {
   color: #dc2626;
-  font-size: 1.8rem;
+  font-size: 2.16rem;
   line-height: 1;
 }
 
@@ -1566,7 +1566,7 @@
   min-height: 36px;
   justify-content: center;
   padding-inline: 0.62rem;
-  font-size: 0.72rem;
+  font-size: 0.864rem;
 }
 
 .hr-report-table-wrap {
@@ -1577,7 +1577,7 @@
   width: 100%;
   table-layout: fixed;
   border-collapse: collapse;
-  font-size: 0.86rem;
+  font-size: 1.032rem;
 }
 
 .hr-report-table th,
@@ -1591,7 +1591,7 @@
 
 .hr-report-table th {
   color: #64748b;
-  font-size: 0.72rem;
+  font-size: 0.864rem;
   font-weight: 900;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -1624,7 +1624,7 @@
 
 .hr-report-remarks-list small {
   display: block;
-  font-size: 0.78rem;
+  font-size: 0.936rem;
   font-weight: 500;
   white-space: pre-wrap;
 }
@@ -1635,7 +1635,7 @@
 
 .hr-report-no-remarks {
   color: #64748b;
-  font-size: 0.78rem;
+  font-size: 0.936rem;
   font-weight: 700;
 }
 
@@ -1646,7 +1646,7 @@
   gap: 0.68rem;
   margin-top: 0.9rem;
   color: #475569;
-  font-size: 0.86rem;
+  font-size: 1.032rem;
   font-weight: 900;
 }
 
@@ -1695,7 +1695,7 @@
 .hr-detail-grid span {
   display: block;
   color: #64748b;
-  font-size: 0.72rem;
+  font-size: 0.864rem;
   font-weight: 900;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -1706,7 +1706,7 @@
   margin-top: 0.25rem;
   overflow-wrap: anywhere;
   color: #111827;
-  font-size: 0.9rem;
+  font-size: 1.08rem;
 }
 
 .hr-detail-section {
@@ -1745,7 +1745,7 @@
 
 .hr-record-section-head span {
   color: #111827;
-  font-size: 0.88rem;
+  font-size: 1.056rem;
   font-weight: 950;
   line-height: 1.2;
 }
@@ -1753,7 +1753,7 @@
 .hr-record-section-head small {
   max-width: 280px;
   color: #8190a8;
-  font-size: 0.76rem;
+  font-size: 0.912rem;
   font-weight: 750;
   line-height: 1.35;
   text-align: right;
@@ -1779,7 +1779,7 @@
   display: block;
   margin-top: 0.35rem;
   color: #111827;
-  font-size: 1.05rem;
+  font-size: 1.26rem;
   font-weight: 950;
   line-height: 1.15;
 }
@@ -1811,7 +1811,7 @@
 
 .hr-action-status-preview strong {
   color: #111827;
-  font-size: 0.95rem;
+  font-size: 1.14rem;
   font-weight: 950;
   line-height: 1.2;
 }
@@ -1833,7 +1833,7 @@
 .hr-remarks-summary span {
   display: block;
   color: #64748b;
-  font-size: 0.72rem;
+  font-size: 0.864rem;
   font-weight: 900;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -1844,7 +1844,7 @@
   margin-top: 0.25rem;
   overflow-wrap: anywhere;
   color: #111827;
-  font-size: 0.9rem;
+  font-size: 1.08rem;
 }
 
 .hr-detail-section-head {
@@ -1857,7 +1857,7 @@
 .hr-detail-section-head small {
   max-width: 320px;
   color: #64748b;
-  font-size: 0.78rem;
+  font-size: 0.936rem;
   font-weight: 700;
   line-height: 1.4;
   text-align: right;
@@ -1940,13 +1940,13 @@
 
 .hr-history-line strong {
   color: #111827;
-  font-size: 0.86rem;
+  font-size: 1.032rem;
 }
 
 .hr-history-line span,
 .hr-history-meta {
   color: #64748b;
-  font-size: 0.78rem;
+  font-size: 0.936rem;
   line-height: 1.35;
 }
 
@@ -1970,7 +1970,7 @@
   border-radius: 999px;
   background: #f8fafc;
   color: #475569;
-  font-size: 0.72rem;
+  font-size: 0.864rem;
   font-weight: 800;
 }
 
@@ -1980,7 +1980,7 @@
   border-radius: 8px;
   background: #fff7f7;
   color: #111827;
-  font-size: 0.78rem;
+  font-size: 0.936rem;
   line-height: 1.45;
 }
 

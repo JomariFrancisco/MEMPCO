@@ -21,7 +21,7 @@
 }
 
 .ms-title {
-  color: var(--ms-ink);
+  color: #111111;
   background: none;
   -webkit-background-clip: border-box;
   background-clip: border-box;
@@ -194,7 +194,7 @@ body.ms-modal-lock {
   border: 1px solid rgba(220,38,38,0.12);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  font-size: clamp(0.66rem, 1.7vw, 0.72rem);
+  font-size: clamp(0.792rem, 2.04vw, 0.864rem);
   font-weight: 700;
   letter-spacing: 0.2em;
   text-transform: uppercase;
@@ -205,11 +205,11 @@ body.ms-modal-lock {
 
 .ms-title {
   margin: 0 0 1rem;
-  font-size: clamp(2.15rem, 6vw, 3.8rem);
-  line-height: 1.18;
-  font-weight: 800;
-  letter-spacing: -0.06em;
-  color: var(--ms-ink);
+  font-size: clamp(2rem, 3.4vw, 3.15rem);
+  line-height: 1.12;
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  color: #111111;
   text-wrap: balance;
 }
 
@@ -220,7 +220,7 @@ body.ms-modal-lock {
 .ms-subtitle {
   margin: 0;
   max-width: 660px;
-  font-size: clamp(0.95rem, 2.4vw, 1.08rem);
+  font-size: clamp(1.14rem, 2.88vw, 1.296rem);
   line-height: 1.8;
   color: var(--ms-muted);
 }
@@ -244,7 +244,7 @@ body.ms-modal-lock {
   border: 1px solid rgba(220, 38, 38, 0.16);
   color: var(--ms-red-dk);
   text-decoration: none;
-  font-size: 0.86rem;
+  font-size: 1.032rem;
   font-weight: 800;
   letter-spacing: -0.01em;
   box-shadow:
@@ -424,7 +424,7 @@ body.ms-modal-lock {
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   box-shadow: 0 12px 28px rgba(15,23,42,0.12);
-  font-size: clamp(0.62rem, 1.8vw, 0.68rem);
+  font-size: clamp(0.744rem, 2.16vw, 0.816rem);
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -445,7 +445,7 @@ body.ms-modal-lock {
 
 .ms-card__text {
   margin: 0;
-  font-size: clamp(0.9rem, 1.8vw, 0.96rem);
+  font-size: clamp(1.08rem, 2.16vw, 1.152rem);
   line-height: 1.8;
   color: var(--ms-ink-2);
 }
@@ -474,7 +474,7 @@ body.ms-modal-lock {
 
 .ms-card__info strong {
   display: block;
-  font-size: clamp(0.92rem, 1.8vw, 0.98rem);
+  font-size: clamp(1.104rem, 2.16vw, 1.176rem);
   font-weight: 700;
   color: var(--ms-ink);
   white-space: nowrap;
@@ -486,7 +486,7 @@ body.ms-modal-lock {
   display: flex;
   align-items: center;
   gap: 0.3rem;
-  font-size: 0.78rem;
+  font-size: 0.936rem;
   color: var(--ms-subtle);
 }
 
@@ -502,7 +502,7 @@ body.ms-modal-lock {
   background: rgba(220,38,38,0.06);
   border: 1px solid rgba(220,38,38,0.12);
   color: var(--ms-red);
-  font-size: 0.8rem;
+  font-size: 0.96rem;
   font-weight: 700;
   cursor: pointer;
   transition:
@@ -660,7 +660,7 @@ body.ms-modal-lock {
 
 .ms-modal__name {
   margin: 0;
-  font-size: clamp(1rem, 2.4vw, 1.28rem);
+  font-size: clamp(1.2rem, 2.88vw, 1.536rem);
   font-weight: 700;
   letter-spacing: -0.025em;
   color: #fff;
@@ -669,7 +669,7 @@ body.ms-modal-lock {
 
 .ms-modal__role {
   margin: 0;
-  font-size: clamp(0.64rem, 1.5vw, 0.72rem);
+  font-size: clamp(0.768rem, 1.8vw, 0.864rem);
   font-weight: 500;
   letter-spacing: 0.06em;
   color: rgba(255,255,255,0.72);
@@ -680,7 +680,7 @@ body.ms-modal-lock {
   display: flex;
   align-items: center;
   gap: 0.3rem;
-  font-size: 0.74rem;
+  font-size: 0.888rem;
   color: rgba(255,255,255,0.58);
   margin-top: 0.08rem;
 }
@@ -713,7 +713,7 @@ body.ms-modal-lock {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.6rem;
+  font-size: 1.92rem;
   line-height: 1;
   font-weight: 300;
   opacity: 0.6;
@@ -762,7 +762,7 @@ body.ms-modal-lock {
   border-radius: 6px;
   background: rgba(220,38,38,0.06);
   border: 1px solid rgba(220,38,38,0.15);
-  font-size: 0.62rem;
+  font-size: 0.744rem;
   font-weight: 700;
   letter-spacing: 0.2em;
   text-transform: uppercase;
@@ -780,7 +780,7 @@ body.ms-modal-lock {
 
 .ms-modal__para {
   margin: 0;
-  font-size: clamp(0.86rem, 1.7vw, 0.915rem);
+  font-size: clamp(1.032rem, 2.04vw, 1.098rem);
   line-height: 1.85;
   color: #1c1c1e;
   font-weight: 400;
@@ -804,7 +804,7 @@ body.ms-modal-lock {
   border-radius: 999px;
   background: rgba(220,38,38,0.04);
   border: 1px solid rgba(220,38,38,0.10);
-  font-size: 0.80rem;
+  font-size: 0.96rem;
   font-weight: 600;
   color: var(--ms-red);
   letter-spacing: 0.02em;
@@ -831,7 +831,7 @@ body.ms-modal-lock {
   height: 42px;
   padding: 0 1.2rem;
   border-radius: 10px;
-  font-size: 0.82rem;
+  font-size: 0.984rem;
   font-weight: 600;
   cursor: pointer;
   text-decoration: none;
@@ -914,7 +914,7 @@ body.ms-modal-lock {
 }
 
 .ms-cta-band__eyebrow {
-  font-size: 0.72rem;
+  font-size: 0.864rem;
   font-weight: 700;
   letter-spacing: 0.2em;
   text-transform: uppercase;
@@ -932,7 +932,7 @@ body.ms-modal-lock {
 
 .ms-cta-band__text {
   margin: 0;
-  font-size: 0.96rem;
+  font-size: 1.152rem;
   line-height: 1.72;
   color: rgba(255,255,255,0.82);
   max-width: 560px;
@@ -954,7 +954,7 @@ body.ms-modal-lock {
   background: rgba(255,255,255,0.12);
   border: 1px solid rgba(255,255,255,0.14);
   color: rgba(255,255,255,0.92);
-  font-size: 0.72rem;
+  font-size: 0.864rem;
   font-weight: 700;
   letter-spacing: 0.06em;
 }
@@ -971,7 +971,7 @@ body.ms-modal-lock {
   border-radius: 999px;
   background: #fff;
   color: var(--ms-red-dk);
-  font-size: 0.9rem;
+  font-size: 1.08rem;
   font-weight: 800;
   text-decoration: none;
   white-space: nowrap;
@@ -1102,7 +1102,7 @@ body.ms-modal-lock {
   }
 
   .ms-modal__name {
-    font-size: 1.08rem;
+    font-size: 1.296rem;
   }
 
   .ms-modal__scroll {
@@ -1186,11 +1186,11 @@ body.ms-modal-lock {
   }
 
   .ms-modal__name {
-    font-size: 1rem;
+    font-size: 1.2rem;
   }
 
   .ms-modal__role {
-    font-size: 0.68rem;
+    font-size: 0.816rem;
   }
 
   .ms-modal__scroll {
@@ -1199,7 +1199,7 @@ body.ms-modal-lock {
   }
 
   .ms-modal__para {
-    font-size: 0.875rem;
+    font-size: 1.05rem;
     line-height: 1.82;
   }
 
@@ -1214,7 +1214,7 @@ body.ms-modal-lock {
 
   .ms-modal__btn {
     height: 42px;
-    font-size: 0.8rem;
+    font-size: 0.96rem;
   }
 }
 
@@ -1235,11 +1235,11 @@ body.ms-modal-lock {
   }
 
   .ms-title {
-    font-size: clamp(2rem, 10vw, 2.2rem);
+    font-size: 2rem;
   }
 
   .ms-subtitle {
-    font-size: 0.96rem;
+    font-size: 1.152rem;
     line-height: 1.7;
   }
 
@@ -1248,7 +1248,7 @@ body.ms-modal-lock {
     bottom: 1rem;
     max-width: calc(100% - 1.7rem);
     min-height: 46px;
-    font-size: 0.82rem;
+    font-size: 0.984rem;
   }
 
   .ms-carousel {
@@ -1280,7 +1280,7 @@ body.ms-modal-lock {
   }
 
   .ms-card__text {
-    font-size: 0.91rem;
+    font-size: 1.092rem;
     line-height: 1.75;
   }
 
@@ -1295,7 +1295,7 @@ body.ms-modal-lock {
   }
 
   .ms-modal__label {
-    font-size: 0.58rem;
+    font-size: 0.696rem;
     letter-spacing: 0.16em;
   }
 
@@ -1353,11 +1353,11 @@ body.ms-modal-lock {
   }
 
   .ms-subtitle {
-    font-size: 0.9rem;
+    font-size: 1.08rem;
   }
 
   .ms-fb-cta {
-    font-size: 0.78rem;
+    font-size: 0.936rem;
     padding-left: 1rem;
   }
 
@@ -1412,7 +1412,7 @@ body.ms-modal-lock {
   }
 
   .ms-modal__para {
-    font-size: 0.82rem;
+    font-size: 0.984rem;
     line-height: 1.65;
   }
 
