@@ -1,200 +1,139 @@
 import './WellnessPage.css';
 
-const wellnessSections = [
+const serviceAreas = [
   {
     id: 'service-overview',
-    chip: 'Overview',
-    meta: 'Coming soon',
-    eyebrow: 'Wellness Service',
-    title: 'Service Overview',
-    desc: 'Coming soon...',
-    accent: 'Coming soon...',
-    panelLabel: 'Service',
-    panelValue: 'Wellness',
-    panelSub: 'Coming soon...',
-    details: [
-      { name: 'Coverage', note: null, value: 'Coming soon...' },
-      { name: 'Availability', note: null, value: 'Coming soon...' },
-      { name: 'Programs', note: null, value: 'Coming soon...' },
-      { name: 'Requirements', note: null, value: 'Coming soon...' },
-    ],
+    kicker: '01 · Overview',
+    title: 'Wellness coverage',
+    text: 'Program coverage, availability, and member access details will be published here.',
+    label: 'Coverage',
   },
   {
     id: 'services-and-support',
-    chip: 'Support',
-    meta: 'Coming soon',
-    eyebrow: 'Programs & Support',
-    title: 'Services and Support',
-    desc: 'Coming soon...',
-    accent: 'Coming soon...',
-    panelLabel: 'Focus',
-    panelValue: 'Care',
-    panelSub: 'Coming soon...',
-    details: [
-      { name: 'Consultation', note: null, value: 'Coming soon...' },
-      { name: 'Member Support', note: null, value: 'Coming soon...' },
-      { name: 'Wellness Activities', note: null, value: 'Coming soon...' },
-      { name: 'Program Access', note: null, value: 'Coming soon...' },
-    ],
+    kicker: '02 · Support',
+    title: 'Programs and support',
+    text: 'Consultation, wellness activities, and support options will be organized here.',
+    label: 'Programs',
   },
   {
     id: 'guidelines-and-reminders',
-    chip: 'Guidelines',
-    meta: 'Coming soon',
-    eyebrow: 'Guidelines & Reminders',
-    title: 'Guidelines and Reminders',
-    desc: 'Coming soon...',
-    accent: 'Coming soon...',
-    panelLabel: 'Guide',
-    panelValue: 'Health',
-    panelSub: 'Coming soon...',
-    details: [
-      { name: 'Policies', note: null, value: 'Coming soon...' },
-      { name: 'Member Guidance', note: null, value: 'Coming soon...' },
-      { name: 'Service Notes', note: null, value: 'Coming soon...' },
-      { name: 'Program Rules', note: null, value: 'Coming soon...' },
-    ],
+    kicker: '03 · Guidelines',
+    title: 'Member guidance',
+    text: 'Requirements, program notes, and participation reminders will be listed here.',
+    label: 'Guidance',
   },
-];
-
-const stats = [
-  { value: '01', label: 'Wellness Service' },
-  { value: 'MEMPCO', label: 'Allied Service' },
-  { value: 'Soon', label: 'Full details' },
-  { value: 'Soon', label: 'Program info' },
 ];
 
 const processCards = [
-  {
-    step: '01',
-    title: 'Inquiry',
-    text: 'Coming soon...',
-  },
-  {
-    step: '02',
-    title: 'Coordination',
-    text: 'Coming soon...',
-  },
-  {
-    step: '03',
-    title: 'Participation',
-    text: 'Coming soon...',
-  },
+  { step: '01', title: 'Make an inquiry', text: 'Ask about available wellness and diagnostic support.' },
+  { step: '02', title: 'Coordinate access', text: 'Confirm the program, schedule, and requirements.' },
+  { step: '03', title: 'Receive guidance', text: 'MEMPCO will provide the final participation details.' },
 ];
+
+function WellnessIcon() {
+  return (
+    <svg viewBox="0 0 220 190" aria-hidden="true">
+      <path d="M110 158S39 117 39 67c0-25 19-42 42-42 14 0 24 7 29 18 6-11 16-18 30-18 23 0 41 17 41 42 0 50-71 91-71 91Z" />
+      <path d="M66 94h25l12-29 17 56 13-27h22" />
+      <circle cx="110" cy="95" r="80" />
+    </svg>
+  );
+}
 
 export default function WellnessPage() {
   return (
     <div className="wp">
       <section className="wp-section wp-hero" aria-labelledby="wp-heading">
-        <div className="wp-inner">
-          <nav className="wp-breadcrumb" aria-label="Breadcrumb">
-            <span>Services</span>
-            <span className="wp-breadcrumb-sep">/</span>
-            <span>Allied Services</span>
-            <span className="wp-breadcrumb-sep">/</span>
-            <span className="wp-breadcrumb-active">Wellness</span>
-          </nav>
+        <div className="wp-inner wp-hero-grid">
+          <div className="wp-hero-copy">
+            <nav className="wp-breadcrumb" aria-label="Breadcrumb">
+              <span>Services</span><span>/</span><span>Allied Services</span><span>/</span>
+              <span className="wp-breadcrumb-active">Wellness</span>
+            </nav>
 
-          <span className="wp-eyebrow">MEMPCO Allied Services</span>
+            <p className="wp-eyebrow">MEMPCO Allied Services</p>
+            <h1 className="wp-hero-title" id="wp-heading">
+              Wellness &amp;
+              <span>Diagnostics.</span>
+            </h1>
+            <p className="wp-hero-tagline">
+              A dedicated page for member wellness programs, diagnostic support,
+              and participation guidance. Full service details are coming soon.
+            </p>
 
-          <h1 className="wp-hero-title" id="wp-heading">
-            Wellness.
-            <br />
-            <span className="accent">For members.</span>
-          </h1>
+            <div className="wp-hero-links">
+              {serviceAreas.map((item) => (
+                <a href={`#${item.id}`} className="wp-hero-link" key={item.id}>
+                  <span>{item.kicker}</span>
+                  <strong>{item.title}</strong>
+                </a>
+              ))}
+            </div>
+          </div>
 
-          <p className="wp-hero-tagline">
-            Coming soon...
-          </p>
-
-          <div className="wp-section-chips">
-            {wellnessSections.map((section) => (
-              <a href={`#${section.id}`} className="wp-section-chip" key={section.id}>
-                <span className="wp-section-chip-name">{section.chip}</span>
-                <span className="wp-section-chip-meta">{section.meta}</span>
-              </a>
-            ))}
+          <div className="wp-hero-visual" aria-label="Wellness and diagnostics preview">
+            <div className="wp-visual-mark"><WellnessIcon /></div>
+            <p className="wp-visual-kicker">Wellness support</p>
+            <h2>Member care, presented with clarity.</h2>
+            <div className="wp-visual-grid">
+              <div><strong>Inquire</strong><span>Available support</span></div>
+              <div><strong>Coordinate</strong><span>Program access</span></div>
+              <div><strong>Participate</strong><span>Member guidance</span></div>
+            </div>
           </div>
         </div>
       </section>
 
-      <section className="wp-section wp-stats" aria-label="Key figures">
+      <section className="wp-section wp-stats" aria-label="Wellness status">
+        <div className="wp-inner wp-stats-grid">
+          <div><strong>01</strong><span>Allied service</span></div>
+          <div><strong>03</strong><span>Service stages</span></div>
+          <div><strong>Member</strong><span>Focused care</span></div>
+          <div><strong>Soon</strong><span>Full program details</span></div>
+        </div>
+      </section>
+
+      <section className="wp-section wp-overview" aria-labelledby="wp-overview-heading">
         <div className="wp-inner">
-          <div className="wp-stats-grid">
-            {stats.map((stat, index) => (
-              <div className="wp-stat" key={index}>
-                <span className="wp-stat-value">{stat.value}</span>
-                <span className="wp-stat-label">{stat.label}</span>
-              </div>
+          <div className="wp-section-head">
+            <p className="wp-section-kicker">Service overview</p>
+            <h2 className="wp-section-title" id="wp-overview-heading">
+              Wellness information, organized clearly.
+            </h2>
+            <p className="wp-section-text">
+              Each part of the service will have a defined place for programs,
+              access, requirements, and member guidance.
+            </p>
+          </div>
+
+          <div className="wp-overview-grid">
+            {serviceAreas.map((item) => (
+              <article className="wp-overview-card" id={item.id} key={item.id}>
+                <span>{item.kicker}</span>
+                <h3>{item.title}</h3>
+                <p>{item.text}</p>
+                <strong>{item.label} · Coming soon</strong>
+              </article>
             ))}
           </div>
-        </div>
-      </section>
-
-      <section className="wp-section wp-intro" aria-label="Wellness introduction">
-        <div className="wp-inner">
-          <p className="wp-intro-kicker">Wellness Support</p>
-          <h2 className="wp-intro-title">Wellness service details are <em>on the way.</em></h2>
-          <p className="wp-intro-sub">
-            Coming soon...
-          </p>
-        </div>
-      </section>
-
-      <section className="wp-section wp-details" aria-label="Wellness details">
-        <div className="wp-inner">
-          {wellnessSections.map((section) => (
-            <article className="wp-detail-card" id={section.id} key={section.id}>
-              <div className="wp-detail-header">
-                <div className="wp-detail-header-left">
-                  <p className="wp-detail-eyebrow">{section.eyebrow}</p>
-                  <h2 className="wp-detail-title">{section.title}</h2>
-                  <p className="wp-detail-desc">{section.desc}</p>
-                  <span className="wp-detail-accent">{section.accent}</span>
-                </div>
-
-                <div className="wp-detail-panel">
-                  <span className="wp-detail-panel-label">{section.panelLabel}</span>
-                  <span className="wp-detail-panel-value">{section.panelValue}</span>
-                  <span className="wp-detail-panel-sub">{section.panelSub}</span>
-                </div>
-              </div>
-
-              <div className="wp-detail-list">
-                <div className="wp-detail-list-label" aria-hidden="true">
-                  <span>Detail</span>
-                  <span>Information</span>
-                </div>
-
-                {section.details.map((detail, index) => (
-                  <div className="wp-detail-row" key={index}>
-                    <div>
-                      <p className="wp-detail-name">{detail.name}</p>
-                      {detail.note && <p className="wp-detail-note">{detail.note}</p>}
-                    </div>
-                    <p className="wp-detail-value">{detail.value}</p>
-                  </div>
-                ))}
-              </div>
-            </article>
-          ))}
         </div>
       </section>
 
       <section className="wp-section wp-process" aria-labelledby="wp-process-heading">
         <div className="wp-inner">
-          <p className="wp-process-kicker">Process</p>
-          <h2 className="wp-process-title" id="wp-process-heading">
-            Service flow <em>coming soon.</em>
-          </h2>
-
+          <div className="wp-section-head">
+            <p className="wp-section-kicker">Service flow</p>
+            <h2 className="wp-section-title" id="wp-process-heading">
+              A simple three-step support process.
+            </h2>
+          </div>
           <div className="wp-process-grid">
-            {processCards.map((card, index) => (
-              <div className="wp-process-card" key={index}>
-                <p className="wp-process-step">{card.step}</p>
-                <p className="wp-process-card-title">{card.title}</p>
-                <p className="wp-process-card-text">{card.text}</p>
-              </div>
+            {processCards.map((card) => (
+              <article className="wp-process-card" key={card.step}>
+                <span>{card.step}</span>
+                <h3>{card.title}</h3>
+                <p>{card.text}</p>
+              </article>
             ))}
           </div>
         </div>
@@ -203,15 +142,9 @@ export default function WellnessPage() {
       <section className="wp-section wp-note" aria-labelledby="wp-note-heading">
         <div className="wp-inner">
           <div className="wp-note-inner">
-            <p className="wp-note-kicker">Wellness</p>
-            <h2 className="wp-note-title" id="wp-note-heading">
-              Full wellness information
-              <br />
-              <em>is coming soon...</em>
-            </h2>
-            <p className="wp-note-text">
-              Coming soon...
-            </p>
+            <p>Wellness &amp; diagnostics</p>
+            <h2 id="wp-note-heading">Complete program information is coming soon.</h2>
+            <span>Contact MEMPCO for current wellness and diagnostic inquiries.</span>
           </div>
         </div>
       </section>

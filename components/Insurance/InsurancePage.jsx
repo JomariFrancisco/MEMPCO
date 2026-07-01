@@ -28,7 +28,7 @@ const categories = [
         id: 'gadddi',
         abbr: 'GADDDI',
         name: 'Group Accident, Death, Disablement & Dismemberment Insurance',
-        summary: 'Accident-centered protection with options based on age bracket and benefit level.',
+        summary: 'Accident-centered coverage options based on age bracket and plan type.',
         tone: '#D18B00',
         toneSoft: 'rgba(209, 139, 0, 0.10)',
         premiumLabel: 'Premium',
@@ -49,7 +49,7 @@ const categories = [
         id: 'glafi',
         abbr: 'GLAFI',
         name: 'Group Life and Accident with Fire Insurance',
-        summary: 'Affordable bundled protection with accident, natural death, burial, and fire insurance benefits.',
+        summary: 'Affordable bundled coverage for accident, natural death, burial, and fire protection.',
         tone: '#4F6BED',
         toneSoft: 'rgba(79, 107, 237, 0.10)',
         premiumLabel: 'Annual Premium',
@@ -69,7 +69,7 @@ const categories = [
         id: 'egyrt',
         abbr: 'EGYRT',
         name: 'Enhanced Group Yearly Renewable Term',
-        summary: 'Yearly renewable term coverage with death, assault, medical reimbursement, burial, and hospital income benefits.',
+        summary: 'Yearly renewable coverage for death, assault, medical reimbursement, burial, and hospital income.',
         tone: '#E7C547',
         toneSoft: 'rgba(231, 197, 71, 0.12)',
         premiumLabel: 'Annual Premium',
@@ -90,7 +90,7 @@ const categories = [
         id: 'time-deposit-life',
         abbr: 'GTLI',
         name: 'Group Term Life Insurance (Time Deposit)',
-        summary: 'Deposit-linked life insurance with premium and coverage scaling by the amount of savings.',
+        summary: 'Deposit-linked life insurance coverage grouped by savings bracket.',
         tone: '#6BCB4B',
         toneSoft: 'rgba(107, 203, 75, 0.12)',
         premiumLabel: 'Annual Premium',
@@ -108,7 +108,7 @@ const categories = [
         id: 'mempco-protect-2',
         abbr: 'MP2',
         name: 'MEMPCO Protect 2',
-        summary: 'Bundled member protection combining accident, natural death, burial, and hospital income benefits for principal and family members.',
+        summary: 'Bundled member coverage for accident, natural death, burial, and hospital income across principal and family members.',
         tone: '#2F35B7',
         toneSoft: 'rgba(47, 53, 183, 0.11)',
         premiumLabel: 'Annual Premium',
@@ -132,7 +132,7 @@ const categories = [
         id: 'mempco-protect-3',
         abbr: 'MP3',
         name: 'MEMPCO Protect 3',
-        summary: 'Higher-value member protection package with co-insured natural and accidental death benefits.',
+        summary: 'Member protection package with co-insured natural and accidental death coverage.',
         tone: '#DC2626',
         toneSoft: 'rgba(220, 38, 38, 0.10)',
         premiumLabel: 'Annual Premium',
@@ -163,7 +163,7 @@ const categories = [
         id: 'fip',
         abbr: 'FIP',
         name: 'Family Insurance Plan',
-        summary: 'Protection plan for principal members and qualified family members with life, accident, hospital income, and burial-related benefits.',
+        summary: 'Coverage plan for principal members and qualified family members across life, accident, hospital income, and burial categories.',
         tone: '#5E77F0',
         toneSoft: 'rgba(94, 119, 240, 0.10)',
         premiumLabel: 'Premium',
@@ -187,7 +187,7 @@ const categories = [
         id: 'mempco-protect-1',
         abbr: 'MP1',
         name: 'MEMPCO Protect 1',
-        summary: 'Enhanced family and yearly renewable term package with stepped benefits based on membership duration.',
+        summary: 'Enhanced family and yearly renewable term package with coverage grouped by membership duration.',
         tone: '#36A52E',
         toneSoft: 'rgba(54, 165, 46, 0.12)',
         premiumLabel: 'Premium',
@@ -217,13 +217,13 @@ const categories = [
     id: 'loan-protection',
     kicker: 'Loan protection',
     title: 'Insurance tied to loan amount, borrower age, and term of loan.',
-    text: 'These entries are structured more like rate schedules, so the table below keeps the catalog format visible and easier to compare.',
+    text: 'These entries group loan-related coverage by natural death, accidental death, borrower age, and loan term.',
     products: [
       {
         id: 'clpp',
         abbr: 'CLPP',
         name: 'Coop Loan Protection Plan',
-        summary: 'Loan-linked protection for natural death and accidental death, with age-based premium rates.',
+        summary: 'Loan-linked coverage for natural death and accidental death by borrower age group.',
         tone: '#E39A18',
         toneSoft: 'rgba(227, 154, 24, 0.12)',
         premiumLabel: 'Rate',
@@ -240,7 +240,7 @@ const categories = [
         id: 'lppi-natural-death',
         abbr: 'LPPI-ND',
         name: 'Loan Payment Protection Insurance — Natural Death',
-        summary: 'Natural death schedule with premium rates that vary by age bracket and coverage amount.',
+        summary: 'Natural death coverage grouped by borrower age and coverage bracket.',
         tone: '#B32020',
         toneSoft: 'rgba(179, 32, 32, 0.10)',
         premiumLabel: 'Rate',
@@ -261,7 +261,7 @@ const categories = [
         id: 'lppi-accidental-death',
         abbr: 'LPPI-AD',
         name: 'Loan Payment Protection Insurance — Accidental Death',
-        summary: 'Accidental death coverage with premiums scheduled according to the term of the loan.',
+        summary: 'Accidental death coverage grouped according to the term of the loan.',
         tone: '#2E9E36',
         toneSoft: 'rgba(46, 158, 54, 0.11)',
         premiumLabel: 'Coverage',
@@ -366,8 +366,8 @@ const categories = [
 const stats = [
   { value: '15', label: 'Insurance products catalogued' },
   { value: '4', label: 'Coverage groups' },
-  { value: '₱250', label: 'Lowest annual premium shown' },
-  { value: '₱1.5M', label: 'Highest coverage shown' },
+  { value: 'Life', label: 'Member and family protection' },
+  { value: 'Non-Life', label: 'Property and vehicle coverage' },
 ];
 
 const quickGuide = [
@@ -381,7 +381,7 @@ const quickGuide = [
   },
   {
     title: 'Loan Protection',
-    text: 'Rate-based plans tied to loan amount, borrower age, and term.',
+    text: 'Coverage tied to loan amount, borrower age, and term.',
   },
   {
     title: 'Non-Life Insurance',
@@ -389,58 +389,124 @@ const quickGuide = [
   },
 ];
 
-function InsuranceTable({ product }) {
+const coverageByProduct = {
+  gadddi: [
+    'Natural Death',
+    'Accidental Death',
+    'Murder & Unprovoked Assault',
+    'Cash Burial due to Accidental Death',
+    'HIB due to Accident',
+  ],
+  glafi: [
+    'Accidental Death, Disablement & Dismemberment',
+    'Murder & Unprovoked Assault',
+    'Cash Burial due to Accidental Death',
+    'Death due to Natural Causes',
+    'Fire Insurance for Furniture & Fixtures',
+  ],
+  egyrt: [
+    'Natural Death',
+    'Accidental Death',
+    'Unprovoked Murder or Assault',
+    'Accident Medical Reimbursement',
+    'Daily Hospital Income',
+    'Burial',
+  ],
+  'time-deposit-life': [
+    'Natural Death',
+    'Accidental Death',
+  ],
+  'mempco-protect-2': [
+    'Natural Death',
+    'Accidental Death',
+    'Murder & Unprovoked Assault',
+    'Cash Burial due to Accidental Death',
+    'HIB due to Accident',
+  ],
+  'mempco-protect-3': [
+    'Natural Death',
+    'Accidental Death',
+    'Unprovoked Murder or Assault',
+    'Accident Medical Reimbursement',
+    'Daily Hospital Income',
+    'Burial',
+  ],
+  fip: [
+    'Life Insurance',
+    'Accidental Death and Dismemberment',
+    'Disablement and Dismemberment',
+    'MRA',
+    'Hospital Income',
+    'Cash Burial',
+  ],
+  'mempco-protect-1': [
+    'Life Insurance',
+    'Accidental Death and Dismemberment',
+    'Disablement and Dismemberment',
+    'MRA',
+    'Hospital Income',
+    'Cash Burial',
+  ],
+  clpp: [
+    'Natural Death',
+    'Accidental Death',
+  ],
+  'lppi-natural-death': [
+    'Natural Death',
+  ],
+  'lppi-accidental-death': [
+    'Accidental Death',
+  ],
+};
+
+const getCoverageItems = (product) => {
+  if (coverageByProduct[product.id]) {
+    return coverageByProduct[product.id];
+  }
+
+  return [
+    ...new Set(
+      product.rows
+        .map((row) => row.label)
+        .filter((label) => !/premium|rate|total amount|amount of savings/i.test(label))
+    ),
+  ];
+};
+
+function CoverageDetails({ product }) {
+  const coverageItems = getCoverageItems(product);
+
   return (
     <article
       id={product.id}
-      className="ins-product-card"
+      className="ins-coverage-card"
       style={{
         '--accent': product.tone,
         '--accent-soft': product.toneSoft,
       }}
     >
-      <div className="ins-product-topbar" />
+      <div className="ins-coverage-topbar" />
 
-      <div className="ins-product-header">
-        <div className="ins-product-copy">
-          <div className="ins-product-meta">
-            <span className="ins-product-abbr">{product.abbr}</span>
-            <span className="ins-product-pill">{product.summary}</span>
+      <div className="ins-coverage-header">
+        <div className="ins-coverage-copy">
+          <div className="ins-coverage-meta">
+            <span className="ins-coverage-abbr">{product.abbr}</span>
+            <span className="ins-coverage-pill">{product.summary}</span>
           </div>
-          <h3 className="ins-product-name">{product.name}</h3>
-        </div>
-
-        <div className="ins-product-premium">
-          <span className="ins-product-premium-label">{product.premiumLabel}</span>
-          <span className="ins-product-premium-value">{product.premium}</span>
-          <span className="ins-product-premium-period">{product.period}</span>
+          <h3 className="ins-coverage-name">{product.name}</h3>
         </div>
       </div>
 
-      <div className="ins-product-table-wrap">
-        <table className="ins-product-table">
-          <thead>
-            <tr>
-              <th>Benefits</th>
-              {product.columns.map((col, ci) => (
-                <th key={`${product.id}-col-${ci}`}>{col}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {product.rows.map((row, ri) => (
-              <tr
-                key={`${product.id}-row-${ri}`}
-                className={row.highlight ? 'is-highlight' : undefined}
-              >
-                <td>{row.label}</td>
-                {row.values.map((val, vi) => (
-                  <td key={`${product.id}-cell-${ri}-${vi}`}>{val || '\u00A0'}</td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="ins-coverage-body">
+        <p className="ins-coverage-label">Coverage included</p>
+        <ul className="ins-coverage-list">
+          {coverageItems.map((item) => (
+            <li key={`${product.id}-${item}`}>
+              <span className="ins-coverage-mark" aria-hidden="true" />
+              <span>{item}</span>
+            </li>
+          ))}
+        </ul>
       </div>
     </article>
   );
@@ -453,6 +519,7 @@ function AccordionItem({ product, isOpen, onToggle }) {
       style={{ '--accent': product.tone, '--accent-soft': product.toneSoft }}
     >
       <button
+        id={`acc-header-${product.id}`}
         className="ins-acc-header"
         type="button"
         aria-expanded={isOpen}
@@ -472,10 +539,6 @@ function AccordionItem({ product, isOpen, onToggle }) {
         </span>
 
         <span className="ins-acc-name">{product.name}</span>
-
-        <span className="ins-acc-premium" style={{ color: product.tone }}>
-          {product.premium}
-        </span>
 
         <span className="ins-acc-chevron" aria-hidden="true">
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
@@ -497,7 +560,7 @@ function AccordionItem({ product, isOpen, onToggle }) {
         aria-labelledby={`acc-header-${product.id}`}
       >
         <div className="ins-acc-body-inner">
-          <InsuranceTable product={product} />
+          <CoverageDetails product={product} />
         </div>
       </div>
     </div>
@@ -505,7 +568,7 @@ function AccordionItem({ product, isOpen, onToggle }) {
 }
 
 function CategoryShowcase({ category }) {
-  const [openId, setOpenId] = useState(category.products[0]?.id ?? null);
+  const [openId, setOpenId] = useState(null);
 
   const toggle = (id) => setOpenId((prev) => (prev === id ? null : id));
 
@@ -654,7 +717,7 @@ export default function InsurancePage() {
               coordinate with MEMPCO.
             </h2>
             <p className="ins-note-text">
-              For final enrollment requirements, updated pricing, and claims
+              For final enrollment requirements, updated terms, and claims
               processing, members should still confirm directly with MEMPCO.
             </p>
           </div>

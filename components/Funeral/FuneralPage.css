@@ -297,6 +297,7 @@ body {
   gap: 0.8rem;
   min-width: 0;
   width: 100%;
+  padding-top: clamp(2rem, 5vh, 4rem);
 }
 
 .fun-logo-hero {
@@ -305,7 +306,7 @@ body {
   justify-content: center;
   width: 100%;
   min-height: 220px;
-  margin: -6.2rem auto 0.35rem;
+  margin: 0 auto 0.35rem;
 }
 
 .fun-logo-image {
@@ -435,6 +436,109 @@ body {
 /* ═══════════════════════════════════════
    STATS
 ═══════════════════════════════════════ */
+@media (min-width: 1181px) {
+  .fun-hero {
+    height: 100svh;
+    min-height: 720px;
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .fun-hero-grid {
+    height: 100%;
+    min-height: 0;
+    gap: 1.35rem;
+    padding-top: clamp(5rem, 8vh, 5.75rem);
+    padding-bottom: 1rem;
+  }
+
+  .fun-breadcrumb {
+    margin-bottom: 0.65rem;
+    font-size: 1.28rem;
+  }
+
+  .fun-hero-title {
+    font-size: clamp(3.35rem, 5.02vw, 5.19rem);
+    line-height: 0.93;
+    margin-bottom: 0.75rem;
+  }
+
+  .fun-hero-links {
+    gap: 0.55rem;
+  }
+
+  .fun-hero-link {
+    gap: 0.22rem;
+    padding: 0.8rem 1rem;
+    border-radius: 18px;
+  }
+
+  .fun-hero-link-kicker {
+    font-size: 0.8rem;
+  }
+
+  .fun-hero-link-title {
+    font-size: 0.94rem;
+    line-height: 1.35;
+  }
+
+  .fun-hero-visual {
+    gap: 0.55rem;
+    padding-top: 0.75rem;
+  }
+
+  .fun-logo-hero {
+    min-height: 162px;
+    margin-bottom: 0;
+  }
+
+  .fun-logo-image {
+    width: min(100%, 446px);
+    max-width: 446px;
+  }
+
+  .fun-showcase-grid {
+    gap: 0.6rem;
+  }
+
+  .fun-showcase-card {
+    min-height: 140px;
+    padding: 0.84rem;
+    border-radius: 18px;
+  }
+
+  .fun-showcase-price {
+    margin-bottom: 0.4rem;
+    padding: 0.3rem 0.56rem;
+    font-size: 0.78rem;
+  }
+
+  .fun-showcase-card h3 {
+    margin-bottom: 0.25rem;
+    font-size: 0.96rem;
+  }
+
+  .fun-showcase-card p {
+    font-size: 0.915rem;
+    line-height: 1.38;
+  }
+
+  .fun-hero-social-action {
+    margin-top: 0.35rem;
+  }
+
+  .fun-logo-facebook-link {
+    min-height: 47px;
+    padding: 0.61rem 1.12rem;
+    font-size: 1.06rem;
+  }
+
+  .fun-logo-facebook-icon {
+    width: 21px;
+    height: 21px;
+  }
+}
+
 .fun-stats {
   background: rgba(255, 255, 255, 0.72);
   border-bottom: 1px solid var(--border);
@@ -616,7 +720,7 @@ body {
     var(--accent-soft) 0%,
     rgba(255, 255, 255, 0.94) 100%
   );
-  border-bottom: 1px solid var(--border);
+  border-bottom: 0;
 }
 
 .fun-package-copy {
@@ -909,6 +1013,8 @@ body {
   padding-left: 1rem;
   display: grid;
   gap: 0.65rem;
+  align-content: start;
+  grid-auto-rows: max-content;
   flex: 1;
 }
 
@@ -921,6 +1027,96 @@ body {
 /* ═══════════════════════════════════════
    NECRO
 ═══════════════════════════════════════ */
+@media (min-width: 1181px) {
+  .fun-chapel-rates {
+    height: 100svh;
+    min-height: 720px;
+    padding: clamp(2.5rem, 5vh, 3.5rem) 0 2rem;
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+  }
+
+  .fun-chapel-rates .fun-inner {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    max-height: 100%;
+  }
+
+  .fun-chapel-rates .fun-section-head {
+    margin-bottom: 1.4rem;
+  }
+
+  .fun-chapel-rates .fun-section-kicker {
+    margin-bottom: 0.55rem;
+    font-size: 0.98rem;
+  }
+
+  .fun-chapel-rates .fun-section-title {
+    font-size: clamp(2.25rem, 3.2vw, 3rem);
+  }
+
+  .fun-chapel-rates .fun-section-text {
+    margin-top: 0.55rem;
+    font-size: 1rem;
+    line-height: 1.5;
+  }
+
+  .fun-rate-grid {
+    gap: 0.8rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .fun-rate-card {
+    min-height: 92px;
+    padding: 0.85rem 0.75rem;
+    border-radius: 20px;
+  }
+
+  .fun-rate-card h3 {
+    font-size: 0.9rem;
+  }
+
+  .fun-rate-card p {
+    font-size: 1rem;
+    line-height: 1.3;
+  }
+
+  .fun-chapel-grid {
+    gap: 0.85rem;
+  }
+
+  .fun-chapel-card {
+    min-height: 0;
+    padding: 1rem 1.15rem;
+    border-radius: 22px;
+  }
+
+  .fun-chapel-card-top {
+    gap: 0.18rem;
+    margin-bottom: 0.65rem;
+  }
+
+  .fun-chapel-card h3 {
+    font-size: 1rem;
+  }
+
+  .fun-chapel-card span {
+    font-size: 0.9rem;
+  }
+
+  .fun-chapel-card ul {
+    gap: 0.35rem;
+    padding-left: 1rem;
+  }
+
+  .fun-chapel-card li {
+    font-size: 0.94rem;
+    line-height: 1.35;
+  }
+}
+
 .fun-necro {
   padding: 5.5rem 0 5rem;
   border-bottom: 1px solid var(--border);
@@ -1052,25 +1248,30 @@ body {
 }
 
 .fun-additional-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.9rem;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.85rem;
+  width: 100%;
 }
 
 .fun-additional-pill {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0.9rem 1.15rem;
-  border-radius: 999px;
+  min-width: 0;
+  min-height: 76px;
+  padding: 0.85rem 1rem;
+  border-radius: 20px;
   background:
     linear-gradient(180deg, rgba(107, 52, 16, 0.98) 0%, rgba(133, 80, 33, 0.94) 100%);
   color: #fffaf2;
   border: 1px solid rgba(107, 52, 16, 0.16);
   box-shadow: 0 16px 34px rgba(74, 34, 8, 0.12);
   font-size: 1.104rem;
-  line-height: 1.4;
+  line-height: 1.3;
   font-weight: 600;
+  text-align: center;
+  text-wrap: balance;
   transition:
     transform 0.2s cubic-bezier(0.22, 1, 0.36, 1),
     box-shadow 0.2s ease,
@@ -1086,6 +1287,29 @@ body {
 /* ═══════════════════════════════════════
    NOTE / CLOSING
 ═══════════════════════════════════════ */
+@media (max-width: 1180px) {
+  .fun-additional-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 920px) {
+  .fun-additional-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .fun-additional-grid {
+    grid-template-columns: 1fr;
+    gap: 0.7rem;
+  }
+
+  .fun-additional-pill {
+    min-height: 64px;
+  }
+}
+
 .fun-note {
   padding: 5.5rem 0 6.5rem;
   background: linear-gradient(180deg, #fffdfa 0%, #f7f1ea 100%);
@@ -1149,6 +1373,7 @@ body {
 
   .fun-hero-visual {
     order: 2;
+    padding-top: 0;
   }
 
   .fun-logo-hero {

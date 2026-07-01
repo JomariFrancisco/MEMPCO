@@ -5,7 +5,6 @@ import { createPortal } from 'react-dom';
 import { listPublishedMemberStories } from '@/lib/marketing/marketingPosts';
 import './MemberStories.css';
 
-const COMPANY_FACEBOOK_URL = 'https://www.facebook.com/groups/mempcopreneurs';
 const COMPANY_YOUTUBE_URL = 'https://www.youtube.com/@mempcoph3541';
 const STORY_YOUTUBE_URLS = {
   villarosa: 'https://youtu.be/QwMlGNOP2gY?si=Vuc8E9pATomR654n',
@@ -84,14 +83,6 @@ const toMemberStory = (post) => ({
 });
 
 /* ── Icons ── */
-function StarIcon() {
-  return (
-    <svg width="13" height="13" viewBox="0 0 13 13" fill="currentColor" aria-hidden="true">
-      <path d="M6.5 1l1.4 2.8 3.1.45-2.25 2.2.53 3.1L6.5 8.1l-2.78 1.46.53-3.1L2 4.25l3.1-.45z" />
-    </svg>
-  );
-}
-
 function LocationIcon() {
   return (
     <svg
@@ -125,29 +116,11 @@ function ReadMoreIcon() {
   );
 }
 
-function FacebookIcon() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <path d="M22 12.06C22 6.5 17.52 2 12 2S2 6.5 2 12.06C2 17.08 5.66 21.25 10.44 22v-7.03H7.9v-2.91h2.54V9.84c0-2.52 1.49-3.91 3.77-3.91 1.09 0 2.23.2 2.23.2v2.47h-1.25c-1.24 0-1.63.78-1.63 1.57v1.89h2.77l-.44 2.91h-2.33V22C18.34 21.25 22 17.08 22 12.06Z" />
-    </svg>
-  );
-}
-
 function YouTubeIcon() {
   return (
     <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
       <path d="M23.5 6.2a3.02 3.02 0 0 0-2.13-2.14C19.49 3.56 12 3.56 12 3.56s-7.49 0-9.37.5A3.02 3.02 0 0 0 .5 6.2 31.5 31.5 0 0 0 0 12a31.5 31.5 0 0 0 .5 5.8 3.02 3.02 0 0 0 2.13 2.14c1.88.5 9.37.5 9.37.5s7.49 0 9.37-.5a3.02 3.02 0 0 0 2.13-2.14A31.5 31.5 0 0 0 24 12a31.5 31.5 0 0 0-.5-5.8ZM9.55 15.57V8.43L15.82 12l-6.27 3.57Z" />
     </svg>
-  );
-}
-
-function Stars({ count = 5 }) {
-  return (
-    <div className="ms-stars" aria-label={`${count} out of 5 stars`}>
-      {Array.from({ length: count }).map((_, i) => (
-        <StarIcon key={i} />
-      ))}
-    </div>
   );
 }
 
@@ -231,7 +204,6 @@ function StoryModal({ story, onClose }) {
           <div className="ms-modal__photo-scrim" aria-hidden="true" />
 
           <div className="ms-modal__identity">
-            <Stars />
             <h2 className="ms-modal__name">{story.name}</h2>
             <p className="ms-modal__role">{story.role}</p>
             <span className="ms-modal__loc">
@@ -313,8 +285,6 @@ function StoryCard({ story, onOpenModal, className = 'ms-card' }) {
       </div>
 
       <div className="ms-card__footer">
-        <Stars />
-
         <div className="ms-card__info">
           <strong>{story.name}</strong>
           <small>
@@ -364,6 +334,7 @@ export default function MemberStories() {
   const sectionRef = useRef(null);
   const [isVisible, setIsVisible] = useState(false);
   const [stories, setStories] = useState(STORIES);
+  const [featuredIndex, setFeaturedIndex] = useState(0);
   const [activeStory, setActiveStory] = useState(null);
 
   useEffect(() => {
@@ -432,8 +403,23 @@ export default function MemberStories() {
     };
   }, []);
 
+  useEffect(() => {
+    if (featuredIndex > stories.length - 1) {
+      setFeaturedIndex(0);
+    }
+  }, [featuredIndex, stories.length]);
+
   const openModal = useCallback((story) => setActiveStory(story), []);
   const closeModal = useCallback(() => setActiveStory(null), []);
+  const featuredStory = stories[featuredIndex] || stories[0];
+
+  const showPreviousStory = useCallback(() => {
+    setFeaturedIndex((current) => Math.max(0, current - 1));
+  }, []);
+
+  const showNextStory = useCallback(() => {
+    setFeaturedIndex((current) => Math.min(stories.length - 1, current + 1));
+  }, [stories.length]);
 
   return (
     <>
@@ -455,28 +441,69 @@ export default function MemberStories() {
             </p>
           </header>
 
-          <div className="ms-cards">
-            {stories.map((story) => (
-              <div className="ms-reveal ms-reveal--up" data-reveal key={story.name}>
-                <StoryCard story={story} onOpenModal={openModal} />
-              </div>
-            ))}
-          </div>
+          <div className="ms-story-showcase ms-reveal ms-reveal--up" data-reveal>
+            {stories.length > 1 && featuredIndex > 0 && (
+              <button
+                type="button"
+                className="ms-story-arrow ms-story-arrow--prev"
+                onClick={showPreviousStory}
+                aria-label="Show previous member story"
+              >
+                <span aria-hidden="true">&lt;</span>
+              </button>
+            )}
 
-          <MobileCarousel stories={stories} onOpenModal={openModal} />
+            {featuredStory && (
+              <StoryCard
+                key={featuredStory.name}
+                story={featuredStory}
+                onOpenModal={openModal}
+                className="ms-card ms-card--featured"
+              />
+            )}
+
+            {stories.length > 1 && featuredIndex < stories.length - 1 && (
+              <button
+                type="button"
+                className="ms-story-arrow ms-story-arrow--next"
+                onClick={showNextStory}
+                aria-label="Show next member story"
+              >
+                <span aria-hidden="true">&gt;</span>
+              </button>
+            )}
+
+            {stories.length > 1 && (
+              <div className="ms-story-controls" aria-label="Member story navigation">
+                <button
+                  type="button"
+                  className="ms-story-control"
+                  onClick={showPreviousStory}
+                  aria-label="Show previous member story"
+                >
+                  <span aria-hidden="true">←</span>
+                  Previous
+                </button>
+
+                <span className="ms-story-counter" aria-live="polite">
+                  {String(featuredIndex + 1).padStart(2, '0')} /{' '}
+                  {String(stories.length).padStart(2, '0')}
+                </span>
+
+                <button
+                  type="button"
+                  className="ms-story-control ms-story-control--primary"
+                  onClick={showNextStory}
+                  aria-label="Show next member story"
+                >
+                  Next
+                  <span aria-hidden="true">→</span>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
-        <a
-          href={COMPANY_FACEBOOK_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="ms-fb-cta"
-          aria-label="Visit MEMPCOpreneurs Facebook group"
-        >
-          <FacebookIcon />
-          <span>Visit MEMPCOpreneurs</span>
-          <ReadMoreIcon />
-        </a>
       </section>
 
       {activeStory && <StoryModal story={activeStory} onClose={closeModal} />}

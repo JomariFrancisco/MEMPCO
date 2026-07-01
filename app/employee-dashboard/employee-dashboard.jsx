@@ -1665,9 +1665,9 @@ function DashboardView({ user, tickets, openTickets, onGoTo }) {
                 <div className="ticket-header">
                   <div className="ticket-header-left">
                     <h4>{latestTicket.concernType || 'Helpdesk Ticket'}</h4>
-                    <span className="ticket-id">{getTicketDisplayCode(latestTicket)}</span>
                   </div>
                   <span className="ticket-date">{latestSubmittedDate}</span>
+                  <span className="ticket-id">{getTicketDisplayCode(latestTicket)}</span>
                 </div>
 
                 <div className="ticket-badges">

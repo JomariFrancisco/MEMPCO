@@ -151,7 +151,7 @@ a.ft-contact-item:hover {
 ═══════════════════════════════════════ */
 .ft-top {
   display: grid;
-  grid-template-columns: minmax(230px, 1.25fr) repeat(3, minmax(0, 0.85fr));
+  grid-template-columns: minmax(230px, 1.15fr) repeat(4, minmax(0, 0.85fr));
   gap: 1.45rem;
   align-items: start;
 }
@@ -178,40 +178,6 @@ a.ft-contact-item:hover {
 }
 
 /* ─── Social icons ─── */
-.ft-social {
-  display: flex;
-  gap: 0.45rem;
-  flex-wrap: wrap;
-}
-
-.ft-social-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 26px;
-  height: 26px;
-  border-radius: 8px;
-  background: transparent;
-  border: 0;
-  color: var(--ink-2);
-  text-decoration: none;
-  transition:
-    background 0.22s ease,
-    color 0.22s ease,
-    transform 0.22s ease;
-}
-
-.ft-social-btn svg {
-  width: 15px;
-  height: 15px;
-}
-
-.ft-social-btn:hover {
-  background: rgba(220, 38, 38, 0.08);
-  color: var(--red);
-  transform: translateY(-1px);
-}
-
 /* ─── Nav columns ─── */
 .ft-col {
   display: flex;
@@ -310,7 +276,7 @@ a.ft-contact-item:hover {
   }
 
   .ft-top {
-    grid-template-columns: minmax(200px, 1.3fr) repeat(3, minmax(0, 1fr));
+    grid-template-columns: minmax(200px, 1.15fr) repeat(4, minmax(0, 1fr));
     row-gap: 1.3rem;
   }
 }
@@ -323,7 +289,7 @@ a.ft-contact-item:hover {
   }
 
   .ft-top {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 1.15rem;
   }
 
@@ -357,7 +323,7 @@ a.ft-contact-item:hover {
 
   .ft-top {
     order: 1;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     column-gap: 0.7rem;
     row-gap: 1.05rem;
   }
@@ -386,10 +352,6 @@ a.ft-contact-item:hover {
     line-height: 1.45;
   }
 
-  .ft-social {
-    gap: 0.35rem;
-  }
-
   .ft-bottom {
     order: 3;
     flex-direction: column;
@@ -397,11 +359,6 @@ a.ft-contact-item:hover {
     gap: 0.55rem;
     padding-top: 0.8rem;
     text-align: center;
-  }
-
-  .ft-social-btn {
-    width: 32px;
-    height: 32px;
   }
 
   .ft-legal {
@@ -421,7 +378,7 @@ a.ft-contact-item:hover {
   }
 
   .ft-top {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.95rem;
   }
 

@@ -14,8 +14,9 @@ export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [aboutOpen, setAboutOpen] = useState(false)
   const [servicesOpen, setServicesOpen] = useState(false)
+  const [membershipOpen, setMembershipOpen] = useState(false)
+  const [whatsNewOpen, setWhatsNewOpen] = useState(false)
   const [contactOpen, setContactOpen] = useState(false)
-  const [governanceOpen, setGovernanceOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const [currentHash, setCurrentHash] = useState('')
 
@@ -37,8 +38,7 @@ export default function Navbar() {
   const isGovernanceActive =
     isGovernanceOverviewActive ||
     isBoardActive ||
-    isManagementActive ||
-    governanceOpen
+    isManagementActive
 
   const isAboutActive =
     isActive('/about') ||
@@ -95,17 +95,23 @@ export default function Navbar() {
     openServiceGroup === 'allied'
 
   const isCareerActive = isActive(CAREER_PATH)
-  const isMembershipActive = isActive('/membership')
+  const isMembershipActive = isActive('/membership') || membershipOpen
+  const isWhatsNewActive =
+    isActive('/news') ||
+    isActive('/promos') ||
+    isCareerActive ||
+    whatsNewOpen
   const isContactActive =
     isActive('/branches') ||
-    isCareerActive ||
+    isActive('/contact-details') ||
     contactOpen
 
   const closeDropdowns = () => {
     setAboutOpen(false)
     setServicesOpen(false)
+    setMembershipOpen(false)
+    setWhatsNewOpen(false)
     setContactOpen(false)
-    setGovernanceOpen(false)
     setOpenServiceGroup(null)
     setOpenNestedServiceGroup(null)
   }
@@ -123,8 +129,9 @@ export default function Navbar() {
   const toggleAbout = () => {
     setAboutOpen((prev) => !prev)
     setServicesOpen(false)
+    setMembershipOpen(false)
+    setWhatsNewOpen(false)
     setContactOpen(false)
-    setGovernanceOpen(false)
     setOpenServiceGroup(null)
     setOpenNestedServiceGroup(null)
   }
@@ -132,21 +139,39 @@ export default function Navbar() {
   const toggleServices = () => {
     setServicesOpen((prev) => !prev)
     setAboutOpen(false)
+    setMembershipOpen(false)
+    setWhatsNewOpen(false)
     setContactOpen(false)
-    setGovernanceOpen(false)
+  }
+
+  const toggleMembership = () => {
+    setMembershipOpen((prev) => !prev)
+    setAboutOpen(false)
+    setServicesOpen(false)
+    setWhatsNewOpen(false)
+    setContactOpen(false)
+    setOpenServiceGroup(null)
+    setOpenNestedServiceGroup(null)
+  }
+
+  const toggleWhatsNew = () => {
+    setWhatsNewOpen((prev) => !prev)
+    setAboutOpen(false)
+    setServicesOpen(false)
+    setMembershipOpen(false)
+    setContactOpen(false)
+    setOpenServiceGroup(null)
+    setOpenNestedServiceGroup(null)
   }
 
   const toggleContact = () => {
     setContactOpen((prev) => !prev)
     setAboutOpen(false)
     setServicesOpen(false)
-    setGovernanceOpen(false)
+    setMembershipOpen(false)
+    setWhatsNewOpen(false)
     setOpenServiceGroup(null)
     setOpenNestedServiceGroup(null)
-  }
-
-  const toggleGovernance = () => {
-    setGovernanceOpen((prev) => !prev)
   }
 
   const toggleServiceGroup = (group) => {
@@ -285,14 +310,21 @@ export default function Navbar() {
 
               <ul className="nav-dropdown-menu about-dropdown-menu">
                 <li className="about-mega__column">
-                  <Link href="/about" onClick={handleNavigation} className="about-mega__heading">
-                    About MEMPCO
+                  <Link href="/about/history" onClick={handleNavigation} className="about-mega__heading">
+                    History
                   </Link>
                   <ul className="about-mega__links">
-                    <li><Link href="/about" onClick={handleNavigation}>Overview</Link></li>
+                    <li><Link href="/about/history" onClick={handleNavigation}>Journey & Milestones</Link></li>
                   </ul>
                 </li>
-
+                <li className="about-mega__column">
+                  <Link href="/about/vision-mission-core-values" onClick={handleNavigation} className="about-mega__heading">
+                    Vision, Mission &amp; Core Values
+                  </Link>
+                  <ul className="about-mega__links">
+                    <li><Link href="/about/vision-mission-core-values" onClick={handleNavigation}>Our Foundation</Link></li>
+                  </ul>
+                </li>
                 <li className="about-mega__column">
                   <Link href="/governance" onClick={handleNavigation} className="about-mega__heading">
                     Governance
@@ -303,30 +335,64 @@ export default function Navbar() {
                     <li><Link href="/governance/management" onClick={handleNavigation}>Management</Link></li>
                   </ul>
                 </li>
-
                 <li className="about-mega__column">
-                  <Link href="/data-privacy" onClick={handleNavigation} className="about-mega__heading">
-                    Policies
+                  <Link href="/about/awards" onClick={handleNavigation} className="about-mega__heading">
+                    Awards
                   </Link>
                   <ul className="about-mega__links">
-                    <li>
-                      <Link href="/data-privacy" onClick={handleNavigation}>
-                        Data Privacy Policy
-                      </Link>
-                    </li>
+                    <li><Link href="/about/awards" onClick={handleNavigation}>Awards & Recognition</Link></li>
+                  </ul>
+                </li>
+                <li className="about-mega__column">
+                  <Link href="/about/member-stories" onClick={handleNavigation} className="about-mega__heading">
+                    Member Stories
+                  </Link>
+                  <ul className="about-mega__links">
+                    <li><Link href="/about/member-stories" onClick={handleNavigation}>Member Experiences</Link></li>
                   </ul>
                 </li>
               </ul>
             </li>
 
-            <li className="nav-item nav-item--news">
-              <Link
-                href="/news"
-                onClick={handleNavigation}
-                className={`nav-link ${isActive('/news') ? 'active' : ''}`}
+            <li className={`nav-item nav-item--news nav-dropdown ${whatsNewOpen ? 'open' : ''}`}>
+              <button
+                type="button"
+                className={`nav-trigger ${isWhatsNewActive ? 'active' : ''}`}
+                onClick={toggleWhatsNew}
+                aria-expanded={whatsNewOpen}
               >
-                News &amp; Events
-              </Link>
+                <span>What&apos;s New</span>
+                <span className="arrow"></span>
+              </button>
+
+              <ul className="nav-dropdown-menu whats-new-dropdown-menu">
+                <li className="whats-new-mega__column">
+                  <Link href="/news" onClick={handleNavigation} className="whats-new-mega__heading">
+                    News &amp; Events
+                  </Link>
+                  <ul className="whats-new-mega__links">
+                    <li><Link href="/news" onClick={handleNavigation}>Latest announcements</Link></li>
+                  </ul>
+                </li>
+
+                <li className="whats-new-mega__column">
+                  <Link href="/promos" onClick={handleNavigation} className="whats-new-mega__heading">
+                    Promos
+                  </Link>
+                  <ul className="whats-new-mega__links">
+                    <li><Link href="/promos" onClick={handleNavigation}>Current offers</Link></li>
+                  </ul>
+                </li>
+
+                <li className="whats-new-mega__column">
+                  <Link href={CAREER_PATH} onClick={handleNavigation} className="whats-new-mega__heading">
+                    Career
+                  </Link>
+                  <ul className="whats-new-mega__links">
+                    <li><Link href={CAREER_PATH} onClick={handleNavigation}>Open positions</Link></li>
+                  </ul>
+                </li>
+              </ul>
             </li>
 
             <li className={`nav-item nav-item--services nav-dropdown ${servicesOpen ? 'open' : ''}`}>
@@ -389,14 +455,45 @@ export default function Navbar() {
               </ul>
             </li>
 
-            <li className="nav-item nav-item--membership">
-              <Link
-                href="/membership"
-                onClick={handleNavigation}
-                className={`nav-link ${isMembershipActive ? 'active' : ''}`}
+            <li className={`nav-item nav-item--membership nav-dropdown ${membershipOpen ? 'open' : ''}`}>
+              <button
+                type="button"
+                className={`nav-trigger ${isMembershipActive ? 'active' : ''}`}
+                onClick={toggleMembership}
+                aria-expanded={membershipOpen}
               >
-                Membership
-              </Link>
+                <span>Membership</span>
+                <span className="arrow"></span>
+              </button>
+
+              <ul className="nav-dropdown-menu membership-dropdown-menu">
+                <li className="membership-mega__column">
+                  <Link href="/membership" onClick={handleNavigation} className="membership-mega__heading">
+                    How to Apply?
+                  </Link>
+                  <ul className="membership-mega__links">
+                    <li><Link href="/membership" onClick={handleNavigation}>Application guide</Link></li>
+                  </ul>
+                </li>
+
+                <li className="membership-mega__column">
+                  <Link href="/membership/pmes" onClick={handleNavigation} className="membership-mega__heading">
+                    PMES
+                  </Link>
+                  <ul className="membership-mega__links">
+                    <li><Link href="/membership/pmes" onClick={handleNavigation}>Pre-membership seminar</Link></li>
+                  </ul>
+                </li>
+
+                <li className="membership-mega__column">
+                  <Link href="/membership/package" onClick={handleNavigation} className="membership-mega__heading">
+                    Membership Package
+                  </Link>
+                  <ul className="membership-mega__links">
+                    <li><Link href="/membership/package" onClick={handleNavigation}>Fees and inclusions</Link></li>
+                  </ul>
+                </li>
+              </ul>
             </li>
 
             <li className={`nav-item nav-item--contact nav-dropdown ${contactOpen ? 'open' : ''}`}>
@@ -417,17 +514,10 @@ export default function Navbar() {
                   </Link>
                   <ul className="contact-mega__links">
                     <li><Link href="/branches" onClick={handleNavigation}>Branches and ATMs</Link></li>
+                    <li><Link href="/contact-details" onClick={handleNavigation}>Contact Details</Link></li>
                   </ul>
                 </li>
 
-                <li className="contact-mega__column">
-                  <Link href={CAREER_PATH} onClick={handleNavigation} className="contact-mega__heading">
-                    Work With Us
-                  </Link>
-                  <ul className="contact-mega__links">
-                    <li><Link href={CAREER_PATH} onClick={handleNavigation}>Career</Link></li>
-                  </ul>
-                </li>
               </ul>
             </li>
 

@@ -17,6 +17,8 @@ const ALL_CARDS = [
     tagline: 'Simple, dependable, tax-free.',
     desc: 'The foundation savings account for every MEMPCO member, opened with just ₱100 and designed for everyday accessibility and steady tax-free growth.',
     details: ['₱100 opening deposit', '4% per annum, tax-free', 'Withdrawal upon demand', 'Open to all members'],
+    image: '/Savings/RegularSavingsPassbook.png',
+    imageAlt: 'Regular Savings passbook',
     href: '/services/savings/regular-savings',
     theme: 'dark',
   },
@@ -29,6 +31,8 @@ const ALL_CARDS = [
     tagline: 'Built for OFWs and families.',
     desc: 'A wealth-building savings program for Overseas Filipinos and their families, offering higher tax-free returns and long-term growth potential.',
     details: ['4.5%–7% per annum', 'Tax-free earnings', 'Up to ₱5,000,000 deposit', 'For OFWs and OF families'],
+    image: '/Savings/KKTPassbook.png',
+    imageAlt: 'KKT passbook',
     href: '/services/savings/kkt',
     theme: 'red',
   },
@@ -41,6 +45,8 @@ const ALL_CARDS = [
     tagline: 'Discipline, rewarded.',
     desc: 'A fixed-term savings option for members who want stronger returns, better spending control, and flexible placements from short to longer terms.',
     details: ['Up to 6.75% per annum', '1 month to 1 year term', 'Interest credited at maturity', 'Ideal for planned savings goals'],
+    image: '/Savings/TimeDeposit.png',
+    imageAlt: 'Time Deposit passbook',
     href: '/services/savings/time-deposit',
     theme: 'light',
   },
@@ -77,6 +83,8 @@ const ALL_CARDS = [
     tagline: 'Coverage for members and families.',
     desc: 'A full insurance catalog covering life insurance, family-oriented plans, loan protection, and non-life coverage for property, vehicles, and calamities.',
     details: ['16 insurance products', 'Life and family plans', 'Loan protection options', 'Non-life coverage available'],
+    image: '/Services/COOPAssurance.png',
+    imageAlt: 'COOP Assurance logo',
     href: '/services/insurance',
     theme: 'light',
   },
@@ -101,6 +109,8 @@ const ALL_CARDS = [
     tagline: 'Compassionate memorial support.',
     desc: 'Structured funeral and memorial assistance with service packages, chapel rates, urn viewing arrangements, add-ons, and 24/7 coordination support.',
     details: ['7 funeral packages', '5 chapel rate tiers', 'Urn viewing services', '24/7 on-call coordination'],
+    image: '/Services/LHFDM%20LOGO.png',
+    imageAlt: 'La Hermosa Funeraria de MEMPCO logo',
     href: '/services/funeral',
     theme: 'red',
   },
@@ -125,6 +135,8 @@ const ALL_CARDS = [
     tagline: 'Save money. Learn life.',
     desc: 'A school-based youth savings program that combines financial literacy, values formation, and guided social development through the Aflatoun curriculum.',
     details: ['₱50 opening deposit', '3% per annum from ₱500', 'Free membership', 'For school-based youth savers'],
+    image: '/Savings/AflatounPassbook.png',
+    imageAlt: 'Aflatoun Savings passbook',
     href: '/services/savings/aflatoun-savings',
     theme: 'dark',
   },
@@ -137,6 +149,8 @@ const ALL_CARDS = [
     tagline: 'Start early. Finish strong.',
     desc: 'A youth-oriented savings account for children of members, helping young savers build discipline early through accessible deposits and steady interest earnings.',
     details: ['₱50 membership fee', '₱50 initial deposit', '3% per annum', 'For youth and kids savers'],
+    image: '/Savings/YouthandKidsPassbook.png',
+    imageAlt: 'Youth Savings passbook',
     href: '/services/savings/youth-savings',
     theme: 'red',
   },
@@ -145,8 +159,16 @@ const ALL_CARDS = [
 const PILLARS = [
   { id: '01', label: 'Savings & Credit', count: 5 },
   { id: '02', label: 'Allied Services', count: 4 },
-  { id: '03', label: 'Laboratory Cooperative', count: 2 },
+  {
+    id: '03',
+    label: 'Laboratory Cooperative',
+    count: 2,
+    logo: '/MLC/MLC.png',
+    logoAlt: 'MEMPCO Laboratory Cooperative logo',
+  },
 ]
+
+const DEFAULT_SERVICE_IMAGE = '/Logos/Logo.png'
 
 function FanCarousel({ cards, activeIndex, onSelect }) {
   const n = cards.length
@@ -193,7 +215,15 @@ function FanCarousel({ cards, activeIndex, onSelect }) {
               </div>
 
               <div className="fc-main">
-                <h3 className="fc-name">{card.name}</h3>
+                <div className="fc-title-row">
+                  <h3 className="fc-name">{card.name}</h3>
+                  <img
+                    src={card.image || DEFAULT_SERVICE_IMAGE}
+                    alt={card.imageAlt || 'MEMPCO logo'}
+                    className={`fc-service-image${card.image ? '' : ' fc-service-image--default'}`}
+                    loading="lazy"
+                  />
+                </div>
                 <p className="fc-tagline">{card.tagline}</p>
               </div>
 
@@ -291,9 +321,6 @@ export default function Services() {
                 <a href="#carousel" className="sp-hero-cta sp-hero-cta--solid">
                   Explore Services
                 </a>
-                <a href="#all-services" className="sp-hero-cta sp-hero-cta--ghost">
-                  View All
-                </a>
               </div>
 
               <div className="sp-hero-meta"></div>
@@ -346,7 +373,16 @@ export default function Services() {
 
           <div className="sp-carousel-col">
             <div className="sp-carousel-head">
-              <p className="sp-section-kicker">{PILLARS[activePillar].label}</p>
+              <div className="sp-carousel-heading-row">
+                <p className="sp-section-kicker">{PILLARS[activePillar].label}</p>
+                {PILLARS[activePillar].logo && (
+                  <img
+                    src={PILLARS[activePillar].logo}
+                    alt={PILLARS[activePillar].logoAlt}
+                    className="sp-carousel-pillar-logo"
+                  />
+                )}
+              </div>
               <p className="sp-carousel-sub">
                 {pillarCards.length} services · select any card to read details
               </p>
@@ -381,12 +417,29 @@ export default function Services() {
                   <div className="sp-list-group-head">
                     <span className="sp-list-num">{p.id}</span>
                     <span className="sp-list-group-name">{p.label}</span>
+                    {p.logo && (
+                      <img
+                        src={p.logo}
+                        alt={p.logoAlt}
+                        className="sp-list-group-logo"
+                      />
+                    )}
                   </div>
 
                   {ALL_CARDS.filter((c) => c.pillar === p.id).map((c) => (
                     <div key={c.id} className="sp-list-row">
                       <span className="sp-list-eyebrow">{c.eyebrow}</span>
-                      <span className="sp-list-service-name">{c.name}</span>
+                      <span className="sp-list-service-main">
+                        <img
+                          src={c.image || DEFAULT_SERVICE_IMAGE}
+                          alt=""
+                          className={`sp-list-service-image${
+                            c.image ? '' : ' sp-list-service-image--default'
+                          }`}
+                          loading="lazy"
+                        />
+                        <span className="sp-list-service-name">{c.name}</span>
+                      </span>
 
                       {c.href ? (
                         <Link href={c.href} className="sp-list-arrow" aria-label={`View ${c.name}`}>

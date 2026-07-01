@@ -292,10 +292,6 @@ export default function NewsEvents() {
             Stay updated with the latest MEMPCO recognitions, community
             activities, safety initiatives, partnerships, and cooperative events.
           </p>
-
-          <Link href="/news" className="ne-header-cta">
-            View all stories <ArrowIcon />
-          </Link>
         </header>
 
         {loading && !featured && (
@@ -345,10 +341,6 @@ export default function NewsEvents() {
                   <span className="ne-cta-btn__icon" aria-hidden="true">
                     <ArrowIcon />
                   </span>
-                </Link>
-
-                <Link href="/news" className="ne-ghost-btn">
-                  View events
                 </Link>
               </div>
             </div>
@@ -433,6 +425,12 @@ export default function NewsEvents() {
               </Link>
             ))}
           </div>
+        </div>
+
+        <div className="ne-footer-actions ne-reveal ne-reveal--up" data-reveal>
+          <Link href="/news" className="ne-all-cta">
+            View all <ArrowIcon />
+          </Link>
         </div>
       </div>
     </section>

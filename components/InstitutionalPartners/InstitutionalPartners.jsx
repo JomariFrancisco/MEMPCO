@@ -4,21 +4,50 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import './InstitutionalPartners.css';
 
 const PARTNERS = [
-  { name: 'name', image: '/Partners/partner1.png' },
-  { name: 'name', image: '/Partners/partner2.png' },
-  { name: 'name', image: '/Partners/partner3.png' },
-  { name: 'name', image: '/Partners/partner4.png' },
-  { name: 'name', image: '/Partners/partner5.png' },
-  { name: 'name', image: '/Partners/partner6.png' },
-  { name: 'name', image: '/Partners/partner7.png' },
-  { name: 'name', image: '/Partners/partner8.png' },
-  { name: 'name', image: '/Partners/partner9.png' },
-  { name: 'name', image: '/Partners/partner10.png' },
-  { name: 'name', image: '/Partners/partner11.png' },
-  { name: 'name', image: '/Partners/partner12.png' },
-  { name: 'name', image: '/Partners/partner13.png' },
-  { name: 'name', image: '/Partners/partner14.png' },
-  { name: 'name', image: '/Partners/partner15.png' },
+  { name: 'ACCU', image: '/Affiliates/ACCU.png', accent: '#16a34a', ink: '#14532d' },
+  {
+    name: 'Banco Cooperative De Zamboanga',
+    image: '/Affiliates/Banco%20Cooperative%20De%20Zamboanga.png',
+    accent: '#dc2626',
+    ink: '#7f1d1d',
+    logoScale: 1.1,
+  },
+  { name: 'CIMAC', image: '/Affiliates/CIMAC.png', accent: '#2563eb', ink: '#1e3a8a' },
+  {
+    name: 'Co-operative College of the Philippines',
+    image: '/Affiliates/CO-OPERATIVE%20COLLEGE%20OF%20THE%20PH.png',
+    accent: '#1d4ed8',
+    ink: '#172554',
+  },
+  { name: 'COOP Chamber', image: '/Affiliates/COOP%20CHAMBER.png', accent: '#f97316', ink: '#7c2d12' },
+  {
+    name: 'Cooperative Insurance of the Philippines',
+    image: '/Affiliates/COOPERATIVE%20INSURANCE%20OF%20THE%20PH.png',
+    accent: '#0f766e',
+    ink: '#134e4a',
+  },
+  { name: 'LANDBANK', image: '/Affiliates/LANDBANK.png', accent: '#15803d', ink: '#14532d' },
+  { name: 'MASS-SPECC', image: '/Affiliates/MASS-SPECC.png', accent: '#7c3aed', ink: '#4c1d95' },
+  { name: 'NAFE COOP', image: '/Affiliates/NAFE%20COOP.png', accent: '#2736a3', ink: '#172554' },
+  { name: 'NATCO', image: '/Affiliates/NATCO.png', accent: '#f28c28', ink: '#7c2d12' },
+  {
+    name: 'Western Mindanao Federation of Cooperatives',
+    image: '/Affiliates/WESTERN%20MINDANAO%20FEDERATION%20OF%20THE%20COOPERATIVE.png',
+    accent: '#ef4444',
+    ink: '#7f1d1d',
+  },
+  {
+    name: 'Zamboanga City Cooperative Development Council',
+    image: '/Affiliates/Zamboanga%20City%20Cooperative%20Development%20Council.png',
+    accent: '#dc2626',
+    ink: '#7f1d1d',
+  },
+  {
+    name: 'Zamboanga City Union of Cooperatives',
+    image: '/Affiliates/ZAMBOANGA%20CITY%20UNION%20OF%20COOPERATIVE.png',
+    accent: '#f59e0b',
+    ink: '#78350f',
+  },
 ];
 
 const getShuffleDelay = (offset) => {
@@ -183,8 +212,8 @@ export default function InstitutionalPartners() {
     const rect = event.currentTarget.getBoundingClientRect();
 
     setTilt({
-      x: (0.5 - (event.clientY - rect.top) / rect.height) * 12,
-      y: ((event.clientX - rect.left) / rect.width - 0.5) * 12,
+      x: (0.5 - (event.clientY - rect.top) / rect.height) * 10,
+      y: ((event.clientX - rect.left) / rect.width - 0.5) * 10,
     });
   };
 
@@ -241,6 +270,9 @@ export default function InstitutionalPartners() {
                   style={{
                     ...getShuffleVars(partner.offset),
                     '--shuffle-delay': getShuffleDelay(partner.offset),
+                    '--affiliate-accent': partner.accent,
+                    '--affiliate-ink': partner.ink,
+                    '--affiliate-logo-scale': partner.logoScale || 1,
                   }}
                 >
                   <div className="partner-card__inner">
@@ -266,10 +298,10 @@ export default function InstitutionalPartners() {
                           draggable={false}
                         />
                       </div>
+                    </div>
 
-                      <div className="partner-card__content">
-                        <h3>{partner.name}</h3>
-                      </div>
+                    <div className="partner-card__content">
+                      <h3>{partner.name}</h3>
                     </div>
 
                     {partner.offset === 0 && (

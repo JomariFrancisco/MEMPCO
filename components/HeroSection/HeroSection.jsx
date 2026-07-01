@@ -5,30 +5,8 @@ import './HeroSection.css';
 
 /* Constants */
 
-const FIRST_VISUAL_VISIBLE_MS = 5000;
-const VISUAL_FADE_MS = 900;
+const VIDEO_INTRO_VISIBLE_MS = 7000;
 const FEATURE_SLIDE_VISIBLE_MS = 9000;
-
-const SERVICE_TAGS = [
-  'Savings & Credit',
-  'Allied Services',
-  'Cooperative Laboratory',
-];
-
-const TAGLINE_PHRASES = [
-  'Helping people help themselves.',
-  'Serving Zamboanga since 2002.',
-  'Community-driven financial growth.',
-  'Empowering micro-entrepreneurs.',
-];
-
-const HERO_VISUALS = {
-  anniversary: {
-    src: '/Hero/24Years&Logo.png',
-    alt: 'MEMPCO - 24 Years in Service',
-    imageClass: 'hero__visual-image hero__visual-image--anniversary',
-  },
-};
 
 const SECOND_HERO = {
   backgroundSrc: '/Funeral/FuneralBG.png',
@@ -148,10 +126,9 @@ export default function HeroSection() {
   const sectionRef = useRef(null);
   const canvasRef = useRef(null);
   const progressRef = useRef(null);
+  const videoRef = useRef(null);
 
   const [activeSlide, setActiveSlide] = useState(0);
-  const [isVisualVisible, setIsVisualVisible] = useState(true);
-  const [typedTagline, setTypedTagline] = useState('');
 
   /* Automatic hero structure carousel */
   useEffect(() => {
@@ -163,16 +140,9 @@ export default function HeroSection() {
     };
 
     if (activeSlide === 0) {
-      setIsVisualVisible(true);
-
-      addTimer(() => {
-        setIsVisualVisible(false);
-      }, FIRST_VISUAL_VISIBLE_MS);
-
       addTimer(() => {
         setActiveSlide((current) => (current + 1) % SLIDE_CLASS_NAMES.length);
-        setIsVisualVisible(true);
-      }, FIRST_VISUAL_VISIBLE_MS + VISUAL_FADE_MS);
+      }, VIDEO_INTRO_VISIBLE_MS);
     } else {
       addTimer(() => {
         setActiveSlide((current) => (current + 1) % SLIDE_CLASS_NAMES.length);
@@ -184,56 +154,14 @@ export default function HeroSection() {
     };
   }, [activeSlide]);
 
-  /* Tagline typewriter */
+  /* Restart video intro whenever it becomes active */
   useEffect(() => {
-    let phraseIndex = 0;
-    let charIndex = 0;
-    let isDeleting = false;
-    let timerId;
+    const video = videoRef.current;
+    if (!video || activeSlide !== 0) return;
 
-    const TYPE_SPEED = 52;
-    const DELETE_SPEED = 28;
-    const PAUSE_AFTER_TYPING = 2200;
-    const PAUSE_BEFORE_TYPING = 420;
-    const START_DELAY = 450;
-
-    const typeLoop = () => {
-      const currentPhrase = TAGLINE_PHRASES[phraseIndex];
-
-      if (!isDeleting) {
-        charIndex = Math.min(charIndex + 1, currentPhrase.length);
-        setTypedTagline(currentPhrase.slice(0, charIndex));
-
-        if (charIndex === currentPhrase.length) {
-          isDeleting = true;
-          timerId = window.setTimeout(typeLoop, PAUSE_AFTER_TYPING);
-          return;
-        }
-
-        timerId = window.setTimeout(typeLoop, TYPE_SPEED);
-        return;
-      }
-
-      charIndex = Math.max(charIndex - 1, 0);
-      setTypedTagline(currentPhrase.slice(0, charIndex));
-
-      if (charIndex === 0) {
-        isDeleting = false;
-        phraseIndex = (phraseIndex + 1) % TAGLINE_PHRASES.length;
-        timerId = window.setTimeout(typeLoop, PAUSE_BEFORE_TYPING);
-        return;
-      }
-
-      timerId = window.setTimeout(typeLoop, DELETE_SPEED);
-    };
-
-    setTypedTagline('');
-    timerId = window.setTimeout(typeLoop, START_DELAY);
-
-    return () => {
-      window.clearTimeout(timerId);
-    };
-  }, []);
+    video.currentTime = 0;
+    video.play().catch(() => {});
+  }, [activeSlide]);
 
   /* Particles */
   useEffect(() => {
@@ -331,8 +259,6 @@ export default function HeroSection() {
     };
   }, []);
 
-  const currentVisual = HERO_VISUALS.anniversary;
-
   return (
     <section
       ref={sectionRef}
@@ -345,6 +271,15 @@ export default function HeroSection() {
       </div>
 
       <div className="hero__bg" aria-hidden="true">
+        <video
+          ref={videoRef}
+          className={`hero__video hero__video--main ${activeSlide === 0 ? 'is-active' : ''}`}
+          src="/Videos/Hero Section 1.mp4"
+          autoPlay
+          muted
+          playsInline
+          preload="metadata"
+        />
         <div className={`hero__backdrop hero__backdrop--main ${activeSlide === 0 ? 'is-active' : ''}`} />
         <div className={`hero__backdrop hero__backdrop--memorial ${activeSlide === 1 ? 'is-active' : ''}`} />
         <div className={`hero__backdrop hero__backdrop--insurance ${activeSlide === 2 ? 'is-active' : ''}`} />
@@ -371,45 +306,8 @@ export default function HeroSection() {
           <div
             className={`hero__slide hero__slide--main ${activeSlide === 0 ? 'is-active' : ''}`}
             aria-hidden={activeSlide !== 0}
-          >
-            <div className="hero__content">
-              <div className="hero__copy">
-                <h1 className="hero__sr-title">MEMPCO Cooperative</h1>
-                <span className="hero__eyebrow" aria-hidden="true">
-                  Trusted Cooperative - Zamboanga City
-                </span>
-
-                <p className="hero__tagline">
-                  <span className="hero__tagline-rule" aria-hidden="true" />
-                  <span className="hero__tagline-text" aria-live="polite">
-                    {typedTagline}
-                  </span>
-                  <span className="hero__tagline-cursor" aria-hidden="true" />
-                  <span className="hero__tagline-rule" aria-hidden="true" />
-                </p>
-              </div>
-
-              <div className="hero__visual">
-                <div className="hero__tilt-wrapper">
-                  <div className={`hero__visual-stage ${isVisualVisible ? '' : 'is-hidden'}`}>
-                    <img
-                      src={currentVisual.src}
-                      alt={currentVisual.alt}
-                      className={currentVisual.imageClass}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="hero__services">
-                {SERVICE_TAGS.map((label) => (
-                  <span key={label} className="hero__service-chip">
-                    {label}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </div>
+            aria-label="MEMPCO members video introduction"
+          />
 
           <div
             className={`hero__slide hero__slide--memorial ${activeSlide === 1 ? 'is-active' : ''}`}

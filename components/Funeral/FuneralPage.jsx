@@ -623,31 +623,6 @@ function FuneralPackageCard({ item, index }) {
         </div>
       </div>
 
-      <div className="fun-package-body">
-        <div className="fun-package-column">
-          <h4>What&apos;s included</h4>
-          <ul className="fun-package-list">
-            {item.inclusions.map((detail) => (
-              <li className="fun-package-list-item" key={detail}>
-                <span className="fun-package-list-dot" aria-hidden="true" />
-                <span>{detail}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        <div className="fun-package-column">
-          <h4>Additional inclusions</h4>
-          <ul className="fun-package-list">
-            {item.addOns.map((detail) => (
-              <li className="fun-package-list-item" key={detail}>
-                <span className="fun-package-list-dot" aria-hidden="true" />
-                <span>{detail}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </div>
     </article>
   );
 }

@@ -203,6 +203,35 @@
   background: var(--nav-accent-soft);
 }
 
+.navbar.top .nav-link.active,
+.navbar.top .nav-trigger.active {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.navbar.scrolled .nav-link.active,
+.navbar.scrolled .nav-trigger.active {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.nav-link.active::after,
+.nav-trigger.active::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 3px;
+  width: 18px;
+  height: 2px;
+  border-radius: 999px;
+  background: var(--nav-accent);
+  transform: translateX(-50%);
+}
+
 .arrow,
 .dropdown-mini-arrow {
   width: 7px;
@@ -270,12 +299,15 @@
   width: 100%;
   min-width: 0;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: clamp(2rem, 7vw, 7rem);
-  padding: 2.5rem clamp(3rem, 12vw, 14rem) 3rem;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: clamp(2rem, 5vw, 5rem);
+  padding: 2.5rem clamp(3rem, 8vw, 11rem) 3rem;
+  border-top: 3px solid var(--nav-accent);
   border-radius: 0;
 }
 
+.membership-dropdown-menu,
+.whats-new-dropdown-menu,
 .contact-dropdown-menu {
   position: fixed;
   top: var(--navbar-height);
@@ -284,20 +316,36 @@
   width: 100%;
   min-width: 0;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: clamp(3rem, 10vw, 10rem);
-  padding: 2.5rem clamp(3rem, 18vw, 20rem) 3rem;
+  gap: clamp(2rem, 5vw, 5rem);
+  padding: 2.5rem clamp(3rem, 8vw, 11rem) 3rem;
+  border-top: 3px solid var(--nav-accent);
   border-radius: 0;
 }
 
+.membership-dropdown-menu,
+.whats-new-dropdown-menu {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.contact-dropdown-menu {
+  grid-template-columns: minmax(260px, 420px);
+  justify-content: end;
+}
+
+.navbar.scrolled .membership-dropdown-menu,
+.navbar.scrolled .whats-new-dropdown-menu,
 .navbar.scrolled .contact-dropdown-menu {
   top: 60px;
 }
 
+.membership-mega__column,
+.whats-new-mega__column,
 .contact-mega__column {
   min-width: 0;
 }
 
+.membership-mega__heading,
+.whats-new-mega__heading,
 .contact-mega__heading {
   display: block;
   padding: 0 0 0.8rem;
@@ -309,10 +357,14 @@
   text-decoration: none;
 }
 
+.membership-mega__heading:hover,
+.whats-new-mega__heading:hover,
 .contact-mega__heading:hover {
   color: var(--nav-accent);
 }
 
+.membership-mega__links,
+.whats-new-mega__links,
 .contact-mega__links {
   display: grid;
   margin: 0;
@@ -320,12 +372,16 @@
   list-style: none;
 }
 
+.membership-mega__links li,
+.whats-new-mega__links li,
 .contact-mega__links li {
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
+.membership-mega__links a,
+.whats-new-mega__links a,
 .contact-mega__links a {
   display: block;
   padding: 0.72rem 0;
@@ -339,6 +395,8 @@
     transform 0.18s ease;
 }
 
+.membership-mega__links a:hover,
+.whats-new-mega__links a:hover,
 .contact-mega__links a:hover {
   color: var(--nav-accent);
   transform: translateX(3px);
@@ -727,6 +785,8 @@
   .nav-dropdown-menu,
   .services-dropdown-menu,
   .about-dropdown-menu,
+  .membership-dropdown-menu,
+  .whats-new-dropdown-menu,
   .contact-dropdown-menu {
     position: static;
     top: auto;
@@ -771,6 +831,56 @@
     gap: 0;
     padding: 0.35rem 0 0.35rem 0.7rem;
     border-top: 0;
+  }
+
+  .membership-dropdown-menu,
+  .whats-new-dropdown-menu {
+    display: none;
+    grid-template-columns: 1fr;
+    gap: 0;
+    padding: 0.35rem 0 0.35rem 0.7rem;
+    border-top: 0;
+  }
+
+  .nav-dropdown.open > .membership-dropdown-menu,
+  .nav-dropdown.open > .whats-new-dropdown-menu {
+    display: grid;
+  }
+
+  .membership-mega__column,
+  .whats-new-mega__column {
+    padding: 0.45rem 0;
+    border-bottom: 1px solid rgba(15, 23, 42, 0.07);
+  }
+
+  .membership-mega__column:last-child,
+  .whats-new-mega__column:last-child {
+    border-bottom: 0;
+  }
+
+  .membership-mega__heading,
+  .whats-new-mega__heading {
+    padding: 0.55rem 0.68rem;
+    border-bottom: 0;
+    font-size: 0.96rem;
+  }
+
+  .membership-mega__links,
+  .whats-new-mega__links {
+    padding-left: 0.65rem;
+  }
+
+  .membership-mega__links a,
+  .whats-new-mega__links a {
+    padding: 0.55rem 0.68rem;
+    border-radius: 5px;
+    font-size: 0.92rem;
+  }
+
+  .membership-mega__links a:hover,
+  .whats-new-mega__links a:hover {
+    background: var(--nav-accent-soft);
+    transform: none;
   }
 
   .nav-dropdown.open > .contact-dropdown-menu {

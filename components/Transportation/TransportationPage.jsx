@@ -1,200 +1,142 @@
 import './TransportationPage.css';
 
-const transportSections = [
+const serviceAreas = [
   {
     id: 'service-overview',
-    chip: 'Overview',
-    meta: 'Coming soon',
-    eyebrow: 'Transportation Service',
-    title: 'Service Overview',
-    desc: 'Coming soon...',
-    accent: 'Coming soon...',
-    panelLabel: 'Service',
-    panelValue: 'Transport',
-    panelSub: 'Coming soon...',
-    details: [
-      { name: 'Coverage', note: null, value: 'Coming soon...' },
-      { name: 'Availability', note: null, value: 'Coming soon...' },
-      { name: 'Service Area', note: null, value: 'Coming soon...' },
-      { name: 'Requirements', note: null, value: 'Coming soon...' },
-    ],
+    kicker: '01 · Overview',
+    title: 'Service coverage',
+    text: 'Vehicle coverage, service areas, and availability will be published here.',
+    label: 'Coverage',
   },
   {
     id: 'booking-coordination',
-    chip: 'Scheduling',
-    meta: 'Coming soon',
-    eyebrow: 'Booking & Coordination',
-    title: 'Booking and Coordination',
-    desc: 'Coming soon...',
-    accent: 'Coming soon...',
-    panelLabel: 'Process',
-    panelValue: 'Booking',
-    panelSub: 'Coming soon...',
-    details: [
-      { name: 'Reservation', note: null, value: 'Coming soon...' },
-      { name: 'Trip Schedule', note: null, value: 'Coming soon...' },
-      { name: 'Pick-up Details', note: null, value: 'Coming soon...' },
-      { name: 'Confirmation', note: null, value: 'Coming soon...' },
-    ],
+    kicker: '02 · Scheduling',
+    title: 'Booking coordination',
+    text: 'Reservation steps, schedules, and pick-up arrangements will be organized here.',
+    label: 'Booking',
   },
   {
     id: 'guidelines-reminders',
-    chip: 'Guidelines',
-    meta: 'Coming soon',
-    eyebrow: 'Guidelines & Reminders',
-    title: 'Guidelines and Reminders',
-    desc: 'Coming soon...',
-    accent: 'Coming soon...',
-    panelLabel: 'Guide',
-    panelValue: 'Travel',
-    panelSub: 'Coming soon...',
-    details: [
-      { name: 'Policies', note: null, value: 'Coming soon...' },
-      { name: 'Member Guidance', note: null, value: 'Coming soon...' },
-      { name: 'Travel Notes', note: null, value: 'Coming soon...' },
-      { name: 'Service Rules', note: null, value: 'Coming soon...' },
-    ],
+    kicker: '03 · Guidelines',
+    title: 'Travel guidance',
+    text: 'Member requirements, service rules, and travel reminders will be listed here.',
+    label: 'Guidance',
   },
-];
-
-const stats = [
-  { value: '01', label: 'Transportation Service' },
-  { value: 'MEMPCO', label: 'Allied Service' },
-  { value: 'Soon', label: 'Full details' },
-  { value: 'Soon', label: 'Availability info' },
 ];
 
 const processCards = [
-  {
-    step: '01',
-    title: 'Inquiry',
-    text: 'Coming soon...',
-  },
-  {
-    step: '02',
-    title: 'Scheduling',
-    text: 'Coming soon...',
-  },
-  {
-    step: '03',
-    title: 'Confirmation',
-    text: 'Coming soon...',
-  },
+  { step: '01', title: 'Send an inquiry', text: 'Ask about the service and intended trip.' },
+  { step: '02', title: 'Coordinate details', text: 'Confirm the schedule, route, and member requirements.' },
+  { step: '03', title: 'Receive confirmation', text: 'Final arrangements will be confirmed by MEMPCO.' },
 ];
+
+function TransportIcon() {
+  return (
+    <svg viewBox="0 0 240 180" aria-hidden="true">
+      <path d="M50 118h140l-14-48c-3-11-12-18-23-18H87c-11 0-20 7-23 18l-14 48Z" />
+      <path d="M42 118h156v22H42z" />
+      <path d="M73 52 58 93M167 52l15 41M75 93h90" />
+      <circle cx="76" cy="142" r="15" />
+      <circle cx="164" cy="142" r="15" />
+      <path d="M31 86h22M187 86h22M92 72h56" />
+    </svg>
+  );
+}
 
 export default function TransportationPage() {
   return (
     <div className="tp">
       <section className="tp-section tp-hero" aria-labelledby="tp-heading">
-        <div className="tp-inner">
-          <nav className="tp-breadcrumb" aria-label="Breadcrumb">
-            <span>Services</span>
-            <span className="tp-breadcrumb-sep">/</span>
-            <span>Allied Services</span>
-            <span className="tp-breadcrumb-sep">/</span>
-            <span className="tp-breadcrumb-active">Transportation</span>
-          </nav>
+        <div className="tp-inner tp-hero-grid">
+          <div className="tp-hero-copy">
+            <nav className="tp-breadcrumb" aria-label="Breadcrumb">
+              <span>Services</span><span>/</span><span>Allied Services</span><span>/</span>
+              <span className="tp-breadcrumb-active">Transportation</span>
+            </nav>
 
-          <span className="tp-eyebrow">MEMPCO Allied Services</span>
+            <p className="tp-eyebrow">MEMPCO Allied Services</p>
+            <h1 className="tp-hero-title" id="tp-heading">
+              Transportation
+              <span>Service.</span>
+            </h1>
+            <p className="tp-hero-tagline">
+              A dedicated page for member transportation support, scheduling, and
+              service guidance. Full operational details are coming soon.
+            </p>
 
-          <h1 className="tp-hero-title" id="tp-heading">
-            Transportation.
-            <br />
-            <span className="accent">For members.</span>
-          </h1>
+            <div className="tp-hero-links">
+              {serviceAreas.map((item) => (
+                <a href={`#${item.id}`} className="tp-hero-link" key={item.id}>
+                  <span>{item.kicker}</span>
+                  <strong>{item.title}</strong>
+                </a>
+              ))}
+            </div>
+          </div>
 
-          <p className="tp-hero-tagline">
-            Coming soon...
-          </p>
-
-          <div className="tp-section-chips">
-            {transportSections.map((section) => (
-              <a href={`#${section.id}`} className="tp-section-chip" key={section.id}>
-                <span className="tp-section-chip-name">{section.chip}</span>
-                <span className="tp-section-chip-meta">{section.meta}</span>
-              </a>
-            ))}
+          <div className="tp-hero-visual" aria-label="Transportation service preview">
+            <div className="tp-visual-mark"><TransportIcon /></div>
+            <p className="tp-visual-kicker">Transportation support</p>
+            <h2>Member mobility, coordinated clearly.</h2>
+            <div className="tp-visual-grid">
+              <div><strong>Inquiry</strong><span>Service availability</span></div>
+              <div><strong>Schedule</strong><span>Trip coordination</span></div>
+              <div><strong>Confirm</strong><span>Final arrangements</span></div>
+            </div>
           </div>
         </div>
       </section>
 
-      <section className="tp-section tp-stats" aria-label="Key figures">
+      <section className="tp-section tp-stats" aria-label="Transportation status">
+        <div className="tp-inner tp-stats-grid">
+          <div><strong>01</strong><span>Allied service</span></div>
+          <div><strong>03</strong><span>Service stages</span></div>
+          <div><strong>Member</strong><span>Focused support</span></div>
+          <div><strong>Soon</strong><span>Full service details</span></div>
+        </div>
+      </section>
+
+      <section className="tp-section tp-overview" aria-labelledby="tp-overview-heading">
         <div className="tp-inner">
-          <div className="tp-stats-grid">
-            {stats.map((stat, index) => (
-              <div className="tp-stat" key={index}>
-                <span className="tp-stat-value">{stat.value}</span>
-                <span className="tp-stat-label">{stat.label}</span>
-              </div>
+          <div className="tp-section-head">
+            <p className="tp-section-kicker">Service overview</p>
+            <h2 className="tp-section-title" id="tp-overview-heading">
+              Transportation information, organized clearly.
+            </h2>
+            <p className="tp-section-text">
+              Each part of the service will have a defined place for coverage,
+              scheduling, requirements, and member guidance.
+            </p>
+          </div>
+
+          <div className="tp-overview-grid">
+            {serviceAreas.map((item) => (
+              <article className="tp-overview-card" id={item.id} key={item.id}>
+                <span>{item.kicker}</span>
+                <h3>{item.title}</h3>
+                <p>{item.text}</p>
+                <strong>{item.label} · Coming soon</strong>
+              </article>
             ))}
           </div>
-        </div>
-      </section>
-
-      <section className="tp-section tp-intro" aria-label="Transportation introduction">
-        <div className="tp-inner">
-          <p className="tp-intro-kicker">Transportation Support</p>
-          <h2 className="tp-intro-title">Transportation service details are <em>on the way.</em></h2>
-          <p className="tp-intro-sub">
-            Coming soon...
-          </p>
-        </div>
-      </section>
-
-      <section className="tp-section tp-details" aria-label="Transportation details">
-        <div className="tp-inner">
-          {transportSections.map((section) => (
-            <article className="tp-detail-card" id={section.id} key={section.id}>
-              <div className="tp-detail-header">
-                <div className="tp-detail-header-left">
-                  <p className="tp-detail-eyebrow">{section.eyebrow}</p>
-                  <h2 className="tp-detail-title">{section.title}</h2>
-                  <p className="tp-detail-desc">{section.desc}</p>
-                  <span className="tp-detail-accent">{section.accent}</span>
-                </div>
-
-                <div className="tp-detail-panel">
-                  <span className="tp-detail-panel-label">{section.panelLabel}</span>
-                  <span className="tp-detail-panel-value">{section.panelValue}</span>
-                  <span className="tp-detail-panel-sub">{section.panelSub}</span>
-                </div>
-              </div>
-
-              <div className="tp-detail-list">
-                <div className="tp-detail-list-label" aria-hidden="true">
-                  <span>Detail</span>
-                  <span>Information</span>
-                </div>
-
-                {section.details.map((detail, index) => (
-                  <div className="tp-detail-row" key={index}>
-                    <div>
-                      <p className="tp-detail-name">{detail.name}</p>
-                      {detail.note && <p className="tp-detail-note">{detail.note}</p>}
-                    </div>
-                    <p className="tp-detail-value">{detail.value}</p>
-                  </div>
-                ))}
-              </div>
-            </article>
-          ))}
         </div>
       </section>
 
       <section className="tp-section tp-process" aria-labelledby="tp-process-heading">
         <div className="tp-inner">
-          <p className="tp-process-kicker">Process</p>
-          <h2 className="tp-process-title" id="tp-process-heading">
-            Service flow <em>coming soon.</em>
-          </h2>
-
+          <div className="tp-section-head">
+            <p className="tp-section-kicker">Service flow</p>
+            <h2 className="tp-section-title" id="tp-process-heading">
+              A simple three-step coordination process.
+            </h2>
+          </div>
           <div className="tp-process-grid">
-            {processCards.map((card, index) => (
-              <div className="tp-process-card" key={index}>
-                <p className="tp-process-step">{card.step}</p>
-                <p className="tp-process-card-title">{card.title}</p>
-                <p className="tp-process-card-text">{card.text}</p>
-              </div>
+            {processCards.map((card) => (
+              <article className="tp-process-card" key={card.step}>
+                <span>{card.step}</span>
+                <h3>{card.title}</h3>
+                <p>{card.text}</p>
+              </article>
             ))}
           </div>
         </div>
@@ -203,15 +145,9 @@ export default function TransportationPage() {
       <section className="tp-section tp-note" aria-labelledby="tp-note-heading">
         <div className="tp-inner">
           <div className="tp-note-inner">
-            <p className="tp-note-kicker">Transportation</p>
-            <h2 className="tp-note-title" id="tp-note-heading">
-              Full transportation information
-              <br />
-              <em>is coming soon...</em>
-            </h2>
-            <p className="tp-note-text">
-              Coming soon...
-            </p>
+            <p>Transportation service</p>
+            <h2 id="tp-note-heading">Complete service information is coming soon.</h2>
+            <span>Contact MEMPCO for current transportation inquiries and coordination.</span>
           </div>
         </div>
       </section>

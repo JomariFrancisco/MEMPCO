@@ -5472,3 +5472,103 @@ button {
     overflow-y: visible !important;
   }
 }
+
+/* Latest activity card: keep long ticket codes from overwhelming the dashboard. */
+.latest-activity-card .ticket-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: flex-start;
+  gap: 0.85rem;
+}
+
+.latest-activity-card .ticket-header-left {
+  min-width: 0;
+  flex: 1 1 auto;
+  gap: 0.45rem;
+}
+
+.latest-activity-card .ticket-header-left h4 {
+  margin: 0;
+  color: var(--text);
+  font-size: 1rem;
+  line-height: 1.25;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+}
+
+.latest-activity-card .ticket-date {
+  color: var(--softer);
+  font-size: 0.86rem;
+  font-weight: 800;
+  line-height: 1.35;
+  text-align: right;
+}
+
+.latest-activity-card .ticket-id {
+  display: block;
+  grid-column: 1 / -1;
+  width: 100%;
+  max-width: 100%;
+  padding: 0.52rem 0.65rem;
+  border-radius: var(--radius-md);
+  background: rgba(254, 226, 226, 0.6);
+  color: var(--red-500);
+  font-size: 0.79rem;
+  font-weight: 900;
+  line-height: 1.35;
+  letter-spacing: 0.045em;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+.latest-activity-card .ticket-badges {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.55rem;
+  margin: 0.15rem 0 0.25rem;
+}
+
+.latest-activity-card .status,
+.latest-activity-card .priority {
+  min-height: 34px;
+  padding: 0.34rem 0.72rem;
+  font-size: 0.82rem;
+  white-space: nowrap;
+  text-align: left;
+}
+
+.latest-activity-card .dashboard-ticket-info-grid {
+  gap: 0.62rem;
+}
+
+.latest-activity-card .dashboard-ticket-meta-cell {
+  padding: 0.68rem 0.72rem;
+}
+
+.latest-activity-card .dashboard-latest-description {
+  margin: 0;
+  max-height: 104px;
+  padding: 0.76rem 0.82rem;
+  color: #64748b;
+  font-size: 0.94rem;
+  line-height: 1.48;
+  overflow-wrap: anywhere;
+}
+
+.latest-activity-card .quick-action-btn.primary {
+  width: 100%;
+  min-height: 44px;
+  margin-top: 0.15rem;
+}
+
+@media (max-width: 520px) {
+  .latest-activity-card .ticket-header {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+
+  .latest-activity-card .ticket-date {
+    text-align: left;
+  }
+}

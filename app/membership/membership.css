@@ -86,6 +86,24 @@
   line-height: 1.75;
 }
 
+.membership-hero--simple {
+  min-height: 72vh;
+  text-align: center;
+}
+
+.membership-hero--simple .membership-shell {
+  display: grid;
+  justify-items: center;
+}
+
+.membership-hero--simple p:not(.membership-label) {
+  max-width: 720px;
+  margin: 1.5rem auto 0;
+  color: var(--membership-muted);
+  font-size: clamp(1.08rem, 1.5vw, 1.28rem);
+  line-height: 1.75;
+}
+
 .membership-hero__actions {
   display: flex;
   flex-wrap: wrap;

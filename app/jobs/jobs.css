@@ -561,6 +561,140 @@ html {
 /* ═══════════════════════════════════════
    SHOWCASE SCREEN
 ═══════════════════════════════════════ */
+@media (min-width: 1181px) {
+  .cp-hero {
+    height: 100svh;
+    min-height: 720px;
+    padding-top: 76px;
+    overflow: hidden;
+  }
+
+  .cp-hero-eyebrow-wrap {
+    top: 88px;
+  }
+
+  .cp-eyebrow {
+    min-height: 32px;
+    font-size: 0.74rem;
+  }
+
+  .cp-hero-shell {
+    height: calc(100svh - 76px);
+    min-height: 644px;
+    gap: clamp(1.7rem, 3vw, 3.4rem);
+    padding-top: 2.8rem;
+    padding-bottom: 1rem;
+  }
+
+  .cp-hero-title {
+    margin-top: 0;
+    margin-bottom: 0.85rem;
+    font-size: clamp(3.8rem, 5.7vw, 5.75rem);
+    line-height: 0.9;
+  }
+
+  .cp-hero-sub {
+    max-width: 590px;
+    margin-bottom: 1rem;
+    font-size: 1.08rem;
+    line-height: 1.55;
+  }
+
+  .cp-hero-actions {
+    gap: 0.7rem;
+    margin-bottom: 0.9rem;
+  }
+
+  .cp-hero-actions .cp-btn {
+    min-height: 44px;
+    padding-inline: 1.15rem;
+    font-size: 0.96rem;
+  }
+
+  .cp-hero-stats {
+    gap: 0.55rem;
+  }
+
+  .cp-hero-stat-card {
+    min-height: 62px;
+    padding: 0.62rem 0.72rem 0.56rem;
+    border-radius: 15px;
+  }
+
+  .cp-hero-stat-value {
+    font-size: 1.25rem;
+  }
+
+  .cp-hero-stat-label {
+    font-size: 0.65rem;
+  }
+
+  .cp-hero-panel {
+    gap: 0.55rem;
+    padding-left: 1.25rem;
+  }
+
+  .cp-hero-panel-badge {
+    min-height: 28px;
+    font-size: 0.72rem;
+  }
+
+  .cp-hero-panel-wordmark {
+    gap: 0;
+  }
+
+  .cp-hero-word--outline {
+    font-size: clamp(3.8rem, 5.3vw, 5.15rem);
+  }
+
+  .cp-hero-word--solid {
+    font-size: clamp(4.35rem, 6.2vw, 6rem);
+  }
+
+  .cp-hero-role-label {
+    margin-bottom: 0.3rem;
+    font-size: 0.7rem;
+  }
+
+  .cp-hero-role-title {
+    margin-bottom: 0.3rem;
+    font-size: clamp(1.15rem, 1.65vw, 1.45rem);
+  }
+
+  .cp-hero-role-text {
+    margin-bottom: 0.55rem;
+    font-size: 0.92rem;
+    line-height: 1.45;
+  }
+
+  .cp-hero-role-chips {
+    gap: 0.35rem;
+  }
+
+  .cp-hero-role-chips .cp-chip {
+    min-height: 27px;
+    padding: 0.3rem 0.62rem;
+    font-size: 0.68rem;
+  }
+
+  .cp-hero-process {
+    gap: 0.6rem;
+    padding-top: 0.65rem;
+  }
+
+  .cp-hero-process-item {
+    gap: 0.15rem;
+  }
+
+  .cp-hero-process-item span {
+    font-size: 0.68rem;
+  }
+
+  .cp-hero-process-item strong {
+    font-size: 0.82rem;
+  }
+}
+
 .cp-showcase-screen {
   background: linear-gradient(180deg, #FFFFFF 0%, #FBF8F7 100%);
   align-items: stretch;
