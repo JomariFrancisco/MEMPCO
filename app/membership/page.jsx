@@ -10,32 +10,30 @@ const MEMBERSHIP_STEPS = [
   {
     number: '01',
     title: 'Prepare your requirements',
-    text: 'Bring a valid government-issued ID, proof of billing, and two recent 2×2 ID pictures.',
+    text: 'Bring a valid government-issued ID and two recent 2x2 ID pictures.',
   },
   {
     number: '02',
-    title: 'Visit the main office',
-    text: 'Go to the MEMPCO main office at 3D–3E HC Marketing Building, Zamboanga City, from Monday to Friday, 8:00 AM to 4:00 PM.',
+    title: 'Visit nearest Branch',
+    text: 'Go to the nearest MEMPCO branch from Monday to Friday, 8:00 AM to 4:00 PM.',
   },
   {
     number: '03',
     title: 'Complete the application',
-    text: 'Fill out the Member Application Form with your personal, civil status, beneficiary, spouse, employment, or business information.',
+    text: 'Fill out the Member Application Form only.',
   },
   {
     number: '04',
     title: 'Pay the required fees',
-    text: 'Pay the applicable membership fee and minimum initial share capital. Confirm the current amounts with the MEMPCO office before payment.',
+    text: 'Pay the required fees: Associate - 300 for depositor, Regular - 1200 for loan.',
   },
 ];
 
 const PREPARATION_ITEMS = [
   'Valid government-issued ID',
-  'Latest proof of billing, such as a water or electric bill',
-  'Two recent 2×2 ID pictures',
-  'Personal information and civil status details',
-  'Spouse and beneficiary details, when applicable',
-  'Employment or business information',
+  'Two recent 2x2 ID pictures',
+  'Member Application Form',
+  'Pay membership package',
 ];
 
 const TERMS = [
@@ -68,6 +66,7 @@ const TERMS = [
 export default function MembershipPage() {
   const [hasAgreed, setHasAgreed] = useState(false);
   const [isAccepted, setIsAccepted] = useState(false);
+  const [hasReadTerms, setHasReadTerms] = useState(false);
 
   useEffect(() => {
     if (isAccepted) return undefined;
@@ -84,6 +83,15 @@ export default function MembershipPage() {
     };
   }, [isAccepted]);
 
+  const handleTermsScroll = (event) => {
+    const { scrollTop, scrollHeight, clientHeight } = event.currentTarget;
+    const isAtBottom = scrollTop + clientHeight >= scrollHeight - 8;
+
+    if (isAtBottom) {
+      setHasReadTerms(true);
+    }
+  };
+
   return (
     <>
       <Navbar />
@@ -93,10 +101,10 @@ export default function MembershipPage() {
           <div className="membership-shell membership-hero__inner">
             <div className="membership-hero__copy">
               <p className="membership-label">MEMPCO Membership</p>
-              <h1>Become part of a cooperative built around people.</h1>
+              <h1>Become part of a Cooperative built around people.</h1>
               <p className="membership-hero__text">
                 Follow this practical guide to prepare your documents, visit
-                the MEMPCO main office, complete your application, and begin
+                the nearest MEMPCO branch, complete your application, and begin
                 the membership process.
               </p>
 
@@ -116,7 +124,7 @@ export default function MembershipPage() {
         <section className="membership-section" id="membership-process">
           <div className="membership-shell">
             <header className="membership-section__header">
-              <p className="membership-label">Membership guide</p>
+              <p className="membership-label">Application guide</p>
               <h2>How to Become a Member</h2>
               <p>
                 Membership applications are submitted in person. Follow these
@@ -144,7 +152,7 @@ export default function MembershipPage() {
               <h2>Membership Requirements</h2>
               <p className="membership-preparation__intro">
                 Prepare the following documents and information before going
-                to the MEMPCO main office.
+                to the nearest MEMPCO branch.
               </p>
             </div>
 
@@ -167,7 +175,7 @@ export default function MembershipPage() {
               <p>
                 Download and print the application form, complete the required
                 information, and bring it with your supporting documents to
-                the MEMPCO main office.
+                the nearest MEMPCO branch.
               </p>
               <span>PDF document · 2.7 MB</span>
             </div>
@@ -226,7 +234,7 @@ export default function MembershipPage() {
               </p>
             </header>
 
-            <div className="membership-consent__body" tabIndex="0">
+            <div className="membership-consent__body" tabIndex="0" onScroll={handleTermsScroll}>
               {TERMS.map((term, index) => (
                 <article className="membership-term" key={term.title}>
                   <span>{String(index + 1).padStart(2, '0')}</span>
@@ -239,16 +247,22 @@ export default function MembershipPage() {
             </div>
 
             <footer className="membership-consent__footer">
-              <label className="membership-consent__check">
-                <input
-                  type="checkbox"
-                  checked={hasAgreed}
-                  onChange={(event) => setHasAgreed(event.target.checked)}
-                />
-                <span>
-                  I have read and agree to the Membership Terms and Conditions.
-                </span>
-              </label>
+              {hasReadTerms ? (
+                <label className="membership-consent__check">
+                  <input
+                    type="checkbox"
+                    checked={hasAgreed}
+                    onChange={(event) => setHasAgreed(event.target.checked)}
+                  />
+                  <span>
+                    I have read and agree to the Membership Terms and Conditions.
+                  </span>
+                </label>
+              ) : (
+                <p className="membership-consent__read-note">
+                  Scroll to the end of the terms to continue.
+                </p>
+              )}
 
               <div className="membership-consent__actions">
                 <Link href="/" className="membership-button membership-button--quiet">

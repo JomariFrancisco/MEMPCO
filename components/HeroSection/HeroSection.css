@@ -112,7 +112,7 @@
   filter: saturate(1) contrast(1) brightness(0.92);
 }
 
-.__backdrop--memorial {
+.n__backdrop--memorial {
   background-image: var(--hero-memorial-bg);
   background-position: center center;
   filter: saturate(0.95) contrast(0.98) brightness(0.78);

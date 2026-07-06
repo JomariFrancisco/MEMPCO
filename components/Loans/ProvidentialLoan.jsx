@@ -1,3 +1,6 @@
+'use client';
+
+import { useState } from 'react';
 import './Providential.css';
 
 const categories = [
@@ -17,13 +20,15 @@ const categories = [
         tone: '#DC2626',
         toneSoft: 'rgba(220, 38, 38, 0.10)',
         premiumLabel: 'Loan Amount',
-        premium: '₱5,000 – ₱30,000',
+        premium: 'Up to Php 50,000',
         period: 'household support',
         columns: ['Details'],
         rows: [
           { label: 'Purpose', values: ['Purchase of personal property or furniture.'] },
-          { label: 'Interest Rate', values: ['2% – 4% per month'] },
-          { label: 'Term', values: ['6 months to 1 year'] },
+          { label: 'Interest Rate', values: ['1.50% to 3% per month'] },
+          { label: 'Loan Amount', values: ['Maximum of Php 50,000'] },
+          { label: 'Term', values: ['6 to 12 months'] },
+          { label: 'Service Fee', values: ['4% service fee'] },
           { label: 'Mode of Payment', values: ['Weekly / Semi-Monthly / Monthly'] },
           {
             label: 'Eligibility',
@@ -48,7 +53,7 @@ const categories = [
         tone: '#4F6BED',
         toneSoft: 'rgba(79, 107, 237, 0.10)',
         premiumLabel: 'Loan Amount',
-        premium: '₱5,000 – ₱100,000',
+        premium: 'Php 30,000 - Php 100,000',
         period: 'employee support',
         columns: ['Details'],
         rows: [
@@ -56,8 +61,10 @@ const categories = [
             label: 'Purpose',
             values: ['Personal financial support for employed members with regular income.'],
           },
-          { label: 'Interest Rate', values: ['3% interest rate'] },
-          { label: 'Term', values: ['3 to 18 months'] },
+          { label: 'Interest Rate', values: ['1.50% to 3% per month'] },
+          { label: 'Loan Amount', values: ['Php 30,000 minimum; Php 100,000 maximum'] },
+          { label: 'Term', values: ['6 to 18 months'] },
+          { label: 'Service Fee', values: ['4% service fee'] },
           { label: 'Mode of Payment', values: ['Salary-based repayment setup'] },
           {
             label: 'Eligibility',
@@ -82,13 +89,15 @@ const categories = [
         tone: '#36A52E',
         toneSoft: 'rgba(54, 165, 46, 0.12)',
         premiumLabel: 'Loan Amount',
-        premium: '₱20,000 – ₱70,000',
+        premium: 'Up to Php 180,000',
         period: 'mobility support',
         columns: ['Details'],
         rows: [
           { label: 'Purpose', values: ['Purchase of a motorcycle.'] },
-          { label: 'Interest Rate', values: ['2% – 4% per month'] },
-          { label: 'Term', values: ['6 months to 3 years'] },
+          { label: 'Interest Rate', values: ['1.50% to 3% per month'] },
+          { label: 'Loan Amount', values: ['Maximum of Php 180,000'] },
+          { label: 'Term', values: ['6 to 36 months'] },
+          { label: 'Service Fee', values: ['4% service fee'] },
           { label: 'Mode of Payment', values: ['Weekly / Semi-Monthly / Monthly'] },
           {
             label: 'Eligibility',
@@ -113,7 +122,7 @@ const categories = [
         tone: '#E39A18',
         toneSoft: 'rgba(227, 154, 24, 0.12)',
         premiumLabel: 'Loan Amount',
-        premium: '₱5,000 – ₱100,000',
+        premium: 'Php 10,000 - Php 100,000',
         period: 'public service support',
         columns: ['Details'],
         rows: [
@@ -121,8 +130,10 @@ const categories = [
             label: 'Purpose',
             values: ['Multi-purpose loan support for incumbent barangay officials.'],
           },
-          { label: 'Interest Rate', values: ['3% per month'] },
-          { label: 'Term', values: ['3 months to 1 year'] },
+          { label: 'Interest Rate', values: ['1.50% to 3% per month'] },
+          { label: 'Loan Amount', values: ['Php 10,000 minimum; Php 100,000 maximum'] },
+          { label: 'Term', values: ['6 to 12 months'] },
+          { label: 'Service Fee', values: ['4% service fee'] },
           { label: 'Mode of Payment', values: ['Monthly'] },
           {
             label: 'Eligibility',
@@ -152,7 +163,7 @@ const categories = [
         tone: '#B32020',
         toneSoft: 'rgba(179, 32, 32, 0.10)',
         premiumLabel: 'Loan Amount',
-        premium: 'Up to ₱1.5M',
+        premium: 'Php 500,000 - Php 1,000,000',
         period: 'major asset financing',
         columns: ['Details'],
         rows: [
@@ -160,8 +171,10 @@ const categories = [
             label: 'Purpose',
             values: ['Purchase of a vehicle for personal or business use.'],
           },
-          { label: 'Interest Rate', values: ['1.25% per month'] },
-          { label: 'Term', values: ['Flexible repayment terms'] },
+          { label: 'Interest Rate', values: ['15% to 3% per annum'] },
+          { label: 'Loan Amount', values: ['Php 500,000 minimum; Php 1,000,000 maximum'] },
+          { label: 'Term', values: ['Up to 5 years'] },
+          { label: 'Service Fee', values: ['4% service fee'] },
           { label: 'Mode of Payment', values: ['Weekly / Semi-Monthly / Monthly'] },
           {
             label: 'Eligibility',
@@ -184,7 +197,7 @@ const categories = [
           {
             label: 'Note',
             values: [
-              'For brand-new units, the maximum is ₱1.5 million. For 2nd hand vehicles not more than 5 years old, financing may be up to 100% of the appraised value.',
+              'Vehicle Loan is currently presented with a Php 1,000,000 maximum loan amount and up to 5 years term, subject to assessment and product guidelines.',
             ],
             highlight: true,
           },
@@ -199,13 +212,15 @@ const categories = [
         tone: '#2E9E36',
         toneSoft: 'rgba(46, 158, 54, 0.11)',
         premiumLabel: 'Loan Amount',
-        premium: '₱20,000 – ₱150,000',
+        premium: 'Up to Php 150,000',
         period: 'home improvement',
         columns: ['Details'],
         rows: [
           { label: 'Purpose', values: ['House repairs and improvement.'] },
-          { label: 'Interest Rate', values: ['2% – 4% per month'] },
+          { label: 'Interest Rate', values: ['1.50% to 3% per month'] },
+          { label: 'Loan Amount', values: ['Maximum of Php 150,000'] },
           { label: 'Term', values: ['6 months to 2 years'] },
+          { label: 'Service Fee', values: ['4% service fee'] },
           { label: 'Mode of Payment', values: ['Weekly / Semi-Monthly / Monthly'] },
           {
             label: 'Eligibility',
@@ -236,13 +251,15 @@ const categories = [
         tone: '#F28C28',
         toneSoft: 'rgba(242, 140, 40, 0.12)',
         premiumLabel: 'Loan Amount',
-        premium: '₱2,000 – ₱10,000',
+        premium: 'Up to Php 10,000',
         period: 'emergency support',
         columns: ['Details'],
         rows: [
           { label: 'Purpose', values: ['Payment for utilities and other emergency expenses.'] },
-          { label: 'Interest Rate', values: ['2% – 4% per month'] },
-          { label: 'Term', values: ['3 months to 1 year'] },
+          { label: 'Interest Rate', values: ['1.50% to 3% per month'] },
+          { label: 'Loan Amount', values: ['Maximum of Php 10,000'] },
+          { label: 'Term', values: ['Short-term repayment'] },
+          { label: 'Service Fee', values: ['4% service fee'] },
           { label: 'Mode of Payment', values: ['Weekly / Semi-Monthly / Monthly'] },
           {
             label: 'Eligibility',
@@ -261,19 +278,21 @@ const categories = [
       {
         id: 'education-loan',
         abbr: 'EDU',
-        name: 'Education Loan',
+        name: 'Study Now Pay Later',
         summary:
           'Helps fund school-related and academic expenses.',
         tone: '#5E77F0',
         toneSoft: 'rgba(94, 119, 240, 0.10)',
         premiumLabel: 'Loan Amount',
-        premium: '₱5,000 – ₱100,000',
+        premium: 'Php 10,000 - Php 100,000',
         period: 'educational support',
         columns: ['Details'],
         rows: [
           { label: 'Purpose', values: ['Financial support for educational expenses.'] },
-          { label: 'Interest Rate', values: ['2% – 4% per month'] },
-          { label: 'Term', values: ['6 months to 10 months'] },
+          { label: 'Interest Rate', values: ['1.50% to 3% per month'] },
+          { label: 'Loan Amount', values: ['Php 10,000 minimum; Php 100,000 maximum'] },
+          { label: 'Term', values: ['6 to 10 months'] },
+          { label: 'Service Fee', values: ['4% service fee'] },
           { label: 'Mode of Payment', values: ['Weekly / Semi-Monthly / Monthly'] },
           {
             label: 'Eligibility',
@@ -298,7 +317,7 @@ const categories = [
         tone: '#E7B81C',
         toneSoft: 'rgba(231, 184, 28, 0.12)',
         premiumLabel: 'Loan Amount',
-        premium: '₱5,000 – ₱100,000',
+        premium: 'Php 10,000 - Php 100,000',
         period: 'pensioner support',
         columns: ['Details'],
         rows: [
@@ -306,8 +325,10 @@ const categories = [
             label: 'Purpose',
             values: ['Loan support for SSS pensioners, whether principal or beneficiary.'],
           },
-          { label: 'Interest Rate', values: ['3% per month'] },
+          { label: 'Interest Rate', values: ['1.50% to 3% per month'] },
+          { label: 'Loan Amount', values: ['Php 10,000 minimum; Php 100,000 maximum'] },
           { label: 'Term', values: ['6 months to 1 year'] },
+          { label: 'Service Fee', values: ['4% service fee'] },
           { label: 'Mode of Payment', values: ['Monthly'] },
           {
             label: 'Eligibility',
@@ -340,8 +361,8 @@ const categories = [
 
 const stats = [
   { value: '9', label: 'Providential loan programs' },
-  { value: '₱2K', label: 'Lowest starting loan shown' },
-  { value: '₱1.5M', label: 'Highest loan ceiling shown' },
+  { value: 'Php 10K', label: 'Common minimum loan shown' },
+  { value: 'Php 1M', label: 'Highest loan ceiling shown' },
   { value: '6+ Uses', label: 'Household and personal purposes' },
 ];
 
@@ -360,72 +381,96 @@ const quickGuide = [
   },
   {
     title: 'Education and Pension Support',
-    text: 'Includes educational financing and loan support for qualified SSS pensioners.',
+    text: 'Includes Study Now Pay Later support and loan support for qualified SSS pensioners.',
   },
 ];
 
-function ProvidentialTable({ product }) {
+function ProvidentialTable({ product, isOpen, onToggle }) {
   return (
     <article
       id={product.id}
-      className="pl-product-card"
+      className={`pl-product-card pl-product-card--dropdown ${isOpen ? 'is-open' : ''}`}
       style={{
         '--accent': product.tone,
         '--accent-soft': product.toneSoft,
       }}
+      aria-label={`${product.name} loan product`}
     >
-      <div className="pl-product-topbar" />
+      <button
+        id={`pl-product-header-${product.id}`}
+        className="pl-product-row pl-product-toggle"
+        type="button"
+        aria-expanded={isOpen}
+        aria-controls={`pl-product-body-${product.id}`}
+        onClick={onToggle}
+      >
+        <span className="pl-product-dot" aria-hidden="true" />
+        <span className="pl-product-abbr">{product.abbr}</span>
+        <h3 className="pl-product-name">{product.name}</h3>
+        <span className="pl-product-chevron" aria-hidden="true">
+          <svg viewBox="0 0 24 24" focusable="false">
+            <path d="m6 9 6 6 6-6" />
+          </svg>
+        </span>
+      </button>
 
-      <div className="pl-product-header">
-        <div className="pl-product-copy">
-          <div className="pl-product-meta">
-            <span className="pl-product-abbr">{product.abbr}</span>
-            <span className="pl-product-pill">{product.summary}</span>
+      <div
+        id={`pl-product-body-${product.id}`}
+        className="pl-product-body"
+        role="region"
+        aria-labelledby={`pl-product-header-${product.id}`}
+      >
+        <div className="pl-product-body-inner">
+          <div className="pl-product-detail-head">
+            <p className="pl-product-summary">{product.summary}</p>
+            <div className="pl-product-premium">
+              <span className="pl-product-premium-label">{product.premiumLabel}</span>
+              <span className="pl-product-premium-value">{product.premium}</span>
+              <span className="pl-product-premium-period">{product.period}</span>
+            </div>
           </div>
 
-          <h3 className="pl-product-name">{product.name}</h3>
-        </div>
+          <div className="pl-product-table-wrap">
+            <table className="pl-product-table">
+              <thead>
+                <tr>
+                  <th>Item</th>
+                  {product.columns.map((column, columnIndex) => (
+                    <th key={`${product.id}-col-${columnIndex}`}>{column}</th>
+                  ))}
+                </tr>
+              </thead>
 
-        <div className="pl-product-premium">
-          <span className="pl-product-premium-label">{product.premiumLabel}</span>
-          <span className="pl-product-premium-value">{product.premium}</span>
-          <span className="pl-product-premium-period">{product.period}</span>
-        </div>
-      </div>
-
-      <div className="pl-product-table-wrap">
-        <table className="pl-product-table">
-          <thead>
-            <tr>
-              <th>Item</th>
-              {product.columns.map((column, columnIndex) => (
-                <th key={`${product.id}-col-${columnIndex}`}>{column}</th>
-              ))}
-            </tr>
-          </thead>
-
-          <tbody>
-            {product.rows.map((row, rowIndex) => (
-              <tr
-                key={`${product.id}-row-${rowIndex}`}
-                className={row.highlight ? 'is-highlight' : undefined}
-              >
-                <td>{row.label}</td>
-                {row.values.map((value, valueIndex) => (
-                  <td key={`${product.id}-cell-${rowIndex}-${valueIndex}`}>
-                    {value || '\u00A0'}
-                  </td>
+              <tbody>
+                {product.rows.map((row, rowIndex) => (
+                  <tr
+                    key={`${product.id}-row-${rowIndex}`}
+                    className={row.highlight ? 'is-highlight' : undefined}
+                  >
+                    <td>{row.label}</td>
+                    {product.columns.map((_, valueIndex) => (
+                      <td key={`${product.id}-cell-${rowIndex}-${valueIndex}`}>
+                        {row.values[valueIndex] || '-'}
+                      </td>
+                    ))}
+                  </tr>
                 ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </article>
   );
 }
 
 export default function ProvidentialLoan() {
+  const [openProductId, setOpenProductId] = useState(null);
+
+  const toggleProduct = (id) => {
+    setOpenProductId((currentId) => (currentId === id ? null : id));
+  };
+
   return (
     <div className="pl">
       <section className="pl-section pl-hero" aria-labelledby="pl-heading">
@@ -507,40 +552,26 @@ export default function ProvidentialLoan() {
         >
           <div className="pl-inner">
             <div className="pl-category-header">
-              <div>
-                <p className="pl-section-kicker">{category.kicker}</p>
-                <h2 className="pl-section-title" id={`${category.id}-heading`}>
-                  {category.title}
-                </h2>
-              </div>
+              <h2 className="pl-section-title" id={`${category.id}-heading`}>
+                {category.title}
+              </h2>
               <p className="pl-section-text">{category.text}</p>
             </div>
 
             <div className="pl-products-stack">
               {category.products.map((product) => (
-                <ProvidentialTable key={product.id} product={product} />
+                <ProvidentialTable
+                  key={product.id}
+                  product={product}
+                  isOpen={openProductId === product.id}
+                  onToggle={() => toggleProduct(product.id)}
+                />
               ))}
             </div>
           </div>
         </section>
       ))}
 
-      <section className="pl-section pl-note" aria-labelledby="pl-note-heading">
-        <div className="pl-inner">
-          <div className="pl-note-inner">
-            <p className="pl-note-kicker">Apply with MEMPCO</p>
-            <h2 className="pl-note-title" id="pl-note-heading">
-              For updated requirements, approval review, and final loan terms,<br />
-              <em>coordinate directly with MEMPCO.</em>
-            </h2>
-            <p className="pl-note-text">
-              Final eligibility, documentary requirements, repayment structure,
-              and approval conditions may still vary depending on the loan type
-              and borrower assessment.
-            </p>
-          </div>
-        </div>
-      </section>
     </div>
   );
 }

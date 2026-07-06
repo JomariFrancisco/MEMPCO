@@ -107,8 +107,8 @@ export default function YouthandKids() {
           <span className="yk-eyebrow">MEMPCO Savings Program</span>
           <h1 className="yk-hero-title" id="yk-heading">Youth Savings.</h1>
           <p className="yk-hero-tagline">
-            The best time to start saving is childhood.<br />
-            The second best time is right now.
+            Teach children to start saving early.<br />
+            A simple account for young savers.
           </p>
 
           {/* product image */}
@@ -157,9 +157,9 @@ export default function YouthandKids() {
                 with money — one built on growth, not spending.
               </p>
               <p className="yk-details-body">
-                Open with as little as <strong>Php 50</strong> and earn{' '}
-                <strong>3% interest per annum</strong>. Simple, accessible,
-                and designed to last a lifetime.
+                Start with a <strong>Php 50 membership fee</strong> and a{' '}
+                <strong>Php 50 initial deposit</strong>, then earn{' '}
+                <strong>3% interest per annum</strong>.
               </p>
 
               <ul className="yk-feature-list">

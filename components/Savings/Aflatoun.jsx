@@ -9,7 +9,7 @@ const stats = [
   },
   {
     value: '3%',
-    label: 'Per annum once balance reaches Php 500',
+    label: 'Interest per annum',
   },
   {
     value: 'FREE',
@@ -19,8 +19,8 @@ const stats = [
 
 const features = [
   {
-    label: 'Free membership for all children',
-    desc:  'Any child can join Aflatoun at no cost — lowering the barrier so every young saver has a place to start.',
+    label: 'Free membership fee',
+    desc:  'Children can join without a membership fee, making it easier to begin saving early.',
     icon: (
       <svg viewBox="0 0 24 24" aria-hidden="true">
         <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
@@ -41,8 +41,8 @@ const features = [
     ),
   },
   {
-    label: 'Earns interest from Php 500',
-    desc:  'Once a child\'s balance reaches Php 500, it begins earning 3% per annum — a direct reward for consistency.',
+    label: 'Php 50 initial deposit',
+    desc:  'A small initial deposit gives young savers a simple and practical starting point.',
     icon: (
       <svg viewBox="0 0 24 24" aria-hidden="true">
         <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
@@ -56,12 +56,12 @@ const cards = [
   {
     num:   '01',
     title: 'Who can open',
-    text:  'Any child enrolled in a NATCCO or DepEd-partnered school may open an Aflatoun account. Membership is completely free.',
+    text:  'Young savers can open an Aflatoun account with free membership and a Php 50 initial deposit.',
   },
   {
     num:   '02',
     title: 'How interest is earned',
-    text:  'The account earns 3% per annum once the balance reaches Php 500 — giving children a tangible milestone to work toward.',
+    text:  'The account earns 3% interest per annum, helping children see how saving can make money grow over time.',
   },
   {
     num:   '03',
@@ -87,7 +87,7 @@ const whyCards = [
   {
     num:   '02',
     title: 'No cost to start',
-    text:  'Free membership removes any excuse. Every child, regardless of background, can open an account and begin their journey.',
+    text:  'Free membership and a Php 50 initial deposit keep the starting point simple for young savers.',
   },
   {
     num:   '03',
@@ -118,8 +118,8 @@ export default function Aflatoun() {
           <span className="af-eyebrow">MEMPCO Savings Program</span>
           <h1 className="af-hero-title" id="af-heading">Aflatoun Savings.</h1>
           <p className="af-hero-tagline">
-            Saving is a skill. Let&apos;s teach it early.<br />
-            Life education and financial growth, together.
+            Teach children to start saving early.<br />
+            Simple deposits and financial learning, together.
           </p>
 
           {/* product image */}
@@ -170,8 +170,7 @@ export default function Aflatoun() {
               <p className="af-details-body">
                 Children can open an account for as low as{' '}
                 <strong>Php 50</strong> with <strong>free membership</strong>,
-                and begin earning <strong>3% per annum</strong> once their
-                balance reaches Php 500.
+                and begin earning <strong>3% interest per annum</strong>.
               </p>
 
               <ul className="af-feature-list">

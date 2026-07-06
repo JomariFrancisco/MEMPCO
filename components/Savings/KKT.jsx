@@ -4,8 +4,8 @@ import './KKT.css'
 /* ─── data ─────────────────────────────────────────── */
 const stats = [
   {
-    value: '4.5% – 7%',
-    label: 'Interest per annum, tax-free',
+    value: '2 years',
+    label: 'Minimum locked-in period',
   },
   {
     value: 'Php 5M',
@@ -13,15 +13,15 @@ const stats = [
     accent: true,
   },
   {
-    value: 'OFW & Families',
-    label: 'Exclusively designed for overseas Filipinos',
+    value: 'Guided',
+    label: 'Calculation method applies',
   },
 ]
 
 const features = [
   {
-    label: 'Higher interest rates',
-    desc:  'Earn between 4.5% and 7% per annum — significantly stronger returns than a regular savings account.',
+    label: 'Minimum two-year lock-in',
+    desc:  'KKT is designed for members who can keep funds placed for at least two years.',
     icon: (
       <svg viewBox="0 0 24 24" aria-hidden="true">
         <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
@@ -30,8 +30,8 @@ const features = [
     ),
   },
   {
-    label: 'Zero tax on earnings',
-    desc:  'Every peso of interest is yours — no withholding tax, no deductions.',
+    label: 'Calculation method applies',
+    desc:  'Returns follow the product calculation method used by MEMPCO for this special savings account.',
     icon: (
       <svg viewBox="0 0 24 24" aria-hidden="true">
         <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
@@ -39,8 +39,8 @@ const features = [
     ),
   },
   {
-    label: 'Built for overseas Filipinos',
-    desc:  'Designed specifically for OFWs and their families — people who sacrifice the most deserve savings that work hardest.',
+    label: 'Maximum deposit of Php 5M',
+    desc:  'Members can place up to Php 5,000,000 for bigger long-term savings goals.',
     icon: (
       <svg viewBox="0 0 24 24" aria-hidden="true">
         <circle cx="12" cy="12" r="10"/>
@@ -54,18 +54,18 @@ const features = [
 const cards = [
   {
     num:   '01',
-    title: 'Interest tiers',
-    text:  'The KKT program offers tiered interest ranging from 4.5% up to 7% per annum depending on your deposit amount — the more you save, the more you earn.',
+    title: 'Lock-in period',
+    text:  'KKT Special Savings has a minimum locked-in period of two years, making it better suited for long-term goals.',
   },
   {
     num:   '02',
     title: 'Deposit limit',
-    text:  'You may deposit up to Php 5,000,000 into your KKT account, making it ideal for OFWs building long-term wealth from abroad.',
+    text:  'Members may deposit up to Php 5,000,000 into a KKT account, depending on product guidelines and branch confirmation.',
   },
   {
     num:   '03',
-    title: 'Who can open',
-    text:  'This program is open to Overseas Filipinos and their immediate family members who are MEMPCO members.',
+    title: 'Calculation',
+    text:  'The applicable calculation method is explained by MEMPCO during account opening so members understand the placement terms.',
   },
 ]
 
@@ -78,7 +78,7 @@ const whyCards = [
   {
     num:   '02',
     title: 'Build real, long-term wealth',
-    text:  'With rates up to 7% per annum and a Php 5M ceiling, this is a genuine wealth-building vehicle — not just a deposit account.',
+    text:  'With a two-year lock-in and a Php 5M maximum deposit, KKT is built for members planning beyond short-term savings.',
   },
   {
     num:   '03',
@@ -102,27 +102,27 @@ export default function KKT() {
             <span className="kkt-breadcrumb-sep">/</span>
             <span>Savings</span>
             <span className="kkt-breadcrumb-sep">/</span>
-            <span className="kkt-breadcrumb-active">KKT Wealth Building Savings</span>
+            <span className="kkt-breadcrumb-active">KKT Special Savings</span>
           </nav>
 
           {/* headline */}
           <span className="kkt-eyebrow">MEMPCO Savings Program</span>
           <h1 className="kkt-hero-title" id="kkt-heading">
-            Kinabukasan <em>Ko &lsquo;To.</em>
+            Kinabukasan <em>Ko To.</em>
           </h1>
           <p className="kkt-hero-subtitle">
-            KKT Wealth Building Savings
+            KKT Special Savings
           </p>
           <p className="kkt-hero-tagline">
-            For every Filipino who left home to build a better future.<br />
-            Your sacrifice deserves savings that grow with you.
+            An easy way to save for the future.<br />
+            Built for members with long-term savings goals.
           </p>
 
           {/* product image */}
           <div className="kkt-product-stage">
             <Image
               src="/Savings/KKTPassbook.png"
-              alt="MEMPCO KKT Wealth Building Savings Passbook"
+              alt="MEMPCO KKT Special Savings Passbook"
               width={900}
               height={700}
               className="kkt-product-img"
@@ -156,17 +156,16 @@ export default function KKT() {
             <div>
               <p className="kkt-details-kicker">The program</p>
               <h2 className="kkt-details-title" id="kkt-details-heading">
-                Savings built for<br /><em>the sacrifices you make.</em>
+                Savings built for<br /><em>future plans.</em>
               </h2>
               <p className="kkt-details-body">
-                The KKT Wealth Building Savings Program is designed for{' '}
-                <strong>Overseas Filipinos and OF Families</strong> — people
-                who give up time with loved ones to secure a better tomorrow.
+                KKT Special Savings is designed for members who want to build
+                money for the future through a longer-term savings commitment.
               </p>
               <p className="kkt-details-body">
-                Earn <strong>4.5% to 7% interest per annum</strong>, completely
-                tax-free, on deposits of up to{' '}
-                <strong>Php 5,000,000</strong>.
+                Funds are placed for a <strong>minimum of two years</strong>,
+                with a maximum deposit of <strong>Php 5,000,000</strong> and
+                a product calculation method explained during account opening.
               </p>
 
               <ul className="kkt-feature-list">
@@ -199,17 +198,17 @@ export default function KKT() {
         </div>
       </section>
 
-      {/* ══ 4. OFW CALLOUT ═══════════════════════════════ */}
-      <section className="kkt-section kkt-callout" aria-label="Message for OFWs">
+      {/* ══ 4. LONG-TERM SAVINGS CALLOUT ═══════════════════════════════ */}
+      <section className="kkt-section kkt-callout" aria-label="Message for long-term savers">
         <div className="kkt-inner">
-          <p className="kkt-callout-kicker">Para sa mga OFW</p>
+          <p className="kkt-callout-kicker">For long-term savers</p>
           <blockquote className="kkt-callout-quote">
-            &ldquo;Pinaghirapan ninyo ang kita ninyo. Luha at dugo ang ipinuhunan.
-            Pahalagahan ang kita at magtira para sa sarili.&rdquo;
+            &ldquo;Future plans need money that is protected, separated, and
+            allowed to grow through steady saving discipline.&rdquo;
           </blockquote>
           <p className="kkt-callout-sub">
-            MEMPCO&apos;s KKT program exists to honor that sacrifice — by making
-            sure every peso you send home works as hard as you do.
+            MEMPCO&apos;s KKT Special Savings helps members set aside funds for
+            goals that need patience and commitment.
           </p>
         </div>
       </section>

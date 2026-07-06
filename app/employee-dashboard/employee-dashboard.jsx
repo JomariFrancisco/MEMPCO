@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -79,44 +79,147 @@ const TRANSITION_DURATION = 560;
 const SAAR_MAX_SIZE = 4 * 1024 * 1024;
 const PHOTO_MAX_SIZE = 4 * 1024 * 1024;
 const PHOTO_MAX_COUNT = 5;
-const PHOTO_ACCEPT = 'image/jpeg,image/jpg,image/png,image/webp';
-const PHOTO_ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+const PHOTO_ACCEPT = 'image/*';
+const PHOTO_ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/bmp'];
 
 
 const HELPDESK_CATEGORY_CONCERNS = {
-  'Software Support': [
-    'Application Installation or Update',
-    'Application Error or Bug',
-    'Software License or Activation',
-    'System Configuration',
-    'Application Access Request',
+  'Software / System Support': [
+    'MBWin / Sky360 concern',
+    'Excel / Office application concern',
+    'System error or application issue',
+    'Software installation request',
+    'Other software concern',
   ],
-  'Network Support': [
-    'Internet or Wi-Fi Connection',
-    'LAN Connection',
-    'Network Printer or Shared Device',
-    'VPN or Remote Access',
-    'Network Account or Voucher',
+  'Account / Access Support': [
+    'New user account request',
+    'Password reset',
+    'Login problem',
+    'Access permission request',
+    'Teller role / user role concern',
+    'Other account access concern',
   ],
-  'Hardware Support': [
-    'Desktop or Laptop Issue',
-    'Printer or Scanner Issue',
-    'Monitor or Display Issue',
-    'Keyboard Mouse or Peripheral',
-    'Power UPS or AVR Issue',
+  'Printer Support': [
+    'Printer not printing',
+    'Printer setup or installation',
+    'Poor print quality',
+    'Printer error or blinking light',
+    'Ink, paper jam, or maintenance concern',
+    'Other printer concern',
   ],
-  'User Account Management': [
-    'Password Reset',
-    'Account Unlock',
-    'Create User Account',
-    'Change Access Permission',
-    'Email or Outlook Account',
-    'MBWIN Account Request',
+  'Computer / Laptop Support': [
+    'Slow computer or laptop',
+    'No display or no power',
+    'Hardware issue',
+    'Computer formatting',
+    'Application installation',
+    'Other computer concern',
+  ],
+  'Network / Internet Support': [
+    'No internet connection',
+    'Slow internet',
+    'Wi-Fi connection issue',
+    'Network cable or port issue',
+    'Shared folder or server access issue',
+    'Other network concern',
+  ],
+  'Biometric / Attendance Support': [
+    'Fingerprint enrollment',
+    'Unable to time-in or time-out',
+    'Biometric device issue',
+    'Attendance system concern',
+    'Other biometric concern',
+  ],
+  'Server / NAS / Database Support': [
+    'Server access issue',
+    'NAS or file storage concern',
+    'Backup concern',
+    'Database or system connection issue',
+    'Other server concern',
+  ],
+  'Other ICT Request': [
+    'General ICT assistance',
+    'ICT equipment request',
+    'Technical consultation',
+    'Concern not listed',
   ],
 };
 
 const HELPDESK_SUPPORT_CATEGORIES = Object.keys(HELPDESK_CATEGORY_CONCERNS);
-const getConcernOptionsForCategory = (category = '') => HELPDESK_CATEGORY_CONCERNS[category] || [];
+
+const DEVICE_SUPPORT_CATEGORY_MAP = {
+  'Desktop PC': [
+    'Software / System Support',
+    'Account / Access Support',
+    'Computer / Laptop Support',
+    'Network / Internet Support',
+    'Other ICT Request',
+  ],
+  Laptop: [
+    'Software / System Support',
+    'Account / Access Support',
+    'Computer / Laptop Support',
+    'Network / Internet Support',
+    'Other ICT Request',
+  ],
+  Printer: [
+    'Printer Support',
+    'Network / Internet Support',
+    'Other ICT Request',
+  ],
+  'Biometric Device': ['Biometric / Attendance Support'],
+  'ATM / Kiosk': [
+    'Software / System Support',
+    'Account / Access Support',
+    'Network / Internet Support',
+    'Other ICT Request',
+  ],
+  'Network / Wi-Fi': [
+    'Network / Internet Support',
+    'Server / NAS / Database Support',
+    'Other ICT Request',
+  ],
+  Server: [
+    'Server / NAS / Database Support',
+    'Network / Internet Support',
+    'Software / System Support',
+    'Other ICT Request',
+  ],
+  'MBWin / Sky360': ['Software / System Support', 'Account / Access Support'],
+  'Excel / Office Application': ['Software / System Support', 'Account / Access Support'],
+  'Application Account': ['Account / Access Support', 'Software / System Support'],
+};
+
+const DEVICE_CONCERN_TYPE_MAP = {
+  'MBWin / Sky360': {
+    'Software / System Support': [
+      'MBWin / Sky360 concern',
+      'System error or application issue',
+      'Other software concern',
+    ],
+    'Account / Access Support': [
+      'New user account request',
+      'Password reset',
+      'Login problem',
+      'Access permission request',
+      'Teller role / user role concern',
+      'Other account access concern',
+    ],
+  },
+  'Excel / Office Application': {
+    'Software / System Support': [
+      'Excel / Office application concern',
+      'Software installation request',
+      'Other software concern',
+    ],
+  },
+};
+
+const getSupportCategoriesForDevice = (deviceName = '') =>
+  DEVICE_SUPPORT_CATEGORY_MAP[deviceName] || HELPDESK_SUPPORT_CATEGORIES;
+
+const getConcernOptionsForSelection = (category = '', deviceName = '') =>
+  DEVICE_CONCERN_TYPE_MAP[deviceName]?.[category] || HELPDESK_CATEGORY_CONCERNS[category] || [];
 
 const OTHER_SERVICES_STORAGE_KEY = 'mempcop-employee-other-services';
 const OTHER_SERVICE_CATEGORIES = [
@@ -165,7 +268,7 @@ const ANNOUNCEMENTS = [
     tag: 'Helpdesk',
     title: 'Use the correct support category',
     description:
-      'Choose Software Support, Network Support, Hardware Support, or User Account Management before selecting the concern type.',
+      'Choose the support category first. The concern type list will only show related options.',
     date: 'Guide',
   },
   {
@@ -186,8 +289,9 @@ const ANNOUNCEMENTS = [
 
 const GUIDES = [
   'Select a support category first. The concern type dropdown will only show concerns related to that category.',
-  'Choose the correct SLA level and operational impact before submitting the ticket.',
-  'For installation or update requests, provide the application name, request type, purpose, and remarks.',
+  'Choose the impact level based on how much work is affected.',
+  'Enter the AnyDesk number because ICT mainly supports tickets remotely.',
+  'Attach a screenshot or photo if possible.',
 ];
 
 const SLA_PICKER_OPTIONS = [
@@ -196,7 +300,7 @@ const SLA_PICKER_OPTIONS = [
     icon: ShieldCheck,
     title: 'Low',
     impact: 'Single user affected',
-    text: 'Minor request or single-employee concern that does not stop daily operations.',
+    text: 'For minor concerns affecting only one user and work can still continue.',
     meta: 'Standard response',
   },
   {
@@ -204,7 +308,7 @@ const SLA_PICKER_OPTIONS = [
     icon: Clock3,
     title: 'Medium',
     impact: 'Multiple users or department affected',
-    text: 'Concern affects work efficiency, a shared device, system function, or several users.',
+    text: 'For concerns affecting several users or causing delay in work.',
     meta: 'Priority review',
   },
   {
@@ -212,7 +316,7 @@ const SLA_PICKER_OPTIONS = [
     icon: Wrench,
     title: 'High',
     impact: 'Branch operation affected',
-    text: 'Major concern affecting branch service, network access, system availability, or important transactions.',
+    text: 'For concerns affecting branch operation, important transactions, or system availability.',
     meta: 'Urgent handling',
   },
   {
@@ -220,7 +324,7 @@ const SLA_PICKER_OPTIONS = [
     icon: BadgeCheck,
     title: 'Critical',
     impact: 'Core operation affected',
-    text: 'Severe concern involving stopped operations, security incident, data loss, or critical system failure.',
+    text: 'For concerns where operation is stopped, the system is down, or there is possible data loss.',
     meta: 'Immediate action',
   },
 ];
@@ -258,95 +362,83 @@ const emptyForm = {
 };
 
 const DEFAULT_DESCRIPTION_TEMPLATE = [
-  'AnyDesk:',
-  'System/App:',
-  'Summary:',
-  'Error:',
+  'Device or System:',
+  'Page or Module:',
+  'What Happened:',
+  'Error Message:',
+  'AnyDesk Number:',
 ].join('\n');
 
 const CONCERN_DESCRIPTION_TEMPLATES = {
   applicationRequest: [
     'Application Name:',
-    'Request Type:',
-    'Purpose:',
-    'Remarks:',
+    'Computer or User:',
+    'Request Needed:',
+    'Reason:',
+    'AnyDesk Number:',
   ].join('\n'),
-
   mbwin: [
-    'AnyDesk:',
-    'MBWIN Account:',
-    'Requested Access:',
-    'Module:',
-    'Error:',
-    'SAAR Ref:',
+    'System Name:',
+    'Username or Employee ID:',
+    'Page or Module:',
+    'What Happened:',
+    'Error Message:',
   ].join('\n'),
-
   network: [
-    'AnyDesk:',
-    'Connection:',
-    'Affected Area:',
-    'Users Affected:',
-    'Summary:',
-    'Status/Error:',
+    'Connection Type:',
+    'Location Affected:',
+    'What Happened:',
+    'Router or Cable Status:',
+    'AnyDesk Number:',
   ].join('\n'),
-
   printer: [
-    'AnyDesk:',
     'Printer Model:',
-    'Connection:',
-    'Affected User:',
-    'Summary:',
-    'Error:',
+    'Printer Location:',
+    'Printer Issue:',
+    'Error or Light Status:',
+    'AnyDesk Number:',
   ].join('\n'),
-
   hardware: [
-    'AnyDesk:',
-    'Summary:',
-    'Started:',
-    'Error/Signal:',
+    'Desktop or Laptop Name:',
+    'Unit Location:',
+    'What Happened:',
+    'Error Message:',
+    'AnyDesk Number:',
   ].join('\n'),
-
   account: [
-    'AnyDesk:',
-    'System/App:',
-    'Username:',
+    'System or Account:',
+    'Username or Employee ID:',
     'Access Needed:',
-    'Error:',
-    'Approver:',
+    'What Happened:',
+    'AnyDesk Number:',
   ].join('\n'),
-
-  email: [
-    'AnyDesk:',
-    'Email Account:',
-    'Client:',
-    'Summary:',
-    'Error:',
+  biometric: [
+    'Biometric Device:',
+    'Branch or Location:',
+    'Employee Affected:',
+    'What Happened:',
+    'AnyDesk Number:',
   ].join('\n'),
-
-  security: [
-    'AnyDesk:',
-    'Affected Account:',
-    'Concern Type:',
-    'Suspicious Source:',
-    'Summary:',
-    'Warning/Error:',
-  ].join('\n'),
-
   server: [
-    'AnyDesk:',
-    'Server/System:',
-    'Service Affected:',
-    'Users Affected:',
-    'Summary:',
-    'Error:',
+    'Server or Storage Name:',
+    'Folder or Database:',
+    'What Happened:',
+    'Error Message:',
+    'AnyDesk Number:',
   ].join('\n'),
-
+  other: [
+    'Request Type:',
+    'Device or System:',
+    'What Happened:',
+    'Needed Date:',
+    'AnyDesk Number:',
+  ].join('\n'),
   software: [
-    'AnyDesk:',
-    'System/App:',
-    'Module:',
-    'Summary:',
-    'Error:',
+    'System Name:',
+    'Page or Module:',
+    'What Happened:',
+    'Error Message:',
+    'AnyDesk Number:',
   ].join('\n'),
 };
 
@@ -359,6 +451,17 @@ const getTemplateLabels = (template = DEFAULT_DESCRIPTION_TEMPLATE) =>
 const normalizeTextareaValue = (value = '') => String(value || '').replace(/\r\n/g, '\n');
 
 const normalize = (value) => String(value || '').trim().toLowerCase();
+
+const getEmployeeTicketStatusLabel = (status = '') => {
+  const normalized = normalize(status).replace(/[-_]+/g, ' ').replace(/\s+/g, ' ');
+
+  if (normalized === 'in progress') return 'In Progress';
+  if (normalized === 'resolved') return 'Resolved';
+  if (normalized === 'cancelled' || normalized === 'canceled') return 'Cancelled';
+  if (normalized === 'escalated') return 'Escalated';
+
+  return 'Pending';
+};
 
 const normalizePortalRole = (role = '') =>
   String(role || '')
@@ -383,10 +486,17 @@ const isMbwinRequest = (formOrTicket) => {
 
   return (
     haystack.includes('mbwin') ||
+    haystack.includes('sky360') ||
     haystack.includes('mb win') ||
     haystack.includes('mbwim') ||
     haystack.includes('mb wim')
   );
+};
+
+const isOtherConcernSelected = (formOrTicket = {}) => {
+  const concern = normalize(formOrTicket.concernType);
+
+  return concern.includes('other') || concern.includes('not listed');
 };
 
 const getIssueDescriptionTemplate = (context = {}) => {
@@ -395,6 +505,41 @@ const getIssueDescriptionTemplate = (context = {}) => {
   const deviceName = typeof context === 'string' ? '' : context.deviceName;
 
   const combined = [supportCategory, concernType, deviceName].map(normalize).join(' ');
+
+  if (supportCategory === 'Printer Support') {
+    return CONCERN_DESCRIPTION_TEMPLATES.printer;
+  }
+
+  if (
+    (supportCategory === 'Software / System Support' && concernType === 'Software installation request') ||
+    (supportCategory === 'Computer / Laptop Support' && concernType === 'Application installation')
+  ) {
+    return CONCERN_DESCRIPTION_TEMPLATES.applicationRequest;
+  }
+
+  if (supportCategory === 'Computer / Laptop Support') {
+    return CONCERN_DESCRIPTION_TEMPLATES.hardware;
+  }
+
+  if (supportCategory === 'Network / Internet Support') {
+    return CONCERN_DESCRIPTION_TEMPLATES.network;
+  }
+
+  if (supportCategory === 'Account / Access Support') {
+    return CONCERN_DESCRIPTION_TEMPLATES.account;
+  }
+
+  if (supportCategory === 'Biometric / Attendance Support') {
+    return CONCERN_DESCRIPTION_TEMPLATES.biometric;
+  }
+
+  if (supportCategory === 'Server / NAS / Database Support') {
+    return CONCERN_DESCRIPTION_TEMPLATES.server;
+  }
+
+  if (supportCategory === 'Other ICT Request') {
+    return CONCERN_DESCRIPTION_TEMPLATES.other;
+  }
 
   if (
     hasAnyKeyword(combined, [
@@ -413,8 +558,12 @@ const getIssueDescriptionTemplate = (context = {}) => {
     return CONCERN_DESCRIPTION_TEMPLATES.applicationRequest;
   }
 
-  if (hasAnyKeyword(combined, ['mbwin', 'mb win', 'mbwim', 'mb wim', 'teller', 'treasury', 'saar'])) {
+  if (hasAnyKeyword(combined, ['mbwin', 'sky360', 'mb win', 'mbwim', 'mb wim', 'teller', 'treasury', 'saar'])) {
     return CONCERN_DESCRIPTION_TEMPLATES.mbwin;
+  }
+
+  if (hasAnyKeyword(combined, ['printer', 'scanner', 'print', 'scan'])) {
+    return CONCERN_DESCRIPTION_TEMPLATES.printer;
   }
 
   if (
@@ -433,10 +582,6 @@ const getIssueDescriptionTemplate = (context = {}) => {
     ])
   ) {
     return CONCERN_DESCRIPTION_TEMPLATES.network;
-  }
-
-  if (hasAnyKeyword(combined, ['printer', 'scanner', 'print', 'scan'])) {
-    return CONCERN_DESCRIPTION_TEMPLATES.printer;
   }
 
   if (
@@ -606,29 +751,7 @@ const applyDescriptionContextPrefills = (value = '', context = {}, previousConte
   return buildDescriptionFromValues(values, context);
 };
 
-const getDescriptionInputPlaceholder = (label = '') => {
-  const lowerLabel = normalize(label);
-
-  if (lowerLabel.includes('application name')) return 'Type the application or system name';
-  if (lowerLabel.includes('request type')) return 'Example: installation, update, license, or activation';
-  if (lowerLabel.includes('purpose')) return 'State the business purpose of the request';
-  if (lowerLabel.includes('remarks')) return 'Add other important details or approval notes';
-  if (lowerLabel.includes('anydesk')) return 'Enter AnyDesk number';
-  if (lowerLabel.includes('summary')) return 'Briefly describe the issue';
-  if (lowerLabel.includes('error') || lowerLabel.includes('warning') || lowerLabel.includes('signal')) {
-    return 'Type the exact error, warning, or indicator';
-  }
-  if (lowerLabel.includes('started')) return 'When did the issue start?';
-  if (lowerLabel.includes('connection')) return 'Example: LAN, Wi-Fi, USB, or network';
-  if (lowerLabel.includes('affected')) return 'Type the affected user, area, or number of users';
-  if (lowerLabel.includes('module')) return 'Type the affected module or transaction';
-  if (lowerLabel.includes('account') || lowerLabel.includes('username')) return 'Type the affected account or username';
-  if (lowerLabel.includes('access')) return 'Type the requested access or role';
-  if (lowerLabel.includes('saar')) return 'Type the SAAR reference or approval detail';
-  if (lowerLabel.includes('approver')) return 'Type the approver or request reference';
-
-  return 'Type details here';
-};
+const getDescriptionInputPlaceholder = () => '';
 
 const sanitizeDescriptionForSubmit = (value = '', context = {}) =>
   ensureDescriptionTemplate(value, context).trim();
@@ -652,34 +775,20 @@ const hasMeaningfulDescriptionDetails = (value = '', context = {}) => {
   return detailLines.some((line) => line.length >= 3);
 };
 
-const getIssueDescriptionHint = (form = {}) => {
-  const combined = getIssueContextText(form);
+const getShortDescriptionDetail = (value = '', context = {}) => {
+  const values = parseDescriptionValues(value, context);
+  const descriptionLabel = Object.keys(values).find((label) =>
+    normalize(label).includes('what happened') || normalize(label).includes('short description')
+  );
 
-  if (hasAnyKeyword(combined, ['application installation', 'application update', 'installation or update', 'software license', 'activation'])) {
-    return 'For installation or update requests, include the application name, request type, purpose, and remarks. No error signal is required.';
-  }
+  return descriptionLabel ? String(values[descriptionLabel] || '').trim() : '';
+};
 
-  if (isMbwinRequest(form)) {
-    return 'For MBWIN concerns, include the account, requested access, affected module, error, and SAAR reference.';
-  }
+const getAnyDeskDetail = (value = '', context = {}) => {
+  const values = parseDescriptionValues(value, context);
+  const anyDeskLabel = Object.keys(values).find((label) => normalize(label).includes('anydesk'));
 
-  if (hasAnyKeyword(combined, ['network', 'internet', 'wi-fi', 'wifi', 'voucher', 'router', 'modem'])) {
-    return 'For network concerns, include the connection type, affected area, number of users, and status/error.';
-  }
-
-  if (hasAnyKeyword(combined, ['printer', 'scanner', 'print', 'scan'])) {
-    return 'For printer or scanner concerns, include the model, connection type, affected user, and error.';
-  }
-
-  if (hasAnyKeyword(combined, ['computer', 'desktop', 'laptop', 'hardware', 'monitor', 'ups', 'no power'])) {
-    return 'For hardware concerns, describe the problem, when it started, and any error or indicator.';
-  }
-
-  if (hasAnyKeyword(combined, ['account', 'access', 'password', 'login', 'permission', 'role'])) {
-    return 'For account concerns, include the affected system, username, access needed, error, and approver if applicable.';
-  }
-
-  return 'Complete the short issue description fields so ICT can review the concern faster.';
+  return anyDeskLabel ? String(values[anyDeskLabel] || '').trim() : '';
 };
 
 const getNewTicketForm = (user = {}) => ({
@@ -774,7 +883,11 @@ const fileToDataUrl = (file) =>
 const isPhotoFile = (file) =>
   Boolean(
     file &&
-      (PHOTO_ALLOWED_TYPES.includes(file.type) || /\.(jpe?g|png|webp)$/i.test(file.name || ''))
+      (
+        file.type?.startsWith('image/') ||
+        PHOTO_ALLOWED_TYPES.includes(file.type) ||
+        /\.(jpe?g|png|webp|gif|bmp)$/i.test(file.name || '')
+      )
   );
 
 const filesToPhotoAttachments = async (files = [], existingCount = 0) => {
@@ -799,15 +912,37 @@ const filesToPhotoAttachments = async (files = [], existingCount = 0) => {
   }
 
   return Promise.all(
-    selectedFiles.map(async (file) => ({
-      id: globalThis.crypto?.randomUUID?.() || `${Date.now()}-${file.name}`,
-      name: file.name,
-      type: file.type || 'image/jpeg',
-      size: file.size,
-      sizeLabel: formatFileSize(file.size),
-      uploadedAt: new Date().toLocaleString(),
-      dataUrl: await fileToDataUrl(file),
-    }))
+    selectedFiles.map(async (file, index) => {
+      const safeName = file.name || `pasted-image-${index + 1}.png`;
+
+      return {
+        id: globalThis.crypto?.randomUUID?.() || `${Date.now()}-${safeName}`,
+        name: safeName,
+        type: file.type || 'image/png',
+        size: file.size,
+        sizeLabel: formatFileSize(file.size),
+        uploadedAt: new Date().toLocaleString(),
+        dataUrl: await fileToDataUrl(file),
+      };
+    })
+  );
+};
+
+const getClipboardImageFiles = (clipboardData) => {
+  const files = Array.from(clipboardData?.files || []).filter(isPhotoFile);
+  const itemFiles = Array.from(clipboardData?.items || [])
+    .filter((item) => item.kind === 'file' && item.type?.startsWith('image/'))
+    .map((item) => item.getAsFile())
+    .filter(Boolean)
+    .filter(isPhotoFile);
+
+  return [...files, ...itemFiles].filter(
+    (file, index, list) =>
+      list.findIndex((candidate) =>
+        candidate.name === file.name &&
+        candidate.size === file.size &&
+        candidate.type === file.type
+      ) === index
   );
 };
 
@@ -1044,7 +1179,13 @@ function IssueDescriptionBuilder({ form, onChange }) {
         {labels.map((label) => {
           const value = values[label] || '';
           const fieldId = `issue-field-${slugify(label)}`;
-          const isLongField = label.toLowerCase().includes('summary') || label.toLowerCase().includes('problem');
+          const normalizedLabel = label.toLowerCase();
+          const isLongField =
+            normalizedLabel.includes('summary') ||
+            normalizedLabel.includes('problem') ||
+            normalizedLabel.includes('description') ||
+            normalizedLabel.includes('concern') ||
+            normalizedLabel.includes('what happened');
 
           return (
             <div key={label} className="issue-description-line">
@@ -1344,7 +1485,9 @@ function EmployeeTicketDetailModal({
           </div>
 
           <div className="employee-ticket-status-stack" aria-label="Ticket status">
-            <span className={`status ${slugify(ticket.status)}`}>{ticket.status}</span>
+            <span className={`status ${slugify(getEmployeeTicketStatusLabel(ticket.status))}`}>
+              {getEmployeeTicketStatusLabel(ticket.status)}
+            </span>
             <span className={`priority ${slugify(ticket.sla)}`}>{ticket.sla}</span>
             {isMbwinRequest(ticket) && <span className="status saar">SAAR Required</span>}
           </div>
@@ -1552,10 +1695,6 @@ function DashboardView({ user, tickets, openTickets, onGoTo }) {
 
         <img className="employee-hero-logo admin-hero-logo" src="/Logos/Logo.png" alt="MEMPCO logo" />
 
-        <div className="hero-meta">
-          <span className="meta-pill">Manual SLA Selection</span>
-          <span className="meta-pill">{openTickets} Active</span>
-        </div>
       </section>
 
       <section className="stats-grid" aria-label="Key statistics">
@@ -1581,8 +1720,7 @@ function DashboardView({ user, tickets, openTickets, onGoTo }) {
           </div>
 
           <p className="dashboard-guide-intro">
-            Use the helpdesk only for ICT-related concerns. The Support Category controls the available Concern Type options,
-            so choose the category first before completing the rest of the ticket details.
+            Use the helpdesk only for ICT-related concerns. Choose the Support Category first, then select the Concern Type that best matches what happened.
           </p>
 
           <div className="dashboard-info-band dashboard-info-band-top">
@@ -1627,25 +1765,25 @@ function DashboardView({ user, tickets, openTickets, onGoTo }) {
             <article className="dashboard-guide-example-card">
               <span>Software example</span>
               <p>
-                For Application Installation or Update, the form asks for Application Name, Request Type, Purpose, and Remarks instead of Error or Signal.
+                Choose Software / System Support for MBWin, Sky360, Excel, Office, installation, or system errors.
               </p>
             </article>
             <article className="dashboard-guide-example-card">
               <span>Network example</span>
               <p>
-                For Internet or Wi-Fi concerns, include the connection type, affected area, users affected, summary, and status or error.
+                Choose Network / Internet Support for no internet, slow internet, Wi-Fi, cable, port, shared folder, or server access issues.
               </p>
             </article>
             <article className="dashboard-guide-example-card">
               <span>Hardware example</span>
               <p>
-                For Desktop, Laptop, Printer, Scanner, Monitor, or Power concerns, include the device, problem summary, when it started, and the error or signal.
+                Choose Computer / Laptop Support for slow units, no display, no power, formatting, hardware, or application installation concerns.
               </p>
             </article>
             <article className="dashboard-guide-example-card">
-              <span>MBWIN reminder</span>
+              <span>Attachment reminder</span>
               <p>
-                MBWIN account requests are under User Account Management and require an approved SAAR PDF attachment before submission.
+                Attach a screenshot, error message, printer photo, router light, damaged cable, or related image if possible.
               </p>
             </article>
           </div>
@@ -1671,7 +1809,9 @@ function DashboardView({ user, tickets, openTickets, onGoTo }) {
                 </div>
 
                 <div className="ticket-badges">
-                  <span className={`status ${slugify(latestTicket.status || 'Created')}`}>{latestTicket.status || 'Created'}</span>
+                  <span className={`status ${slugify(getEmployeeTicketStatusLabel(latestTicket.status))}`}>
+                    {getEmployeeTicketStatusLabel(latestTicket.status)}
+                  </span>
                   <span className={`priority ${slugify(latestTicket.sla || latestTicket.priority || 'Low')}`}>
                     {latestTicket.sla || latestTicket.priority || 'Low'}
                   </span>
@@ -1733,11 +1873,11 @@ function DashboardView({ user, tickets, openTickets, onGoTo }) {
               </div>
               <div className="submission-guide-item">
                 <span className="submission-guide-number">03</span>
-                <p>Fill in the issue description fields shown for the selected concern type. Installation or update requests ask for Application Name, Request Type, Purpose, and Remarks.</p>
+                <p>Complete the Issue Description fields shown on the form.</p>
               </div>
               <div className="submission-guide-item">
                 <span className="submission-guide-number">04</span>
-                <p>For MBWIN-related requests, attach the approved SAAR PDF. Photos or screenshots are optional and limited to {PHOTO_MAX_COUNT} files.</p>
+                <p>For MBWin / Sky360 role requests, attach the approved SAAR PDF. Photos or screenshots are optional and limited to {PHOTO_MAX_COUNT} files.</p>
               </div>
             </div>
 
@@ -1883,6 +2023,7 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
   const [successNotice, setSuccessNotice] = useState(null);
   const [viewTicket, setViewTicket] = useState(null);
   const [formError, setFormError] = useState('');
+  const [photoPasteNotice, setPhotoPasteNotice] = useState('');
   const [ticketPage, setTicketPage] = useState(1);
 
   // Conversation state — matches admin pattern exactly
@@ -1903,8 +2044,14 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
   const resolvedCount = tickets.filter((ticket) => ticket.status === 'Resolved').length;
   const mbwinRequired = isMbwinRequest(form);
   const selectedSlaOption = useMemo(() => getSelectedSlaOption(form.sla), [form.sla]);
-  const issueDescriptionHint = useMemo(() => getIssueDescriptionHint(form), [form]);
-  const concernOptions = useMemo(() => getConcernOptionsForCategory(form.supportCategory), [form.supportCategory]);
+  const availableSupportCategories = useMemo(
+    () => getSupportCategoriesForDevice(form.deviceName),
+    [form.deviceName]
+  );
+  const concernOptions = useMemo(
+    () => getConcernOptionsForSelection(form.supportCategory, form.deviceName),
+    [form.supportCategory, form.deviceName]
+  );
   const pageSize = 3;
   const totalPages = Math.max(1, Math.ceil(tickets.length / pageSize));
   const currentPage = Math.min(ticketPage, totalPages);
@@ -2043,8 +2190,23 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
     setForm((prev) => {
       const next = { ...prev, [field]: value };
 
+      if (field === 'deviceName') {
+        const nextSupportCategories = getSupportCategoriesForDevice(value);
+
+        if (!nextSupportCategories.includes(prev.supportCategory)) {
+          next.supportCategory = nextSupportCategories.length === 1 ? nextSupportCategories[0] : '';
+          next.concernType = '';
+        } else {
+          const nextConcernOptions = getConcernOptionsForSelection(next.supportCategory, value);
+
+          if (!nextConcernOptions.includes(prev.concernType)) {
+            next.concernType = '';
+          }
+        }
+      }
+
       if (field === 'supportCategory') {
-        const nextConcernOptions = getConcernOptionsForCategory(value);
+        const nextConcernOptions = getConcernOptionsForSelection(value, next.deviceName);
 
         if (!nextConcernOptions.includes(prev.concernType)) {
           next.concernType = '';
@@ -2157,6 +2319,7 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
   const handlePhotoFilesChange = async (e) => {
     const files = e.target.files;
     setFormError('');
+    setPhotoPasteNotice('');
 
     try {
       const nextPhotos = await filesToPhotoAttachments(files, form.photoAttachments.length);
@@ -2172,11 +2335,59 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
     }
   };
 
+  const handlePhotoPaste = async (event) => {
+    const pastedImages = getClipboardImageFiles(event.clipboardData);
+
+    if (!pastedImages.length) {
+      setPhotoPasteNotice('No screenshot was found in the clipboard.');
+      return false;
+    }
+
+    event.preventDefault();
+    setFormError('');
+    setPhotoPasteNotice('');
+
+    try {
+      const nextPhotos = await filesToPhotoAttachments(pastedImages, form.photoAttachments.length);
+
+      setForm((prev) => ({
+        ...prev,
+        photoAttachments: [...prev.photoAttachments, ...nextPhotos],
+      }));
+
+      setPhotoPasteNotice(
+        `${nextPhotos.length} pasted screenshot${nextPhotos.length === 1 ? '' : 's'} attached.`
+      );
+      return true;
+    } catch (error) {
+      setFormError(error.message || 'Unable to paste the image. Please try choosing the file instead.');
+      return false;
+    }
+  };
+
+  useEffect(() => {
+    if (tab !== 'submit' || showConfirm || successNotice || typeof window === 'undefined') {
+      return undefined;
+    }
+
+    const handleWindowPaste = (event) => {
+      if (event.defaultPrevented) return;
+      void handlePhotoPaste(event);
+    };
+
+    window.addEventListener('paste', handleWindowPaste);
+
+    return () => {
+      window.removeEventListener('paste', handleWindowPaste);
+    };
+  }, [tab, showConfirm, successNotice, form.photoAttachments.length]);
+
   const removePhotoAttachment = (photoId) => {
     setForm((prev) => ({
       ...prev,
       photoAttachments: prev.photoAttachments.filter((photo) => photo.id !== photoId),
     }));
+    setPhotoPasteNotice('');
   };
 
   const handleConversationPhotoChange = async (e) => {
@@ -2238,9 +2449,9 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
       ['department', 'Department'],
       ['supportCategory', 'Support Category'],
       ['concernType', 'Concern Type'],
-      ['deviceName', 'Device / Workstation'],
+      ['deviceName', 'Device or System'],
       ['contactNumber', 'Contact Number'],
-      ['sla', 'SLA Level'],
+      ['sla', 'Impact Level'],
       ['description', 'Issue Description'],
     ];
 
@@ -2256,8 +2467,18 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
       return false;
     }
 
+    if (getAnyDeskDetail(form.description, form).length < 3) {
+      setFormError('AnyDesk Number is required because ICT mainly supports tickets remotely.');
+      return false;
+    }
+
+    if (isOtherConcernSelected(form) && getShortDescriptionDetail(form.description, form).length < 8) {
+      setFormError('Please briefly describe the concern when selecting an Other or Concern not listed option.');
+      return false;
+    }
+
     if (mbwinRequired && !form.saarAttachment?.dataUrl) {
-      setFormError('SAAR PDF attachment is required for MBWIN-related requests.');
+      setFormError('SAAR PDF attachment is required for MBWin / Sky360 role requests.');
       return false;
     }
 
@@ -2313,7 +2534,7 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
         title: wasEditing ? 'Ticket Updated' : 'Ticket Submitted',
         message: wasEditing
           ? 'Your ticket changes were saved successfully and sent back to ICT for review.'
-          : 'Your ticket was submitted successfully. ICT can now review your request.',
+          : 'Your ticket has been submitted successfully. ICT will review your concern and update the ticket status.',
       });
     } catch (error) {
       setFormError(error.message || 'Unable to save ticket. Please try again.');
@@ -2381,10 +2602,6 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
           </p>
         </div>
 
-        <div className="helpdesk-banner-actions">
-          <span className="helpdesk-badge">{activeCount} Active</span>
-          <span className="helpdesk-badge">{resolvedCount} Resolved</span>
-        </div>
       </section>
 
       <section className="support-insight-grid" aria-label="Support insights">
@@ -2406,7 +2623,7 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
         <article className="support-insight-card">
           <span><MonoIcon icon={BadgeCheck} />SAAR</span>
           <strong>PDF</strong>
-          <p>Required for all MBWIN-related service requests.</p>
+          <p>Required for MBWin / Sky360 role requests.</p>
         </article>
       </section>
 
@@ -2454,7 +2671,9 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
                     </div>
 
                     <div className="ticket-badges">
-                      <span className={`status ${slugify(ticket.status)}`}>{ticket.status}</span>
+                      <span className={`status ${slugify(getEmployeeTicketStatusLabel(ticket.status))}`}>
+                        {getEmployeeTicketStatusLabel(ticket.status)}
+                      </span>
                       <span className={`priority ${slugify(ticket.sla)}`}>{ticket.sla}</span>
                       {isMbwinRequest(ticket) && <span className="status saar">SAAR Required</span>}
                     </div>
@@ -2544,6 +2763,7 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
                     <option key={branch} value={branch}>{branch}</option>
                   ))}
                 </select>
+                <span className="ticket-form-hint">Select the branch or office where the concern happened.</span>
               </div>
 
               <div className="ticket-form-group">
@@ -2560,10 +2780,11 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
                     <option key={dept} value={dept}>{dept}</option>
                   ))}
                 </select>
+                <span className="ticket-form-hint">Select your department or the department affected by the concern.</span>
               </div>
 
               <div className="ticket-form-group">
-                <label htmlFor="ticket-device">Device / Workstation / System</label>
+                <label htmlFor="ticket-device">Device or System</label>
                 <select
                   id="ticket-device"
                   className="ticket-field ticket-select"
@@ -2571,7 +2792,7 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
                   onChange={(e) => handleFormChange('deviceName', e.target.value)}
                   required
                 >
-                  <option value="" disabled>Select device or system</option>
+                  <option value="" disabled>Select the affected device or system</option>
                   {form.deviceName && !DEVICE_OPTIONS.includes(form.deviceName) && (
                     <option value={form.deviceName}>{form.deviceName}</option>
                   )}
@@ -2579,6 +2800,7 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
                     <option key={device} value={device}>{device}</option>
                   ))}
                 </select>
+                <span className="ticket-form-hint">Choose the device, application, or system involved.</span>
               </div>
 
               <div className="ticket-form-group">
@@ -2592,6 +2814,7 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
                   placeholder="Example: 0917 000 0000 or local number"
                   required
                 />
+                <span className="ticket-form-hint">Provide a number where ICT can contact you if more details are needed.</span>
               </div>
 
               <div className="ticket-form-group">
@@ -2601,16 +2824,24 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
                   className="ticket-field ticket-select"
                   value={form.supportCategory}
                   onChange={(e) => handleFormChange('supportCategory', e.target.value)}
+                  disabled={!form.deviceName}
                   required
                 >
-                  <option value="" disabled>Select support category</option>
-                  {form.supportCategory && !HELPDESK_SUPPORT_CATEGORIES.includes(form.supportCategory) && (
+                  <option value="" disabled>
+                    {form.deviceName ? 'Select support category' : 'Select device or system first'}
+                  </option>
+                  {form.supportCategory && !availableSupportCategories.includes(form.supportCategory) && (
                     <option value={form.supportCategory}>{form.supportCategory}</option>
                   )}
-                  {HELPDESK_SUPPORT_CATEGORIES.map((category) => (
+                  {availableSupportCategories.map((category) => (
                     <option key={category} value={category}>{category}</option>
                   ))}
                 </select>
+                <span className="ticket-form-hint">
+                  {form.deviceName
+                    ? 'Only support categories related to the selected device or system are shown.'
+                    : 'Select a device or system first.'}
+                </span>
               </div>
 
               <div className="ticket-form-group">
@@ -2633,10 +2864,16 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
                     <option key={type} value={type}>{type}</option>
                   ))}
                 </select>
+                <span className="ticket-form-hint">
+                  {form.supportCategory
+                    ? 'Only concern types related to the selected support category are shown.'
+                    : 'Select a support category first to show concern types.'}
+                </span>
               </div>
 
               <div className="ticket-form-group full sla-level-section">
-                <label id="ticket-sla-label">SLA Level &amp; Operational Impact</label>
+                <label id="ticket-sla-label">Impact Level</label>
+                <span className="ticket-form-hint">Choose how much the concern affects daily work.</span>
                 <div
                   className="sla-picker-modern"
                   role="radiogroup"
@@ -2660,7 +2897,6 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
                         ].filter(Boolean).join(' ')}
                         onClick={() => handleSlaChange(option)}
                       >
-                        <span className="sla-card-icon"><MonoIcon icon={option.icon} /></span>
                         <span className="sla-card-copy">
                           <strong>{option.title}</strong>
                           <em>{option.impact}</em>
@@ -2679,12 +2915,11 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
                   form={form}
                   onChange={handleDescriptionDetailChange}
                 />
-                <span className="ticket-form-hint">{issueDescriptionHint}</span>
               </div>
 
               {mbwinRequired && (
                 <div className="ticket-form-group full saar-upload-card required">
-                  <label htmlFor="ticket-saar">SAAR PDF Attachment (Required for MBWIN / MBWIM)</label>
+                  <label htmlFor="ticket-saar">SAAR PDF Attachment (Required for MBWin / Sky360 role requests)</label>
 
                   <input
                     id="ticket-saar"
@@ -2709,7 +2944,7 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
                     </div>
                   ) : (
                     <span className="ticket-form-hint">
-                      Attach an approved SAAR PDF for MBWIN / MBWIM account, teller, role, or function requests.
+                      Attach an approved SAAR PDF for MBWin / Sky360 account, teller, role, or function requests.
                     </span>
                   )}
                 </div>
@@ -2726,7 +2961,7 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
                   onChange={handlePhotoFilesChange}
                 />
                 <span className="ticket-form-hint">
-                  Attach up to {PHOTO_MAX_COUNT} JPG, PNG, or WEBP photos. Use this for screenshots, printer errors, router lights, damaged cables, or hardware issues.
+                  Attach a screenshot, error message, printer photo, router light, damaged cable, or other related image. You can also press Ctrl+V to paste a copied screenshot directly.
                 </span>
 
                 {form.photoAttachments.length > 0 && (
@@ -3030,10 +3265,6 @@ function OtherServicesView({ user, reloadTickets }) {
           </p>
         </div>
 
-        <div className="helpdesk-banner-actions">
-          <span className="helpdesk-badge">Burnout / Other</span>
-          <span className="helpdesk-badge">{requests.length} Request{requests.length === 1 ? '' : 's'}</span>
-        </div>
       </section>
 
       <section className="panel-card glass">
@@ -3444,25 +3675,6 @@ export default function EmployeeDashboardPage() {
             </div>
 
             <div className="portal-topbar-actions">
-              <span className="portal-status-pill">
-                <span className="dot" />
-                IT Support Center
-              </span>
-
-              <span className="portal-status-pill alert">
-                <span className="dot" />
-                {openTickets} Active
-              </span>
-
-              <span className="portal-status-pill">
-                <span className="dot" />
-                Synced now
-              </span>
-
-              <button className="topbar-icon-btn" type="button" aria-label="Notifications">
-                <Icon.Bell />
-              </button>
-
               <div className="profile-chip">
                 <span className="profile-chip-avatar">{user.initials}</span>
                 <div className="profile-chip-copy">

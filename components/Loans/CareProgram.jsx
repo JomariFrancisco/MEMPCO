@@ -32,10 +32,10 @@ const features = [
 ];
 
 const stats = [
-  { value: '₱200K', label: 'Maximum loan amount' },
-  { value: '7', label: 'Key program features' },
-  { value: 'Group', label: 'Lending support model' },
-  { value: 'Character', label: 'Basis for lending' },
+  { value: '2.75%', label: 'Interest per month' },
+  { value: 'Php 4K', label: 'Minimum loan amount' },
+  { value: 'Php 200K', label: 'Maximum loan amount' },
+  { value: '4-12 mos', label: 'Repayment term' },
 ];
 
 export default function CareProgram() {
@@ -56,20 +56,19 @@ export default function CareProgram() {
 
           <h1 className="cp-hero-title" id="cp-heading">
             CARE Program.<br />
-            <span className="accent">Helping Help Themselves.</span>
+            <span className="accent">Helping members move forward.</span>
           </h1>
 
           <p className="cp-hero-tagline">
-            MEMPCO&apos;s flagship initiative designed to empower micro-entrepreneurs
-            by providing access to sustainable and responsible financing. Supporting
-            members in building resilient livelihoods, strengthening businesses, and
-            improving quality of life.
+            MEMPCO&apos;s CARE Program gives members a clear loan facility for
+            practical financing needs, with transparent amount limits, repayment
+            terms, and service fees.
           </p>
 
           <div className="cp-hero-badge-row">
-            <span className="cp-hero-badge">Micro-Entrepreneur Focused</span>
-            <span className="cp-hero-badge">Character-Based Financing</span>
-            <span className="cp-hero-badge">Up to ₱200,000</span>
+            <span className="cp-hero-badge">2.75% Monthly Interest</span>
+            <span className="cp-hero-badge">Php 4K Minimum</span>
+            <span className="cp-hero-badge">Up to Php 200K</span>
           </div>
         </div>
       </section>
@@ -93,13 +92,13 @@ export default function CareProgram() {
         <div className="cp-inner">
           <p className="cp-section-kicker">About the program</p>
           <h2 className="cp-section-title" id="cp-about-heading">
-            Anchored on empowering micro-entrepreneurs.
+            Built to help members move forward.
           </h2>
           <p className="cp-section-text">
-            The CARE Program supports members in building resilient livelihoods through
-            sustainable, responsible financing. At its core is the CARE Loan Facility — a
-            character-based financing solution tailored to meet the needs of small and
-            growing enterprises.
+            The CARE Program supports members through the CARE Loan facility:
+            2.75% interest per month, a Php 4,000 minimum loan amount, a Php
+            200,000 maximum loan amount, 4 to 12 months to pay, and a 4%
+            service fee.
           </p>
         </div>
       </section>
@@ -115,10 +114,9 @@ export default function CareProgram() {
               </h2>
             </div>
             <p className="cp-section-text">
-              Accessible and flexible funding to help members start, sustain, or expand
-              their businesses. Promotes responsible borrowing through a structured
-              approach that combines financial support with discipline and capacity
-              development.
+              Accessible funding with clear loan limits and repayment terms.
+              Members can review the amount, term, interest, and service fee
+              before applying.
             </p>
           </div>
 
@@ -130,17 +128,15 @@ export default function CareProgram() {
                 <span className="cp-amount-abbr">CARE</span>
                 <h3 className="cp-amount-name">CARE Loan Facility</h3>
                 <p className="cp-amount-desc">
-                  A character-based financing solution tailored to meet the needs of
-                  small and growing enterprises. Members not only access capital but also
-                  develop the discipline, skills, and confidence for long-term financial
-                  independence.
+                  A practical loan facility with 2.75% monthly interest, a 4%
+                  service fee, and repayment terms from 4 to 12 months.
                 </p>
               </div>
               <div className="cp-amount-highlight">
                 <span className="cp-amount-label">Loan Amount</span>
-                <span className="cp-amount-value">Up to ₱200,000</span>
+                <span className="cp-amount-value">Php 4,000 - Php 200,000</span>
                 <span className="cp-amount-sub">
-                  Based on capacity, repayment performance,<br />and business needs
+                  2.75% monthly interest<br />4% service fee
                 </span>
               </div>
             </div>

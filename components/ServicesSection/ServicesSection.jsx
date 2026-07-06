@@ -12,7 +12,7 @@ const SERVICES = [
       'Core financial services designed to help members build savings, access reliable credit, and support long-term financial stability.',
     groups: [
       { label: 'Savings', items: ['Regular Savings', 'KKT', 'Time Deposit'] },
-      { label: 'Loan', items: ['Business Loan', 'Providential Loan'] },
+      { label: 'Loan', items: ['CARE Program', 'Business Loan', 'Providential Loan'] },
     ],
     logos: [
       {
@@ -71,7 +71,7 @@ const SERVICES = [
 
 const STATS = [
   { value: '3', label: 'Service Pillars' },
-  { value: '11', label: 'Services' },
+  { value: '12', label: 'Services' },
   { value: '12', label: 'Branch Offices' },
 ];
 
