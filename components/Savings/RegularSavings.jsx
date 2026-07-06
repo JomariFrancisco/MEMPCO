@@ -4,14 +4,14 @@ import './RegularSavings.css'
 /* ─── data ─────────────────────────────────────────── */
 const stats = [
   { value: 'Php', num: '100', label: 'Minimum opening deposit' },
-  { value: '4%',  num: null,  label: 'Interest per annum, tax-free' },
-  { value: null,  num: 'On demand', label: 'Withdraw anytime during office hours' },
+  { value: 'Php', num: '100', label: 'Maintaining balance' },
+  { value: '3%',  num: null,  label: 'Interest per annum' },
 ]
 
 const features = [
   {
-    label: 'Zero tax on earnings',
-    desc:  'Every centavo of interest you earn goes straight to you — no deductions.',
+    label: 'Steady annual interest',
+    desc:  'Your savings earns 3% interest per annum while keeping the account simple and accessible.',
     icon: (
       <svg viewBox="0 0 24 24" aria-hidden="true">
         <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
@@ -19,8 +19,8 @@ const features = [
     ),
   },
   {
-    label: 'Withdrawal upon demand',
-    desc:  'Access your savings any time you need them during MEMPCO office hours.',
+    label: 'Php 100 maintaining balance',
+    desc:  'Keep at least Php 100 in the account to maintain active Regular Savings status.',
     icon: (
       <svg viewBox="0 0 24 24" aria-hidden="true">
         <rect x="2" y="5" width="20" height="14" rx="2"/>
@@ -29,8 +29,8 @@ const features = [
     ),
   },
   {
-    label: 'Open to all members',
-    desc:  'Required upon membership — simple, inclusive, and immediate.',
+    label: 'One-year dormancy policy',
+    desc:  'Accounts follow a one-year dormancy policy, so members are encouraged to keep their savings active.',
     icon: (
       <svg viewBox="0 0 24 24" aria-hidden="true">
         <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
@@ -46,12 +46,12 @@ const cards = [
   {
     num:   '01',
     title: 'How it works',
-    text:  'Open your account with Php 100.00. Your balance earns 4% interest per annum, computed on your average daily balance and credited to your account.',
+    text:  'Open your Regular Savings account with Php 100. Maintain at least Php 100 and earn 3% interest per annum.',
   },
   {
     num:   '02',
-    title: 'Withdrawals',
-    text:  'Savings may be withdrawn upon demand during MEMPCO\'s regular office hours. Simply present your passbook at the counter.',
+    title: 'Dormancy',
+    text:  'The account follows a one-year dormancy policy. Keep the account active through regular savings activity.',
   },
 ]
 
@@ -64,7 +64,7 @@ const whyCards = [
   {
     num:   '02',
     title: 'Grow without worry',
-    text:  'At 4% per annum with no taxes, your money works for you quietly and consistently.',
+    text:  'At 3% per annum, your savings continues to grow while staying easy to manage.',
   },
   {
     num:   '03',
@@ -95,7 +95,7 @@ export default function RegularSavings() {
           <span className="rs-eyebrow">MEMPCO Savings Program</span>
           <h1 className="rs-hero-title" id="rs-heading">Regular <em>Savings.</em></h1>
           <p className="rs-hero-tagline">
-            Simple, dependable, and tax-free.<br />
+            Save early to help in the long run.<br />
             Built for every member from day one.
           </p>
 
@@ -146,11 +146,11 @@ export default function RegularSavings() {
               <p className="rs-details-body">
                 The Regular Savings account is the foundation of your MEMPCO membership.
                 Open with as little as <strong>Php 100.00</strong> and earn{' '}
-                <strong>4% interest per annum</strong>, completely tax-free.
+                <strong>3% interest per annum</strong>.
               </p>
               <p className="rs-details-body">
-                It is straightforward by design — no complicated terms,
-                no hidden fees, no lock-in periods.
+                Keep a <strong>Php 100 maintaining balance</strong> and keep
+                the account active under the one-year dormancy policy.
               </p>
 
               <ul className="rs-feature-list">

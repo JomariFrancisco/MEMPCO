@@ -182,8 +182,8 @@ export const SITE_MAP = {
     label: 'KKT',
     href: '/services/savings/kkt',
     icon: 'savings',
-    keywords: ['kkt', 'kaunlaran', 'savings', 'ofw savings', 'family savings'],
-    description: 'A savings product built around long-term growth for OFWs, families, and members planning ahead.',
+    keywords: ['kkt', 'kinabukasan', 'special savings', 'locked savings', 'long term savings', 'family savings'],
+    description: 'A special savings product for members planning ahead with a minimum two-year lock-in.',
     nextSteps: ['Check the page for rate and eligibility details.', 'Compare it with Regular Savings and Time Deposit.', 'Ask a branch which savings option fits your goal.'],
     related: ['regularSavings', 'timeDeposit', 'services'],
   },
@@ -230,7 +230,7 @@ export const SITE_MAP = {
     icon: 'loans',
     keywords: ['providential loan', 'salary loan', 'appliance loan', 'motorcycle loan', 'pension loan', 'education loan', 'personal loan', 'house improvement'],
     description: 'Personal financing options for salary, education, motorcycle, pension, household, and other member needs.',
-    options: ['Appliance & Furniture Loan', 'Salary Loan', 'Motorcycle Loan', 'Honorarium Loan', 'Vehicle Loan', 'House Improvement Loan', 'Instant Loan', 'Education Loan', 'Pension Loan'],
+    options: ['Appliance & Furniture Loan', 'Salary Loan', 'Motorcycle Loan', 'Honorarium Loan', 'Vehicle Loan', 'House Improvement Loan', 'Instant Loan', 'Study Now Pay Later', 'Pension Loan'],
     nextSteps: ['Pick the loan purpose that fits your need.', 'Review the product page before applying.', 'Ask a branch for the latest requirements and amount limits.'],
     related: ['businessLoan', 'services'],
   },
@@ -239,17 +239,17 @@ export const SITE_MAP = {
     href: '/services/loans/care-program',
     icon: 'care',
     keywords: ['care program', 'care loan', 'micro entrepreneur', 'character based financing', 'small business support'],
-    description: 'A micro-entrepreneur focused loan program for responsible borrowers and small livelihood growth.',
-    nextSteps: ['Review CARE Program eligibility.', 'Prepare livelihood or business details.', 'Contact a branch for assessment and next steps.'],
+    description: 'A CARE Loan program with clear amount limits, monthly interest, repayment term, and service fee.',
+    nextSteps: ['Review CARE Loan details.', 'Check the amount, term, interest, and service fee.', 'Contact a branch for assessment and next steps.'],
     related: ['businessLoan', 'providentialLoan', 'services'],
   },
   insurance: {
     label: 'Insurance',
     href: '/services/insurance',
     icon: 'insurance',
-    keywords: ['insurance', 'coop assurance', 'life insurance', 'loan protection', 'family protection', 'non life'],
-    description: 'Insurance options for member protection, family coverage, loan protection, and selected non-life needs.',
-    nextSteps: ['Review available insurance categories.', 'Match coverage to your family, loan, or property need.', 'Confirm terms with a branch before enrolling.'],
+    keywords: ['insurance', 'coop assurance', 'life insurance', 'gadddi', 'expanded life insurance', 'loan protection', 'family protection', 'non life'],
+    description: 'Insurance catalog including GADDDI-4, Expanded Life Insurance, family coverage, loan protection, and selected non-life needs.',
+    nextSteps: ['Review available insurance categories and add-on life packages.', 'Match coverage to your family, loan, or property need.', 'Confirm terms with a branch before enrolling.'],
     related: ['services', 'offices'],
   },
   transportation: {
@@ -435,7 +435,7 @@ const FAQ_ITEMS = [
     label: 'How do I apply for a loan?',
     keywords: ['apply loan', 'loan application', 'borrow money', 'requirements loan', 'business loan application', 'providential loan application'],
     answer: 'Start by choosing the loan purpose, then review the matching loan page and contact a MEMPCO branch for current requirements and assessment.',
-    details: ['Business or livelihood need: start with Business Loan or CARE Program.', 'Personal, salary, education, pension, or household need: start with Providential Loan.', 'A branch can confirm eligibility, documents, amount limits, and processing steps.'],
+    details: ['Business or livelihood need: start with Business Loan or CARE Program.', 'Personal, salary, school, pension, or household need: start with Providential Loan.', 'A branch can confirm eligibility, documents, amount limits, and processing steps.'],
     links: ['businessLoan', 'providentialLoan', 'careProgram', 'offices'],
   },
   {
@@ -474,8 +474,8 @@ const FAQ_ITEMS = [
     id: 'education-help',
     label: 'I need money for school',
     keywords: ['school', 'tuition', 'education loan', 'student expense', 'money for school', 'college'],
-    answer: 'For school or tuition-related needs, start with the Education Loan under Providential Loan, then confirm requirements with a branch.',
-    details: ['Open Providential Loan and look for Education Loan.', 'Prepare school-related details or documents before asking for assessment.', 'Contact a branch to confirm the current amount limits and requirements.'],
+    answer: 'For school or tuition-related needs, start with Study Now Pay Later under Providential Loan, then confirm requirements with a branch.',
+    details: ['Open Providential Loan and look for Study Now Pay Later.', 'Prepare school-related details or documents before asking for assessment.', 'Contact a branch to confirm the current amount limits and requirements.'],
     links: ['providentialLoan', 'offices'],
   },
   {
@@ -517,7 +517,7 @@ const DIRECT_ACTIONS = {
 
 const PAGE_GUIDE_DETAILS = {
   businessLoan: {
-    details: ['Compare Individual, Group, Back-to-Back, and EC Tricycle options.', 'Use branch contact before preparing documents so requirements are current.', 'If the business is micro-entrepreneur focused, also check CARE Program.'],
+    details: ['Compare Individual, Group, Back-to-Back, and EC Tricycle options.', 'Use branch contact before preparing documents so requirements are current.', 'If the amount fits CARE Loan limits, also check CARE Program.'],
     actions: ['call', 'email'],
   },
   providentialLoan: {
@@ -525,7 +525,7 @@ const PAGE_GUIDE_DETAILS = {
     actions: ['call', 'email'],
   },
   careProgram: {
-    details: ['Focused on micro-entrepreneur and livelihood support.', 'Prepare basic livelihood details before asking for assessment.', 'Compare it with Business Loan if you need larger business financing.'],
+    details: ['CARE Loan has 2.75% monthly interest, Php 4,000 minimum, and Php 200,000 maximum.', 'Review the 4 to 12 month term and 4% service fee.', 'Compare it with Business Loan if you need larger business financing.'],
     actions: ['call', 'email'],
   },
   regularSavings: {
@@ -869,7 +869,7 @@ function buildGoals(pathname) {
         text: 'What is the loan mainly for? Pick the closest purpose first; requirements are confirmed by a branch after that.',
         topics: [
           { key: 'loan-business', label: 'Business capital or livelihood', icon: 'loans', items: ['businessLoan'] },
-          { key: 'loan-care', label: 'Micro-entrepreneur CARE', icon: 'care', items: ['careProgram'] },
+          { key: 'loan-care', label: 'CARE Loan', icon: 'care', items: ['careProgram'] },
           { key: 'loan-personal', label: 'Salary, household, or personal', icon: 'loans', items: ['providentialLoan'] },
           { key: 'loan-education', label: 'Education or pension need', icon: 'loans', items: ['providentialLoan'] },
         ],
@@ -877,7 +877,7 @@ function buildGoals(pathname) {
         actions: actionsFromKeys(['call', 'email']),
         cardTitle: 'Loan Application Path',
         cardDescription: 'Choose the loan family first, then use the branch page for current requirements.',
-        details: ['Business Loan covers enterprise, group, back-to-back, and tricycle-related options.', 'Providential Loan covers personal and household needs.', 'CARE Program supports micro-entrepreneur financing.'],
+        details: ['Business Loan covers enterprise, group, back-to-back, and tricycle-related options.', 'Providential Loan covers personal and household needs.', 'CARE Program covers practical CARE Loan needs.'],
         quickReplies: [
           { key: 'quick-business-loan', label: 'Business Loan', type: 'page', pageKey: 'businessLoan' },
           { key: 'quick-providential-loan', label: 'Providential', type: 'page', pageKey: 'providentialLoan' },
@@ -896,14 +896,14 @@ function buildGoals(pathname) {
         topics: [
           { key: 'save-everyday', label: 'Everyday member savings', icon: 'savings', items: ['regularSavings'] },
           { key: 'save-fixed', label: 'Fixed-term savings', icon: 'savings', items: ['timeDeposit'] },
-          { key: 'save-ofw', label: 'OFW or family growth', icon: 'savings', items: ['kkt'] },
+          { key: 'save-long-term', label: 'Long-term special savings', icon: 'savings', items: ['kkt'] },
           { key: 'save-youth', label: 'Youth or student saver', icon: 'mlc', items: ['youthSavings', 'aflatounSavings', 'mlc'] },
         ],
         links: linksFromKeys(['regularSavings', 'timeDeposit', 'aflatounSavings', 'youthSavings', 'offices']),
         actions: actionsFromKeys(['call', 'email']),
         cardTitle: 'Savings Account Path',
         cardDescription: 'Regular Savings is the usual starting point; Time Deposit is for fixed-term saving.',
-        details: ['Use KKT for long-term OFW or family savings goals.', 'Use youth products for younger savers and school-linked programs.', 'Branch staff can confirm the latest account requirements.'],
+        details: ['Use KKT for long-term special savings goals.', 'Use youth products for younger savers and school-linked programs.', 'Branch staff can confirm the latest account requirements.'],
         quickReplies: [
           { key: 'quick-regular-savings', label: 'Regular Savings', type: 'page', pageKey: 'regularSavings' },
           { key: 'quick-time-deposit', label: 'Time Deposit', type: 'page', pageKey: 'timeDeposit' },

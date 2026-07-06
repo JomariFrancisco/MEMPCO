@@ -876,6 +876,11 @@ body {
 }
 
 .ins-coverage-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
   padding: 1.7rem 1.75rem 1.4rem;
   background: linear-gradient(
     180deg,
@@ -887,6 +892,7 @@ body {
 
 .ins-coverage-copy {
   min-width: 0;
+  flex: 1 1 320px;
 }
 
 .ins-coverage-meta {
@@ -931,6 +937,34 @@ body {
   letter-spacing: -0.035em;
   line-height: 1.15;
   color: var(--ink);
+}
+
+.ins-coverage-premium {
+  display: grid;
+  gap: 0.18rem;
+  min-width: 150px;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.88);
+  text-align: right;
+}
+
+.ins-coverage-premium span,
+.ins-coverage-premium small {
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 1.25;
+  text-transform: uppercase;
+}
+
+.ins-coverage-premium strong {
+  color: var(--ink);
+  font-size: 1.15rem;
+  font-weight: 900;
+  line-height: 1.15;
 }
 
 .ins-coverage-body {
@@ -980,6 +1014,53 @@ body {
 .ins-coverage-list li:hover {
   border-color: color-mix(in srgb, var(--accent) 24%, var(--border));
   background: var(--accent-soft);
+}
+
+.ins-benefit-table-wrap {
+  margin-top: 1.1rem;
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: #fff;
+}
+
+.ins-benefit-table {
+  width: 100%;
+  min-width: 520px;
+  border-collapse: collapse;
+}
+
+.ins-benefit-table th,
+.ins-benefit-table td {
+  padding: 0.78rem 0.9rem;
+  border-bottom: 1px solid var(--border);
+  color: var(--ink-2);
+  font-size: 0.92rem;
+  line-height: 1.35;
+  text-align: left;
+  vertical-align: top;
+  white-space: normal;
+}
+
+.ins-benefit-table th {
+  background: var(--accent-soft);
+  color: var(--ink);
+  font-weight: 900;
+}
+
+.ins-benefit-table td:first-child {
+  color: var(--ink);
+  font-weight: 800;
+}
+
+.ins-benefit-table tr.is-highlight td {
+  background: rgba(201, 162, 39, 0.1);
+  color: var(--ink);
+  font-weight: 900;
+}
+
+.ins-benefit-table tr:last-child td {
+  border-bottom: 0;
 }
 
 /* ═══════════════════════════════════════
@@ -1088,6 +1169,11 @@ body {
 
   .ins-product-premium {
     align-items: flex-start;
+    text-align: left;
+  }
+
+  .ins-coverage-premium {
+    width: 100%;
     text-align: left;
   }
 }

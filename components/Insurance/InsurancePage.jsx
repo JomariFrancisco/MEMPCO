@@ -21,28 +21,27 @@ const categories = [
   {
     id: 'life-insurance',
     kicker: 'Life insurance products',
-    title: 'Life protection for members, deposits, and bundled coverage.',
-    text: 'A broader insurance catalog covering yearly renewable term protection, accident-focused plans, and bundled cooperative member protection.',
+    title: 'Life protection, including add-on packages for members.',
+    text: 'A broader insurance catalog covering GADDDI-4, Expanded Life Insurance, yearly renewable term protection, accident-focused plans, and bundled cooperative member protection.',
     products: [
       {
         id: 'gadddi',
-        abbr: 'GADDDI',
-        name: 'Group Accident, Death, Disablement & Dismemberment Insurance',
-        summary: 'Accident-centered coverage options based on age bracket and plan type.',
+        abbr: 'GADDDI-4',
+        name: 'GADDDI-4 Life Insurance',
+        summary: 'Add-on life insurance package with age-based natural death coverage and accident-related benefits.',
         tone: '#D18B00',
         toneSoft: 'rgba(209, 139, 0, 0.10)',
-        premiumLabel: 'Premium',
-        premium: '₱600 / ₱1,800',
-        period: 'catalog options',
-        columns: ['Option 1', 'Option 4 (18–69 y.o)', 'Option 4 (70–80 y.o)'],
+        premiumLabel: 'Annual Premium',
+        premium: 'Php 1,800',
+        period: 'per year',
+        columns: ['18-69 years old', '70-80 years old'],
         rows: [
-          { label: 'Natural Death', values: ['25,000.00', '75,000.00', '37,500.00'] },
-          { label: 'Accidental Death', values: ['100,000.00', '300,000.00', '-'] },
-          { label: 'Murder & Unprovoked Assault', values: ['50,000.00', '150,000.00', '-'] },
-          { label: 'Cash Burial due to Accidental Death', values: ['15,000.00', '45,000.00', '-'] },
-          { label: 'HIB Due to Accident (max of 30 days)', values: ['100/day', '300/day', '-'] },
-          { label: 'Annual Premium — Option 1', values: ['600.00', '', ''], highlight: true },
-          { label: 'Annual Premium — Option 4', values: ['', '1,800.00', '1,800.00'], highlight: true },
+          { label: 'Natural Death', values: ['75,000.00', '37,500.00'] },
+          { label: 'Accidental Death', values: ['300,000.00', 'N/A'] },
+          { label: 'Murder & Unprovoked Assault', values: ['150,000.00', 'N/A'] },
+          { label: 'Cash Burial due to Accident', values: ['45,000.00', 'N/A'] },
+          { label: 'HIB due to Accident (max. 30 days)', values: ['300/day', 'N/A'] },
+          { label: 'Annual Premium', values: ['1,800.00', '1,800.00'], highlight: true },
         ],
       },
       {
@@ -68,18 +67,18 @@ const categories = [
       {
         id: 'egyrt',
         abbr: 'EGYRT',
-        name: 'Enhanced Group Yearly Renewable Term',
-        summary: 'Yearly renewable coverage for death, assault, medical reimbursement, burial, and hospital income.',
+        name: 'Expanded Life Insurance',
+        summary: 'Add-on life insurance package with natural death, accidental death, medical reimbursement, hospital income, and burial benefits.',
         tone: '#E7C547',
         toneSoft: 'rgba(231, 197, 71, 0.12)',
         premiumLabel: 'Annual Premium',
-        premium: '₱1,890',
+        premium: 'Php 1,890',
         period: 'per year',
-        columns: ['Coverage'],
+        columns: ['18-70 years old'],
         rows: [
           { label: 'Natural Death', values: ['200,000.00'] },
-          { label: 'Accidental Death Benefit', values: ['300,000.00'] },
-          { label: 'Unprovoked Murder or Assault', values: ['50,000.00'] },
+          { label: 'Accidental Death', values: ['300,000.00'] },
+          { label: 'Murder & Unprovoked Assault', values: ['50,000.00'] },
           { label: 'Accident Medical Reimbursement', values: ['10,000.00'] },
           { label: 'Daily Hospital Income Benefits', values: ['300/day'] },
           { label: 'Burial', values: ['2,000.00'] },
@@ -366,14 +365,14 @@ const categories = [
 const stats = [
   { value: '15', label: 'Insurance products catalogued' },
   { value: '4', label: 'Coverage groups' },
-  { value: 'Life', label: 'Member and family protection' },
+  { value: 'Add-ons', label: 'Life insurance packages' },
   { value: 'Non-Life', label: 'Property and vehicle coverage' },
 ];
 
 const quickGuide = [
   {
     title: 'Life Insurance Products',
-    text: 'Yearly renewable term, accident coverage, bundled protection, and deposit-linked insurance.',
+    text: 'Includes GADDDI-4, Expanded Life Insurance, yearly renewable term, accident coverage, and deposit-linked insurance.',
   },
   {
     title: 'C.A.R.E Member Plans',
@@ -394,7 +393,7 @@ const coverageByProduct = {
     'Natural Death',
     'Accidental Death',
     'Murder & Unprovoked Assault',
-    'Cash Burial due to Accidental Death',
+    'Cash Burial due to Accident',
     'HIB due to Accident',
   ],
   glafi: [
@@ -407,9 +406,9 @@ const coverageByProduct = {
   egyrt: [
     'Natural Death',
     'Accidental Death',
-    'Unprovoked Murder or Assault',
+    'Murder & Unprovoked Assault',
     'Accident Medical Reimbursement',
-    'Daily Hospital Income',
+    'Daily Hospital Income Benefits',
     'Burial',
   ],
   'time-deposit-life': [
@@ -495,6 +494,11 @@ function CoverageDetails({ product }) {
           </div>
           <h3 className="ins-coverage-name">{product.name}</h3>
         </div>
+        <div className="ins-coverage-premium">
+          <span>{product.premiumLabel}</span>
+          <strong>{product.premium}</strong>
+          <small>{product.period}</small>
+        </div>
       </div>
 
       <div className="ins-coverage-body">
@@ -507,6 +511,33 @@ function CoverageDetails({ product }) {
             </li>
           ))}
         </ul>
+        <div className="ins-benefit-table-wrap">
+          <table className="ins-benefit-table">
+            <thead>
+              <tr>
+                <th>Benefit</th>
+                {product.columns.map((column, index) => (
+                  <th key={`${product.id}-detail-col-${index}`}>{column}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {product.rows.map((row, rowIndex) => (
+                <tr
+                  key={`${product.id}-detail-row-${rowIndex}`}
+                  className={row.highlight ? 'is-highlight' : undefined}
+                >
+                  <td>{row.label}</td>
+                  {product.columns.map((_, valueIndex) => (
+                    <td key={`${product.id}-detail-cell-${rowIndex}-${valueIndex}`}>
+                      {row.values[valueIndex] || '-'}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </article>
   );

@@ -4,23 +4,23 @@ import './TimeDeposit.css'
 /* ─── data ─────────────────────────────────────────── */
 const stats = [
   {
-    value: '6.75%',
-    label: 'Maximum interest per annum',
+    value: '4.10% - 6.75%',
+    label: 'Interest rate per annum',
   },
   {
-    value: '1 mo – 1 yr',
-    label: 'Flexible placement term',
+    value: 'Php 5,000',
+    label: 'Minimum account opening',
   },
   {
-    value: 'Lock it in',
-    label: 'Stop the spend, grow the fund',
+    value: '30 days - 1 year',
+    label: 'Available placement terms',
   },
 ]
 
 const features = [
   {
-    label: 'Higher earnings than most institutions',
-    desc:  'Earn up to 6.75% per annum — stronger than many banks and financial cooperatives.',
+    label: 'Competitive fixed-term rates',
+    desc:  'Earn from 4.10% to 6.75% per annum depending on the selected term and current product schedule.',
     icon: (
       <svg viewBox="0 0 24 24" aria-hidden="true">
         <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
@@ -29,8 +29,8 @@ const features = [
     ),
   },
   {
-    label: 'Flexible terms from 1 month',
-    desc:  'Choose a placement period that fits your plans — from a single month up to a full year.',
+    label: 'Multiple term options',
+    desc:  'Choose from 30, 60, 90, 120, 180 days, or a 1-year placement term.',
     icon: (
       <svg viewBox="0 0 24 24" aria-hidden="true">
         <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
@@ -41,8 +41,8 @@ const features = [
     ),
   },
   {
-    label: 'Prevents unplanned spending',
-    desc:  'Placing funds in Time Deposit removes the temptation to spend money that is sitting idle.',
+    label: 'Php 5,000 minimum opening',
+    desc:  'Start a Time Deposit placement with a minimum account opening of Php 5,000.',
     icon: (
       <svg viewBox="0 0 24 24" aria-hidden="true">
         <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
@@ -56,17 +56,17 @@ const cards = [
   {
     num:   '01',
     title: 'How interest works',
-    text:  'Your deposit earns up to 6.75% per annum over the agreed term. Interest is computed on your principal and credited at maturity.',
+    text:  'Your deposit earns from 4.10% to 6.75% per annum, based on the selected term and current product schedule.',
   },
   {
     num:   '02',
     title: 'Placement terms',
-    text:  'Terms range from as short as 1 month to as long as 1 year. Choose the duration that best fits your upcoming financial plans.',
+    text:  'Available terms include 30, 60, 90, 120, 180 days, and 1 year. Choose the duration that fits your savings plan.',
   },
   {
     num:   '03',
-    title: 'At maturity',
-    text:  'At the end of your chosen term, you may withdraw your principal and earned interest, or roll over the placement for another term.',
+    title: 'Minimum opening',
+    text:  'A Time Deposit account starts with a minimum opening placement of Php 5,000.',
   },
 ]
 
@@ -79,7 +79,7 @@ const whyCards = [
   {
     num:   '02',
     title: 'Stronger returns, shorter wait',
-    text:  'Even a 1-month placement earns more than a regular savings account sitting untouched.',
+    text:  'The rate range of 4.10% to 6.75% per annum gives members a clearer reason to set aside funds.',
   },
   {
     num:   '03',
@@ -110,7 +110,7 @@ export default function TimeDeposit() {
           <span className="td-eyebrow">MEMPCO Savings Program</span>
           <h1 className="td-hero-title" id="td-heading">Time <em>Deposit.</em></h1>
           <p className="td-hero-tagline">
-            Lock in your money. Lock out temptation.<br />
+            Keep money secure while earning fixed-term returns.<br />
             Let discipline do the earning.
           </p>
 
@@ -160,9 +160,9 @@ export default function TimeDeposit() {
                 period — so the money is there when you actually need it.
               </p>
               <p className="td-details-body">
-                Earn <strong>up to 6.75% interest per annum</strong> on
-                placements from <strong>1 month to 1 year</strong>. A simple,
-                powerful way to stay disciplined and financially ahead.
+                Earn <strong>4.10% to 6.75% interest per annum</strong> on
+                placements starting at <strong>Php 5,000</strong>, with terms
+                from <strong>30 days to 1 year</strong>.
               </p>
 
               <ul className="td-feature-list">

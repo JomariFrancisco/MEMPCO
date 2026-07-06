@@ -1,3 +1,6 @@
+'use client';
+
+import { useState } from 'react';
 import './BusinessLoan.css';
 
 const categories = [
@@ -17,13 +20,14 @@ const categories = [
         tone: '#DC2626',
         toneSoft: 'rgba(220, 38, 38, 0.10)',
         premiumLabel: 'Loan Ceiling',
-        premium: 'Up to ₱5,000,000',
+        premium: 'Up to Php 5,000,000',
         period: 'business financing program',
         columns: ['Details'],
         rows: [
-          { label: 'Interest Rate', values: ['2%–4%'] },
-          { label: 'Term', values: ['Up to 3 years to pay'] },
-          { label: 'Loan Amount', values: ['Maximum of ₱5,000,000'] },
+          { label: 'Interest Rate', values: ['1.50% to 3% per month'] },
+          { label: 'Loan Amount', values: ['Php 50,000 minimum; Php 5,000,000 maximum'] },
+          { label: 'Term', values: ['Flexible terms from 6 months up to 3 years'] },
+          { label: 'Service Fee', values: ['4% service fee'] },
           {
             label: 'Eligibility',
             values: [
@@ -47,12 +51,14 @@ const categories = [
         tone: '#4F6BED',
         toneSoft: 'rgba(79, 107, 237, 0.10)',
         premiumLabel: 'Loan Range',
-        premium: '₱3,000 – ₱50,000',
+        premium: 'Php 30,000 - Php 100,000',
         period: 'community-based financing',
         columns: ['Details'],
         rows: [
-          { label: 'Interest Rate', values: ['4% per month based on diminishing principal balance'] },
-          { label: 'Term', values: ['3 months to 12 months'] },
+          { label: 'Interest Rate', values: ['1.50% to 3% per month'] },
+          { label: 'Loan Amount', values: ['Php 30,000 minimum; Php 100,000 maximum'] },
+          { label: 'Term', values: ['6 to 12 months to pay'] },
+          { label: 'Service Fee', values: ['4% service fee'] },
           { label: 'Repayment', values: ['Weekly, semi-monthly, or monthly'] },
           {
             label: 'Overview',
@@ -81,13 +87,14 @@ const categories = [
         tone: '#36A52E',
         toneSoft: 'rgba(54, 165, 46, 0.12)',
         premiumLabel: 'Loan Ceiling',
-        premium: 'Up to ₱2,000,000',
+        premium: 'Up to Php 1,000,000',
         period: 'for existing depositors',
         columns: ['Details'],
         rows: [
           { label: 'Borrower Type', values: ['For existing depositors'] },
-          { label: 'Interest Rate', values: ['1.5% per month'] },
-          { label: 'Loan Amount', values: ['Maximum of ₱2,000,000'] },
+          { label: 'Interest Rate', values: ['0.83% to 1% per month'] },
+          { label: 'Loan Amount', values: ['Php 5,000 minimum; Php 1,000,000 maximum'] },
+          { label: 'Service Fee', values: ['2% service fee'] },
         ],
       },
       {
@@ -99,12 +106,14 @@ const categories = [
         tone: '#E39A18',
         toneSoft: 'rgba(227, 154, 24, 0.12)',
         premiumLabel: 'Loan Range',
-        premium: '₱20,000 – ₱250,000',
+        premium: 'Up to Php 200,000 per unit',
         period: 'transport livelihood financing',
         columns: ['Details'],
         rows: [
-          { label: 'Interest Rate', values: ['1.25% per month'] },
-          { label: 'Term', values: ['1 to 5 years'] },
+          { label: 'Interest Rate', values: ['15% interest rate per annum'] },
+          { label: 'Loan Amount', values: ['Maximum of Php 200,000 per unit'] },
+          { label: 'Term', values: ['Up to 5 years'] },
+          { label: 'Service Fee', values: ['1% service fee'] },
           { label: 'Repayment', values: ['Daily payment, Monday to Friday only'] },
           { label: 'Savings Component', values: ['Included'] },
           {
@@ -133,9 +142,9 @@ const categories = [
 
 const stats = [
   { value: '4', label: 'Business loan programs' },
-  { value: '₱3K', label: 'Lowest starting loan shown' },
-  { value: '₱5M', label: 'Highest loan ceiling shown' },
-  { value: '1–5 yrs', label: 'Longest term shown' },
+  { value: 'Php 5K', label: 'Lowest starting loan shown' },
+  { value: 'Php 5M', label: 'Highest loan ceiling shown' },
+  { value: 'Up to 5 yrs', label: 'Longest term shown' },
 ];
 
 const quickGuide = [
@@ -157,68 +166,92 @@ const quickGuide = [
   },
 ];
 
-function LoanTable({ product }) {
+function LoanTable({ product, isOpen, onToggle }) {
   return (
     <article
       id={product.id}
-      className="bl-product-card"
+      className={`bl-product-card bl-product-card--dropdown ${isOpen ? 'is-open' : ''}`}
       style={{
         '--accent': product.tone,
         '--accent-soft': product.toneSoft,
       }}
+      aria-label={`${product.name} loan product`}
     >
-      <div className="bl-product-topbar" />
+      <button
+        id={`bl-product-header-${product.id}`}
+        className="bl-product-row bl-product-toggle"
+        type="button"
+        aria-expanded={isOpen}
+        aria-controls={`bl-product-body-${product.id}`}
+        onClick={onToggle}
+      >
+        <span className="bl-product-dot" aria-hidden="true" />
+        <span className="bl-product-abbr">{product.abbr}</span>
+        <h3 className="bl-product-name">{product.name}</h3>
+        <span className="bl-product-chevron" aria-hidden="true">
+          <svg viewBox="0 0 24 24" focusable="false">
+            <path d="m6 9 6 6 6-6" />
+          </svg>
+        </span>
+      </button>
 
-      <div className="bl-product-header">
-        <div className="bl-product-copy">
-          <div className="bl-product-meta">
-            <span className="bl-product-abbr">{product.abbr}</span>
-            <span className="bl-product-pill">{product.summary}</span>
+      <div
+        id={`bl-product-body-${product.id}`}
+        className="bl-product-body"
+        role="region"
+        aria-labelledby={`bl-product-header-${product.id}`}
+      >
+        <div className="bl-product-body-inner">
+          <div className="bl-product-detail-head">
+            <p className="bl-product-summary">{product.summary}</p>
+            <div className="bl-product-premium">
+              <span className="bl-product-premium-label">{product.premiumLabel}</span>
+              <span className="bl-product-premium-value">{product.premium}</span>
+              <span className="bl-product-premium-period">{product.period}</span>
+            </div>
           </div>
 
-          <h3 className="bl-product-name">{product.name}</h3>
-        </div>
+          <div className="bl-product-table-wrap">
+            <table className="bl-product-table">
+              <thead>
+                <tr>
+                  <th>Item</th>
+                  {product.columns.map((column, columnIndex) => (
+                    <th key={`${product.id}-col-${columnIndex}`}>{column}</th>
+                  ))}
+                </tr>
+              </thead>
 
-        <div className="bl-product-premium">
-          <span className="bl-product-premium-label">{product.premiumLabel}</span>
-          <span className="bl-product-premium-value">{product.premium}</span>
-          <span className="bl-product-premium-period">{product.period}</span>
-        </div>
-      </div>
-
-      <div className="bl-product-table-wrap">
-        <table className="bl-product-table">
-          <thead>
-            <tr>
-              <th>Item</th>
-              {product.columns.map((column, columnIndex) => (
-                <th key={`${product.id}-col-${columnIndex}`}>{column}</th>
-              ))}
-            </tr>
-          </thead>
-
-          <tbody>
-            {product.rows.map((row, rowIndex) => (
-              <tr
-                key={`${product.id}-row-${rowIndex}`}
-                className={row.highlight ? 'is-highlight' : undefined}
-              >
-                <td>{row.label}</td>
-                {row.values.map((value, valueIndex) => (
-                  <td key={`${product.id}-cell-${rowIndex}-${valueIndex}`}>
-                    {value || '\u00A0'}
-                  </td>
+              <tbody>
+                {product.rows.map((row, rowIndex) => (
+                  <tr
+                    key={`${product.id}-row-${rowIndex}`}
+                    className={row.highlight ? 'is-highlight' : undefined}
+                  >
+                    <td>{row.label}</td>
+                    {product.columns.map((_, valueIndex) => (
+                      <td key={`${product.id}-cell-${rowIndex}-${valueIndex}`}>
+                        {row.values[valueIndex] || '-'}
+                      </td>
+                    ))}
+                  </tr>
                 ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </article>
   );
 }
 
 export default function BusinessLoan() {
+  const [openProductId, setOpenProductId] = useState(null);
+
+  const toggleProduct = (id) => {
+    setOpenProductId((currentId) => (currentId === id ? null : id));
+  };
+
   return (
     <div className="bl">
       <section className="bl-section bl-hero" aria-labelledby="bl-heading">
@@ -299,40 +332,26 @@ export default function BusinessLoan() {
         >
           <div className="bl-inner">
             <div className="bl-category-header">
-              <div>
-                <p className="bl-section-kicker">{category.kicker}</p>
-                <h2 className="bl-section-title" id={`${category.id}-heading`}>
-                  {category.title}
-                </h2>
-              </div>
+              <h2 className="bl-section-title" id={`${category.id}-heading`}>
+                {category.title}
+              </h2>
               <p className="bl-section-text">{category.text}</p>
             </div>
 
             <div className="bl-products-stack">
               {category.products.map((product) => (
-                <LoanTable key={product.id} product={product} />
+                <LoanTable
+                  key={product.id}
+                  product={product}
+                  isOpen={openProductId === product.id}
+                  onToggle={() => toggleProduct(product.id)}
+                />
               ))}
             </div>
           </div>
         </section>
       ))}
 
-      <section className="bl-section bl-note" aria-labelledby="bl-note-heading">
-        <div className="bl-inner">
-          <div className="bl-note-inner">
-            <p className="bl-note-kicker">Apply with MEMPCO</p>
-            <h2 className="bl-note-title" id="bl-note-heading">
-              For updated requirements, application review, and final loan terms,<br />
-              <em>coordinate directly with MEMPCO.</em>
-            </h2>
-            <p className="bl-note-text">
-              Final approval, pricing, eligibility evaluation, and documentary
-              requirements may still vary depending on the borrower profile and
-              loan assessment.
-            </p>
-          </div>
-        </div>
-      </section>
     </div>
   );
 }

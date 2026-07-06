@@ -4,19 +4,14 @@
 
 export const SUPPORT_CATEGORIES = [
   'Burnout',
-  'Software Support',
-  'Network Support',
-  'Hardware Support',
-  'User Account Management',
-  'Other ICT Support',
-  // Legacy categories are kept so older tickets still appear in admin filters/reports.
-  'Application / Software',
-  'Hardware / Device',
-  'Network / Internet',
-  'Account / Access',
-  'Remote Assistance',
-  'Request / Installation',
-  'Server / Core System',
+  'Software / System Support',
+  'Account / Access Support',
+  'Printer Support',
+  'Computer / Laptop Support',
+  'Network / Internet Support',
+  'Biometric / Attendance Support',
+  'Server / NAS / Database Support',
+  'Other ICT Request',
 ];
 
 export const BRANCHES = [
@@ -35,18 +30,20 @@ export const BRANCHES = [
 ];
 
 export const DEPARTMENTS = [
-  'Treasury Department',
-  'Accounting Department',
-  'Operation Department',
-  'MILES Department',
-  'Insurance Department/CAC',
-  'Marketing Department',
-  'HR Department',
-  'Audit Department',
-  'Legal Department',
-  'Allied and Services Department',
-  'Executive Department',
-  'ICT Department',
+  'Credit and Savings Operation',
+  'Treasury',
+  'CAS',
+  'Accounting',
+  'ICT',
+  'Marketing',
+  'MRDSS',
+  'Admin',
+  'Finance',
+  'HR',
+  'Legal Compliance',
+  'Internal Audit',
+  'Allied Services Operation',
+  'MEDS',
 ];
 
 export const SLA_LEVELS = ['Low', 'Medium', 'High', 'Critical'];
@@ -59,7 +56,7 @@ export const TICKET_STATUSES = [
   'Moved Date',
   'Modified',
   'Resolved',
-  'Canceled',
+  'Cancelled',
 ];
 
 export const BURNOUT_TICKET_STATUSES = [
@@ -85,42 +82,64 @@ export const ESCALATION_PARTNERS = [
 ];
 
 export const CATEGORY_CONCERN_TYPES = {
-  'Software Support': [
-    'Application Installation or Update',
-    'Application Error or Bug',
-    'Software License or Activation',
-    'System Configuration',
-    'Application Access Request',
+  'Software / System Support': [
+    'MBWin / Sky360 concern',
+    'Excel / Office application concern',
+    'System error or application issue',
+    'Software installation request',
+    'Other software concern',
   ],
-  'Network Support': [
-    'Internet or Wi-Fi Connection',
-    'LAN Connection',
-    'Network Printer or Shared Device',
-    'VPN or Remote Access',
-    'Network Account or Voucher',
+  'Account / Access Support': [
+    'New user account request',
+    'Password reset',
+    'Login problem',
+    'Access permission request',
+    'Teller role / user role concern',
+    'Other account access concern',
   ],
-  'Hardware Support': [
-    'Desktop or Laptop Issue',
-    'Printer or Scanner Issue',
-    'Monitor or Display Issue',
-    'Keyboard Mouse or Peripheral',
-    'Power UPS or AVR Issue',
+  'Printer Support': [
+    'Printer not printing',
+    'Printer setup or installation',
+    'Poor print quality',
+    'Printer error or blinking light',
+    'Ink, paper jam, or maintenance concern',
+    'Other printer concern',
   ],
-  'User Account Management': [
-    'Password Reset',
-    'Account Unlock',
-    'Create User Account',
-    'Change Access Permission',
-    'Email or Outlook Account',
-    'MBWIN Account Request',
+  'Computer / Laptop Support': [
+    'Slow computer or laptop',
+    'No display or no power',
+    'Hardware issue',
+    'Computer formatting',
+    'Application installation',
+    'Other computer concern',
   ],
-  'Other ICT Support': [
-    'Remote Assistance',
-    'ICT Service Request',
-    'Report or Document Assistance',
-    'Preventive Maintenance',
-    'Website or Web System',
-    'Other Technical Concern',
+  'Network / Internet Support': [
+    'No internet connection',
+    'Slow internet',
+    'Wi-Fi connection issue',
+    'Network cable or port issue',
+    'Shared folder or server access issue',
+    'Other network concern',
+  ],
+  'Biometric / Attendance Support': [
+    'Fingerprint enrollment',
+    'Unable to time-in or time-out',
+    'Biometric device issue',
+    'Attendance system concern',
+    'Other biometric concern',
+  ],
+  'Server / NAS / Database Support': [
+    'Server access issue',
+    'NAS or file storage concern',
+    'Backup concern',
+    'Database or system connection issue',
+    'Other server concern',
+  ],
+  'Other ICT Request': [
+    'General ICT assistance',
+    'ICT equipment request',
+    'Technical consultation',
+    'Concern not listed',
   ],
 };
 
@@ -148,11 +167,14 @@ export const CONCERN_TYPES = Array.from(
 );
 
 export const CATEGORY_TEMPLATES = {
-  'Software Support': 'Application Name:\nRequest Type:\nPurpose:\nRemarks:',
-  'Network Support': 'AnyDesk Number:\nConnection Type:\nAffected Area:\nUsers Affected:\nSummary:',
-  'Hardware Support': 'Device Type:\nDevice Name / Asset Name:\nLocation:\nProblem Summary:\nRemarks:',
-  'User Account Management': 'System / Application:\nUsername / Employee ID:\nRequested Access or Issue:\nApprover:\nRemarks:',
-  'Other ICT Support': 'Concern Summary:\nAffected User / Area:\nAdditional Details:\nRemarks:',
+  'Software / System Support': 'System Name:\nPage or Module:\nWhat Happened:\nError Message:\nAnyDesk Number:',
+  'Account / Access Support': 'System or Account:\nUsername or Employee ID:\nAccess Needed:\nWhat Happened:\nAnyDesk Number:',
+  'Printer Support': 'Printer Model:\nPrinter Location:\nPrinter Issue:\nError or Light Status:\nAnyDesk Number:',
+  'Computer / Laptop Support': 'Desktop or Laptop Name:\nUnit Location:\nWhat Happened:\nError Message:\nAnyDesk Number:',
+  'Network / Internet Support': 'Connection Type:\nLocation Affected:\nWhat Happened:\nRouter or Cable Status:\nAnyDesk Number:',
+  'Biometric / Attendance Support': 'Biometric Device:\nBranch or Location:\nWhat Happened:\nEmployee Affected:\nAnyDesk Number:',
+  'Server / NAS / Database Support': 'Server or Storage Name:\nFolder or Database:\nWhat Happened:\nError Message:\nAnyDesk Number:',
+  'Other ICT Request': 'Request Type:\nDevice or System:\nWhat Happened:\nNeeded Date:\nAnyDesk Number:',
   // Legacy templates are kept for older forms/components that may still reference them.
   'Application / Software': 'Anydesk Number:\nApplication/System:\nIssue Summary:\nExact Error Message:\nAction Already Tried:',
   'Hardware / Device': 'Anydesk Number:\nDevice Model/Asset Name:\nOffice Location:\nIssue Summary:\nAction Already Tried:',
@@ -167,15 +189,13 @@ export const DEVICE_OPTIONS = [
   'Desktop PC',
   'Laptop',
   'Printer',
-  'Scanner',
-  'Monitor',
   'Biometric Device',
   'ATM / Kiosk',
   'Network / Wi-Fi',
   'Server',
-  'MBWIN / Application Account',
-  'Website / Web System',
-  'Mobile Phone / Tablet',
+  'MBWin / Sky360',
+  'Excel / Office Application',
+  'Application Account',
   'Other ICT Device',
 ];
 

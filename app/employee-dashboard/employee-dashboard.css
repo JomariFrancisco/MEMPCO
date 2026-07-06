@@ -3450,22 +3450,6 @@ button {
     0 0 0 3px rgba(220, 38, 38, 0.065);
 }
 
-.sla-card-icon {
-  width: 42px;
-  height: 42px;
-  border-radius: 12px;
-  background: rgba(100, 116, 139, 0.08);
-  color: #475569;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.sla-card.selected .sla-card-icon {
-  color: #fff;
-  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.12);
-}
-
 .sla-card.low.selected {
   border-color: rgba(34, 197, 94, 0.42);
   background:
@@ -3476,10 +3460,6 @@ button {
     0 0 0 3px rgba(34, 197, 94, 0.07);
 }
 
-.sla-card.low.selected .sla-card-icon {
-  background: linear-gradient(180deg, #22c55e, #16a34a);
-}
-
 .sla-card.medium.selected {
   border-color: rgba(234, 179, 8, 0.45);
   background:
@@ -3487,23 +3467,11 @@ button {
     linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(254, 252, 232, 0.92));
 }
 
-.sla-card.medium.selected .sla-card-icon {
-  background: linear-gradient(180deg, #facc15, #ca8a04);
-}
-
 .sla-card.high.selected {
   border-color: rgba(249, 115, 22, 0.45);
   background:
     radial-gradient(circle at top right, rgba(249, 115, 22, 0.13), transparent 38%),
     linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 247, 237, 0.92));
-}
-
-.sla-card.high.selected .sla-card-icon {
-  background: linear-gradient(180deg, #fb923c, #ea580c);
-}
-
-.sla-card.critical.selected .sla-card-icon {
-  background: var(--grad-red);
 }
 
 .sla-card-copy {
