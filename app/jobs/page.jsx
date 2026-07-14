@@ -24,12 +24,6 @@ const VALUES = [
   },
 ];
 
-const HIGHLIGHTS = [
-  { value: '05', label: 'Open Roles' },
-  { value: 'On-site', label: 'Work Setup' },
-  { value: 'Zamboanga', label: 'Primary Office' },
-];
-
 export default function Career() {
   const [selectedJob, setSelectedJob] = useState(null);
   const [jobOpenings, setJobOpenings] = useState([]);
@@ -254,16 +248,6 @@ export default function Career() {
                 </button>
               </div>
 
-              <div className="cp-hero-stats">
-                {HIGHLIGHTS.map((h) => (
-                  <div key={h.label} className="cp-hero-stat-card">
-                    <span className="cp-hero-stat-value">
-                      {h.label === 'Open Roles' ? String(jobOpenings.length).padStart(2, '0') : h.value}
-                    </span>
-                    <span className="cp-hero-stat-label">{h.label}</span>
-                  </div>
-                ))}
-              </div>
             </div>
 
             <aside className="cp-hero-panel" aria-label="Hiring overview">

@@ -1,4 +1,4 @@
--- Run this in Supabase SQL Editor to convert the current static News & Events
+-- Run this in Supabase SQL Editor to convert the current static Marketing
 -- content into real Marketing Admin records.
 
 create extension if not exists pgcrypto;
@@ -105,6 +105,90 @@ with seed_marketing_posts (
       'latest',
       3,
       '2026-04-29 09:00:00+08'::timestamptz
+    ),
+    (
+      'award-diamond-awards-regional-awardee-2025',
+      'Diamond Awards Regional Awardee',
+      'Awards',
+      'award',
+      'Recognized as a Distinguished Institution and Mover of National Development Regional Awardee.',
+      jsonb_build_object(
+        'paragraphs',
+        jsonb_build_array(
+          'Recognized as a Distinguished Institution and Mover of National Development Regional Awardee.'
+        ),
+        'organization',
+        'Land Bank of the Philippines'
+      ),
+      '/About/Awards/diamond-awards.png',
+      'published',
+      false,
+      'more',
+      0,
+      '2025-12-04 09:00:00+08'::timestamptz
+    ),
+    (
+      'award-most-outstanding-primary-cooperative-2025',
+      'Most Outstanding Primary Cooperative',
+      'Awards',
+      'award',
+      'First placer in the Large Cooperative Category during the 2025 Cooperative Month Celebration.',
+      jsonb_build_object(
+        'paragraphs',
+        jsonb_build_array(
+          'First placer in the Large Cooperative Category during the 2025 Cooperative Month Celebration.'
+        ),
+        'organization',
+        '7th Marciano Aquino Coop Gawad Parangal'
+      ),
+      '/About/Awards/coop-gawad-parangal.png',
+      'published',
+      false,
+      'more',
+      0,
+      '2025-12-03 09:00:00+08'::timestamptz
+    ),
+    (
+      'award-aurora-awards-2025',
+      'Aurora Awards 2025',
+      'Awards',
+      'award',
+      'Received multiple recognitions for risk readiness, share capital structure, and loan-loss provision.',
+      jsonb_build_object(
+        'paragraphs',
+        jsonb_build_array(
+          'Received multiple recognitions for risk readiness, share capital structure, and loan-loss provision.'
+        ),
+        'organization',
+        'NATCCO Network'
+      ),
+      '/About/Awards/aurora-awards-2025.png',
+      'published',
+      false,
+      'more',
+      0,
+      '2025-12-02 09:00:00+08'::timestamptz
+    ),
+    (
+      'award-champion-for-climate-action-2025',
+      'Champion for Climate Action',
+      'Awards',
+      'award',
+      'Recognized for sustainability impact and climate-conscious cooperative action.',
+      jsonb_build_object(
+        'paragraphs',
+        jsonb_build_array(
+          'Recognized for sustainability impact and climate-conscious cooperative action.'
+        ),
+        'organization',
+        'CLIMBS'
+      ),
+      '/About/Awards/climbs-climate-action.png',
+      'published',
+      false,
+      'more',
+      0,
+      '2025-12-01 09:00:00+08'::timestamptz
     ),
     (
       'empowering-communities-financial-wellness',
@@ -312,8 +396,16 @@ select
   seed.display_order,
   seed.published_at
 from seed_marketing_posts seed
-where not exists (
-  select 1
-  from public.marketing_posts existing
-  where lower(existing.slug) = lower(seed.slug)
-);
+on conflict (slug) do update
+set
+  title = excluded.title,
+  category = excluded.category,
+  content_type = excluded.content_type,
+  excerpt = excluded.excerpt,
+  body = excluded.body,
+  image_url = excluded.image_url,
+  status = excluded.status,
+  featured = excluded.featured,
+  placement = excluded.placement,
+  display_order = excluded.display_order,
+  published_at = excluded.published_at;
