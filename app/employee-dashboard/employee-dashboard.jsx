@@ -452,15 +452,44 @@ const normalizeTextareaValue = (value = '') => String(value || '').replace(/\r\n
 
 const normalize = (value) => String(value || '').trim().toLowerCase();
 
+const EMPLOYEE_RESOLVED_STATUS_KEYS = [
+  'resolved',
+  'passed burnout',
+  'ready for deployment',
+  'deployed',
+  'failed burnout',
+  'damaged',
+  'for repair',
+  'for replacement',
+];
+
 const getEmployeeTicketStatusLabel = (status = '') => {
   const normalized = normalize(status).replace(/[-_]+/g, ' ').replace(/\s+/g, ' ');
 
   if (normalized === 'in progress') return 'In Progress';
-  if (normalized === 'resolved') return 'Resolved';
+  if (normalized === 'under burnout' || normalized === 'for inspection') return 'In Progress';
+  if (EMPLOYEE_RESOLVED_STATUS_KEYS.includes(normalized)) return 'Resolved';
   if (normalized === 'cancelled' || normalized === 'canceled') return 'Cancelled';
   if (normalized === 'escalated') return 'Escalated';
 
   return 'Pending';
+};
+
+const isEmployeeResolvedTicket = (ticket = {}) => getEmployeeTicketStatusLabel(ticket.status) === 'Resolved';
+
+const isEmployeeQueueTicket = (ticket = {}) => {
+  const statusLabel = getEmployeeTicketStatusLabel(ticket.status);
+  return statusLabel === 'Pending' || statusLabel === 'In Progress';
+};
+
+const getEmployeeClosedTicketMessage = (ticket = {}) => {
+  const normalized = normalize(ticket.status).replace(/[-_]+/g, ' ').replace(/\s+/g, ' ');
+
+  if (normalized === 'passed burnout') return 'This Burnout ticket has already passed and was completed by ICT.';
+  if (EMPLOYEE_RESOLVED_STATUS_KEYS.includes(normalized)) return 'This ticket has already been resolved by ICT.';
+  if (normalized === 'cancelled' || normalized === 'canceled') return 'This ticket has been cancelled.';
+
+  return '';
 };
 
 const normalizePortalRole = (role = '') =>
@@ -1440,12 +1469,24 @@ function EmployeeTicketDetailModal({
   onSend,
 }) {
   const canEditTicket = canEmployeeEditTicket(ticket);
+  const employeeStatusLabel = getEmployeeTicketStatusLabel(ticket.status);
+  const closedTicketMessage = getEmployeeClosedTicketMessage(ticket);
+  const isClosedTicket = Boolean(closedTicketMessage);
   const lockReason =
+    closedTicketMessage ||
     ticket.employeeLockReason ||
     ticket.employeeEditLockReason ||
     'Locked because ICT is already handling this ticket.';
   const lastUpdated = ticket.lastUpdated || ticket.lastEmployeeUpdate || ticket.date || ticket.createdAt || 'Not available';
   const isChatOpen = shouldShowConversation && !isChatMinimized;
+  const statusPanelTitle = canEditTicket
+    ? 'This request can still be edited.'
+    : isClosedTicket
+      ? 'This request has been completed.'
+      : 'ICT is already handling this request.';
+  const statusPanelDescription = canEditTicket
+    ? 'You may update the ticket while it is still pending review.'
+    : lockReason;
 
   return (
     <div
@@ -1480,13 +1521,13 @@ function EmployeeTicketDetailModal({
         <div className="admin-workflow-box ticket-action-status-panel">
           <div className="ticket-action-workflow-copy">
             <span className="section-kicker">Employee Ticket</span>
-            <h4>{canEditTicket ? 'This request can still be edited.' : 'ICT is already handling this request.'}</h4>
-            <p>{canEditTicket ? 'You may update the ticket while it is still pending review.' : lockReason}</p>
+            <h4>{statusPanelTitle}</h4>
+            <p>{statusPanelDescription}</p>
           </div>
 
           <div className="employee-ticket-status-stack" aria-label="Ticket status">
-            <span className={`status ${slugify(getEmployeeTicketStatusLabel(ticket.status))}`}>
-              {getEmployeeTicketStatusLabel(ticket.status)}
+            <span className={`status ${slugify(employeeStatusLabel)}`}>
+              {employeeStatusLabel}
             </span>
             <span className={`priority ${slugify(ticket.sla)}`}>{ticket.sla}</span>
             {isMbwinRequest(ticket) && <span className="status saar">SAAR Required</span>}
@@ -1664,7 +1705,7 @@ function EmployeeTicketDetailModal({
 ========================= */
 
 function DashboardView({ user, tickets, openTickets, onGoTo }) {
-  const resolvedCount = tickets.filter((ticket) => ticket.status === 'Resolved').length;
+  const resolvedCount = tickets.filter(isEmployeeResolvedTicket).length;
   const pendingCount = tickets.filter((ticket) => ['Created', 'Pending', 'Modified'].includes(ticket.status)).length;
   const urgentCount = tickets.filter(
     (ticket) => ['High', 'Critical'].includes(ticket.sla) && isUnresolved(ticket.status)
@@ -2040,8 +2081,9 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
   const currentUserIdRef = useRef(user?.id || '');
   const ticketMessageIdsRef = useRef(new Set());
 
+  const queueCount = tickets.filter(isEmployeeQueueTicket).length;
   const activeCount = tickets.filter((ticket) => isUnresolved(ticket.status)).length;
-  const resolvedCount = tickets.filter((ticket) => ticket.status === 'Resolved').length;
+  const resolvedCount = tickets.filter(isEmployeeResolvedTicket).length;
   const mbwinRequired = isMbwinRequest(form);
   const selectedSlaOption = useMemo(() => getSelectedSlaOption(form.sla), [form.sla]);
   const availableSupportCategories = useMemo(
@@ -2607,8 +2649,8 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
       <section className="support-insight-grid" aria-label="Support insights">
         <article className="support-insight-card">
           <span><MonoIcon icon={FileText} />Queue</span>
-          <strong>{tickets.length}</strong>
-          <p>Total requests submitted from your account.</p>
+          <strong>{queueCount}</strong>
+          <p>Pending or in-progress requests currently with ICT.</p>
         </article>
         <article className="support-insight-card">
           <span><MonoIcon icon={Clock3} />Active</span>
