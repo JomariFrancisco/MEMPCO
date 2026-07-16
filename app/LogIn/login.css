@@ -511,6 +511,49 @@ button {
   flex-shrink: 0;
 }
 
+.forced-password-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9400;
+  display: grid;
+  place-items: center;
+  padding: clamp(1rem, 3vw, 2rem);
+  background: rgba(15, 23, 42, 0.62);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.forced-password-modal {
+  width: min(460px, 100%);
+  display: grid;
+  gap: 1rem;
+  padding: clamp(1.15rem, 3vw, 1.75rem);
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 28px 80px rgba(15, 23, 42, 0.28);
+}
+
+.forced-password-modal .auth-form-head {
+  margin: 0;
+}
+
+.password-hint {
+  margin: -0.2rem 0 0;
+  padding: 0.72rem 0.82rem;
+  border: 1px solid rgba(220, 38, 38, 0.14);
+  border-radius: 14px;
+  background: rgba(254, 242, 242, 0.72);
+  color: #596579;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.forced-password-modal .form-grid.single {
+  display: grid;
+  grid-template-columns: 1fr;
+}
+
 /* =========================
    PREMIUM AUTH LOADER
 ========================= */

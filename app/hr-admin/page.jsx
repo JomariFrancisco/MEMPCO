@@ -28,6 +28,7 @@ import {
   getPortalHomeRoute,
   isHrAdminRole,
   isInactivePortalUser,
+  isPasswordChangeRequired,
   signOutPortal,
 } from '@/lib/auth/portalAuth';
 import {
@@ -731,6 +732,11 @@ export default function HrAdminPage() {
 
       if (!activeUser) {
         router.replace('/LogIn');
+        return;
+      }
+
+      if (isPasswordChangeRequired(activeUser)) {
+        router.replace('/LogIn?mode=force-password');
         return;
       }
 

@@ -5,12 +5,14 @@ import {
   toPortalProfileRow,
   toPortalUserMetadata,
 } from '@/lib/auth/portalAccountSchema';
+import { generateTemporaryPassword } from '@/lib/auth/temporaryPassword';
 import {
   SUPABASE_ADMIN_CONFIG_ERROR,
   createAdminClient,
   hasSupabaseAdminConfig,
 } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
+import { checkRateLimit, rateLimitResponse } from '@/lib/server/rateLimit';
 
 const BASE_PROFILE_COLUMNS =
   'id, role, full_name, employee_id, department, branch, office, email, phone, status, created_at, updated_at';
@@ -62,6 +64,10 @@ const getActorName = (auth) =>
 const getProfileName = (profile = {}) =>
   profile.full_name || profile.email || 'portal account';
 
+const isSuperadminRole = (role = '') => normalizePortalRole(role) === 'superadmin';
+
+const isIctAdminRole = (role = '') => normalizePortalRole(role) === 'admin';
+
 const withoutDesignation = (profileRow) => {
   const { designation, ...row } = profileRow;
   return row;
@@ -88,7 +94,7 @@ const saveProfileRow = async (supabaseAdmin, profileRow, { mode, userId }) => {
   return fallbackQuery.select(BASE_PROFILE_COLUMNS).single();
 };
 
-const authorizeSuperadmin = async () => {
+const authorizeAccountAccess = async ({ allowIctAdmin = false } = {}) => {
   const supabase = await createClient();
   const {
     data: { user },
@@ -105,21 +111,30 @@ const authorizeSuperadmin = async () => {
     .eq('id', user.id)
     .maybeSingle();
 
+  const active = String(adminProfile?.status || 'Active').trim().toLowerCase() === 'active';
+  const superadmin = isSuperadminRole(adminProfile?.role);
+  const ictAdmin = isIctAdminRole(adminProfile?.role);
+  const allowedRole = superadmin || (allowIctAdmin && ictAdmin);
+
   if (
     profileError ||
-    adminProfile?.role !== 'superadmin' ||
-    String(adminProfile?.status || 'Active').trim().toLowerCase() !== 'active'
+    !allowedRole ||
+    !active
   ) {
     return {
       response: NextResponse.json(
-        { error: 'Super admin access required.' },
+        { error: allowIctAdmin ? 'Admin access required.' : 'Super admin access required.' },
         { status: 403 }
       ),
     };
   }
 
-  return { user, profile: adminProfile };
+  return { user, profile: adminProfile, isSuperadmin: superadmin };
 };
+
+const authorizeSuperadmin = () => authorizeAccountAccess();
+
+const authorizeUserAccountEditor = () => authorizeAccountAccess({ allowIctAdmin: true });
 
 const readProfileById = async (supabaseAdmin, id) => {
   const result = await supabaseAdmin
@@ -211,6 +226,35 @@ const summarizeProfileChanges = (changes) => {
   return `${labels.slice(0, 3).join(', ')} and ${labels.length - 3} more fields updated.`;
 };
 
+const getAccountUpdatePermissionIssue = (auth, existingProfile, account) => {
+  const existingRole = normalizePortalRole(existingProfile?.role);
+  const nextRole = normalizePortalRole(account.role);
+  const roleChanged = existingRole !== nextRole;
+
+  if (account.id === auth.user.id && account.status !== 'Active') {
+    return {
+      error: 'You cannot lock, deactivate, or mark your own account for setup.',
+      status: 400,
+    };
+  }
+
+  if (!auth.isSuperadmin && existingRole === 'superadmin') {
+    return {
+      error: 'Only the super admin can update super admin accounts.',
+      status: 403,
+    };
+  }
+
+  if (!auth.isSuperadmin && roleChanged) {
+    return {
+      error: 'Only the super admin can change portal roles.',
+      status: 403,
+    };
+  }
+
+  return null;
+};
+
 const writeAuditLog = async (supabaseAdmin, auth, { userId, action, summary, changes = {} }) => {
   const { error } = await supabaseAdmin
     .from('user_account_audit_logs')
@@ -270,6 +314,14 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
+    const rateLimit = checkRateLimit(request, {
+      key: 'admin-users:create',
+      limit: 12,
+      windowMs: 60_000,
+    });
+
+    if (!rateLimit.allowed) return rateLimitResponse(rateLimit);
+
     const auth = await authorizeSuperadmin();
     if (auth.response) return auth.response;
 
@@ -284,13 +336,17 @@ export async function POST(request) {
 
     const supabaseAdmin = createAdminClient();
     await assertNoDuplicateProfile(supabaseAdmin, account);
+    const temporaryPassword = generateTemporaryPassword();
 
     const { data: created, error: createError } =
       await supabaseAdmin.auth.admin.createUser({
         email: account.email,
-        password: account.password,
+        password: temporaryPassword,
         email_confirm: true,
         user_metadata: toPortalUserMetadata(account),
+        app_metadata: {
+          must_change_password: true,
+        },
       });
 
     if (createError || !created?.user) {
@@ -326,7 +382,7 @@ export async function POST(request) {
       },
     });
 
-    return NextResponse.json({ profile }, { status: 201 });
+    return NextResponse.json({ profile, temporaryPassword }, { status: 201 });
   } catch (error) {
     const status = error.name === 'ValidationError' ? 400 : 500;
 
@@ -339,34 +395,28 @@ export async function POST(request) {
 
 export async function PATCH(request) {
   try {
-    const auth = await authorizeSuperadmin();
+    const rateLimit = checkRateLimit(request, {
+      key: 'admin-users:update',
+      limit: 30,
+      windowMs: 60_000,
+    });
+
+    if (!rateLimit.allowed) return rateLimitResponse(rateLimit);
+
+    const auth = await authorizeUserAccountEditor();
     if (auth.response) return auth.response;
 
     const account = parsePortalAccountUpdatePayload(await parseRequestJson(request));
 
-    if (account.id === auth.user.id && account.role !== 'superadmin') {
-      return NextResponse.json(
-        { error: 'You cannot remove your own superadmin role.' },
-        { status: 400 }
-      );
-    }
-
     if (account.id === auth.user.id && account.status !== 'Active') {
       return NextResponse.json(
-        { error: 'You cannot lock, deactivate, or mark your own superadmin account for setup.' },
+        { error: 'You cannot lock, deactivate, or mark your own account for setup.' },
         { status: 400 }
       );
     }
 
     if (!hasSupabaseAdminConfig()) {
       const supabase = await createClient();
-
-      if (account.password) {
-        return NextResponse.json(
-          { error: `${SUPABASE_ADMIN_CONFIG_ERROR} Password changes require Supabase admin access.` },
-          { status: 503 }
-        );
-      }
 
       const { data: existingProfile, error: existingProfileError } = await readProfileById(
         supabase,
@@ -387,6 +437,14 @@ export async function PATCH(request) {
         return NextResponse.json(
           { error: `${SUPABASE_ADMIN_CONFIG_ERROR} Email changes require Supabase admin access.` },
           { status: 503 }
+        );
+      }
+
+      const permissionIssue = getAccountUpdatePermissionIssue(auth, existingProfile, account);
+      if (permissionIssue) {
+        return NextResponse.json(
+          { error: permissionIssue.error },
+          { status: permissionIssue.status }
         );
       }
 
@@ -441,6 +499,14 @@ export async function PATCH(request) {
       );
     }
 
+    const permissionIssue = getAccountUpdatePermissionIssue(auth, existingProfile, account);
+    if (permissionIssue) {
+      return NextResponse.json(
+        { error: permissionIssue.error },
+        { status: permissionIssue.status }
+      );
+    }
+
     await assertNoDuplicateProfile(supabaseAdmin, account, account.id);
 
     const roleChanged = normalizePortalRole(existingProfile.role) !== normalizePortalRole(account.role);
@@ -458,10 +524,6 @@ export async function PATCH(request) {
       email: account.email,
       user_metadata: toPortalUserMetadata(account),
     };
-
-    if (account.password) {
-      authUpdates.password = account.password;
-    }
 
     const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(
       account.id,
@@ -492,10 +554,8 @@ export async function PATCH(request) {
     const changes = getProfileChanges(existingProfile, profile);
     await writeAuditLog(supabaseAdmin, auth, {
       userId: account.id,
-      action: account.password ? 'updated_password' : 'updated',
-      summary: account.password
-        ? `${summarizeProfileChanges(changes)} Password was reset by admin.`
-        : summarizeProfileChanges(changes),
+      action: 'updated',
+      summary: summarizeProfileChanges(changes),
       changes,
     });
 
@@ -512,6 +572,14 @@ export async function PATCH(request) {
 
 export async function DELETE(request) {
   try {
+    const rateLimit = checkRateLimit(request, {
+      key: 'admin-users:delete',
+      limit: 10,
+      windowMs: 60_000,
+    });
+
+    if (!rateLimit.allowed) return rateLimitResponse(rateLimit);
+
     const auth = await authorizeSuperadmin();
     if (auth.response) return auth.response;
 

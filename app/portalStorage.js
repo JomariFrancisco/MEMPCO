@@ -17,33 +17,33 @@ export const SUPPORT_CATEGORIES = [
 export const BRANCHES = [
   'Ayala',
   'Canelar',
-  'Nunez',
   'Central Office',
-  'Veterans',
   'Culianan',
   'Curuan',
-  'Vitali',
-  'Ipil',
   'Dipolog',
+  'Ipil',
   'La Hermosa',
+  'Nunez',
   'Pagadian',
+  'Veterans',
+  'Vitali',
 ];
 
 export const DEPARTMENTS = [
-  'Credit and Savings Operation',
-  'Treasury',
-  'CAS',
   'Accounting',
-  'ICT',
-  'Marketing',
-  'MRDSS',
   'Admin',
+  'Allied Services Operation',
+  'CAS',
+  'Credit and Savings Operation',
   'Finance',
   'HR',
-  'Legal Compliance',
+  'ICT',
   'Internal Audit',
-  'Allied Services Operation',
+  'Legal Compliance',
+  'Marketing',
   'MEDS',
+  'MRDSS',
+  'Treasury',
 ];
 
 export const SLA_LEVELS = ['Low', 'Medium', 'High', 'Critical'];
@@ -98,6 +98,7 @@ export const CATEGORY_CONCERN_TYPES = {
     'Other account access concern',
   ],
   'Printer Support': [
+    'Passbook printer concern',
     'Printer not printing',
     'Printer setup or installation',
     'Poor print quality',
