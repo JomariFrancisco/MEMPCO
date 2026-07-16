@@ -30,6 +30,7 @@ import {
   getPortalHomeRoute,
   isInactivePortalUser,
   isMarketingAdminRole,
+  isPasswordChangeRequired,
   signOutPortal,
 } from '@/lib/auth/portalAuth';
 import {
@@ -488,6 +489,11 @@ export default function MarketingAdminPage() {
 
       if (!activeUser) {
         router.replace('/LogIn');
+        return;
+      }
+
+      if (isPasswordChangeRequired(activeUser)) {
+        router.replace('/LogIn?mode=force-password');
         return;
       }
 

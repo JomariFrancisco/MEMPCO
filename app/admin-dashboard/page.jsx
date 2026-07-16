@@ -9,10 +9,9 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock3,
+  Clipboard,
   Download,
   ExternalLink,
-  Eye,
-  EyeOff,
   FileText,
   ImageIcon,
   Megaphone,
@@ -34,7 +33,9 @@ import {
 import {
   BRANCHES,
   BURNOUT_TICKET_STATUSES,
+  CATEGORY_CONCERN_TYPES,
   DEPARTMENTS,
+  DEVICE_OPTIONS,
   ESCALATION_PARTNERS,
   SLA_LEVELS,
   SUPPORT_CATEGORIES,
@@ -50,15 +51,19 @@ import {
   INACTIVE_ACCOUNT_MESSAGE,
   isAdminRole,
   isInactivePortalUser,
+  isPasswordChangeRequired,
   listPortalUsers,
+  refreshPortalUserPassword,
   signOutPortal,
   updatePortalUser,
 } from '@/lib/auth/portalAuth';
 import {
   claimTicketLock,
   canTicketAcceptMessages,
+  createTicket,
   createTicketMessage,
   deleteTicket,
+  deriveTicketImpact,
   getTicketMessages,
   getTickets,
   isTicketBeingHandled,
@@ -91,6 +96,79 @@ const PHOTO_MAX_SIZE = 4 * 1024 * 1024;
 const PHOTO_MAX_COUNT = 5;
 const PHOTO_ACCEPT = 'image/jpeg,image/jpg,image/png,image/webp';
 const PHOTO_ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+const ADMIN_HELPDESK_SUPPORT_CATEGORIES = Object.keys(CATEGORY_CONCERN_TYPES);
+const ADMIN_DEVICE_SUPPORT_CATEGORY_MAP = {
+  'Desktop PC': [
+    'Software / System Support',
+    'Account / Access Support',
+    'Computer / Laptop Support',
+    'Network / Internet Support',
+    'Other ICT Request',
+  ],
+  Laptop: [
+    'Software / System Support',
+    'Account / Access Support',
+    'Computer / Laptop Support',
+    'Network / Internet Support',
+    'Other ICT Request',
+  ],
+  Printer: [
+    'Printer Support',
+    'Network / Internet Support',
+    'Other ICT Request',
+  ],
+  'Biometric Device': ['Biometric / Attendance Support'],
+  'ATM / Kiosk': [
+    'Software / System Support',
+    'Account / Access Support',
+    'Network / Internet Support',
+    'Other ICT Request',
+  ],
+  'Network / Wi-Fi': [
+    'Network / Internet Support',
+    'Server / NAS / Database Support',
+    'Other ICT Request',
+  ],
+  Server: [
+    'Server / NAS / Database Support',
+    'Network / Internet Support',
+    'Software / System Support',
+    'Other ICT Request',
+  ],
+  'MBWin / Sky360': ['Software / System Support', 'Account / Access Support'],
+  'Excel / Office Application': ['Software / System Support', 'Account / Access Support'],
+  'Application Account': ['Account / Access Support', 'Software / System Support'],
+};
+const ADMIN_DEVICE_CONCERN_TYPE_MAP = {
+  'MBWin / Sky360': {
+    'Software / System Support': [
+      'MBWin / Sky360 concern',
+      'System error or application issue',
+      'Other software concern',
+    ],
+    'Account / Access Support': [
+      'New user account request',
+      'Password reset',
+      'Login problem',
+      'Access permission request',
+      'Teller role / user role concern',
+      'Other account access concern',
+    ],
+  },
+  'Excel / Office Application': {
+    'Software / System Support': [
+      'Excel / Office application concern',
+      'Software installation request',
+      'Other software concern',
+    ],
+  },
+};
+const getAdminSupportCategoriesForDevice = (deviceName = '') =>
+  ADMIN_DEVICE_SUPPORT_CATEGORY_MAP[deviceName] || ADMIN_HELPDESK_SUPPORT_CATEGORIES;
+
+const getAdminConcernOptionsForSelection = (category = '', deviceName = '') =>
+  ADMIN_DEVICE_CONCERN_TYPE_MAP[deviceName]?.[category] || CATEGORY_CONCERN_TYPES[category] || [];
+
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 const BURNOUT_STANDARD_MIN_DAYS = 3;
 const BURNOUT_TARGET_DAYS = 5;
@@ -204,6 +282,53 @@ function InactiveAccountNotice() {
   );
 }
 
+function TicketLockNoticeModal({ notice, onClose }) {
+  if (!notice) return null;
+
+  return (
+    <div className="modal-overlay ticket-lock-notice-overlay" role="presentation" onClick={onClose}>
+      <section
+        className="modal-box glass ticket-lock-notice-modal"
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="ticket-lock-notice-title"
+        aria-describedby="ticket-lock-notice-description"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="ticket-lock-notice-icon" aria-hidden="true">
+          <ShieldCheck className="admin-mono-icon" />
+        </div>
+
+        <div className="ticket-lock-notice-copy">
+          <span className="section-kicker">Ticket already assigned</span>
+          <h3 id="ticket-lock-notice-title">Another ICT staff is handling this ticket.</h3>
+          <p id="ticket-lock-notice-description">
+            This prevents two admins from updating the same request at the same time. Please refresh the queue or open
+            another ticket.
+          </p>
+        </div>
+
+        <div className="ticket-lock-notice-details" aria-label="Ticket handling details">
+          <div>
+            <span>Ticket Code</span>
+            <strong>{notice.ticketCode}</strong>
+          </div>
+          <div>
+            <span>Currently Handled By</span>
+            <strong>{notice.staffName}</strong>
+          </div>
+        </div>
+
+        <div className="modal-footer ticket-lock-notice-footer">
+          <button type="button" className="modal-btn confirm" onClick={onClose} autoFocus>
+            Got it
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
 function useBodyScrollLock(active) {
   useEffect(() => {
     if (!active || typeof document === 'undefined') return undefined;
@@ -228,6 +353,39 @@ function useBodyScrollLock(active) {
   }, [active]);
 }
 
+function TemporaryPasswordPanel({ password, accountName, onDismiss }) {
+  if (!password) return null;
+
+  const copyPassword = async () => {
+    try {
+      await navigator.clipboard.writeText(password);
+    } catch {
+      window.prompt('Copy the temporary password:', password);
+    }
+  };
+
+  return (
+    <div className="admin-alert success temporary-password-panel">
+      <div>
+        <strong>Temporary password issued{accountName ? ` for ${accountName}` : ''}</strong>
+        <p>This password is shown only once. The user must change it after first login.</p>
+        <code>{password}</code>
+      </div>
+      <div className="temporary-password-actions">
+        <button type="button" className="modal-btn cancel" onClick={copyPassword}>
+          <MonoIcon icon={Clipboard} />
+          Copy
+        </button>
+        {onDismiss && (
+          <button type="button" className="modal-btn confirm" onClick={onDismiss}>
+            Done
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 const emptyCreateUserForm = {
   name: '',
   employeeId: '',
@@ -237,8 +395,6 @@ const emptyCreateUserForm = {
   email: '',
   phone: '',
   role: 'employee',
-  password: '',
-  confirmPassword: '',
 };
 
 const USER_EDIT_STATUSES = ['Active', 'Inactive'];
@@ -260,8 +416,6 @@ const toUserEditForm = (user) => ({
   phone: user.phone || '',
   role: user.role || 'employee',
   status: normalizeUserEditStatus(user.status || 'Active'),
-  password: '',
-  confirmPassword: '',
 });
 
 const formatPhoneNumber = (value) => {
@@ -576,6 +730,31 @@ const breakdown = (tickets, key, source = []) => {
     .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
 };
 
+const getTicketFinalReportStatus = (ticket = {}) => {
+  const status = normalizeTicketStatus(ticket.status);
+
+  if (status === 'canceled' || status === 'cancelled') return 'Cancelled';
+
+  const matchedStatus = TICKET_STATUSES.find(
+    (item) => normalizeTicketStatus(item) === status
+  );
+
+  return matchedStatus || ticket.status || 'Pending';
+};
+
+const buildReportStatusSummary = (tickets = []) => {
+  const submittedCount = tickets.length;
+  const finalStatusRows = tickets.map((ticket) => ({
+    reportStatus: getTicketFinalReportStatus(ticket),
+  }));
+  const finalStatusItems = breakdown(finalStatusRows, 'reportStatus', TICKET_STATUSES);
+
+  return [
+    ...(submittedCount ? [{ name: 'Submitted', count: submittedCount }] : []),
+    ...finalStatusItems,
+  ];
+};
+
 const getSubmittedTime = (ticket) => {
   const raw = ticket.createdAt || ticket.date || ticket.lastEmployeeUpdate || ticket.lastUpdated;
   const parsed = new Date(raw || '').getTime();
@@ -710,7 +889,60 @@ const getTicketMovedDateLabel = (ticket) =>
 const getTicketResolvedDateLabel = (ticket) =>
   formatReportTimestamp(getTicketResolvedTime(ticket));
 
-const createTicketReportEvent = (ticket, { timestamp, label, type, status }) => {
+const getReportTechnicianName = (value = '') => {
+  const name = String(value || '').trim();
+
+  return name && name.toLowerCase() !== 'unassigned' ? name : '';
+};
+
+const getEntryTechnicianName = (entry = {}) =>
+  getReportTechnicianName(
+    entry.technician ||
+    entry.technicianName ||
+    entry.assignedTechnician ||
+    entry.assignedToName ||
+    entry.handledByName
+  );
+
+const getEntryUpdaterName = (entry = {}) =>
+  getReportTechnicianName(entry.updatedByName || entry.performedByName || entry.handledByName);
+
+const getFirstHandlingTechnician = (ticket, history = []) => {
+  const handlingEntry = history.find((entry) => {
+    const normalizedStatus = normalizeTicketStatus(entry?.status || entry?.label);
+    return ['in progress', 'under burnout', 'for inspection'].includes(normalizedStatus);
+  });
+
+  return (
+    getEntryTechnicianName(handlingEntry) ||
+    getEntryUpdaterName(handlingEntry) ||
+    getReportTechnicianName(ticket?.employeeEditLockedByName)
+  );
+};
+
+const getStatusHistoryTechnician = (ticket, entry = {}, history = []) => {
+  const normalizedStatus = normalizeTicketStatus(entry?.status || entry?.label);
+  const entryTechnician = getEntryTechnicianName(entry);
+  const entryUpdater = getEntryUpdaterName(entry);
+  const ticketTechnician = getReportTechnicianName(ticket?.technician);
+  const firstHandler = getFirstHandlingTechnician(ticket, history);
+
+  if (normalizedStatus === 'submitted') {
+    return firstHandler || entryTechnician || entryUpdater || ticketTechnician || 'Unassigned';
+  }
+
+  if (normalizedStatus === 'escalated') {
+    return entryTechnician || ticketTechnician || entryUpdater || firstHandler || 'Unassigned';
+  }
+
+  if (['in progress', 'under burnout', 'for inspection'].includes(normalizedStatus)) {
+    return entryTechnician || entryUpdater || firstHandler || ticketTechnician || 'Unassigned';
+  }
+
+  return entryTechnician || entryUpdater || ticketTechnician || firstHandler || 'Unassigned';
+};
+
+const createTicketReportEvent = (ticket, { timestamp, label, type, status, technician }) => {
   if (!timestamp) return null;
 
   const reportDate = new Date(timestamp);
@@ -728,6 +960,7 @@ const createTicketReportEvent = (ticket, { timestamp, label, type, status }) => 
     reportDate,
     reportDateLabel: formatReportTimestamp(timestamp),
     reportStatus,
+    technician: technician || getReportTechnicianName(ticket?.technician) || 'Unassigned',
   };
 };
 
@@ -754,6 +987,7 @@ const getTicketStatusHistoryEvents = (ticket) => {
         label: entry?.label || status || 'Status Update',
         type,
         status: status || entry?.label || 'Status Update',
+        technician: getStatusHistoryTechnician(ticket, entry, history),
       });
     })
     .filter(Boolean);
@@ -777,6 +1011,7 @@ const getTicketReportEvents = (ticket) => {
         label: 'Moved Date',
         type: 'moved-date',
         status: 'Moved Date',
+        technician: getReportTechnicianName(ticket?.technician) || 'Unassigned',
       }),
     ].filter(Boolean);
   }
@@ -791,6 +1026,7 @@ const getTicketReportEvents = (ticket) => {
       label: 'Moved Date',
       type: 'moved-date',
       status: 'Moved Date',
+      technician: getReportTechnicianName(ticket?.technician) || 'Unassigned',
     }));
   } else if (submittedTime) {
     events.push(createTicketReportEvent(ticket, {
@@ -798,6 +1034,7 @@ const getTicketReportEvents = (ticket) => {
       label: 'Submitted',
       type: 'submitted',
       status: 'Submitted',
+      technician: getReportTechnicianName(ticket?.technician) || 'Unassigned',
     }));
   }
 
@@ -809,6 +1046,7 @@ const getTicketReportEvents = (ticket) => {
       label: 'Resolved',
       type: 'resolved',
       status: 'Resolved',
+      technician: getReportTechnicianName(ticket?.technician) || 'Unassigned',
     }));
   }
 
@@ -1027,13 +1265,12 @@ const openPrintDocument = (title, body) => {
           .field strong, .row strong { display: block; margin-top: 3px; font-size: 10.5px; line-height: 1.25; white-space: pre-wrap; }
           .section-title { margin: 8px 0 5px; font-size: 10px; color: #374151; text-transform: uppercase; letter-spacing: 0.08em; }
           .text-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
-          .note { min-height: 45px; max-height: 74px; padding: 7px 8px; border: 1px solid #e5e7eb; border-radius: 7px; white-space: pre-wrap; line-height: 1.35; font-size: 10.5px; overflow: hidden; }
+          .note { min-height: 45px; padding: 7px 8px; border: 1px solid #e5e7eb; border-radius: 7px; white-space: pre-wrap; line-height: 1.35; font-size: 10.5px; overflow: visible; break-inside: auto; page-break-inside: auto; }
           .report-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-top: 8px; }
           .report-list.single { grid-template-columns: 1fr; margin-top: 0; }
           .report-list.period-volume-list { grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 0; }
-          .report-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px; align-items: center; padding: 7px 8px; border: 1px solid #e5e7eb; border-radius: 7px; background: #f8fafc; font-size: 10.5px; }
+          .report-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 7px 8px; border: 1px solid #e5e7eb; border-radius: 7px; background: #f8fafc; font-size: 10.5px; }
           .report-row strong { min-width: 28px; text-align: right; color: #dc2626; }
-          .report-row em { min-width: 32px; color: #64748b; font-style: normal; font-weight: 800; text-align: right; }
           .consolidated-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 2px; }
           .ticket-detail-section { margin-top: 9px; page-break-inside: auto; }
           .detail-table { width: 100%; margin: 0 auto; border-collapse: collapse; table-layout: fixed; font-size: 8.5px; line-height: 1.25; }
@@ -1070,11 +1307,12 @@ const openPrintDocument = (title, body) => {
           .period-detail-table th:nth-child(7), .period-detail-table td:nth-child(7) { width: 8%; }
           .period-detail-table th:nth-child(8), .period-detail-table td:nth-child(8) { width: 7%; }
           .period-detail-table th:nth-child(9), .period-detail-table td:nth-child(9) { width: 8%; }
-          .period-detail-table th:nth-child(10), .period-detail-table td:nth-child(10) { width: 8%; }
-          .period-detail-table th:nth-child(11), .period-detail-table td:nth-child(11) { width: 10%; }
+          .period-detail-table th:nth-child(10), .period-detail-table td:nth-child(10) { width: 7%; }
+          .period-detail-table th:nth-child(11), .period-detail-table td:nth-child(11) { width: 9%; }
           .period-detail-table th:nth-child(12), .period-detail-table td:nth-child(12) { width: 5%; }
           .period-detail-table th:nth-child(13), .period-detail-table td:nth-child(13) { width: 4%; }
-          .period-detail-table th:nth-child(14), .period-detail-table td:nth-child(14) { width: 5%; }
+          .period-detail-table th:nth-child(14), .period-detail-table td:nth-child(14) { width: 7%; }
+          .period-detail-table th:nth-child(14) { white-space: nowrap; overflow-wrap: normal; }
           .print-note { margin-top: 7px; color: #64748b; font-size: 9.5px; font-weight: 700; }
           @media print {
             body {
@@ -1218,7 +1456,7 @@ const printResolvedTicket = (ticket) => {
       <div class="text-grid">
         <section>
           <h3 class="section-title">Description of Problem</h3>
-          <div class="note">${escapePrintHtml(ticket.description || 'No description provided.')}</div>
+          <div class="note">${escapePrintHtml(getVisibleTicketDescription(ticket.description) || 'No description provided.')}</div>
         </section>
         <section>
           <h3 class="section-title">Action Taken</h3>
@@ -1418,6 +1656,11 @@ const buildPeriodEventTableRows = (events, columns) =>
       `).join('')
     : `<tr><td colspan="${columns.length}">No ticket events found for this report.</td></tr>`;
 
+const formatPrintCount = (count, singular, plural = `${singular}s`) => {
+  const value = Number(count || 0);
+  return `${value} ${value === 1 ? singular : plural}`;
+};
+
 const printReportSummary = ({
   mode,
   title,
@@ -1441,41 +1684,36 @@ const printReportSummary = ({
     ? [{ name: selectedPeriodName || title, count: uniqueTickets.length }]
     : (items?.length ? items : buildDateBreakdown(tickets, mode));
   const reportTotal = uniqueTickets.length || total || 0;
-  const row = (item, totalCount = reportTotal) => {
-    const percent = totalCount ? Math.round((item.count / totalCount) * 100) : 0;
-
-    return `
-      <div class="report-row">
-        <span>${escapePrintHtml(item.name)}</span>
-        <strong>${escapePrintHtml(item.count)}</strong>
-        <em>${escapePrintHtml(percent)}%</em>
-      </div>
-    `;
-  };
+  const row = (item, unit = 'ticket', plural) => `
+    <div class="report-row">
+      <span>${escapePrintHtml(item.name)}</span>
+      <strong>${escapePrintHtml(formatPrintCount(item.count, unit, plural))}</strong>
+    </div>
+  `;
   const technicianItems = TECHNICIANS
     .map((name) => ({
       name,
       count: uniqueTickets.filter((ticket) => (ticket.technician || 'Unassigned') === name).length,
     }))
     .filter((item) => item.count > 0);
-  const statusItems = breakdown(detailedEvents, 'reportStatus', ['Submitted', ...TICKET_STATUSES]).slice(0, 6);
+  const statusItems = buildReportStatusSummary(uniqueTickets).slice(0, 6);
   const categoryItems = breakdown(uniqueTickets, 'supportCategory', SUPPORT_CATEGORIES).slice(0, 6);
   const branchItems = breakdown(uniqueTickets, 'branch', BRANCHES).slice(0, 6);
   const ictRows = technicianItems.length
-    ? technicianItems.map((item) => row(item)).join('')
-    : '<div class="report-row"><span>No ICT assignments</span><strong>0</strong><em>0%</em></div>';
+    ? technicianItems.map((item) => row(item, 'ticket')).join('')
+    : '<div class="report-row"><span>No ICT assignments</span><strong>0 tickets</strong></div>';
   const statusRows = statusItems.length
-    ? statusItems.map((item) => row(item, detailedEvents.length)).join('')
-    : '<div class="report-row"><span>No status data</span><strong>0</strong><em>0%</em></div>';
+    ? statusItems.map((item) => row(item, 'ticket')).join('')
+    : '<div class="report-row"><span>No status data</span><strong>0 tickets</strong></div>';
   const categoryRows = categoryItems.length
-    ? categoryItems.map((item) => row(item)).join('')
-    : '<div class="report-row"><span>No support category data</span><strong>0</strong><em>0%</em></div>';
+    ? categoryItems.map((item) => row(item, 'ticket')).join('')
+    : '<div class="report-row"><span>No support category data</span><strong>0 tickets</strong></div>';
   const branchRows = branchItems.length
-    ? branchItems.map((item) => row(item)).join('')
-    : '<div class="report-row"><span>No branch data</span><strong>0</strong><em>0%</em></div>';
+    ? branchItems.map((item) => row(item, 'ticket')).join('')
+    : '<div class="report-row"><span>No branch data</span><strong>0 tickets</strong></div>';
   const periodRows = periodItems.length
-    ? periodItems.slice(0, 12).map((item) => row(item, periodItems.reduce((sum, current) => sum + current.count, 0))).join('')
-    : '<div class="report-row"><span>No period data</span><strong>0</strong><em>0%</em></div>';
+    ? periodItems.slice(0, 12).map((item) => row(item, selectedPeriodKey ? 'ticket' : 'event')).join('')
+    : '<div class="report-row"><span>No period data</span><strong>0 tickets</strong></div>';
   const periodPrintColumns = [
     ['Period', (event) => event.periodName],
     ['Event', (event) => event.label],
@@ -1490,13 +1728,13 @@ const printReportSummary = ({
     ['Concern', (event) => getTicketField(event.ticket.concernType, 'Unspecified')],
     ['Status', (event) => getTicketField(event.reportStatus, 'Submitted')],
     ['SLA', (event) => getTicketField(event.ticket.sla, 'Low')],
-    ['Technician', (event) => getTicketField(event.ticket.technician, 'Unassigned')],
+    ['Technician', (event) => getTicketField(event.technician, 'Unassigned')],
   ];
   const body = `
     <main class="print-page">
       ${getPrintLetterhead()}
       <section class="doc-head">
-        <h2>${escapePrintHtml(periodLabel)} ICT Detailed Report</h2>
+        <h2>${escapePrintHtml(periodLabel)} ICT Report</h2>
         <div class="meta">${escapePrintHtml(selectedPeriodName || title)}<br />Printed ${escapePrintHtml(new Date().toLocaleString())}</div>
       </section>
       <section class="grid">
@@ -1517,7 +1755,7 @@ const printReportSummary = ({
           <div class="report-list single">${ictRows}</div>
         </div>
         <div>
-          <h3 class="section-title">Status</h3>
+          <h3 class="section-title">Event Status</h3>
           <div class="report-list single">${statusRows}</div>
         </div>
         <div>
@@ -1530,11 +1768,11 @@ const printReportSummary = ({
         </div>
       </section>
       <section class="ticket-detail-section">
-        <h3 class="section-title">Period Volume</h3>
+        <h3 class="section-title">Selected Period</h3>
         <div class="report-list period-volume-list">${periodRows}</div>
       </section>
       <section class="ticket-detail-section">
-        <h3 class="section-title">Ticket Event Details</h3>
+        <h3 class="section-title">Event Log</h3>
         <table class="detail-table period-detail-table">
           <thead>
             <tr>
@@ -1546,11 +1784,11 @@ const printReportSummary = ({
           </tbody>
         </table>
       </section>
-      <p class="print-note">Detailed ${escapePrintHtml(periodLabel.toLowerCase())} report includes submitted, moved-date, and resolved events for ICT review.</p>
+      <p class="print-note">Event Log lists the recorded ticket updates for the selected period, including status, SLA, and assigned technician.</p>
     </main>
   `;
 
-  openPrintDocument(`${periodLabel} ICT Detailed Report`, body);
+  openPrintDocument(`${periodLabel} ICT Report`, body);
 };
 
 const getMonthlyReportData = (tickets, monthDate) => {
@@ -1602,31 +1840,27 @@ const printMonthlyConsolidatedReport = (tickets, monthDate) => {
       count: monthlyTickets.filter((ticket) => (ticket.technician || 'Unassigned') === name).length,
     }))
     .filter((item) => item.count > 0);
-  const statusItems = breakdown(monthlyTickets, 'status', TICKET_STATUSES).slice(0, 6);
+  const statusItems = buildReportStatusSummary(monthlyTickets).slice(0, 6);
   const categoryItems = breakdown(monthlyTickets, 'supportCategory', SUPPORT_CATEGORIES).slice(0, 6);
   const branchItems = breakdown(monthlyTickets, 'branch', BRANCHES).slice(0, 6);
-  const row = (item, total = monthlyTickets.length) => {
-    const percent = total ? Math.round((item.count / total) * 100) : 0;
-    return `
-      <div class="report-row">
-        <span>${escapePrintHtml(item.name)}</span>
-        <strong>${escapePrintHtml(item.count)}</strong>
-        <em>${escapePrintHtml(percent)}%</em>
-      </div>
-    `;
-  };
+  const row = (item, unit = 'ticket') => `
+    <div class="report-row">
+      <span>${escapePrintHtml(item.name)}</span>
+      <strong>${escapePrintHtml(formatPrintCount(item.count, unit))}</strong>
+    </div>
+  `;
   const ictRows = technicianItems.length
-    ? technicianItems.map((item) => row(item, monthlyTickets.length)).join('')
-    : '<div class="report-row"><span>No ICT assignments</span><strong>0</strong><em>0%</em></div>';
+    ? technicianItems.map((item) => row(item, 'ticket')).join('')
+    : '<div class="report-row"><span>No ICT assignments</span><strong>0 tickets</strong></div>';
   const statusRows = statusItems.length
-    ? statusItems.map((item) => row(item, monthlyTickets.length)).join('')
-    : '<div class="report-row"><span>No ticket status data</span><strong>0</strong><em>0%</em></div>';
+    ? statusItems.map((item) => row(item, 'ticket')).join('')
+    : '<div class="report-row"><span>No ticket status data</span><strong>0 tickets</strong></div>';
   const categoryRows = categoryItems.length
-    ? categoryItems.map((item) => row(item, monthlyTickets.length)).join('')
-    : '<div class="report-row"><span>No support category data</span><strong>0</strong><em>0%</em></div>';
+    ? categoryItems.map((item) => row(item, 'ticket')).join('')
+    : '<div class="report-row"><span>No support category data</span><strong>0 tickets</strong></div>';
   const branchRows = branchItems.length
-    ? branchItems.map((item) => row(item, monthlyTickets.length)).join('')
-    : '<div class="report-row"><span>No branch data</span><strong>0</strong><em>0%</em></div>';
+    ? branchItems.map((item) => row(item, 'ticket')).join('')
+    : '<div class="report-row"><span>No branch data</span><strong>0 tickets</strong></div>';
   const body = `
     <main class="print-page">
       ${getPrintLetterhead()}
@@ -2325,7 +2559,7 @@ const normalizeBurnoutReport = (ticket = {}, currentUser = {}) => {
   };
 };
 
-const buildStatusHistoryEntry = (status, timestamp, user) => {
+const buildStatusHistoryEntry = (status, timestamp, user, details = {}) => {
   const normalizedStatus = normalizeTicketStatus(status);
   const type =
     normalizedStatus === 'moved date'
@@ -2343,6 +2577,8 @@ const buildStatusHistoryEntry = (status, timestamp, user) => {
     timestamp: new Date(timestamp).toISOString(),
     updatedBy: user?.id || '',
     updatedByName: user?.name || '',
+    handledByName: user?.name || '',
+    technician: details.technician || '',
   };
 };
 
@@ -2352,7 +2588,9 @@ const getTicketWorkStartedAt = (ticket) =>
     ? ticket?.adminUpdatedAt || ticket?.lastUpdated || ''
     : '');
 
-const getTicketWorkEndedAt = (ticket) => ticket?.workEndedAt || '';
+const getTicketWorkEndedAt = (ticket) =>
+  ticket?.workEndedAt ||
+  (!isUnresolved(ticket?.status) ? ticket?.adminUpdatedAt || ticket?.lastUpdated || '' : '');
 
 const isTicketLockActive = (ticket) => {
   if (!ticket?.lockedBy) return false;
@@ -2397,10 +2635,17 @@ const getTicketHandlingState = (ticket = {}) => {
   const isClosed = closedStatuses.includes(status) || (!isUnresolved(ticket.status) && Boolean(startedAt));
 
   if (endedAt || isClosed) {
+    const closedTitle =
+      status === 'resolved'
+        ? 'Resolved'
+        : ['canceled', 'cancelled'].includes(status)
+          ? 'Cancelled'
+          : 'Work completed';
+
     return {
       tone: 'done',
       icon: ShieldCheck,
-      title: status === 'resolved' ? 'Resolved' : 'Work completed',
+      title: closedTitle,
       detail: assignedTechnician ? `Handled by ${assignedTechnician}` : 'ICT action recorded',
       meta: endedAt ? `Ended ${endedAt}` : ticket.lastUpdated || ticket.adminUpdatedAt || '',
     };
@@ -2493,7 +2738,7 @@ const getActionButtonLabel = (ticket) => {
    SIDEBAR
 ========================= */
 
-function Sidebar({ active, onNav, onLogout, open, canCreateUsers, canAccessDepartmentConsoles }) {
+function Sidebar({ active, onNav, onLogout, open, canCreateUsers, canCreateIctTickets, canAccessDepartmentConsoles }) {
   const items = [
     { key: 'dashboard', label: 'Dashboard', Icon: Icon.Dashboard },
     { key: 'tickets', label: 'All Tickets', Icon: Icon.Tickets },
@@ -2506,6 +2751,10 @@ function Sidebar({ active, onNav, onLogout, open, canCreateUsers, canAccessDepar
 
   if (canCreateUsers) {
     items.push({ key: 'create-user', label: 'Create User', Icon: Icon.UserPlus });
+  }
+
+  if (canCreateIctTickets) {
+    items.push({ key: 'create-ict-ticket', label: 'Submit Ticket', Icon: Icon.Tickets });
   }
 
   return (
@@ -2565,6 +2814,20 @@ function Sidebar({ active, onNav, onLogout, open, canCreateUsers, canAccessDepar
 /* =========================
    SHARED COMPONENTS
 ========================= */
+
+const getVisibleTicketDescription = (description = '') =>
+  String(description || '')
+    .split('\n')
+    .filter((line) => {
+      const normalized = line.trim().toLowerCase();
+      return (
+        normalized &&
+        !normalized.startsWith('submitted by super admin:') &&
+        !normalized.startsWith('ticket for ict staff:')
+      );
+    })
+    .join('\n')
+    .trim();
 
 function StatCard({ icon, label, value, meta }) {
   return (
@@ -3314,7 +3577,7 @@ function TicketTable({
                 {!compact && (
                   <PreservedText
                     className="admin-ticket-card-description"
-                    value={ticket.description}
+                    value={getVisibleTicketDescription(ticket.description) || 'No description provided.'}
                   />
                 )}
 
@@ -3533,7 +3796,7 @@ function ReportCalendar({
     ? formatReportDate(new Date(`${calendar.busiestDay.key}T00:00:00`), { month: 'short', day: 'numeric' })
     : 'No activity';
   const selectedDateLabel = selectedDateKey
-    ? formatReportDate(new Date(`${selectedDateKey}T00:00:00`), { month: 'short', day: 'numeric', year: 'numeric' })
+    ? formatReportDate(new Date(`${selectedDateKey}T00:00:00`), { month: 'long', day: 'numeric', year: 'numeric' })
     : 'Select a date';
   const getLevel = (count) => {
     if (!count || !calendar.maxCount) return 'empty';
@@ -4438,7 +4701,7 @@ function BranchesView({ branchSummary, tickets, onOpenTicket, now }) {
 
                   <PreservedText
                     className="admin-ticket-card-description"
-                    value={ticket.description}
+                    value={getVisibleTicketDescription(ticket.description) || 'No description provided.'}
                   />
 
                   <TicketWorkTimer ticket={ticket} now={now} compact />
@@ -4573,13 +4836,9 @@ function ReportsView({ tickets, summary, categorySummary, statusSummary, branchS
   const [periodPageByMode, setPeriodPageByMode] = useState({ day: 1, week: 1, month: 1 });
   const concernSummary = breakdown(tickets, 'concernType').slice(0, 10);
   const slaSummary = breakdown(tickets, 'sla', SLA_LEVELS);
-  const reportActivityRows = useMemo(
-    () => tickets.flatMap((ticket) => getTicketReportEvents(ticket)),
-    [tickets]
-  );
   const statusActivitySummary = useMemo(
-    () => breakdown(reportActivityRows, 'reportStatus', ['Submitted', ...TICKET_STATUSES]),
-    [reportActivityRows]
+    () => buildReportStatusSummary(tickets),
+    [tickets]
   );
   const monthPrintOptions = useMemo(() => buildPeriodPrintOptions(tickets, 'month'), [tickets]);
   const selectedPeriod = REPORT_PERIOD_OPTIONS.find((option) => option.key === periodMode) || REPORT_PERIOD_OPTIONS[0];
@@ -4845,17 +5104,18 @@ function ReportsView({ tickets, summary, categorySummary, statusSummary, branchS
    USERS VIEW
 ========================= */
 
-function UsersView({ users, canManageUsers, currentUserId, onUsersChanged }) {
+function UsersView({ users, canEditUsers, canDeleteUsers, canEditRoles, currentUserId, onUsersChanged }) {
   const USERS_PAGE_SIZE = 5;
   const [editingUser, setEditingUser] = useState(null);
   const [editForm, setEditForm] = useState(null);
   const [message, setMessage] = useState({ type: '', text: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showEditPassword, setShowEditPassword] = useState(false);
+  const [passwordRefreshUser, setPasswordRefreshUser] = useState(null);
+  const [refreshedPassword, setRefreshedPassword] = useState(null);
   const [userSearch, setUserSearch] = useState('');
   const [userStatusFilter, setUserStatusFilter] = useState('All');
   const [userPage, setUserPage] = useState(1);
-  useBodyScrollLock(Boolean(editingUser));
+  useBodyScrollLock(Boolean(editingUser || passwordRefreshUser));
 
   const findDuplicateUser = (draft, field) => {
     const value = normalizeComparable(draft?.[field]);
@@ -4920,7 +5180,7 @@ function UsersView({ users, canManageUsers, currentUserId, onUsersChanged }) {
     setEditingUser(user);
     setEditForm(toUserEditForm(user));
     setMessage({ type: '', text: '' });
-    setShowEditPassword(false);
+    setRefreshedPassword(null);
   };
 
   const updateEditForm = (field, value) => {
@@ -4930,6 +5190,42 @@ function UsersView({ users, canManageUsers, currentUserId, onUsersChanged }) {
   const closeEdit = () => {
     setEditingUser(null);
     setEditForm(null);
+    setPasswordRefreshUser(null);
+    setRefreshedPassword(null);
+  };
+
+  const requestPasswordRefresh = () => {
+    if (!editingUser) return;
+    setPasswordRefreshUser(editingUser);
+    setRefreshedPassword(null);
+  };
+
+  const confirmPasswordRefresh = async () => {
+    if (!passwordRefreshUser) return;
+
+    setIsSubmitting(true);
+    setMessage({ type: '', text: '' });
+
+    try {
+      const temporaryPassword = await refreshPortalUserPassword(passwordRefreshUser.id);
+      setRefreshedPassword({
+        password: temporaryPassword,
+        accountName: passwordRefreshUser.name || passwordRefreshUser.email,
+      });
+      setPasswordRefreshUser(null);
+      setMessage({
+        type: 'success',
+        text: 'Temporary password refreshed. Share it securely with the user.',
+      });
+      await onUsersChanged();
+    } catch (error) {
+      setMessage({
+        type: 'error',
+        text: error.message || 'Unable to refresh password.',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleEditSubmit = async (e) => {
@@ -4950,6 +5246,11 @@ function UsersView({ users, canManageUsers, currentUserId, onUsersChanged }) {
       }
 
       const roleChanged = normalizePortalRole(editingUser.role) !== normalizePortalRole(editForm.role);
+
+      if (roleChanged && !canEditRoles) {
+        throw new Error('Only the super admin can change portal roles.');
+      }
+
       const privilegedRoleChange =
         roleChanged && (isPrivilegedPortalRole(editingUser.role) || isPrivilegedPortalRole(editForm.role));
       let confirmPrivilegedRoleChange = false;
@@ -4984,6 +5285,14 @@ function UsersView({ users, canManageUsers, currentUserId, onUsersChanged }) {
   };
 
   const handleDelete = async (user) => {
+    if (!canDeleteUsers) {
+      setMessage({
+        type: 'error',
+        text: 'Only the super admin can delete accounts.',
+      });
+      return;
+    }
+
     if (user.id === currentUserId) {
       setMessage({
         type: 'error',
@@ -5093,13 +5402,13 @@ function UsersView({ users, canManageUsers, currentUserId, onUsersChanged }) {
               {pagedUsers.map((user) => (
                 <tr
                   key={user.id}
-                  className={canManageUsers ? 'user-clickable-row' : undefined}
-                  tabIndex={canManageUsers ? 0 : undefined}
-                  role={canManageUsers ? 'button' : undefined}
-                  aria-label={canManageUsers ? `View account for ${user.name || user.email}` : undefined}
-                  onClick={canManageUsers ? () => beginEdit(user) : undefined}
+                  className={canEditUsers ? 'user-clickable-row' : undefined}
+                  tabIndex={canEditUsers ? 0 : undefined}
+                  role={canEditUsers ? 'button' : undefined}
+                  aria-label={canEditUsers ? `View account for ${user.name || user.email}` : undefined}
+                  onClick={canEditUsers ? () => beginEdit(user) : undefined}
                   onKeyDown={
-                    canManageUsers
+                    canEditUsers
                       ? (event) => {
                           if (event.key === 'Enter' || event.key === ' ') {
                             event.preventDefault();
@@ -5316,8 +5625,8 @@ function UsersView({ users, canManageUsers, currentUserId, onUsersChanged }) {
                   maxLength={13}
                   value={editForm.phone}
                   onChange={(e) => updateEditForm('phone', formatPhoneNumber(e.target.value))}
-                  placeholder="09XX XXX XXXX"
-                  title="Use format 09XX XXX XXXX."
+                  placeholder="09** *** ****"
+                  title="Use format 09** *** ****."
                 />
               </div>
 
@@ -5341,7 +5650,7 @@ function UsersView({ users, canManageUsers, currentUserId, onUsersChanged }) {
                   className="ticket-field ticket-select"
                   value={editForm.role}
                   onChange={(e) => updateEditForm('role', e.target.value)}
-                  disabled={editForm.id === currentUserId}
+                  disabled={!canEditRoles || editForm.id === currentUserId}
                   required
                 >
                   {Object.entries(ROLE_LABELS).map(([role, label]) => (
@@ -5350,50 +5659,20 @@ function UsersView({ users, canManageUsers, currentUserId, onUsersChanged }) {
                 </select>
               </div>
 
-              <div className="ticket-form-group">
-                <label htmlFor="edit-password">New Password</label>
-                <div className="password-field-wrap">
-                  <input
-                    id="edit-password"
-                    className="ticket-field ticket-input"
-                    type={showEditPassword ? 'text' : 'password'}
-                    minLength={8}
-                    value={editForm.password}
-                    onChange={(e) => updateEditForm('password', e.target.value)}
-                    placeholder="Optional"
-                  />
+              <div className="ticket-form-group password-refresh-field">
+                <span className="field-label-row">Password Access</span>
+                <div className="password-refresh-card">
+                  <div>
+                    <strong>Refresh Password</strong>
+                    <p>Issue a new temporary password and require this user to change it on next login.</p>
+                  </div>
                   <button
                     type="button"
-                    className="password-toggle-btn"
-                    onClick={() => setShowEditPassword((prev) => !prev)}
-                    aria-label={showEditPassword ? 'Hide password' : 'Show password'}
-                    title={showEditPassword ? 'Hide password' : 'Show password'}
+                    className="modal-btn danger"
+                    onClick={requestPasswordRefresh}
+                    disabled={isSubmitting || editForm.id === currentUserId}
                   >
-                    <MonoIcon icon={showEditPassword ? EyeOff : Eye} />
-                  </button>
-                </div>
-              </div>
-
-              <div className="ticket-form-group">
-                <label htmlFor="edit-confirm-password">Confirm Password</label>
-                <div className="password-field-wrap">
-                  <input
-                    id="edit-confirm-password"
-                    className="ticket-field ticket-input"
-                    type={showEditPassword ? 'text' : 'password'}
-                    minLength={8}
-                    value={editForm.confirmPassword}
-                    onChange={(e) => updateEditForm('confirmPassword', e.target.value)}
-                    placeholder="Optional"
-                  />
-                  <button
-                    type="button"
-                    className="password-toggle-btn"
-                    onClick={() => setShowEditPassword((prev) => !prev)}
-                    aria-label={showEditPassword ? 'Hide password confirmation' : 'Show password confirmation'}
-                    title={showEditPassword ? 'Hide password confirmation' : 'Show password confirmation'}
-                  >
-                    <MonoIcon icon={showEditPassword ? EyeOff : Eye} />
+                    Refresh Password
                   </button>
                 </div>
               </div>
@@ -5401,16 +5680,24 @@ function UsersView({ users, canManageUsers, currentUserId, onUsersChanged }) {
             </div>
               </div>
             </div>
+
+            <TemporaryPasswordPanel
+              password={refreshedPassword?.password}
+              accountName={refreshedPassword?.accountName}
+              onDismiss={() => setRefreshedPassword(null)}
+            />
 
             <div className="modal-footer">
-              <button
-                type="button"
-                className="modal-btn danger"
-                onClick={() => handleDelete(editingUser)}
-                disabled={isSubmitting || editingUser.id === currentUserId}
-              >
-                Delete Account
-              </button>
+              {canDeleteUsers && (
+                <button
+                  type="button"
+                  className="modal-btn danger"
+                  onClick={() => handleDelete(editingUser)}
+                  disabled={isSubmitting || editingUser.id === currentUserId}
+                >
+                  Delete Account
+                </button>
+              )}
               <button type="button" className="modal-btn cancel" onClick={closeEdit} disabled={isSubmitting}>
                 Cancel
               </button>
@@ -5421,6 +5708,55 @@ function UsersView({ users, canManageUsers, currentUserId, onUsersChanged }) {
           </form>
         </div>
       )}
+
+      {passwordRefreshUser && (
+        <div className="modal-overlay password-refresh-overlay" role="dialog" aria-modal="true" aria-label="Confirm password refresh">
+          <section className="modal-box glass password-refresh-confirm">
+            <div className="admin-modal-head">
+              <div>
+                <span className="section-kicker">Refresh Password</span>
+                <h3>Replace current password?</h3>
+                <p>{passwordRefreshUser.name || passwordRefreshUser.email}</p>
+              </div>
+              <button
+                type="button"
+                className="admin-modal-close"
+                onClick={() => setPasswordRefreshUser(null)}
+                aria-label="Cancel password refresh"
+                disabled={isSubmitting}
+              >
+                &times;
+              </button>
+            </div>
+
+            <div className="password-refresh-warning">
+              <p>
+                This will replace the user's current password with a new temporary password.
+                The user must change that temporary password on next login before accessing the portal.
+              </p>
+            </div>
+
+            <div className="modal-footer">
+              <button
+                type="button"
+                className="modal-btn cancel"
+                onClick={() => setPasswordRefreshUser(null)}
+                disabled={isSubmitting}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="modal-btn danger"
+                onClick={confirmPasswordRefresh}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? 'Refreshing...' : 'Confirm Refresh'}
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
     </div>
   );
 }
@@ -5429,7 +5765,7 @@ function CreateUserView({ users = [], onCreated }) {
   const [form, setForm] = useState(emptyCreateUserForm);
   const [message, setMessage] = useState({ type: '', text: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showCreatePassword, setShowCreatePassword] = useState(false);
+  const [createdPassword, setCreatedPassword] = useState(null);
 
   const duplicateEmail = normalizeComparable(form.email)
     ? users.find((user) => normalizeComparable(user.email) === normalizeComparable(form.email))
@@ -5440,21 +5776,6 @@ function CreateUserView({ users = [], onCreated }) {
 
   const updateForm = (field, value) => {
     setForm((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const generateTemporaryPassword = () => {
-    const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
-    const symbols = '!@#$%';
-    const password = Array.from({ length: 10 }, () =>
-      alphabet[Math.floor(Math.random() * alphabet.length)]
-    ).join('') + symbols[Math.floor(Math.random() * symbols.length)] + '7';
-
-    setForm((prev) => ({
-      ...prev,
-      password,
-      confirmPassword: password,
-    }));
-    setShowCreatePassword(true);
   };
 
   const handleSubmit = async (e) => {
@@ -5475,12 +5796,15 @@ function CreateUserView({ users = [], onCreated }) {
         throw new Error(`Employee ID already belongs to ${duplicateEmployeeId.name || duplicateEmployeeId.email}.`);
       }
 
-      await createPortalUser(form);
+      const result = await createPortalUser(form);
       setForm(emptyCreateUserForm);
-      setShowCreatePassword(false);
+      setCreatedPassword({
+        password: result.temporaryPassword,
+        accountName: result.profile?.full_name || form.name,
+      });
       setMessage({
         type: 'success',
-        text: 'Account created. The user can now sign in using the issued password.',
+        text: 'Account created. Copy the temporary password before leaving this page.',
       });
       await onCreated();
     } catch (error) {
@@ -5529,6 +5853,12 @@ function CreateUserView({ users = [], onCreated }) {
               {duplicateEmployeeId && `Employee ID already belongs to ${duplicateEmployeeId.name || duplicateEmployeeId.email}.`}
             </div>
           )}
+
+          <TemporaryPasswordPanel
+            password={createdPassword?.password}
+            accountName={createdPassword?.accountName}
+            onDismiss={() => setCreatedPassword(null)}
+          />
 
           <div className="ticket-form-grid">
             <div className="ticket-form-group">
@@ -5618,64 +5948,9 @@ function CreateUserView({ users = [], onCreated }) {
                 maxLength={13}
                 value={form.phone}
                 onChange={(e) => updateForm('phone', formatPhoneNumber(e.target.value))}
-                placeholder="09XX XXX XXXX"
-                title="Use format 09XX XXX XXXX."
+                placeholder="09** *** ****"
+                title="Use format 09** *** ****."
               />
-            </div>
-
-            <div className="ticket-form-group create-password-field">
-              <div className="field-label-row">
-                <label htmlFor="create-password">Password</label>
-                <button type="button" className="text-tool-btn" onClick={generateTemporaryPassword}>
-                  Generate
-                </button>
-              </div>
-              <div className="password-field-wrap">
-                <input
-                  id="create-password"
-                  className="ticket-field ticket-input"
-                  type={showCreatePassword ? 'text' : 'password'}
-                  required
-                  minLength={8}
-                  value={form.password}
-                  onChange={(e) => updateForm('password', e.target.value)}
-                  placeholder="Create password"
-                />
-                <button
-                  type="button"
-                  className="password-toggle-btn"
-                  onClick={() => setShowCreatePassword((prev) => !prev)}
-                  aria-label={showCreatePassword ? 'Hide password' : 'Show password'}
-                  title={showCreatePassword ? 'Hide password' : 'Show password'}
-                >
-                  <MonoIcon icon={showCreatePassword ? EyeOff : Eye} />
-                </button>
-              </div>
-            </div>
-
-            <div className="ticket-form-group create-confirm-password-field">
-              <label htmlFor="create-confirm-password">Confirm Password</label>
-              <div className="password-field-wrap">
-                <input
-                  id="create-confirm-password"
-                  className="ticket-field ticket-input"
-                  type={showCreatePassword ? 'text' : 'password'}
-                  required
-                  minLength={8}
-                  value={form.confirmPassword}
-                  onChange={(e) => updateForm('confirmPassword', e.target.value)}
-                  placeholder="Confirm password"
-                />
-                <button
-                  type="button"
-                  className="password-toggle-btn"
-                  onClick={() => setShowCreatePassword((prev) => !prev)}
-                  aria-label={showCreatePassword ? 'Hide password confirmation' : 'Show password confirmation'}
-                  title={showCreatePassword ? 'Hide password confirmation' : 'Show password confirmation'}
-                >
-                  <MonoIcon icon={showCreatePassword ? EyeOff : Eye} />
-                </button>
-              </div>
             </div>
 
             <div className="ticket-form-group create-designation-field">
@@ -5710,6 +5985,317 @@ function CreateUserView({ users = [], onCreated }) {
           <div className="admin-form-actions">
             <button type="submit" className="modal-btn confirm" disabled={isSubmitting}>
               {isSubmitting ? 'Creating Account...' : 'Create Account'}
+            </button>
+          </div>
+        </form>
+      </section>
+    </div>
+  );
+}
+
+const getEmptyAdminTicketForm = () => ({
+  submittedForUserId: '',
+  branch: '',
+  department: '',
+  supportCategory: '',
+  concernType: '',
+  deviceName: '',
+  contactNumber: '',
+  description: '',
+});
+
+const isIctRequester = (user = {}) => {
+  const role = normalizePortalRole(user.role);
+  const department = normalizeComparable(user.department);
+
+  return role === 'admin' || role === 'superadmin' || department === 'ict';
+};
+
+function CreateIctTicketView({ admin, users = [], onCreated }) {
+  const [form, setForm] = useState(getEmptyAdminTicketForm);
+  const [message, setMessage] = useState({ type: '', text: '' });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const requesterOptions = users.filter((user) => isIctRequester(user) && !isInactivePortalUser(user));
+  const selectedRequester = requesterOptions.find((user) => user.id === form.submittedForUserId) || null;
+  const supportCategories = form.deviceName ? getAdminSupportCategoriesForDevice(form.deviceName) : [];
+  const concernOptions = form.supportCategory
+    ? getAdminConcernOptionsForSelection(form.supportCategory, form.deviceName)
+    : [];
+  const derivedImpact = useMemo(
+    () => deriveTicketImpact(form),
+    [form.supportCategory, form.concernType, form.deviceName]
+  );
+
+  const updateForm = (field, value) => {
+    setForm((prev) => {
+      const next = { ...prev, [field]: value };
+
+      if (field === 'submittedForUserId') {
+        const requester = requesterOptions.find((user) => user.id === value);
+        next.branch = requester?.branch || requester?.office || '';
+        next.department = requester?.department || 'ICT';
+        next.contactNumber = requester?.phone || '';
+      }
+
+      if (field === 'deviceName') {
+        const nextCategories = value ? getAdminSupportCategoriesForDevice(value) : [];
+        const categoryIsValid = nextCategories.includes(prev.supportCategory);
+        next.supportCategory = categoryIsValid
+          ? prev.supportCategory
+          : nextCategories.length === 1
+            ? nextCategories[0]
+            : '';
+        const nextConcerns = next.supportCategory
+          ? getAdminConcernOptionsForSelection(next.supportCategory, value)
+          : [];
+        next.concernType = nextConcerns.includes(prev.concernType) ? prev.concernType : '';
+      }
+
+      if (field === 'supportCategory' && value !== prev.supportCategory) {
+        const nextConcerns = getAdminConcernOptionsForSelection(value, next.deviceName);
+        next.concernType = nextConcerns.includes(prev.concernType) ? prev.concernType : '';
+      }
+
+      return next;
+    });
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setIsSubmitting(true);
+    setMessage({ type: '', text: '' });
+
+    try {
+      if (!selectedRequester) {
+        throw new Error('Select the ICT staff account this ticket is for.');
+      }
+
+      const payload = {
+        ...form,
+        submittedForUserId: selectedRequester.id,
+        branch: form.branch || selectedRequester.branch || selectedRequester.office || '',
+        department: form.department || selectedRequester.department || 'ICT',
+        contactNumber: form.contactNumber || selectedRequester.phone || '',
+        description: form.description.trim(),
+        impact: derivedImpact.impact,
+        sla: derivedImpact.sla,
+        priority: derivedImpact.priority,
+      };
+
+      await createTicket({ user: admin, form: payload });
+      setForm(getEmptyAdminTicketForm());
+      setMessage({
+        type: 'success',
+        text: `Ticket created for ${selectedRequester.name || selectedRequester.email}. It is now visible in the helpdesk queue.`,
+      });
+      await onCreated();
+    } catch (error) {
+      setMessage({
+        type: 'error',
+        text: error.message || 'Unable to create ICT ticket.',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="dashboard-view">
+      <section className="panel-card glass hero-panel">
+        <div className="hero-copy">
+          <span className="section-kicker">ICT Ticket Submission</span>
+          <h2>Record support concerns for ICT staff.</h2>
+          <p>Super Admin can file a ticket for ICT personnel so every concern follows the same queue and report trail.</p>
+        </div>
+
+        <div className="hero-meta">
+          <span className="meta-pill">Super Admin Only</span>
+        </div>
+      </section>
+
+      <section className="panel-card glass admin-account-panel">
+        <form className="admin-account-form" onSubmit={handleSubmit}>
+          <div className="admin-form-head">
+            <div>
+              <span className="section-kicker">Ticket Details</span>
+              <h3>Requester with concern</h3>
+              <p>Select the ICT staff member who needs support. This does not assign the ticket to that staff member.</p>
+            </div>
+          </div>
+
+          {message.text && (
+            <div className={`admin-alert ${message.type}`}>
+              {message.text}
+            </div>
+          )}
+
+          <div className="ticket-form-grid">
+            <div className="ticket-form-group full">
+              <label htmlFor="ict-ticket-requester">ICT Staff With Concern</label>
+              <select
+                id="ict-ticket-requester"
+                className="ticket-field ticket-select"
+                required
+                value={form.submittedForUserId}
+                onChange={(event) => updateForm('submittedForUserId', event.target.value)}
+              >
+                <option value="" disabled>Select the requester account</option>
+                {requesterOptions.map((user) => (
+                  <option key={user.id} value={user.id}>
+                    {user.name || user.email} - {user.department || 'No department'} - {user.branch || user.office || 'No branch'}
+                  </option>
+                ))}
+              </select>
+              <span className="ticket-form-hint">Choose the ICT staff member who has the concern. The assigned technician stays unassigned until someone starts handling the ticket.</span>
+            </div>
+
+            {selectedRequester && (
+              <div className="ticket-form-group full admin-selected-requester-card">
+                <span>Selected requester</span>
+                <strong>{selectedRequester.name || selectedRequester.email}</strong>
+                <p>
+                  {selectedRequester.employeeId || 'No ID'} - {selectedRequester.department || 'No department'} - {selectedRequester.branch || selectedRequester.office || 'No branch'}
+                </p>
+              </div>
+            )}
+
+            <div className="ticket-form-group">
+              <label htmlFor="ict-ticket-branch">Branch / Location</label>
+              <select
+                id="ict-ticket-branch"
+                className="ticket-field ticket-select"
+                required
+                value={form.branch}
+                onChange={(event) => updateForm('branch', event.target.value)}
+              >
+                <option value="" disabled>Select branch or office</option>
+                {BRANCHES.map((branch) => (
+                  <option key={branch} value={branch}>{branch}</option>
+                ))}
+              </select>
+              <span className="ticket-form-hint">Select the branch or office where the concern happened.</span>
+            </div>
+
+            <div className="ticket-form-group">
+              <label htmlFor="ict-ticket-department">Department</label>
+              <select
+                id="ict-ticket-department"
+                className="ticket-field ticket-select"
+                required
+                value={form.department}
+                onChange={(event) => updateForm('department', event.target.value)}
+              >
+                <option value="" disabled>Select department</option>
+                {DEPARTMENTS.map((department) => (
+                  <option key={department} value={department}>{department}</option>
+                ))}
+              </select>
+              <span className="ticket-form-hint">Select the requester department or the department affected by the concern.</span>
+            </div>
+
+            <div className="ticket-form-group">
+              <label htmlFor="ict-ticket-device">Device or System</label>
+              <select
+                id="ict-ticket-device"
+                className="ticket-field ticket-select"
+                required
+                value={form.deviceName}
+                onChange={(event) => updateForm('deviceName', event.target.value)}
+              >
+                <option value="" disabled>Select the affected device or system</option>
+                {DEVICE_OPTIONS.map((device) => (
+                  <option key={device} value={device}>{device}</option>
+                ))}
+              </select>
+              <span className="ticket-form-hint">Choose the device, application, or system involved.</span>
+            </div>
+
+            <div className="ticket-form-group">
+              <label htmlFor="ict-ticket-contact">Contact Number / Local</label>
+              <input
+                id="ict-ticket-contact"
+                className="ticket-field ticket-input"
+                type="tel"
+                required
+                value={form.contactNumber}
+                onChange={(event) => updateForm('contactNumber', formatPhoneNumber(event.target.value))}
+                placeholder="09** *** ****"
+              />
+              <span className="ticket-form-hint">Provide a number where ICT can contact the requester if more details are needed.</span>
+            </div>
+
+            <div className="ticket-form-group">
+              <label htmlFor="ict-ticket-category">Support Category</label>
+              <select
+                id="ict-ticket-category"
+                className="ticket-field ticket-select"
+                required
+                disabled={!form.deviceName}
+                value={form.supportCategory}
+                onChange={(event) => updateForm('supportCategory', event.target.value)}
+              >
+                <option value="" disabled>
+                  {form.deviceName ? 'Select support category' : 'Select device or system first'}
+                </option>
+                {supportCategories.map((category) => (
+                  <option key={category} value={category}>{category}</option>
+                ))}
+              </select>
+              <span className="ticket-form-hint">
+                {form.deviceName ? 'Select the type of ICT support needed.' : 'Select a device or system first.'}
+              </span>
+            </div>
+
+            <div className="ticket-form-group">
+              <label htmlFor="ict-ticket-concern">Concern Type</label>
+              <select
+                id="ict-ticket-concern"
+                className="ticket-field ticket-select"
+                required
+                disabled={!form.supportCategory}
+                value={form.concernType}
+                onChange={(event) => updateForm('concernType', event.target.value)}
+              >
+                <option value="" disabled>
+                  {form.supportCategory ? 'Select concern type' : 'Select support category first'}
+                </option>
+                {concernOptions.map((concern) => (
+                  <option key={concern} value={concern}>{concern}</option>
+                ))}
+              </select>
+              <span className="ticket-form-hint">
+                {form.supportCategory ? 'Choose the closest concern type for this request.' : 'Select a support category first to show concern types.'}
+              </span>
+            </div>
+
+            {derivedImpact.isReady && (
+              <div className="ticket-form-group full">
+                <label>Auto Impact Level</label>
+                <div className={`auto-impact-card sla-only ${slugify(derivedImpact.sla)}`}>
+                  <div>
+                    <span>SLA</span>
+                    <strong>{derivedImpact.sla}</strong>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="ticket-form-group full">
+              <label htmlFor="ict-ticket-description">Issue Description</label>
+              <textarea
+                id="ict-ticket-description"
+                className="ticket-field ticket-textarea"
+                required
+                value={form.description}
+                onChange={(event) => updateForm('description', event.target.value)}
+                placeholder="Briefly describe what happened and what support is needed."
+              />
+            </div>
+          </div>
+
+          <div className="admin-form-actions">
+            <button type="submit" className="modal-btn confirm" disabled={isSubmitting}>
+              {isSubmitting ? 'Submitting Ticket...' : 'Submit Ticket'}
             </button>
           </div>
         </form>
@@ -6102,7 +6688,7 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
         <div className="ticket-action-details-row">
           <div className="admin-description-box ticket-action-description">
             <span>Description of Problem</span>
-            <PreservedText value={ticket.description} />
+            <PreservedText value={getVisibleTicketDescription(ticket.description) || 'No description provided.'} />
           </div>
 
           <div className="ticket-action-control-stack">
@@ -6122,18 +6708,14 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
           </div>
 
           <div className="ticket-form-group">
-            <label>SLA</label>
-            <select
-              className="ticket-field ticket-select"
-              value={draft.sla}
-              onChange={(e) => updateDraft('sla', e.target.value)}
-              required
-              disabled={isResolvedLocked}
-            >
-              {SLA_LEVELS.map((sla) => (
-                <option key={sla} value={sla}>{sla}</option>
-              ))}
-            </select>
+            <label>Auto Impact Level</label>
+            <div className={`auto-impact-card compact ${slugify(draft.sla || 'Low')}`}>
+              <div>
+                <span>Saved SLA</span>
+                <strong>{draft.sla || 'Low'}</strong>
+              </div>
+              <p>{ticket.impact || deriveTicketImpact(ticket).impact}</p>
+            </div>
           </div>
 
           <div className="ticket-form-group">
@@ -6342,6 +6924,7 @@ export default function AdminDashboardPage() {
   const [isPageTransitioning, setIsPageTransitioning] = useState(false);
   const [transitionLabel, setTransitionLabel] = useState(adminTransitionLabels.dashboard);
   const [timerNow, setTimerNow] = useState(Date.now());
+  const [ticketLockNotice, setTicketLockNotice] = useState(null);
   const [, setNotifications] = useState([]);
   const [filters, setFilters] = useState({
     search: '',
@@ -6395,6 +6978,13 @@ export default function AdminDashboardPage() {
           );
 
           router.replace(LOGIN_ROUTE);
+          return;
+        }
+
+        if (isPasswordChangeRequired(activeUser)) {
+          setAuthChecked(true);
+          setAdmin(null);
+          router.replace(`${LOGIN_ROUTE}?mode=force-password`);
           return;
         }
 
@@ -6462,7 +7052,7 @@ Current role: ${activeUser.role || 'No role found'}`
 
     const syncData = () => {
       void loadData({
-        includeUsers: activeSection === 'users' || activeSection === 'create-user',
+        includeUsers: activeSection === 'users' || activeSection === 'create-user' || activeSection === 'create-ict-ticket',
       });
     };
 
@@ -6631,8 +7221,13 @@ Current role: ${activeUser.role || 'No role found'}`
   const statusSummary = useMemo(() => breakdown(tickets, 'status', TICKET_STATUSES), [tickets]);
   const branchSummary = useMemo(() => breakdown(tickets, 'branch', BRANCHES), [tickets]);
   const isSuperAdmin = normalizePortalRole(admin?.role) === 'superadmin';
+  const isIctAdmin = normalizePortalRole(admin?.role) === 'admin';
+  const canEditUsers = isSuperAdmin || isIctAdmin;
   const canCreateUsers = isSuperAdmin;
+  const canCreateIctTickets = isSuperAdmin;
   const canAccessDepartmentConsoles = isSuperAdmin;
+  const canDeleteUsers = isSuperAdmin;
+  const canEditUserRoles = isSuperAdmin;
   const canDeleteTickets = isSuperAdmin;
 
   const goTo = (section) => {
@@ -6672,9 +7267,10 @@ Current role: ${activeUser.role || 'No role found'}`
       }
 
       if (isTicketLockedByOther(lockedTicket, admin.id)) {
-        window.alert(
-          `Ticket ${getTicketDisplayCode(ticket)} is already being worked on by ${lockedTicket.lockedByName || 'another IT staff'}.`
-        );
+        setTicketLockNotice({
+          ticketCode: getTicketDisplayCode(ticket),
+          staffName: lockedTicket.lockedByName || 'another IT staff',
+        });
         await loadData();
         return;
       }
@@ -6741,7 +7337,9 @@ Current role: ${activeUser.role || 'No role found'}`
     if (updates.status && nextStatus && nextStatus !== currentStatus) {
       nextUpdates.statusHistory = [
         ...(Array.isArray(currentTicket?.statusHistory) ? currentTicket.statusHistory : []),
-        buildStatusHistoryEntry(updates.status, timestamp, admin),
+        buildStatusHistoryEntry(updates.status, timestamp, admin, {
+          technician: nextUpdates.technician,
+        }),
       ];
     }
 
@@ -6782,7 +7380,7 @@ Current role: ${activeUser.role || 'No role found'}`
       nextUpdates.lastUpdated = timestamp;
     }
 
-    if (nextStatus === 'canceled') {
+    if (nextStatus === 'canceled' || nextStatus === 'cancelled') {
       if (currentTicket?.workStartedAt) {
         nextUpdates.workEndedAt = timestamp;
       }
@@ -6889,7 +7487,7 @@ Current role: ${activeUser.role || 'No role found'}`
       );
       setTickets((currentTickets) => currentTickets.filter((item) => item.id !== ticket.id));
       await loadData({
-        includeUsers: activeSection === 'users' || activeSection === 'create-user',
+        includeUsers: activeSection === 'users' || activeSection === 'create-user' || activeSection === 'create-ict-ticket',
       });
     } catch (error) {
       window.alert(error.message || 'Unable to delete ticket.');
@@ -6939,6 +7537,7 @@ Current role: ${activeUser.role || 'No role found'}`
               onLogout={handleLogout}
               open={sidebarOpen}
               canCreateUsers={canCreateUsers}
+              canCreateIctTickets={canCreateIctTickets}
               canAccessDepartmentConsoles={canAccessDepartmentConsoles}
             />
 
@@ -7020,7 +7619,9 @@ Current role: ${activeUser.role || 'No role found'}`
               {activeSection === 'users' && (
                 <UsersView
                   users={users}
-                  canManageUsers={canCreateUsers}
+                  canEditUsers={canEditUsers}
+                  canDeleteUsers={canDeleteUsers}
+                  canEditRoles={canEditUserRoles}
                   currentUserId={admin.id}
                   onUsersChanged={loadData}
                 />
@@ -7028,6 +7629,14 @@ Current role: ${activeUser.role || 'No role found'}`
 
               {activeSection === 'create-user' && canCreateUsers && (
                 <CreateUserView
+                  users={users}
+                  onCreated={() => loadData({ includeUsers: true })}
+                />
+              )}
+
+              {activeSection === 'create-ict-ticket' && canCreateIctTickets && (
+                <CreateIctTicketView
+                  admin={admin}
                   users={users}
                   onCreated={() => loadData({ includeUsers: true })}
                 />
@@ -7060,6 +7669,8 @@ Current role: ${activeUser.role || 'No role found'}`
           }}
         />
       )}
+
+      <TicketLockNoticeModal notice={ticketLockNotice} onClose={() => setTicketLockNotice(null)} />
 
       {isPageTransitioning && <PortalTransitionLoader label={transitionLabel} />}
     </>

@@ -1445,10 +1445,154 @@ button {
   grid-column: 1 / -1;
 }
 
+.ticket-form-hint {
+  display: block;
+  color: var(--softer);
+  font-size: 0.888rem;
+  line-height: 1.45;
+  margin-top: 0.05rem;
+}
+
+.auto-impact-card {
+  display: grid;
+  gap: 0.65rem;
+  min-height: 0;
+  padding: 0.95rem 1rem;
+  border: 1px solid rgba(203, 213, 225, 0.72);
+  border-left-width: 4px;
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.045);
+}
+
+.auto-impact-card div {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  min-width: 0;
+  padding-bottom: 0.55rem;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+}
+
+.auto-impact-card span {
+  color: var(--softer);
+  font-size: 0.75rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.auto-impact-card strong {
+  color: var(--text);
+  font-size: clamp(1rem, 1.45vw, 1.22rem);
+  font-weight: 900;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+  text-align: right;
+}
+
+.auto-impact-card p,
+.auto-impact-card em {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.auto-impact-card em {
+  display: block;
+  padding: 0.56rem 0.7rem;
+  border-radius: var(--radius-sm);
+  background: rgba(248, 250, 252, 0.9);
+  color: #475569;
+  font-style: normal;
+  font-weight: 750;
+}
+
+.auto-impact-card.low {
+  border-color: rgba(34, 197, 94, 0.24);
+  border-left-color: rgba(22, 163, 74, 0.72);
+  background: linear-gradient(90deg, rgba(240, 253, 244, 0.58), rgba(255, 255, 255, 0.92));
+}
+
+.auto-impact-card.medium {
+  border-color: rgba(234, 179, 8, 0.28);
+  border-left-color: rgba(202, 138, 4, 0.76);
+  background: linear-gradient(90deg, rgba(254, 252, 232, 0.66), rgba(255, 255, 255, 0.92));
+}
+
+.auto-impact-card.high {
+  border-color: rgba(249, 115, 22, 0.28);
+  border-left-color: rgba(234, 88, 12, 0.78);
+  background: linear-gradient(90deg, rgba(255, 247, 237, 0.68), rgba(255, 255, 255, 0.92));
+}
+
+.auto-impact-card.critical {
+  border-color: rgba(220, 38, 38, 0.3);
+  border-left-color: rgba(220, 38, 38, 0.82);
+  background: linear-gradient(90deg, rgba(254, 242, 242, 0.7), rgba(255, 255, 255, 0.92));
+}
+
+.auto-impact-card.sla-only {
+  padding: 0.85rem 1rem;
+}
+
+.auto-impact-card.sla-only div {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.auto-impact-card.compact {
+  min-height: 0;
+  padding: 0.75rem 0.85rem;
+  border-radius: var(--radius-md);
+}
+
+.auto-impact-card.compact strong {
+  font-size: 1.05rem;
+}
+
+.auto-impact-card.compact p {
+  font-size: 0.88rem;
+}
+
 .ticket-form-group.portal-role-field {
   grid-column: 2 / 3;
   justify-self: stretch;
   width: 100%;
+}
+
+.admin-selected-requester-card {
+  padding: 0.9rem 1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(220, 38, 38, 0.14);
+  background:
+    linear-gradient(90deg, rgba(220, 38, 38, 0.065), transparent 42%),
+    rgba(255, 255, 255, 0.88);
+}
+
+.admin-selected-requester-card span {
+  color: var(--softer);
+  font-size: 0.82rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.admin-selected-requester-card strong {
+  color: var(--text);
+  font-size: 1.04rem;
+  line-height: 1.25;
+}
+
+.admin-selected-requester-card p {
+  color: var(--muted);
+  font-size: 0.95rem;
+  line-height: 1.35;
 }
 
 .create-password-field {
@@ -1521,6 +1665,94 @@ button {
 .password-field-wrap {
   position: relative;
   width: 100%;
+}
+
+.temporary-password-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1rem;
+  align-items: center;
+}
+
+.temporary-password-panel p {
+  margin: 0.3rem 0 0.6rem;
+  color: var(--muted);
+}
+
+.temporary-password-panel code {
+  display: inline-flex;
+  max-width: 100%;
+  padding: 0.56rem 0.75rem;
+  border: 1px solid rgba(22, 163, 74, 0.18);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.76);
+  color: var(--text);
+  font-size: 1rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  overflow-wrap: anywhere;
+}
+
+.temporary-password-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.password-refresh-field {
+  grid-column: 1 / -1;
+}
+
+.password-refresh-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1rem;
+  align-items: center;
+  min-height: 78px;
+  padding: 0.9rem;
+  border: 1px solid rgba(220, 38, 38, 0.16);
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(254, 242, 242, 0.72));
+}
+
+.password-refresh-card strong {
+  display: block;
+  color: var(--text);
+  font-size: 1rem;
+}
+
+.password-refresh-card p,
+.password-refresh-warning p {
+  margin: 0.22rem 0 0;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.password-refresh-confirm {
+  width: min(520px, calc(100vw - 2rem));
+}
+
+.password-refresh-warning {
+  padding: 1rem;
+  border: 1px solid rgba(220, 38, 38, 0.16);
+  border-radius: var(--radius-md);
+  background: rgba(254, 242, 242, 0.72);
+}
+
+@media (max-width: 640px) {
+  .temporary-password-panel,
+  .password-refresh-card {
+    grid-template-columns: 1fr;
+  }
+
+  .temporary-password-actions {
+    justify-content: stretch;
+  }
+
+  .temporary-password-actions .modal-btn,
+  .password-refresh-card .modal-btn {
+    width: 100%;
+  }
 }
 
 /* Burnout reports can exceed one viewport; keep the modal genuinely scrollable. */
@@ -2757,23 +2989,29 @@ button {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 0.75rem;
+  gap: 0.55rem;
   margin-bottom: 0.55rem;
 }
 
 .report-selected-day-head span {
+  flex: 0 0 auto;
   color: var(--softer);
   font-size: 0.792rem;
   font-weight: 900;
   line-height: 1.25;
   text-transform: uppercase;
   letter-spacing: 0.06em;
+  white-space: nowrap;
 }
 
 .report-selected-day-head strong {
+  flex: 0 0 auto;
   color: var(--text);
-  font-size: 1.008rem;
+  font-size: clamp(0.9rem, 0.92vw, 1.008rem);
   font-weight: 850;
+  line-height: 1.15;
+  text-align: right;
+  white-space: nowrap;
 }
 
 .report-selected-ticket-list {
@@ -3279,6 +3517,127 @@ button {
 .modal-btn.print:hover {
   transform: translateY(-1px);
   background: rgba(220, 38, 38, 0.13);
+}
+
+.ticket-lock-notice-overlay {
+  background:
+    radial-gradient(circle at 50% 8%, rgba(220, 38, 38, 0.12), transparent 34%),
+    rgba(15, 23, 42, 0.42);
+}
+
+.ticket-lock-notice-modal {
+  position: relative;
+  display: grid;
+  gap: 1rem;
+  width: min(520px, calc(100vw - 2rem));
+  padding: clamp(1.15rem, 3vw, 1.55rem);
+  border: 1px solid rgba(220, 38, 38, 0.14);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 247, 247, 0.96));
+  box-shadow:
+    0 28px 70px rgba(15, 23, 42, 0.24),
+    0 10px 24px rgba(220, 38, 38, 0.1);
+}
+
+.ticket-lock-notice-modal::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 5px;
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  background: linear-gradient(90deg, var(--red-500), #f97316);
+}
+
+.ticket-lock-notice-icon {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 18px;
+  background: rgba(220, 38, 38, 0.1);
+  color: var(--red-500);
+  box-shadow: inset 0 0 0 1px rgba(220, 38, 38, 0.12);
+}
+
+.ticket-lock-notice-icon .admin-mono-icon {
+  width: 25px;
+  height: 25px;
+}
+
+.ticket-lock-notice-copy {
+  min-width: 0;
+}
+
+.ticket-lock-notice-copy h3 {
+  margin: 0.38rem 0 0.45rem;
+  color: var(--text);
+  font-size: clamp(1.32rem, 3.4vw, 1.75rem);
+  line-height: 1.08;
+  letter-spacing: -0.045em;
+  overflow-wrap: anywhere;
+}
+
+.ticket-lock-notice-copy p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.ticket-lock-notice-details {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.ticket-lock-notice-details div {
+  min-width: 0;
+  padding: 0.78rem 0.85rem;
+  border: 1px solid rgba(226, 232, 240, 0.82);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.86);
+}
+
+.ticket-lock-notice-details span {
+  display: block;
+  margin-bottom: 0.25rem;
+  color: var(--softer);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.ticket-lock-notice-details strong {
+  display: block;
+  color: var(--text);
+  font-size: 0.98rem;
+  font-weight: 850;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.ticket-lock-notice-footer {
+  margin-top: 0.15rem;
+}
+
+.ticket-lock-notice-footer .modal-btn {
+  min-width: 118px;
+}
+
+@media (max-width: 560px) {
+  .ticket-lock-notice-details {
+    grid-template-columns: 1fr;
+  }
+
+  .ticket-lock-notice-footer {
+    justify-content: stretch;
+  }
+
+  .ticket-lock-notice-footer .modal-btn {
+    width: 100%;
+  }
 }
 
 /* =========================
@@ -10828,5 +11187,50 @@ button {
 @media (max-width: 720px) {
   .admin-workload-stats {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Final ticket text visibility correction: long modal text scrolls, print output expands. */
+.ticket-action-modal .ticket-action-description {
+  overflow: hidden !important;
+}
+
+.ticket-action-modal .ticket-action-description p {
+  max-height: min(24dvh, 180px) !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  padding-right: 0.35rem;
+  white-space: pre-wrap;
+}
+
+.ticket-action-modal .ticket-action-notes-grid .admin-small-textarea {
+  height: clamp(76px, 12dvh, 132px) !important;
+  min-height: 76px !important;
+  max-height: 132px !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  resize: none;
+  white-space: pre-wrap;
+}
+
+.ticket-action-modal .ticket-action-description p::-webkit-scrollbar,
+.ticket-action-modal .ticket-action-notes-grid .admin-small-textarea::-webkit-scrollbar {
+  width: 6px;
+}
+
+.ticket-action-modal .ticket-action-description p::-webkit-scrollbar-thumb,
+.ticket-action-modal .ticket-action-notes-grid .admin-small-textarea::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.72);
+}
+
+@media (max-width: 760px), (max-height: 700px) {
+  .ticket-action-modal .ticket-action-description p {
+    max-height: 150px !important;
+  }
+
+  .ticket-action-modal .ticket-action-notes-grid .admin-small-textarea {
+    height: 92px !important;
+    max-height: 92px !important;
   }
 }

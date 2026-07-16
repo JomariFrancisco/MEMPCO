@@ -7,6 +7,7 @@ import {
   Bell,
   BriefcaseBusiness,
   Building2,
+  Camera,
   ChevronLeft,
   ChevronRight,
   CheckCircle2,
@@ -39,7 +40,6 @@ import {
   CATEGORY_TEMPLATES,
   DEPARTMENTS,
   DEVICE_OPTIONS,
-  SLA_LEVELS,
   isUnresolved,
   slugify,
 } from '../portalStorage';
@@ -48,12 +48,15 @@ import {
   getPortalHomeRoute,
   INACTIVE_ACCOUNT_MESSAGE,
   isInactivePortalUser,
+  isPasswordChangeRequired,
   signOutPortal,
+  updateCurrentPortalUserProfilePhoto,
 } from '@/lib/auth/portalAuth';
 import {
   canTicketAcceptMessages,
   createTicket,
   createTicketMessage,
+  deriveTicketImpact,
   getTicket,
   getTicketMessages,
   getTicketsForUser,
@@ -100,6 +103,7 @@ const HELPDESK_CATEGORY_CONCERNS = {
     'Other account access concern',
   ],
   'Printer Support': [
+    'Passbook printer concern',
     'Printer not printing',
     'Printer setup or installation',
     'Poor print quality',
@@ -273,10 +277,10 @@ const ANNOUNCEMENTS = [
   },
   {
     tag: 'SLA',
-    title: 'SLA is selected manually by the user',
+    title: 'SLA is calculated automatically',
     description:
-      'The selected SLA level also sets the operational impact and will not be overwritten by the system.',
-    date: 'Manual',
+      'The system calculates the impact level from the selected support category and concern type.',
+    date: 'Auto',
   },
   {
     tag: 'Required',
@@ -289,7 +293,7 @@ const ANNOUNCEMENTS = [
 
 const GUIDES = [
   'Select a support category first. The concern type dropdown will only show concerns related to that category.',
-  'Choose the impact level based on how much work is affected.',
+  'The impact level is calculated automatically after you select the concern type.',
   'Enter the AnyDesk number because ICT mainly supports tickets remotely.',
   'Attach a screenshot or photo if possible.',
 ];
@@ -299,7 +303,7 @@ const SLA_PICKER_OPTIONS = [
     level: 'Low',
     icon: ShieldCheck,
     title: 'Low',
-    impact: 'Single user affected',
+    impact: 'Routine request or non-blocking assistance',
     text: 'For minor concerns affecting only one user and work can still continue.',
     meta: 'Standard response',
   },
@@ -307,7 +311,7 @@ const SLA_PICKER_OPTIONS = [
     level: 'Medium',
     icon: Clock3,
     title: 'Medium',
-    impact: 'Multiple users or department affected',
+    impact: 'Work affected with workaround',
     text: 'For concerns affecting several users or causing delay in work.',
     meta: 'Priority review',
   },
@@ -315,7 +319,7 @@ const SLA_PICKER_OPTIONS = [
     level: 'High',
     icon: Wrench,
     title: 'High',
-    impact: 'Branch operation affected',
+    impact: 'Work or branch function blocked',
     text: 'For concerns affecting branch operation, important transactions, or system availability.',
     meta: 'Urgent handling',
   },
@@ -323,14 +327,11 @@ const SLA_PICKER_OPTIONS = [
     level: 'Critical',
     icon: BadgeCheck,
     title: 'Critical',
-    impact: 'Core operation affected',
+    impact: 'Core operation stopped',
     text: 'For concerns where operation is stopped, the system is down, or there is possible data loss.',
     meta: 'Immediate action',
   },
 ];
-
-const getSelectedSlaOption = (sla = 'Low') =>
-  SLA_PICKER_OPTIONS.find((option) => option.level === sla) || SLA_PICKER_OPTIONS[0];
 
 const SUPPORT_FLOW = [
   {
@@ -339,7 +340,7 @@ const SUPPORT_FLOW = [
   },
   {
     title: 'ICT review',
-    text: 'Employee selects the SLA level and ICT validates the concern.',
+    text: 'The system assigns the impact level and ICT validates the concern.',
   },
   {
     title: 'Action & resolution',
@@ -828,8 +829,8 @@ const getNewTicketForm = (user = {}) => ({
   description: DEFAULT_DESCRIPTION_TEMPLATE,
   photoAttachments: [],
   saarAttachment: null,
-  sla: 'Low',
-  impact: getSelectedSlaOption('Low').impact,
+  sla: deriveTicketImpact().sla,
+  impact: deriveTicketImpact().impact,
 });
 
 /* =========================
@@ -918,6 +919,45 @@ const isPhotoFile = (file) =>
         /\.(jpe?g|png|webp|gif|bmp)$/i.test(file.name || '')
       )
   );
+
+const compressProfilePhoto = async (file) => {
+  if (!isPhotoFile(file)) {
+    throw new Error('Choose a valid image file for your profile photo.');
+  }
+
+  if (file.size > PHOTO_MAX_SIZE) {
+    throw new Error('Profile photo must not exceed 4 MB.');
+  }
+
+  const source = await fileToDataUrl(file);
+
+  return new Promise((resolve) => {
+    const image = new Image();
+
+    image.onload = () => {
+      const canvas = document.createElement('canvas');
+      const maxSize = 420;
+      const sourceSize = Math.min(image.width, image.height);
+      const sx = Math.max(0, (image.width - sourceSize) / 2);
+      const sy = Math.max(0, (image.height - sourceSize) / 2);
+      const outputSize = Math.min(maxSize, sourceSize || maxSize);
+      canvas.width = outputSize;
+      canvas.height = outputSize;
+
+      const context = canvas.getContext('2d');
+      if (!context) {
+        resolve(source);
+        return;
+      }
+
+      context.drawImage(image, sx, sy, sourceSize, sourceSize, 0, 0, outputSize, outputSize);
+      resolve(canvas.toDataURL('image/jpeg', 0.86));
+    };
+
+    image.onerror = () => resolve(source);
+    image.src = source;
+  });
+};
 
 const filesToPhotoAttachments = async (files = [], existingCount = 0) => {
   const selectedFiles = Array.from(files || []);
@@ -1768,7 +1808,7 @@ function DashboardView({ user, tickets, openTickets, onGoTo }) {
             <div>
               <span className="section-kicker">SLA &amp; Operational Impact</span>
               <p>
-                Select the SLA level based on how wide the concern affects work. The operational impact follows the selected SLA and is saved with the ticket.
+                The system calculates the impact level from the selected Support Category and Concern Type, then saves it with the ticket.
               </p>
             </div>
 
@@ -1910,7 +1950,7 @@ function DashboardView({ user, tickets, openTickets, onGoTo }) {
               </div>
               <div className="submission-guide-item">
                 <span className="submission-guide-number">02</span>
-                <p>Select the SLA level manually. The operational impact will follow your selected SLA level.</p>
+                <p>The impact level is calculated automatically after you select the Support Category and Concern Type.</p>
               </div>
               <div className="submission-guide-item">
                 <span className="submission-guide-number">03</span>
@@ -1944,7 +1984,12 @@ function DashboardView({ user, tickets, openTickets, onGoTo }) {
    PROFILE VIEW
 ========================= */
 
-function ProfileView({ user, onGoTo }) {
+function ProfileView({ user, onGoTo, onUserUpdate }) {
+  const profilePhotoInputRef = useRef(null);
+  const profilePhotoMenuRef = useRef(null);
+  const [photoMessage, setPhotoMessage] = useState('');
+  const [isPhotoMenuOpen, setIsPhotoMenuOpen] = useState(false);
+  const [isSavingPhoto, setIsSavingPhoto] = useState(false);
   const employeeStatus = user.status || 'Active';
   const assignedOffice = user.branch || user.office || 'Not assigned';
   const designation = user.designation || 'Job title not provided';
@@ -1957,11 +2002,122 @@ function ProfileView({ user, onGoTo }) {
     { label: 'Phone Number', value: user.phone || 'Not provided', icon: Phone },
   ];
 
+  useEffect(() => {
+    if (!isPhotoMenuOpen) return undefined;
+
+    const closePhotoMenu = (event) => {
+      if (!profilePhotoMenuRef.current?.contains(event.target)) {
+        setIsPhotoMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('pointerdown', closePhotoMenu);
+
+    return () => {
+      document.removeEventListener('pointerdown', closePhotoMenu);
+    };
+  }, [isPhotoMenuOpen]);
+
+  const saveProfilePhoto = async (profilePhoto) => {
+    setIsSavingPhoto(true);
+    setPhotoMessage('');
+    setIsPhotoMenuOpen(false);
+
+    try {
+      const updatedUser = await updateCurrentPortalUserProfilePhoto(profilePhoto);
+      onUserUpdate(updatedUser);
+      setPhotoMessage(profilePhoto ? 'Profile photo updated.' : 'Profile photo removed.');
+    } catch (error) {
+      setPhotoMessage(error.message || 'Unable to update profile photo.');
+    } finally {
+      setIsSavingPhoto(false);
+    }
+  };
+
+  const handleProfilePhotoChange = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+
+    if (!file) return;
+
+    try {
+      const profilePhoto = await compressProfilePhoto(file);
+      await saveProfilePhoto(profilePhoto);
+    } catch (error) {
+      setPhotoMessage(error.message || 'Unable to read the selected photo.');
+    }
+  };
+
   return (
     <div className="profile-view">
       <section className="panel-card glass profile-banner premium-profile-banner">
         <div className="profile-banner-main premium-profile-main">
-          <div className="avatar large premium-profile-avatar">{user.initials}</div>
+          <div className="profile-photo-control" ref={profilePhotoMenuRef}>
+            <div className="profile-photo-frame">
+              <button
+                type="button"
+                className="avatar large premium-profile-avatar profile-photo-button"
+                onClick={() => setIsPhotoMenuOpen((current) => !current)}
+                disabled={isSavingPhoto}
+                aria-haspopup="menu"
+                aria-expanded={isPhotoMenuOpen}
+                aria-label="Open profile photo options"
+              >
+                {user.profilePhoto ? (
+                  <img src={user.profilePhoto} alt={`${user.name} profile`} className="profile-photo-image" />
+                ) : (
+                  <span>{user.initials}</span>
+                )}
+              </button>
+              <button
+                type="button"
+                className="profile-photo-camera-button"
+                onClick={() => setIsPhotoMenuOpen((current) => !current)}
+                disabled={isSavingPhoto}
+                aria-haspopup="menu"
+                aria-expanded={isPhotoMenuOpen}
+                aria-label="Profile photo options"
+              >
+                <MonoIcon icon={Camera} />
+              </button>
+              {isPhotoMenuOpen && (
+                <div className="profile-photo-menu" role="menu">
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setIsPhotoMenuOpen(false);
+                      profilePhotoInputRef.current?.click();
+                    }}
+                  >
+                    <MonoIcon icon={ImageIcon} />
+                    {user.profilePhoto ? 'Upload new photo' : 'Upload photo'}
+                  </button>
+                  {user.profilePhoto && (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      className="danger"
+                      onClick={() => saveProfilePhoto('')}
+                    >
+                      <MonoIcon icon={X} />
+                      Remove photo
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+            <input
+              ref={profilePhotoInputRef}
+              type="file"
+              className="profile-photo-input"
+              accept="image/*"
+              onChange={handleProfilePhotoChange}
+            />
+            {(isSavingPhoto || photoMessage) && (
+              <p className="profile-photo-message">{isSavingPhoto ? 'Saving photo...' : photoMessage}</p>
+            )}
+          </div>
           <div className="profile-banner-copy premium-profile-copy">
             <span className="section-kicker">My Profile</span>
             <h2>{user.name}</h2>
@@ -2085,7 +2241,10 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
   const activeCount = tickets.filter((ticket) => isUnresolved(ticket.status)).length;
   const resolvedCount = tickets.filter(isEmployeeResolvedTicket).length;
   const mbwinRequired = isMbwinRequest(form);
-  const selectedSlaOption = useMemo(() => getSelectedSlaOption(form.sla), [form.sla]);
+  const derivedImpact = useMemo(
+    () => deriveTicketImpact(form),
+    [form.supportCategory, form.concernType, form.deviceName]
+  );
   const availableSupportCategories = useMemo(
     () => getSupportCategoriesForDevice(form.deviceName),
     [form.deviceName]
@@ -2280,16 +2439,6 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
     setForm((prev) => ({
       ...prev,
       description: updateDescriptionLabelValue(prev.description, prev, label, value),
-    }));
-  };
-
-  const handleSlaChange = (option) => {
-    setFormError('');
-
-    setForm((prev) => ({
-      ...prev,
-      sla: option.level,
-      impact: option.impact,
     }));
   };
 
@@ -2493,7 +2642,6 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
       ['concernType', 'Concern Type'],
       ['deviceName', 'Device or System'],
       ['contactNumber', 'Contact Number'],
-      ['sla', 'Impact Level'],
       ['description', 'Issue Description'],
     ];
 
@@ -2538,15 +2686,14 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
   const confirmSubmit = async () => {
     const wasEditing = Boolean(editingId);
     const cleanDescription = sanitizeDescriptionForSubmit(form.description, form);
-    const finalSla = form.sla || 'Low';
-    const finalSlaOption = getSelectedSlaOption(finalSla);
+    const finalImpact = deriveTicketImpact(form);
 
     const payload = {
       ...form,
-      impact: finalSlaOption.impact,
+      impact: finalImpact.impact,
       description: cleanDescription,
-      sla: finalSla,
-      priority: finalSla,
+      sla: finalImpact.sla,
+      priority: finalImpact.priority,
       saarRequired: mbwinRequired,
       lastEmployeeUpdate: new Date().toLocaleString(),
     };
@@ -2853,7 +3000,7 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
                   type="text"
                   value={form.contactNumber}
                   onChange={(e) => handleFormChange('contactNumber', e.target.value)}
-                  placeholder="Example: 0917 000 0000 or local number"
+                  placeholder="09** *** ****"
                   required
                 />
                 <span className="ticket-form-hint">Provide a number where ICT can contact you if more details are needed.</span>
@@ -2913,43 +3060,17 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
                 </span>
               </div>
 
-              <div className="ticket-form-group full sla-level-section">
-                <label id="ticket-sla-label">Impact Level</label>
-                <span className="ticket-form-hint">Choose how much the concern affects daily work.</span>
-                <div
-                  className="sla-picker-modern"
-                  role="radiogroup"
-                  aria-labelledby="ticket-sla-label"
-                >
-                  {SLA_PICKER_OPTIONS.filter(
-                    (option) => !SLA_LEVELS?.length || SLA_LEVELS.includes(option.level)
-                  ).map((option) => {
-                    const isSelected = (form.sla || 'Low') === option.level;
-
-                    return (
-                      <button
-                        key={option.level}
-                        type="button"
-                        role="radio"
-                        aria-checked={isSelected}
-                        className={[
-                          'sla-card',
-                          slugify(option.level),
-                          isSelected ? 'selected' : '',
-                        ].filter(Boolean).join(' ')}
-                        onClick={() => handleSlaChange(option)}
-                      >
-                        <span className="sla-card-copy">
-                          <strong>{option.title}</strong>
-                          <em>{option.impact}</em>
-                          <span>{option.text}</span>
-                        </span>
-                        <small>{option.meta}</small>
-                      </button>
-                    );
-                  })}
+              {derivedImpact.isReady && (
+                <div className="ticket-form-group full sla-level-section">
+                  <label>Auto Impact Level</label>
+                  <div className={`auto-impact-card sla-only ${slugify(derivedImpact.sla)}`}>
+                    <div>
+                      <span>SLA</span>
+                      <strong>{derivedImpact.sla}</strong>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              )}
 
               <div className="ticket-form-group full">
                 <label htmlFor="ticket-desc-builder">Issue Description</label>
@@ -3040,12 +3161,12 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
             <p>
               {editingId
                 ? 'Your updated ticket details will be sent for ICT review.'
-                : 'Your helpdesk request will be submitted to ICT with your selected SLA level.'}
+                : 'Your helpdesk request will be submitted to ICT with the calculated impact level.'}
             </p>
 
             <div className="modal-ticket-summary">
-              <span className={`priority ${slugify(form.sla || 'Low')}`}>{form.sla || 'Low'}</span>
-              <span>{selectedSlaOption.impact}</span>
+              <span className={`priority ${slugify(derivedImpact.sla)}`}>{derivedImpact.sla}</span>
+              <span>{derivedImpact.impact}</span>
               <span>{form.concernType}</span>
             </div>
 
@@ -3602,6 +3723,11 @@ export default function EmployeeDashboardPage() {
           return;
         }
 
+        if (isPasswordChangeRequired(activeUser)) {
+          router.replace(`${LOGIN_ROUTE}?mode=force-password`);
+          return;
+        }
+
         if (normalizePortalRole(activeUser.role) !== 'employee') {
           router.replace(getPortalHomeRoute(activeUser.role));
           return;
@@ -3718,7 +3844,13 @@ export default function EmployeeDashboardPage() {
 
             <div className="portal-topbar-actions">
               <div className="profile-chip">
-                <span className="profile-chip-avatar">{user.initials}</span>
+                <span className="profile-chip-avatar">
+                  {user.profilePhoto ? (
+                    <img src={user.profilePhoto} alt="" aria-hidden="true" />
+                  ) : (
+                    user.initials
+                  )}
+                </span>
                 <div className="profile-chip-copy">
                   <strong>{user.name}</strong>
                   <span>{user.department}</span>
@@ -3762,7 +3894,7 @@ export default function EmployeeDashboardPage() {
               )}
 
               {activeSection === 'profile' && (
-                <ProfileView user={user} onGoTo={goTo} />
+                <ProfileView user={user} onGoTo={goTo} onUserUpdate={setUser} />
               )}
 
               {activeSection === 'helpdesk' && (

@@ -61,6 +61,7 @@ create table if not exists public.profiles (
   designation text,
   email text not null,
   phone text,
+  profile_photo text,
   status text not null default 'Active',
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -76,6 +77,7 @@ add column if not exists office text,
 add column if not exists designation text,
 add column if not exists email text,
 add column if not exists phone text,
+add column if not exists profile_photo text,
 add column if not exists status text not null default 'Active',
 add column if not exists created_at timestamptz not null default now(),
 add column if not exists updated_at timestamptz not null default now();
@@ -336,10 +338,6 @@ on public.profiles for insert
 with check (auth.uid() = id and role = 'employee');
 
 drop policy if exists "Users can update own employee profile" on public.profiles;
-create policy "Users can update own employee profile"
-on public.profiles for update
-using (auth.uid() = id)
-with check (auth.uid() = id and role = 'employee');
 
 drop policy if exists "Admins can update profiles" on public.profiles;
 create policy "Admins can update profiles"
@@ -356,6 +354,32 @@ drop trigger if exists profiles_set_updated_at on public.profiles;
 create trigger profiles_set_updated_at
 before update on public.profiles
 for each row execute function public.set_updated_at();
+
+create or replace function public.update_own_profile_photo(photo_url text)
+returns public.profiles
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  updated_profile public.profiles;
+begin
+  if auth.uid() is null then
+    raise exception 'Login required.';
+  end if;
+
+  update public.profiles
+  set profile_photo = coalesce(photo_url, '')
+  where id = auth.uid()
+  returning * into updated_profile;
+
+  if updated_profile.id is null then
+    raise exception 'Profile was not found.';
+  end if;
+
+  return updated_profile;
+end;
+$$;
 
 -- =====================================================
 -- GAP-REUSE HELP DESK TICKET ID
@@ -496,8 +520,8 @@ set
   brand = coalesce(brand, ''),
   device_type = coalesce(device_type, ''),
   serial_number = coalesce(serial_number, ''),
-  support_category = coalesce(nullif(support_category, ''), 'Other ICT Support'),
-  concern_type = coalesce(nullif(concern_type, ''), 'Other Technical Concern'),
+  support_category = coalesce(nullif(support_category, ''), 'Other ICT Request'),
+  concern_type = coalesce(nullif(concern_type, ''), 'Concern not listed'),
   device_name = coalesce(device_name, ''),
   contact_number = coalesce(contact_number, ''),
   impact = coalesce(impact, ''),
@@ -578,8 +602,8 @@ begin
     new.created_at := coalesce(new.created_at, now());
   end if;
 
-  new.support_category := coalesce(nullif(new.support_category, ''), 'Other ICT Support');
-  new.concern_type := coalesce(nullif(new.concern_type, ''), 'Other Technical Concern');
+  new.support_category := coalesce(nullif(new.support_category, ''), 'Other ICT Request');
+  new.concern_type := coalesce(nullif(new.concern_type, ''), 'Concern not listed');
   new.ticket_code := nullif(new.ticket_code, '');
   new.custodian := coalesce(new.custodian, '');
   new.brand := upper(coalesce(new.brand, ''));
@@ -593,10 +617,10 @@ begin
   new.impact := coalesce(
     nullif(new.impact, ''),
     case
-      when new.sla = 'Critical' then 'Core operation affected'
-      when new.sla = 'High' then 'Branch operation affected'
-      when new.sla = 'Medium' then 'Multiple users or department affected'
-      else 'Single user affected'
+      when new.sla = 'Critical' then 'Server, database, or internet service is down and branch operation may stop.'
+      when new.sla = 'High' then 'Server, file storage, or network issue is blocking important work.'
+      when new.sla = 'Medium' then 'Work is affected but there is a workaround or the request is planned support.'
+      else 'Routine request, preparation, consultation, or non-blocking assistance.'
     end
   );
   new.status := coalesce(nullif(new.status, ''), 'Created');
@@ -909,6 +933,88 @@ begin
   return true;
 end;
 $$;
+
+-- =====================================================
+-- TICKET STATUS EVENTS
+-- Append-only status log for reporting and backtracking.
+-- =====================================================
+
+create table if not exists public.ticket_status_events (
+  id uuid primary key default gen_random_uuid(),
+  ticket_id text not null references public.tickets(id) on delete cascade,
+  owner_id uuid references public.profiles(id) on delete set null,
+  status text not null,
+  previous_status text,
+  technician text,
+  created_by uuid references public.profiles(id) on delete set null,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists ticket_status_events_ticket_created_idx
+on public.ticket_status_events (ticket_id, created_at desc);
+
+create index if not exists ticket_status_events_status_created_idx
+on public.ticket_status_events (status, created_at desc);
+
+alter table public.ticket_status_events enable row level security;
+
+drop policy if exists "Ticket owners can read own status events" on public.ticket_status_events;
+create policy "Ticket owners can read own status events"
+on public.ticket_status_events for select
+using (auth.uid() = owner_id);
+
+drop policy if exists "Admins can read all ticket status events" on public.ticket_status_events;
+create policy "Admins can read all ticket status events"
+on public.ticket_status_events for select
+using (public.is_admin());
+
+drop policy if exists "System can insert ticket status events" on public.ticket_status_events;
+create policy "System can insert ticket status events"
+on public.ticket_status_events for insert
+with check (
+  public.is_admin()
+  or exists (
+    select 1
+    from public.tickets t
+    where t.id = ticket_status_events.ticket_id
+      and t.owner_id = auth.uid()
+  )
+);
+
+create or replace function public.record_ticket_status_event()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if TG_OP = 'INSERT' or new.status is distinct from old.status then
+    insert into public.ticket_status_events (
+      ticket_id,
+      owner_id,
+      status,
+      previous_status,
+      technician,
+      created_by
+    )
+    values (
+      new.id,
+      new.owner_id,
+      coalesce(nullif(new.status, ''), 'Created'),
+      case when TG_OP = 'UPDATE' then old.status else null end,
+      nullif(new.technician, ''),
+      auth.uid()
+    );
+  end if;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists tickets_record_status_event on public.tickets;
+create trigger tickets_record_status_event
+after insert or update of status on public.tickets
+for each row execute function public.record_ticket_status_event();
 
 -- =====================================================
 -- USER NOTIFICATIONS
@@ -1560,6 +1666,90 @@ on public.job_applications for delete
 using (public.is_superadmin());
 
 -- =====================================================
+-- PORTAL FILE STORAGE
+-- =====================================================
+
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'profile-photos',
+  'profile-photos',
+  true,
+  3145728,
+  array['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+)
+on conflict (id) do update
+set
+  public = excluded.public,
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
+
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'ticket-attachments',
+  'ticket-attachments',
+  true,
+  8388608,
+  array['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf']
+)
+on conflict (id) do update
+set
+  public = excluded.public,
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
+
+drop policy if exists "Public can read profile photos" on storage.objects;
+create policy "Public can read profile photos"
+on storage.objects for select
+to anon, authenticated
+using (bucket_id = 'profile-photos');
+
+drop policy if exists "Users can upload own profile photos" on storage.objects;
+create policy "Users can upload own profile photos"
+on storage.objects for insert
+to authenticated
+with check (
+  bucket_id = 'profile-photos'
+  and auth.uid()::text = (storage.foldername(name))[1]
+);
+
+drop policy if exists "Users can update own profile photos" on storage.objects;
+create policy "Users can update own profile photos"
+on storage.objects for update
+to authenticated
+using (
+  bucket_id = 'profile-photos'
+  and auth.uid()::text = (storage.foldername(name))[1]
+)
+with check (
+  bucket_id = 'profile-photos'
+  and auth.uid()::text = (storage.foldername(name))[1]
+);
+
+drop policy if exists "Users can delete own profile photos" on storage.objects;
+create policy "Users can delete own profile photos"
+on storage.objects for delete
+to authenticated
+using (
+  bucket_id = 'profile-photos'
+  and auth.uid()::text = (storage.foldername(name))[1]
+);
+
+drop policy if exists "Public can read ticket attachments" on storage.objects;
+create policy "Public can read ticket attachments"
+on storage.objects for select
+to anon, authenticated
+using (bucket_id = 'ticket-attachments');
+
+drop policy if exists "Users can upload own ticket attachments" on storage.objects;
+create policy "Users can upload own ticket attachments"
+on storage.objects for insert
+to authenticated
+with check (
+  bucket_id = 'ticket-attachments'
+  and auth.uid()::text = (storage.foldername(name))[1]
+);
+
+-- =====================================================
 -- JOB APPLICATION RESUME STORAGE
 -- =====================================================
 
@@ -1609,6 +1799,7 @@ grant select, insert, update, delete on public.profiles to authenticated;
 grant select, insert on public.user_account_audit_logs to authenticated;
 grant select, insert, update, delete on public.tickets to authenticated;
 grant select, insert, update, delete on public.ticket_messages to authenticated;
+grant select, insert on public.ticket_status_events to authenticated;
 grant select, insert, update, delete on public.user_notifications to authenticated;
 grant select, insert, update, delete on public.other_service_requests to authenticated;
 grant select, insert, update, delete on public.marketing_posts to authenticated;
@@ -1621,6 +1812,7 @@ grant insert on public.job_applications to anon;
 grant execute on function public.claim_ticket_lock(text, uuid, text) to authenticated;
 grant execute on function public.release_ticket_lock(text, uuid) to authenticated;
 grant execute on function public.delete_helpdesk_ticket(text) to authenticated;
+grant execute on function public.update_own_profile_photo(text) to authenticated;
 grant execute on function public.generate_ticket_id() to authenticated;
 grant execute on function public.generate_other_service_id() to authenticated;
 grant execute on function public.is_admin() to authenticated;
