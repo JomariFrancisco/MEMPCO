@@ -67,30 +67,37 @@ export async function POST(request) {
       );
     }
 
+    const { error: passwordUpdateError } = await supabase.auth.updateUser({
+      password: parsed.data.password,
+    });
+
+    if (passwordUpdateError) {
+      return NextResponse.json(
+        { error: passwordUpdateError.message || 'Unable to update password.' },
+        { status: 400 }
+      );
+    }
+
     const supabaseAdmin = createAdminClient();
     const { data: authUserResult, error: authUserError } =
       await supabaseAdmin.auth.admin.getUserById(user.id);
 
     if (authUserError || !authUserResult?.user) {
-      return NextResponse.json(
-        { error: authUserError?.message || 'Unable to verify current account.' },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: true });
     }
 
     const existingAppMetadata = authUserResult.user.app_metadata || {};
 
-    const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(user.id, {
-      password: parsed.data.password,
+    const { error: metadataUpdateError } = await supabaseAdmin.auth.admin.updateUserById(user.id, {
       app_metadata: {
         ...existingAppMetadata,
         must_change_password: false,
       },
     });
 
-    if (updateError) {
+    if (metadataUpdateError) {
       return NextResponse.json(
-        { error: updateError.message || 'Unable to update password.' },
+        { error: metadataUpdateError.message || 'Unable to complete password setup.' },
         { status: 400 }
       );
     }
