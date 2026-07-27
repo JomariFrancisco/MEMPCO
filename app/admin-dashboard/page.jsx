@@ -6,6 +6,7 @@ import {
   BriefcaseBusiness,
   Building2,
   CalendarDays,
+  Camera,
   ChevronLeft,
   ChevronRight,
   Clock3,
@@ -14,11 +15,13 @@ import {
   ExternalLink,
   FileText,
   ImageIcon,
+  Mail,
   Megaphone,
   Menu,
   MessageCircle,
   Monitor,
   Paperclip,
+  Phone,
   Plus,
   Printer,
   Search,
@@ -55,6 +58,7 @@ import {
   listPortalUsers,
   refreshPortalUserPassword,
   signOutPortal,
+  updateCurrentPortalUserProfilePhoto,
   updatePortalUser,
 } from '@/lib/auth/portalAuth';
 import {
@@ -244,6 +248,7 @@ const MonoIcon = ({ icon: IconComponent }) => (
 
 const adminTransitionLabels = {
   dashboard: 'Opening admin dashboard...',
+  profile: 'Opening admin profile...',
   tickets: 'Loading ticket queue...',
   'support-tickets': 'Loading support tickets...',
   'burnout-tickets': 'Loading burnout tickets...',
@@ -251,6 +256,7 @@ const adminTransitionLabels = {
   reports: 'Preparing reports...',
   users: 'Loading user management...',
   'create-user': 'Preparing account form...',
+  'create-ict-ticket': 'Preparing ticket form...',
   logout: 'Signing out...',
 };
 
@@ -483,6 +489,20 @@ const filesToPhotoAttachments = async (files = [], existingCount = 0) => {
   );
 };
 
+const fileToProfilePhotoDataUrl = async (file) => {
+  if (!file) return '';
+
+  if (!isPhotoFile(file)) {
+    throw new Error('Profile photo must be a JPG, PNG, or WEBP image.');
+  }
+
+  if (file.size > PHOTO_MAX_SIZE) {
+    throw new Error('Profile photo must not exceed 4 MB.');
+  }
+
+  return fileToDataUrl(file);
+};
+
 /* =========================
    ICONS
 ========================= */
@@ -521,6 +541,11 @@ const Icon = {
   UserPlus: () => (
     <svg className="sidebar-nav-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
       <path d="M8 9a3.5 3.5 0 100-7 3.5 3.5 0 000 7zM2 17a6 6 0 1112 0v1H2v-1zM15 5a1 1 0 112 0v2h2a1 1 0 110 2h-2v2a1 1 0 11-2 0V9h-2a1 1 0 110-2h2V5z" />
+    </svg>
+  ),
+  Profile: () => (
+    <svg className="sidebar-nav-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+      <path d="M10 10a4 4 0 100-8 4 4 0 000 8zM3 17a7 7 0 0114 0v1H3v-1z" />
     </svg>
   ),
   Logout: () => (
@@ -2741,6 +2766,7 @@ const getActionButtonLabel = (ticket) => {
 function Sidebar({ active, onNav, onLogout, open, canCreateUsers, canCreateIctTickets, canAccessDepartmentConsoles }) {
   const items = [
     { key: 'dashboard', label: 'Dashboard', Icon: Icon.Dashboard },
+    { key: 'profile', label: 'My Profile', Icon: Icon.Profile },
     { key: 'tickets', label: 'All Tickets', Icon: Icon.Tickets },
     { key: 'support-tickets', label: 'Support Tickets', Icon: Icon.Tickets },
     { key: 'burnout-tickets', label: 'Burnout Tickets', Icon: Icon.Burnout },
@@ -2853,6 +2879,254 @@ function TicketBadges({ ticket }) {
       {reachedFiveDayMark && <span className="status burnout-overdue">5-Day Mark</span>}
       {!reachedFiveDayMark && reachedThreeDayMark && <span className="status burnout-due">3-Day Mark</span>}
       {(ticket.saarRequired || ticket.saarAttachment?.name) && <span className="status saar">SAAR</span>}
+    </div>
+  );
+}
+
+function AdminProfileView({
+  admin,
+  users = [],
+  tickets = [],
+  canCreateUsers,
+  canCreateIctTickets,
+  canAccessDepartmentConsoles,
+  onAdminUpdate,
+  onGoTo,
+}) {
+  const [isSavingPhoto, setIsSavingPhoto] = useState(false);
+  const [photoMessage, setPhotoMessage] = useState('');
+  const photoInputRef = useRef(null);
+  const adminName = admin?.name || 'Admin User';
+  const assignedOffice = admin?.branch || admin?.office || 'Not assigned';
+  const department = admin?.department || 'Not assigned';
+  const designation = admin?.designation || formatRoleLabel(admin?.role);
+  const adminRole = normalizePortalRole(admin?.role);
+  const isSuperAdmin = adminRole === 'superadmin';
+
+  const handledTickets = sortTickets(tickets.filter((ticket) => {
+    const staffName = normalizeComparable(adminName);
+    const staffId = normalizeComparable(admin?.id);
+    const history = Array.isArray(ticket.statusHistory) ? ticket.statusHistory : [];
+
+    return (
+      normalizeComparable(ticket.technician) === staffName ||
+      history.some((entry) => (
+        normalizeComparable(entry.updatedBy) === staffId ||
+        normalizeComparable(entry.updatedByName) === staffName ||
+        normalizeComparable(entry.handledByName) === staffName ||
+        normalizeComparable(entry.technician) === staffName
+      ))
+    );
+  }));
+
+  const activeHandledTickets = handledTickets.filter((ticket) => isUnresolved(ticket.status)).length;
+  const resolvedHandledTickets = handledTickets.filter(isTicketResolved).length;
+  const activeUserAccounts = users.filter((user) => !isInactivePortalUser(user)).length;
+  const recentHandledTickets = handledTickets.slice(0, 3);
+
+  const profileFacts = [
+    { label: 'Employee ID', value: admin?.employeeId || 'Not provided', icon: UserRound },
+    { label: 'Job Title', value: designation || 'Not provided', icon: BriefcaseBusiness },
+    { label: 'Department', value: department, icon: Building2 },
+    { label: 'Branch / Office', value: assignedOffice, icon: Building2 },
+    { label: 'Email Address', value: admin?.email || 'Not provided', icon: Mail },
+    { label: 'Phone Number', value: admin?.phone || 'Not provided', icon: Phone },
+  ];
+
+  const profileStats = [
+    {
+      label: isSuperAdmin ? 'Portal Users' : 'Handled Tickets',
+      value: isSuperAdmin ? users.length : handledTickets.length,
+      meta: isSuperAdmin ? `${activeUserAccounts} active accounts` : 'assigned or updated',
+    },
+    { label: 'Active Load', value: activeHandledTickets, meta: 'currently unresolved' },
+    { label: 'Resolved Work', value: resolvedHandledTickets, meta: 'completed tickets' },
+    { label: 'Access Level', value: formatRoleLabel(admin?.role), meta: admin?.status || 'Active' },
+  ];
+
+  const permissionItems = [
+    'Review and update ICT helpdesk tickets',
+    'Record admin actions, remarks, and resolutions',
+    ...(canCreateIctTickets ? ['Submit ICT staff tickets for queue transparency'] : []),
+    ...(canCreateUsers ? ['Create and manage portal user accounts'] : []),
+    ...(canAccessDepartmentConsoles ? ['Access Marketing and HR admin consoles'] : []),
+  ];
+
+  const handlePhotoChange = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+
+    if (!file) return;
+
+    setIsSavingPhoto(true);
+    setPhotoMessage('');
+
+    try {
+      const profilePhoto = await fileToProfilePhotoDataUrl(file);
+      const updatedAdmin = await updateCurrentPortalUserProfilePhoto(profilePhoto);
+      onAdminUpdate(updatedAdmin);
+      setPhotoMessage('Profile photo updated.');
+    } catch (error) {
+      setPhotoMessage(error.message || 'Unable to update profile photo.');
+    } finally {
+      setIsSavingPhoto(false);
+    }
+  };
+
+  const handleRemovePhoto = async () => {
+    setIsSavingPhoto(true);
+    setPhotoMessage('');
+
+    try {
+      const updatedAdmin = await updateCurrentPortalUserProfilePhoto('');
+      onAdminUpdate(updatedAdmin);
+      setPhotoMessage('Profile photo removed.');
+    } catch (error) {
+      setPhotoMessage(error.message || 'Unable to remove profile photo.');
+    } finally {
+      setIsSavingPhoto(false);
+    }
+  };
+
+  return (
+    <div className="admin-profile-view">
+      <section className="panel-card glass admin-profile-hero">
+        <div className="admin-profile-identity">
+          <button
+            type="button"
+            className="admin-profile-photo"
+            onClick={() => photoInputRef.current?.click()}
+            disabled={isSavingPhoto}
+            aria-label="Upload admin profile photo"
+          >
+            {admin?.profilePhoto ? (
+              <img src={admin.profilePhoto} alt={`${adminName} profile`} />
+            ) : (
+              <span>{admin?.initials || getInitials(adminName)}</span>
+            )}
+            <i><MonoIcon icon={Camera} /></i>
+          </button>
+          <input
+            ref={photoInputRef}
+            type="file"
+            className="admin-profile-photo-input"
+            accept={PHOTO_ACCEPT}
+            onChange={handlePhotoChange}
+          />
+
+          <div className="admin-profile-title">
+            <span className="section-kicker">{isSuperAdmin ? 'Super Admin Profile' : 'Admin Profile'}</span>
+            <h2>{adminName}</h2>
+            <p>{designation} - {department}</p>
+            <div className="admin-profile-pills">
+              <span>{formatRoleLabel(admin?.role)}</span>
+              <span>{assignedOffice}</span>
+              <span>{admin?.status || 'Active'}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="admin-profile-photo-actions">
+          <button type="button" className="modal-btn confirm" onClick={() => photoInputRef.current?.click()} disabled={isSavingPhoto}>
+            <MonoIcon icon={Camera} />
+            {admin?.profilePhoto ? 'Change Photo' : 'Upload Photo'}
+          </button>
+          {admin?.profilePhoto && (
+            <button type="button" className="modal-btn cancel" onClick={handleRemovePhoto} disabled={isSavingPhoto}>
+              Remove
+            </button>
+          )}
+          {(isSavingPhoto || photoMessage) && (
+            <span className="admin-profile-photo-note">{isSavingPhoto ? 'Saving photo...' : photoMessage}</span>
+          )}
+        </div>
+      </section>
+
+      <section className="admin-profile-stats">
+        {profileStats.map((item) => (
+          <article key={item.label} className="admin-profile-stat glass">
+            <span>{item.label}</span>
+            <strong>{item.value}</strong>
+            <p>{item.meta}</p>
+          </article>
+        ))}
+      </section>
+
+      <div className="admin-profile-grid">
+        <section className="panel-card glass admin-profile-panel">
+          <div className="section-head">
+            <div>
+              <span className="section-kicker">Account Record</span>
+              <h3>Identity &amp; Work Details</h3>
+            </div>
+          </div>
+
+          <div className="admin-profile-facts">
+            {profileFacts.map((item) => (
+              <article key={item.label} className="admin-profile-fact">
+                <span><MonoIcon icon={item.icon} /></span>
+                <div>
+                  <small>{item.label}</small>
+                  <strong>{item.value}</strong>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="panel-card glass admin-profile-panel">
+          <div className="section-head">
+            <div>
+              <span className="section-kicker">Admin Scope</span>
+              <h3>Permissions &amp; Accountability</h3>
+            </div>
+          </div>
+
+          <div className="admin-permission-list">
+            {permissionItems.map((item) => (
+              <span key={item}>
+                <MonoIcon icon={ShieldCheck} />
+                {item}
+              </span>
+            ))}
+          </div>
+        </section>
+      </div>
+
+      <section className="panel-card glass admin-profile-panel">
+        <div className="section-head">
+          <div>
+            <span className="section-kicker">Recent Activity</span>
+            <h3>Latest Handled Tickets</h3>
+          </div>
+          <button type="button" className="modal-btn cancel" onClick={() => onGoTo('tickets')}>
+            View Tickets
+          </button>
+        </div>
+
+        <div className="admin-profile-activity-list">
+          {recentHandledTickets.length ? recentHandledTickets.map((ticket) => (
+            <button
+              key={ticket.id}
+              type="button"
+              className="admin-profile-activity"
+              onClick={() => onGoTo('tickets')}
+            >
+              <span className={`status ${slugify(ticket.status)}`}>{ticket.status}</span>
+              <div>
+                <strong>{ticket.ticketCode || ticket.id}</strong>
+                <p>{ticket.concernType || ticket.supportCategory || 'ICT ticket'} - {ticket.branch || 'No branch'}</p>
+              </div>
+              <small>{ticket.lastUpdated || ticket.adminUpdatedAt || ticket.createdAt || ticket.date || 'No date'}</small>
+            </button>
+          )) : (
+            <div className="empty-state compact">
+              <h4>No handled tickets yet</h4>
+              <p>Tickets assigned to or updated by this admin will appear here.</p>
+            </div>
+          )}
+        </div>
+      </section>
     </div>
   );
 }
@@ -6268,18 +6542,6 @@ function CreateIctTicketView({ admin, users = [], onCreated }) {
               </span>
             </div>
 
-            {derivedImpact.isReady && (
-              <div className="ticket-form-group full">
-                <label>Auto Impact Level</label>
-                <div className={`auto-impact-card sla-only ${slugify(derivedImpact.sla)}`}>
-                  <div>
-                    <span>SLA</span>
-                    <strong>{derivedImpact.sla}</strong>
-                  </div>
-                </div>
-              </div>
-            )}
-
             <div className="ticket-form-group full">
               <label htmlFor="ict-ticket-description">Issue Description</label>
               <textarea
@@ -6708,14 +6970,19 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
           </div>
 
           <div className="ticket-form-group">
-            <label>Auto Impact Level</label>
-            <div className={`auto-impact-card compact ${slugify(draft.sla || 'Low')}`}>
-              <div>
-                <span>Saved SLA</span>
-                <strong>{draft.sla || 'Low'}</strong>
-              </div>
-              <p>{ticket.impact || deriveTicketImpact(ticket).impact}</p>
-            </div>
+            <label htmlFor={`ticket-action-sla-${ticket.id}`}>SLA</label>
+            <select
+              id={`ticket-action-sla-${ticket.id}`}
+              className="ticket-field ticket-select"
+              value={draft.sla || 'Low'}
+              onChange={(e) => updateDraft('sla', e.target.value)}
+              required
+              disabled={isResolvedLocked}
+            >
+              {SLA_LEVELS.map((sla) => (
+                <option key={sla} value={sla}>{sla}</option>
+              ))}
+            </select>
           </div>
 
           <div className="ticket-form-group">
@@ -7052,7 +7319,7 @@ Current role: ${activeUser.role || 'No role found'}`
 
     const syncData = () => {
       void loadData({
-        includeUsers: activeSection === 'users' || activeSection === 'create-user' || activeSection === 'create-ict-ticket',
+        includeUsers: activeSection === 'profile' || activeSection === 'users' || activeSection === 'create-user' || activeSection === 'create-ict-ticket',
       });
     };
 
@@ -7487,7 +7754,7 @@ Current role: ${activeUser.role || 'No role found'}`
       );
       setTickets((currentTickets) => currentTickets.filter((item) => item.id !== ticket.id));
       await loadData({
-        includeUsers: activeSection === 'users' || activeSection === 'create-user' || activeSection === 'create-ict-ticket',
+        includeUsers: activeSection === 'profile' || activeSection === 'users' || activeSection === 'create-user' || activeSection === 'create-ict-ticket',
       });
     } catch (error) {
       window.alert(error.message || 'Unable to delete ticket.');
@@ -7520,13 +7787,19 @@ Current role: ${activeUser.role || 'No role found'}`
             </div>
 
             <div className="portal-topbar-actions">
-              <div className="profile-chip">
-                <span className="profile-chip-avatar">{admin.initials}</span>
+              <button type="button" className="profile-chip admin-profile-chip-button" onClick={() => goTo('profile')}>
+                <span className="profile-chip-avatar">
+                  {admin.profilePhoto ? (
+                    <img src={admin.profilePhoto} alt="" aria-hidden="true" />
+                  ) : (
+                    admin.initials
+                  )}
+                </span>
                 <div className="profile-chip-copy">
                   <strong>{admin.name}</strong>
                   <span>{admin.department}</span>
                 </div>
-              </div>
+              </button>
             </div>
           </header>
 
@@ -7552,6 +7825,19 @@ Current role: ${activeUser.role || 'No role found'}`
               >
                 <Menu className="admin-mono-icon" aria-hidden="true" />
               </button>
+
+              {activeSection === 'profile' && (
+                <AdminProfileView
+                  admin={admin}
+                  users={users}
+                  tickets={tickets}
+                  canCreateUsers={canCreateUsers}
+                  canCreateIctTickets={canCreateIctTickets}
+                  canAccessDepartmentConsoles={canAccessDepartmentConsoles}
+                  onAdminUpdate={setAdmin}
+                  onGoTo={goTo}
+                />
+              )}
 
               {activeSection === 'dashboard' && (
                 <DashboardView
