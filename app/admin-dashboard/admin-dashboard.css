@@ -310,6 +310,14 @@ button {
   transition: transform var(--transition);
 }
 
+.admin-profile-chip-button {
+  width: auto;
+  max-width: 100%;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
 .profile-chip:hover {
   transform: translateY(-1px);
 }
@@ -332,6 +340,13 @@ button {
   height: 38px;
   border-radius: var(--radius-sm);
   font-size: 1.08rem;
+  overflow: hidden;
+}
+
+.profile-chip-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .profile-chip-copy {
@@ -9448,6 +9463,11 @@ button {
   padding: 0.46rem 0.55rem !important;
 }
 
+.ticket-action-modal .ticket-handling-indicator::after {
+  content: none !important;
+  display: none !important;
+}
+
 .ticket-action-modal .ticket-handling-title-row {
   flex-wrap: wrap !important;
   gap: 0.32rem !important;
@@ -9636,7 +9656,7 @@ button {
   overflow: hidden !important;
 }
 
-.ticket-action-modal .ticket-action-head {
+.ticket-action-modal.is-support-modal .ticket-action-head {
   display: grid !important;
   grid-template-columns: minmax(0, 1fr) auto !important;
   align-items: center !important;
@@ -9645,7 +9665,7 @@ button {
   margin: 0 0 0.5rem !important;
 }
 
-.ticket-action-modal .ticket-action-head-main {
+.ticket-action-modal.is-support-modal .ticket-action-head-main {
   min-width: 0;
   display: grid !important;
   grid-template-columns: minmax(250px, 0.92fr) minmax(330px, 1.08fr);
@@ -9859,11 +9879,11 @@ button {
   overflow: hidden !important;
 }
 
-.ticket-action-modal .ticket-action-head {
+.ticket-action-modal.is-support-modal .ticket-action-head {
   margin-bottom: 0.42rem !important;
 }
 
-.ticket-action-modal .ticket-action-head-main {
+.ticket-action-modal.is-support-modal .ticket-action-head-main {
   grid-template-columns: minmax(260px, 0.9fr) minmax(300px, 1fr) !important;
 }
 
@@ -11232,5 +11252,552 @@ button {
   .ticket-action-modal .ticket-action-notes-grid .admin-small-textarea {
     height: 92px !important;
     max-height: 92px !important;
+  }
+}
+
+/* Keep the original support modal layout, but reserve room for footer buttons at 100% zoom. */
+.ticket-action-modal.is-support-modal {
+  display: grid !important;
+  grid-template-rows: auto auto auto auto minmax(0, auto) auto !important;
+  align-content: start !important;
+  max-height: calc(100dvh - (var(--ticket-action-edge-gap) * 2)) !important;
+  overflow: hidden !important;
+}
+
+.ticket-action-modal.is-support-modal .ticket-action-head {
+  padding-top: 0.58rem !important;
+  padding-bottom: 0.48rem !important;
+  margin-bottom: 0.36rem !important;
+}
+
+.ticket-action-modal.is-support-modal .ticket-action-info-grid,
+.ticket-action-modal.is-support-modal .ticket-action-details-row,
+.ticket-action-modal.is-support-modal .ticket-action-notes-grid,
+.ticket-action-modal.is-support-modal .ticket-action-attachments-row {
+  width: auto !important;
+  max-width: none !important;
+  justify-self: stretch !important;
+}
+
+.ticket-action-modal.is-support-modal .ticket-action-details-row {
+  grid-template-columns: minmax(0, 1fr) minmax(230px, 300px) !important;
+}
+
+.ticket-action-modal.is-support-modal .ticket-action-description p {
+  max-height: clamp(82px, 14dvh, 112px) !important;
+}
+
+.ticket-action-modal.is-support-modal .ticket-action-notes-grid .admin-small-textarea {
+  height: clamp(58px, 8dvh, 72px) !important;
+  min-height: 58px !important;
+  max-height: 72px !important;
+}
+
+.ticket-action-modal.is-support-modal .ticket-action-attachments-row {
+  max-height: clamp(118px, 16dvh, 150px) !important;
+  overflow: hidden !important;
+}
+
+.ticket-action-modal.is-support-modal .admin-photo-attachment-box {
+  grid-template-columns: minmax(220px, 0.42fr) minmax(0, 1fr) !important;
+  gap: 0.7rem !important;
+}
+
+.ticket-action-modal.is-support-modal .ticket-action-attachments-row .attached-photo-grid {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 180px)) !important;
+  justify-content: start !important;
+  align-items: start !important;
+  max-height: 116px !important;
+  overflow: hidden !important;
+}
+
+.ticket-action-modal.is-support-modal .attached-photo-card-wrap {
+  position: relative !important;
+  max-width: 180px !important;
+}
+
+.ticket-action-modal.is-support-modal .attached-photo-card {
+  padding: 0.38rem !important;
+}
+
+.ticket-action-modal.is-support-modal .attached-photo-card img,
+.ticket-action-modal.is-support-modal .attached-photo-placeholder {
+  aspect-ratio: 16 / 9 !important;
+  max-height: 74px !important;
+  object-fit: contain !important;
+  margin-bottom: 0.26rem !important;
+}
+
+.ticket-action-modal.is-support-modal .attached-photo-save {
+  position: absolute !important;
+  top: 0.42rem !important;
+  right: 0.42rem !important;
+  width: 28px !important;
+  min-width: 28px !important;
+  height: 28px !important;
+  min-height: 28px !important;
+  padding: 0 !important;
+  border-radius: 9px !important;
+  font-size: 0 !important;
+  gap: 0 !important;
+  background: rgba(255, 255, 255, 0.94) !important;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12) !important;
+}
+
+.ticket-action-modal.is-support-modal .attached-photo-save svg {
+  width: 14px !important;
+  height: 14px !important;
+}
+
+.ticket-action-modal.is-support-modal .modal-footer {
+  position: relative !important;
+  z-index: 5 !important;
+  min-height: 54px !important;
+  padding-top: 0.5rem !important;
+  padding-bottom: 0.5rem !important;
+}
+
+@media (max-height: 820px) {
+  .ticket-action-modal.is-support-modal .ticket-action-description p {
+    max-height: 86px !important;
+  }
+
+  .ticket-action-modal.is-support-modal .ticket-action-notes-grid .admin-small-textarea {
+    height: 58px !important;
+    max-height: 58px !important;
+  }
+
+  .ticket-action-modal.is-support-modal .ticket-action-attachments-row {
+    max-height: 116px !important;
+  }
+
+  .ticket-action-modal.is-support-modal .attached-photo-card img,
+  .ticket-action-modal.is-support-modal .attached-photo-placeholder {
+    max-height: 58px !important;
+  }
+}
+
+/* Ticket action header alignment: keep ID + title together, and pin close to the top-right. */
+.ticket-action-modal.is-support-modal .ticket-action-head {
+  position: relative !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  align-items: start !important;
+  padding: 0.76rem 2.55rem 0.58rem 1rem !important;
+}
+
+.ticket-action-modal.is-support-modal .ticket-action-head-main {
+  width: 100% !important;
+  grid-template-columns: minmax(0, max-content) minmax(430px, 625px) !important;
+  justify-content: space-between !important;
+  align-items: start !important;
+  gap: clamp(1.2rem, 2.4vw, 2rem) !important;
+}
+
+.ticket-action-modal.is-support-modal .ticket-action-identity-group {
+  min-width: 0 !important;
+  width: max-content !important;
+  max-width: min(48vw, 540px) !important;
+  display: grid !important;
+  grid-template-columns: max-content minmax(0, 1fr) !important;
+  align-items: start !important;
+  column-gap: 0.62rem !important;
+  row-gap: 0.12rem !important;
+}
+
+.ticket-action-modal.is-support-modal .ticket-action-identity-group .ticket-id {
+  grid-column: 1 !important;
+  grid-row: 1 !important;
+  margin-top: 0.02rem !important;
+  white-space: nowrap !important;
+}
+
+.ticket-action-modal.is-support-modal .ticket-action-title-copy {
+  grid-column: 2 !important;
+  grid-row: 1 !important;
+  min-width: 0 !important;
+  align-self: center !important;
+  gap: 0.1rem !important;
+}
+
+.ticket-action-modal.is-support-modal .ticket-action-title-copy h3,
+.ticket-action-modal.is-support-modal .ticket-action-title-copy p {
+  display: block !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.ticket-action-modal.is-support-modal .ticket-action-title-copy h3 {
+  margin-top: 0 !important;
+}
+
+.ticket-action-modal.is-support-modal .ticket-action-header-status {
+  min-width: 0 !important;
+  width: min(100%, 625px) !important;
+  justify-self: end !important;
+  transform: translateX(20%) !important;
+}
+
+.ticket-action-modal.is-support-modal .ticket-action-status-tools.title-row-tools {
+  width: 100% !important;
+  grid-template-columns: minmax(330px, 1fr) minmax(132px, 156px) !important;
+  justify-content: end !important;
+  gap: 0.5rem !important;
+}
+
+.ticket-action-modal.is-support-modal .admin-modal-close {
+  position: absolute !important;
+  top: 0.55rem !important;
+  right: 0.72rem !important;
+  z-index: 8 !important;
+  margin: 0 !important;
+}
+
+@media (max-width: 980px) {
+  .ticket-action-modal.is-support-modal .ticket-action-head-main {
+    grid-template-columns: 1fr !important;
+    gap: 0.55rem !important;
+  }
+
+  .ticket-action-modal.is-support-modal .ticket-action-identity-group {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .ticket-action-modal.is-support-modal .ticket-action-header-status {
+    width: 100% !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .ticket-action-modal.is-support-modal .ticket-action-head {
+    padding-right: 2.9rem !important;
+  }
+
+  .ticket-action-modal.is-support-modal .ticket-action-identity-group {
+    grid-template-columns: 1fr !important;
+  }
+
+  .ticket-action-modal.is-support-modal .ticket-action-title-copy {
+    grid-column: 1 !important;
+    grid-row: 2 !important;
+  }
+}
+
+/* =========================
+   ADMIN PROFILE
+========================= */
+
+.admin-profile-view {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.admin-profile-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.1rem;
+}
+
+.admin-profile-identity {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.admin-profile-photo {
+  position: relative;
+  width: 104px;
+  height: 104px;
+  flex: 0 0 104px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(220, 38, 38, 0.16);
+  border-radius: 22px;
+  background: var(--grad-red);
+  color: #fff;
+  font: inherit;
+  font-size: 2rem;
+  font-weight: 950;
+  box-shadow: 0 18px 34px rgba(220, 38, 38, 0.2);
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.admin-profile-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.admin-profile-photo i {
+  position: absolute;
+  right: 0.45rem;
+  bottom: 0.45rem;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.96);
+  color: var(--red-600);
+  border: 1px solid rgba(220, 38, 38, 0.2);
+  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.12);
+}
+
+.admin-profile-photo-input {
+  display: none;
+}
+
+.admin-profile-title {
+  min-width: 0;
+}
+
+.admin-profile-title h2 {
+  margin: 0.1rem 0 0.18rem;
+  color: var(--text);
+  font-size: clamp(1.7rem, 3vw, 2.35rem);
+  line-height: 1.05;
+}
+
+.admin-profile-title p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 1rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.admin-profile-pills,
+.admin-profile-photo-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.admin-profile-pills {
+  margin-top: 0.75rem;
+}
+
+.admin-profile-pills span {
+  max-width: 100%;
+  padding: 0.46rem 0.72rem;
+  border: 1px solid rgba(226, 232, 240, 0.86);
+  border-radius: 999px;
+  background: rgba(248, 250, 252, 0.84);
+  color: var(--text-soft);
+  font-size: 0.9rem;
+  font-weight: 850;
+  overflow-wrap: anywhere;
+}
+
+.admin-profile-photo-actions {
+  justify-content: flex-end;
+  max-width: 360px;
+}
+
+.admin-profile-photo-note {
+  width: 100%;
+  color: var(--muted);
+  font-size: 0.86rem;
+  font-weight: 800;
+  text-align: right;
+}
+
+.admin-profile-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.admin-profile-stat {
+  min-width: 0;
+  padding: 0.95rem;
+  border: 1px solid rgba(226, 232, 240, 0.76);
+  border-radius: var(--radius-lg);
+  background: rgba(255, 255, 255, 0.84);
+}
+
+.admin-profile-stat span,
+.admin-profile-fact small {
+  display: block;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.admin-profile-stat strong {
+  display: block;
+  margin-top: 0.35rem;
+  color: var(--text);
+  font-size: clamp(1.45rem, 2.6vw, 2rem);
+  font-weight: 950;
+  line-height: 1.05;
+  overflow-wrap: anywhere;
+}
+
+.admin-profile-stat p {
+  margin: 0.28rem 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.admin-profile-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.18fr) minmax(300px, 0.82fr);
+  gap: 1rem;
+}
+
+.admin-profile-panel {
+  min-width: 0;
+}
+
+.admin-profile-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.72rem;
+}
+
+.admin-profile-fact {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.82rem;
+  border: 1px solid rgba(226, 232, 240, 0.78);
+  border-radius: var(--radius-md);
+  background: rgba(248, 250, 252, 0.78);
+}
+
+.admin-profile-fact > span {
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  background: var(--red-50);
+  color: var(--text-soft);
+}
+
+.admin-profile-fact strong {
+  display: block;
+  margin-top: 0.18rem;
+  color: var(--text);
+  font-size: 1rem;
+  line-height: 1.28;
+  overflow-wrap: anywhere;
+}
+
+.admin-permission-list {
+  display: grid;
+  gap: 0.58rem;
+}
+
+.admin-permission-list span {
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  padding: 0.72rem 0.78rem;
+  border: 1px solid rgba(226, 232, 240, 0.78);
+  border-radius: var(--radius-md);
+  background: rgba(248, 250, 252, 0.78);
+  color: var(--text-soft);
+  font-weight: 850;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.admin-profile-activity-list {
+  display: grid;
+  gap: 0.62rem;
+}
+
+.admin-profile-activity {
+  width: 100%;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.84);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.admin-profile-activity strong,
+.admin-profile-activity p,
+.admin-profile-activity small {
+  overflow-wrap: anywhere;
+}
+
+.admin-profile-activity strong {
+  display: block;
+  color: var(--text);
+  font-weight: 950;
+  line-height: 1.2;
+}
+
+.admin-profile-activity p {
+  margin: 0.12rem 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.3;
+}
+
+.admin-profile-activity small {
+  color: var(--softer);
+  font-size: 0.82rem;
+  font-weight: 850;
+  line-height: 1.25;
+  text-align: right;
+}
+
+@media (max-width: 1180px) {
+  .admin-profile-stats,
+  .admin-profile-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 780px) {
+  .admin-profile-hero,
+  .admin-profile-identity {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .admin-profile-stats,
+  .admin-profile-grid,
+  .admin-profile-facts,
+  .admin-profile-activity {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-profile-photo-actions {
+    justify-content: flex-start;
+    max-width: none;
+  }
+
+  .admin-profile-photo-note,
+  .admin-profile-activity small {
+    text-align: left;
   }
 }

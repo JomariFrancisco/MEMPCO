@@ -49,7 +49,6 @@ export default function LoginPage() {
   const [loadingLabel, setLoadingLabel] = useState(authLoadingCopy.signin);
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [showForcedPassword, setShowForcedPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
 
   const redirectToRoute = (route = '/') => {
     const destination = String(route || '/').startsWith('/') ? route : '/';
@@ -64,15 +63,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const rememberedEmail = window.localStorage.getItem(REMEMBERED_EMAIL_KEY);
-
-    if (rememberedEmail) {
-      setRememberMe(true);
-      setLoginForm((prev) => ({
-        ...prev,
-        email: rememberedEmail,
-      }));
-    }
+    window.localStorage.removeItem(REMEMBERED_EMAIL_KEY);
 
     if (params.get('mode') === 'force-password') {
       setMessage({
@@ -117,14 +108,6 @@ export default function LoginPage() {
     setLoginForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleRememberMeChange = (checked) => {
-    setRememberMe(checked);
-
-    if (!checked) {
-      window.localStorage.removeItem(REMEMBERED_EMAIL_KEY);
-    }
-  };
-
   const handleLogin = async (e) => {
     e.preventDefault();
 
@@ -136,13 +119,7 @@ export default function LoginPage() {
 
     try {
       const user = await signInPortal(loginForm);
-      const email = loginForm.email.trim();
-
-      if (rememberMe && email) {
-        window.localStorage.setItem(REMEMBERED_EMAIL_KEY, email);
-      } else {
-        window.localStorage.removeItem(REMEMBERED_EMAIL_KEY);
-      }
+      window.localStorage.removeItem(REMEMBERED_EMAIL_KEY);
 
       if (isInactivePortalUser(user)) {
         await signOutPortal().catch(() => {});
@@ -320,12 +297,9 @@ export default function LoginPage() {
                   className="auth-company-logo"
                 />
 
-                <div className="auth-showcase-copy">
-                  <span>MEMPCO Employee Access</span>
-                  <p>
-                    Internal helpdesk portal for employee support, admin action,
-                    and technical concern tracking.
-                  </p>
+                <div className="auth-showcase-summary">
+                  <span>Employee and Admin Access</span>
+                  <strong>Helpdesk Operations Portal</strong>
                 </div>
               </div>
             </div>
@@ -344,9 +318,9 @@ export default function LoginPage() {
                     className={`auth-form signin-form ${authMode === 'signin' ? 'active' : ''}`}
                   >
                     <div className="auth-form-head">
-                      <span className="auth-kicker">Employee / Admin Portal</span>
-                      <h2>Secure dashboard access</h2>
-                      <p>Login using your MEMPCO employee or admin account.</p>
+                      <span className="auth-kicker">MEMPCO Portal</span>
+                      <h2>Sign in</h2>
+                      <p>Use your assigned account to open the staff dashboard.</p>
                     </div>
 
                     <div className="form-grid single">
@@ -393,25 +367,13 @@ export default function LoginPage() {
                       </div>
                     </div>
 
-                    <div className="auth-form-row">
-                      <label className="remember-me">
-                        <input
-                          type="checkbox"
-                          checked={rememberMe}
-                          onChange={(e) => handleRememberMeChange(e.target.checked)}
-                          disabled={isBusy}
-                        />
-                        <span>Remember me</span>
-                      </label>
-                    </div>
-
                     <button type="submit" className="auth-submit-btn login-submit-btn" disabled={isBusy}>
                       <AuthButtonIcon icon={LogIn} />
-                      {isBusy ? 'Please wait...' : 'Login to Portal'}
+                      {isBusy ? 'Please wait...' : 'Sign In'}
                     </button>
 
                     <p className="auth-switch-text">
-                      Need access? Request account creation from the MEMPCO admin office.
+                      Need access? Contact the MEMPCO admin office.
                     </p>
                   </form>
 
@@ -479,9 +441,6 @@ export default function LoginPage() {
                   </form>
                 </div>
 
-                <p className="auth-bottom-note">
-                  Accounts are created only by authorized MEMPCO administrators.
-                </p>
               </div>
             </div>
           </div>

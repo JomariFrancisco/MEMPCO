@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient, hasSupabaseAdminConfig } from '@/lib/supabase/admin';
 import { createClient as createServerClient } from '@/lib/supabase/server';
-import { deriveTicketImpact } from '@/lib/tickets/sla';
+import { IMPACT_TEXT_BY_SLA, deriveTicketImpact, normalizeSlaLevel } from '@/lib/tickets/sla';
 import { checkRateLimit, rateLimitResponse } from '@/lib/server/rateLimit';
 import { sanitizeStoredAttachment, uploadDataUrlToStorage } from '@/lib/server/storageUploads';
 
@@ -499,6 +499,8 @@ export async function POST(request) {
     const now = new Date();
     const burnoutTicket = isBurnoutTicket(form);
     const deviceType = form.deviceType || form.deviceName || '';
+    const affectedBranch = String(form.branch || '').trim();
+    const affectedDepartment = String(form.department || '').trim();
     const derivedImpact = deriveTicketImpact({
       supportCategory: form.supportCategory || (burnoutTicket ? 'Burnout' : ''),
       concernType: form.concernType || (burnoutTicket ? 'Helpdesk Burnout' : ''),
@@ -506,6 +508,7 @@ export async function POST(request) {
       deviceType,
     });
     const finalSla = derivedImpact.sla;
+    const finalImpact = derivedImpact.impact;
 
     if (burnoutTicket && !String(form.brand || '').trim()) {
       throw new Error('Brand & Model is required for Helpdesk Burnout tickets.');
@@ -519,9 +522,17 @@ export async function POST(request) {
       throw new Error('Serial number is required for Helpdesk Burnout tickets.');
     }
 
+    if (!affectedBranch) {
+      throw new Error('Branch / Location is required. Select where the concern happened.');
+    }
+
+    if (!affectedDepartment) {
+      throw new Error('Department is required. Select the department affected by the concern.');
+    }
+
     const ticketCode = burnoutTicket
       ? await getNextBurnoutTicketCode(dbClient, {
-          branch: form.branch || requesterProfile.branch || requesterProfile.office || 'Unspecified',
+          branch: affectedBranch,
           brand: form.brand,
           deviceType,
         })
@@ -533,8 +544,8 @@ export async function POST(request) {
       ticket_code: ticketCode || null,
       requester: requesterProfile.full_name || requesterProfile.email || 'Employee',
       employee_id: requesterProfile.employee_id || '',
-      branch: form.branch || requesterProfile.branch || requesterProfile.office || 'Unspecified',
-      department: form.department || requesterProfile.department || 'Unspecified',
+      branch: affectedBranch,
+      department: affectedDepartment,
       custodian: form.custodian || '',
       brand: burnoutTicket ? normalizeCodePart(form.brand, '') : form.brand || '',
       device_type: burnoutTicket ? normalizeDeviceCode(deviceType, '') : form.deviceType || '',
@@ -543,7 +554,7 @@ export async function POST(request) {
       concern_type: form.concernType || (burnoutTicket ? 'Helpdesk Burnout' : 'Concern not listed'),
       device_name: deviceType || '',
       contact_number: form.contactNumber || requesterProfile.phone || '',
-      impact: derivedImpact.impact,
+      impact: finalImpact,
       description: String(form.description || form.remarks || '').trim(),
       sla: finalSla,
       priority: finalSla,
@@ -646,7 +657,7 @@ export async function PATCH(request) {
 
       const blockedFields = Object.keys(updates).filter((key) => {
         if (!EMPLOYEE_UPDATE_FIELDS.has(key)) return true;
-        if (key === 'status') return normalizeStatus(updates.status) !== 'modified';
+        if (key === 'status') return true;
         return false;
       });
 
@@ -672,6 +683,14 @@ export async function PATCH(request) {
       nextUpdates.priority = derivedImpact.priority;
       nextUpdates.impact = derivedImpact.impact;
       nextUpdates.lastEmployeeUpdate = formatDateTime(new Date());
+    }
+
+    if (adminProfile && nextUpdates.sla) {
+      const manualSla = normalizeSlaLevel(nextUpdates.sla);
+
+      nextUpdates.sla = manualSla;
+      nextUpdates.priority = manualSla;
+      nextUpdates.impact = nextUpdates.impact || IMPACT_TEXT_BY_SLA[manualSla] || currentTicket.impact;
     }
 
     if (nextUpdates.photoAttachments !== undefined) {

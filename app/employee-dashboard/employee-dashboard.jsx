@@ -1061,7 +1061,7 @@ const canEmployeeEditTicket = (ticket = {}) => {
   if (ticket.employeeEditLocked) return false;
 
   const status = normalize(ticket.status);
-  const editableStatuses = ['created', 'pending', 'modified'];
+  const editableStatuses = ['created', 'pending'];
   const hasTechnician = Boolean(String(ticket.technician || '').trim()) && ticket.technician !== 'Unassigned';
   const hasStarted = Boolean(ticket.workStartedAt);
   const hasAction = Boolean(
@@ -1072,6 +1072,48 @@ const canEmployeeEditTicket = (ticket = {}) => {
 
   return editableStatuses.includes(status) && !hasTechnician && !hasStarted && !hasAction;
 };
+
+const compactDateFormatter = new Intl.DateTimeFormat('en-US', {
+  month: 'short',
+  day: 'numeric',
+  year: 'numeric',
+  hour: 'numeric',
+  minute: '2-digit',
+});
+
+const toDate = (value) => {
+  if (!value) return null;
+
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
+const formatCompactDateTime = (value) => {
+  const parsed = toDate(value);
+  return parsed ? compactDateFormatter.format(parsed) : value;
+};
+
+const formatCompactDuration = (startValue, endValue) => {
+  const start = toDate(startValue);
+  const end = toDate(endValue);
+
+  if (!start || !end || end.getTime() < start.getTime()) return '';
+
+  const totalSeconds = Math.max(0, Math.floor((end.getTime() - start.getTime()) / 1000));
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  if (hours > 0) return `${hours}h ${minutes}m ${seconds}s`;
+  if (minutes > 0) return `${minutes}m ${seconds}s`;
+  return `${seconds}s`;
+};
+
+const getCompactTicketRequester = (ticket = {}, user = {}) =>
+  ticket.name || ticket.requester || ticket.requestedBy || user.fullName || user.name || 'Employee';
+
+const getCompactTicketDate = (ticket = {}) =>
+  formatCompactDateTime(ticket.createdAt || ticket.submittedAt || ticket.date || ticket.lastUpdated || 'Not recorded');
 
 /* =========================
    ICONS
@@ -1096,7 +1138,6 @@ const employeeTransitionLabels = {
   dashboard: 'Opening employee dashboard...',
   profile: 'Loading employee profile...',
   helpdesk: 'Preparing helpdesk workspace...',
-  otherServices: 'Opening other services...',
   logout: 'Signing out...',
 };
 
@@ -1135,7 +1176,6 @@ function Sidebar({ active, onNav, onLogout, open }) {
     { key: 'dashboard', label: 'Dashboard', Icon: Icon.Dashboard },
     { key: 'profile', label: 'My Profile', Icon: Icon.Profile },
     { key: 'helpdesk', label: 'Helpdesk', Icon: Icon.Helpdesk },
-    { key: 'otherServices', label: 'Other Services', Icon: Icon.OtherServices },
   ];
 
   return (
@@ -1746,7 +1786,7 @@ function EmployeeTicketDetailModal({
 
 function DashboardView({ user, tickets, openTickets, onGoTo }) {
   const resolvedCount = tickets.filter(isEmployeeResolvedTicket).length;
-  const pendingCount = tickets.filter((ticket) => ['Created', 'Pending', 'Modified'].includes(ticket.status)).length;
+  const pendingCount = tickets.filter((ticket) => ['Created', 'Pending'].includes(ticket.status)).length;
   const urgentCount = tickets.filter(
     (ticket) => ['High', 'Critical'].includes(ticket.sla) && isUnresolved(ticket.status)
   ).length;
@@ -1962,16 +2002,6 @@ function DashboardView({ user, tickets, openTickets, onGoTo }) {
               </div>
             </div>
 
-            <div className="dashboard-other-services-note">
-              <strong>Other Services</strong>
-              <p>
-                Use Burnout for unit preparation requests, or choose Other and type the exact service you need.
-              </p>
-              <button type="button" className="quick-action-btn" onClick={() => onGoTo('otherServices')}>
-                <MonoIcon icon={Wrench} />
-                Open Other Services
-              </button>
-            </div>
           </section>
         </aside>
       </section>
@@ -1984,7 +2014,7 @@ function DashboardView({ user, tickets, openTickets, onGoTo }) {
    PROFILE VIEW
 ========================= */
 
-function ProfileView({ user, onGoTo, onUserUpdate }) {
+function ProfileView({ user, tickets = [], onGoTo, onUserUpdate }) {
   const profilePhotoInputRef = useRef(null);
   const profilePhotoMenuRef = useRef(null);
   const [photoMessage, setPhotoMessage] = useState('');
@@ -1993,6 +2023,11 @@ function ProfileView({ user, onGoTo, onUserUpdate }) {
   const employeeStatus = user.status || 'Active';
   const assignedOffice = user.branch || user.office || 'Not assigned';
   const designation = user.designation || 'Job title not provided';
+  const pendingTickets = tickets.filter((ticket) => getEmployeeTicketStatusLabel(ticket.status) === 'Pending').length;
+  const inProgressTickets = tickets.filter((ticket) => getEmployeeTicketStatusLabel(ticket.status) === 'In Progress').length;
+  const resolvedTickets = tickets.filter(isEmployeeResolvedTicket).length;
+  const cancelledTickets = tickets.filter((ticket) => getEmployeeTicketStatusLabel(ticket.status) === 'Cancelled').length;
+  const latestTickets = Array.isArray(tickets) ? tickets.slice(0, 3) : [];
   const profileRows = [
     { label: 'Employee ID', value: user.employeeId || 'Not provided', icon: IdCard },
     { label: 'Job Title', value: designation, icon: BriefcaseBusiness },
@@ -2000,6 +2035,13 @@ function ProfileView({ user, onGoTo, onUserUpdate }) {
     { label: 'Assigned Office', value: assignedOffice, icon: MapPin },
     { label: 'Email Address', value: user.email || 'Not provided', icon: Mail },
     { label: 'Phone Number', value: user.phone || 'Not provided', icon: Phone },
+  ];
+  const ticketSummaryRows = [
+    { label: 'Submitted', value: tickets.length, tone: 'submitted' },
+    { label: 'Pending', value: pendingTickets, tone: 'pending' },
+    { label: 'In Progress', value: inProgressTickets, tone: 'progress' },
+    { label: 'Resolved', value: resolvedTickets, tone: 'resolved' },
+    { label: 'Cancelled', value: cancelledTickets, tone: 'cancelled' },
   ];
 
   useEffect(() => {
@@ -2155,54 +2197,63 @@ function ProfileView({ user, onGoTo, onUserUpdate }) {
               </article>
             ))}
           </div>
+
+          <section className="profile-section-block">
+            <div className="section-head compact">
+              <div>
+                <span className="section-kicker">Helpdesk Summary</span>
+                <h3>My Ticket Activity</h3>
+              </div>
+              <button type="button" className="profile-text-action" onClick={() => onGoTo('helpdesk', 'tickets')}>
+                Review tickets
+              </button>
+            </div>
+
+            <div className="profile-ticket-summary-grid">
+              {ticketSummaryRows.map((row) => (
+                <article key={row.label} className={`profile-ticket-summary-card is-${row.tone}`}>
+                  <span>{row.label}</span>
+                  <strong>{row.value}</strong>
+                </article>
+              ))}
+            </div>
+          </section>
+
+          <section className="profile-section-block">
+            <div className="section-head compact">
+              <div>
+                <span className="section-kicker">Recent Activity</span>
+                <h3>Latest Ticket Updates</h3>
+              </div>
+            </div>
+
+            <div className="profile-activity-list">
+              {latestTickets.length ? latestTickets.map((ticket) => (
+                <button
+                  key={ticket.id}
+                  type="button"
+                  className="profile-activity-item"
+                  onClick={() => onGoTo('helpdesk', 'tickets')}
+                >
+                  <span className={`profile-activity-status is-${slugify(getEmployeeTicketStatusLabel(ticket.status))}`}>
+                    {getEmployeeTicketStatusLabel(ticket.status)}
+                  </span>
+                  <div>
+                    <strong>{ticket.concernType || ticket.supportCategory || 'Helpdesk ticket'}</strong>
+                    <p>{ticket.branch || 'No branch'} - {ticket.department || 'No department'}</p>
+                  </div>
+                  <small>{ticket.lastUpdated || ticket.createdAt || ticket.date || 'No date'}</small>
+                </button>
+              )) : (
+                <div className="profile-empty-activity">
+                  <strong>No ticket activity yet</strong>
+                  <p>Your submitted tickets and ICT updates will appear here.</p>
+                </div>
+              )}
+            </div>
+          </section>
         </section>
 
-        <aside className="profile-side-panel-stack">
-          <section className="panel-card glass profile-status-panel">
-            <div className="profile-status-list">
-              <div>
-                <span>Branch</span>
-                <strong>{assignedOffice}</strong>
-              </div>
-              <div>
-                <span>Department</span>
-                <strong>{user.department || 'Not assigned'}</strong>
-              </div>
-              <div>
-                <span>Employee ID</span>
-                <strong>{user.employeeId || 'Not provided'}</strong>
-              </div>
-            </div>
-          </section>
-
-          <section className="panel-card glass profile-action-panel">
-            <div className="section-head">
-              <div>
-                <span className="section-kicker">Account Actions</span>
-                <h3>Shortcuts</h3>
-              </div>
-            </div>
-
-            <div className="profile-side-stack">
-              <button type="button" className="quick-action-btn primary" onClick={() => onGoTo('helpdesk', 'submit')}>
-                <MonoIcon icon={Ticket} />
-                Submit Helpdesk Ticket
-              </button>
-              <button type="button" className="quick-action-btn" onClick={() => onGoTo('helpdesk', 'tickets')}>
-                <MonoIcon icon={Eye} />
-                Review My Tickets
-              </button>
-              <button type="button" className="quick-action-btn" onClick={() => onGoTo('otherServices')}>
-                <MonoIcon icon={Wrench} />
-                Open Other Services
-              </button>
-              <button type="button" className="quick-action-btn" onClick={() => onGoTo('dashboard')}>
-                <MonoIcon icon={LayoutDashboard} />
-                Return to Dashboard
-              </button>
-            </div>
-          </section>
-        </aside>
       </div>
     </div>
   );
@@ -2253,7 +2304,7 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
     () => getConcernOptionsForSelection(form.supportCategory, form.deviceName),
     [form.supportCategory, form.deviceName]
   );
-  const pageSize = 3;
+  const pageSize = 2;
   const totalPages = Math.max(1, Math.ceil(tickets.length / pageSize));
   const currentPage = Math.min(ticketPage, totalPages);
   const pagedTickets = tickets.slice((currentPage - 1) * pageSize, currentPage * pageSize);
@@ -2702,10 +2753,7 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
       if (wasEditing) {
         await updateTicket(
           editingId,
-          {
-            ...payload,
-            status: 'Modified',
-          },
+          payload,
           { requestedByRole: 'employee' }
         );
 
@@ -2837,10 +2885,20 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
           >
             {editingId ? 'Edit Ticket' : 'Submit Ticket'}
           </button>
+
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === 'burnout'}
+            className={tab === 'burnout' ? 'active' : ''}
+            onClick={() => setTab('burnout')}
+          >
+            Burnout / Other Request
+          </button>
         </div>
 
         {tab === 'tickets' && (
-          <div className="ticket-list">
+          <div className="ticket-list compact-ticket-grid">
             {tickets.length === 0 ? (
               <div className="empty-state">
                 <div className="empty-icon"><MonoIcon icon={Ticket} /></div>
@@ -2849,40 +2907,56 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
               </div>
             ) : (
               <>
-                {pagedTickets.map((ticket) => (
-                  <div key={ticket.id} className="ticket-card">
-                    <div className="ticket-header">
-                      <div className="ticket-header-left">
-                        <h4>{ticket.concernType}</h4>
+                {pagedTickets.map((ticket) => {
+                  const employeeStatusLabel = getEmployeeTicketStatusLabel(ticket.status);
+                  const requesterName = getCompactTicketRequester(ticket, user);
+                  const startedLabel = formatCompactDateTime(ticket.workStartedAt);
+                  const endedLabel = formatCompactDateTime(ticket.workEndedAt);
+                  const durationLabel = formatCompactDuration(ticket.workStartedAt, ticket.workEndedAt);
+                  const hasWorkSummary = Boolean(ticket.workStartedAt || ticket.workEndedAt || durationLabel);
+                  const assignedStaff = ticket.technician || ticket.assignedTo;
+                  const handlingCopy = assignedStaff ? `Handled by ${assignedStaff}` : 'Awaiting ICT assignment';
+
+                  return (
+                    <div key={ticket.id} className="ticket-card compact-ticket-card">
+                      <div className="compact-ticket-top">
                         <span className="ticket-id">{getTicketDisplayCode(ticket)}</span>
+                        <h4>{ticket.concernType}</h4>
+                        <span className="ticket-date">{getCompactTicketDate(ticket)}</span>
                       </div>
-                      <span className="ticket-date">{ticket.date}</span>
-                    </div>
 
-                    <div className="ticket-badges">
-                      <span className={`status ${slugify(getEmployeeTicketStatusLabel(ticket.status))}`}>
-                        {getEmployeeTicketStatusLabel(ticket.status)}
-                      </span>
-                      <span className={`priority ${slugify(ticket.sla)}`}>{ticket.sla}</span>
-                      {isMbwinRequest(ticket) && <span className="status saar">SAAR Required</span>}
-                    </div>
+                      <div className="ticket-badges">
+                        <span className={`status ${slugify(employeeStatusLabel)}`}>
+                          {employeeStatusLabel}
+                        </span>
+                        <span className={`priority ${slugify(ticket.sla)}`}>{ticket.sla}</span>
+                        {isMbwinRequest(ticket) && <span className="status saar">SAAR Required</span>}
+                      </div>
 
-                    <div className="ticket-meta-grid">
-                      <div className="ticket-meta-cell">
-                        <span>Branch</span>
-                        <p>{ticket.branch}</p>
+                      <div className="compact-ticket-status-box">
+                        <span className="compact-status-icon"><MonoIcon icon={ShieldCheck} /></span>
+                        <div>
+                          <strong>{employeeStatusLabel}</strong>
+                          <p>{handlingCopy}</p>
+                          {endedLabel && <span>Ended {endedLabel}</span>}
+                          {!endedLabel && startedLabel && <span>Started {startedLabel}</span>}
+                        </div>
                       </div>
-                      <div className="ticket-meta-cell">
-                        <span>Department</span>
-                        <p>{ticket.department}</p>
-                      </div>
-                      <div className="ticket-meta-cell">
-                        <span>Technician</span>
-                        <p>{ticket.technician || 'Unassigned'}</p>
-                      </div>
-                    </div>
 
-                    <p className="ticket-description">{ticket.description}</p>
+                      <div className="ticket-meta-grid compact-ticket-meta-grid">
+                        <div className="ticket-meta-cell">
+                          <span><MonoIcon icon={UserRound} />Requester</span>
+                          <p>{requesterName}</p>
+                          <small>{ticket.department || user.department || 'Department not set'}</small>
+                        </div>
+                        <div className="ticket-meta-cell">
+                          <span><MonoIcon icon={Building2} />Branch</span>
+                          <p>{ticket.branch || user.branch || user.office || 'Branch not set'}</p>
+                          <small>{ticket.supportCategory || 'Support category not set'}</small>
+                        </div>
+                      </div>
+
+                      <p className="ticket-description compact-ticket-description">{ticket.description}</p>
 
                     {ticket.saarAttachment?.name && (
                       <div className="ticket-attachment-note">
@@ -2898,30 +2972,42 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
                       </div>
                     )}
 
-                    {ticket.actionTaken && (
-                      <div className="ticket-admin-note">
-                        <strong>ICT Action Taken</strong>
-                        <p>{ticket.actionTaken}</p>
-                      </div>
-                    )}
-
-                    <div className="ticket-footer">
-                      <button type="button" className="ticket-action-btn" onClick={() => openTicketDetails(ticket)}>
-                        <MonoIcon icon={Eye} />
-                        View Details
-                      </button>
-
-                      {canEmployeeEditTicket(ticket) ? (
-                        <button type="button" className="ticket-action-btn" onClick={() => handleEdit(ticket)}>
-                          <MonoIcon icon={PenLine} />
-                          Edit
-                        </button>
-                      ) : (
-                        <span className="ticket-locked-pill">Locked</span>
+                      {ticket.actionTaken && (
+                        <div className="ticket-admin-note compact-ticket-admin-note">
+                          <strong>ICT Action Taken</strong>
+                          <p>{ticket.actionTaken}</p>
+                        </div>
                       )}
+
+                      {hasWorkSummary && (
+                        <div className="compact-work-summary">
+                          <span><MonoIcon icon={Clock3} />Work Completed</span>
+                          {durationLabel && <strong>{durationLabel}</strong>}
+                          <p>
+                            {startedLabel ? `Started ${startedLabel}` : 'Started time not recorded'}
+                            {endedLabel ? ` - Ended ${endedLabel}` : ''}
+                          </p>
+                        </div>
+                      )}
+
+                      <div className="ticket-footer">
+                        <button type="button" className="ticket-action-btn" onClick={() => openTicketDetails(ticket)}>
+                          <MonoIcon icon={Eye} />
+                          View Details
+                        </button>
+
+                        {canEmployeeEditTicket(ticket) ? (
+                          <button type="button" className="ticket-action-btn" onClick={() => handleEdit(ticket)}>
+                            <MonoIcon icon={PenLine} />
+                            Edit
+                          </button>
+                        ) : (
+                          <span className="ticket-locked-pill">Locked</span>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
 
                 <TicketPagination
                   page={currentPage}
@@ -3150,6 +3236,10 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
             </button>
           </form>
         )}
+
+        {tab === 'burnout' && (
+          <OtherServicesView user={user} reloadTickets={reloadTickets} embedded />
+        )}
       </section>
 
       {/* Confirm submission modal */}
@@ -3240,7 +3330,7 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
    OTHER SERVICES VIEW
 ========================= */
 
-function OtherServicesView({ user, reloadTickets }) {
+function OtherServicesView({ user, reloadTickets, embedded = false }) {
   const [form, setForm] = useState(() => getNewOtherServiceForm(user));
   const [requests, setRequests] = useState([]);
   const [formError, setFormError] = useState('');
@@ -3418,23 +3508,24 @@ function OtherServicesView({ user, reloadTickets }) {
   };
 
   return (
-    <div className="other-services-view">
-      <section className="panel-card glass helpdesk-banner other-services-banner">
-        <div className="helpdesk-banner-copy">
-          <span className="section-kicker">Other Services</span>
-          <h2>Submit non-helpdesk service requests.</h2>
-          <p>
-            This page follows the Helpdesk layout but uses a separate form for service concerns outside ICT ticketing.
-          </p>
-        </div>
+    <div className={`other-services-view${embedded ? ' embedded-helpdesk-request' : ''}`}>
+      {!embedded && (
+        <section className="panel-card glass helpdesk-banner other-services-banner">
+          <div className="helpdesk-banner-copy">
+            <span className="section-kicker">Other Services</span>
+            <h2>Submit non-helpdesk service requests.</h2>
+            <p>
+              This page follows the Helpdesk layout but uses a separate form for service concerns outside ICT ticketing.
+            </p>
+          </div>
+        </section>
+      )}
 
-      </section>
-
-      <section className="panel-card glass">
+      <section className={embedded ? 'embedded-request-section' : 'panel-card glass'}>
         <div className="section-head">
           <div>
-            <span className="section-kicker">Other Services Request</span>
-            <h3>Service Request Form</h3>
+            <span className="section-kicker">{embedded ? 'Helpdesk Request' : 'Other Services Request'}</span>
+            <h3>{embedded ? 'Burnout / Other ICT Request' : 'Service Request Form'}</h3>
           </div>
         </div>
 
@@ -3454,7 +3545,7 @@ function OtherServicesView({ user, reloadTickets }) {
                   <option key={category} value={category}>{category}</option>
                 ))}
               </select>
-              <span className="ticket-form-hint">Choose Burnout for unit preparation, or Other for requests like cabling.</span>
+              <span className="ticket-form-hint">Choose Burnout for unit preparation, or Other for ICT requests that do not fit the regular ticket form.</span>
             </div>
 
             <div className="ticket-form-group">
@@ -3588,7 +3679,7 @@ function OtherServicesView({ user, reloadTickets }) {
         </form>
       </section>
 
-      <section className="panel-card glass">
+      <section className={embedded ? 'embedded-request-section' : 'panel-card glass'}>
         <div className="section-head">
           <div>
             <span className="section-kicker">Request History</span>
@@ -3696,14 +3787,7 @@ export default function EmployeeDashboardPage() {
     try {
       const employeeTickets = await getTicketsForUser(currentUser.id);
 
-      setTickets(
-        employeeTickets.sort((a, b) => {
-          const aTime = new Date(a.lastUpdated || a.createdAt || a.date || 0).getTime();
-          const bTime = new Date(b.lastUpdated || b.createdAt || b.date || 0).getTime();
-
-          return bTime - aTime;
-        })
-      );
+      setTickets(employeeTickets);
     } catch (error) {
       console.error(error);
     }
@@ -3894,7 +3978,7 @@ export default function EmployeeDashboardPage() {
               )}
 
               {activeSection === 'profile' && (
-                <ProfileView user={user} onGoTo={goTo} onUserUpdate={setUser} />
+                <ProfileView user={user} tickets={tickets} onGoTo={goTo} onUserUpdate={setUser} />
               )}
 
               {activeSection === 'helpdesk' && (

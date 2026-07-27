@@ -597,8 +597,17 @@ begin
     new.owner_email := coalesce(nullif(new.owner_email, ''), active_profile.email);
     new.requester := coalesce(nullif(new.requester, ''), active_profile.full_name, active_profile.email, 'Employee');
     new.employee_id := coalesce(nullif(new.employee_id, ''), active_profile.employee_id);
-    new.branch := coalesce(nullif(new.branch, ''), active_profile.branch, active_profile.office, 'Unspecified');
-    new.department := coalesce(nullif(new.department, ''), active_profile.department, 'Unspecified');
+    new.branch := nullif(trim(coalesce(new.branch, '')), '');
+    new.department := nullif(trim(coalesce(new.department, '')), '');
+
+    if new.branch is null then
+      raise exception 'Branch / Location is required. Select where the concern happened.';
+    end if;
+
+    if new.department is null then
+      raise exception 'Department is required. Select the department affected by the concern.';
+    end if;
+
     new.created_at := coalesce(new.created_at, now());
   end if;
 
