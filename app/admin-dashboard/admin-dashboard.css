@@ -11801,3 +11801,2041 @@ button {
     text-align: left;
   }
 }
+
+/* Final helpdesk ticket modal workspace: wider canvas, 2x2 notes, quiet autosave. */
+.ticket-action-modal.is-support-modal {
+  width: min(1240px, calc(100vw - (var(--ticket-action-edge-gap, 0.75rem) * 2))) !important;
+  grid-template-rows: auto auto auto auto minmax(0, auto) auto !important;
+}
+
+.ticket-action-modal.is-support-modal .ticket-action-head-main {
+  grid-template-columns: minmax(330px, 0.78fr) minmax(440px, 1fr) !important;
+}
+
+.ticket-action-modal.is-support-modal .ticket-action-header-status {
+  transform: none !important;
+}
+
+.ticket-action-modal.is-support-modal .ticket-action-info-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+}
+
+.ticket-action-modal.is-support-modal .ticket-action-details-row {
+  grid-template-columns: minmax(0, 1fr) minmax(250px, 320px) !important;
+}
+
+.ticket-action-modal.is-support-modal .ticket-action-description {
+  min-height: 148px !important;
+}
+
+.ticket-action-modal.is-support-modal .ticket-action-description p {
+  max-height: 108px !important;
+  overflow-y: auto !important;
+}
+
+.ticket-action-modal.is-support-modal .ticket-action-notes-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  align-items: stretch !important;
+  gap: 0.48rem !important;
+}
+
+.ticket-action-modal.is-support-modal .ticket-action-notes-grid .admin-small-textarea {
+  height: clamp(86px, 11dvh, 112px) !important;
+  min-height: 86px !important;
+  max-height: 112px !important;
+  overflow-y: auto !important;
+  resize: vertical !important;
+}
+
+.ticket-action-footer-tools {
+  margin-left: auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+}
+
+.ticket-autosave-status {
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 0.7rem;
+  border-radius: 999px;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  background: rgba(255, 255, 255, 0.88);
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.ticket-autosave-status.saving {
+  color: #b45309;
+  border-color: rgba(245, 158, 11, 0.32);
+  background: rgba(255, 251, 235, 0.92);
+}
+
+.ticket-autosave-status.saved {
+  color: #047857;
+  border-color: rgba(16, 185, 129, 0.28);
+  background: rgba(236, 253, 245, 0.92);
+}
+
+.ticket-autosave-status.error {
+  color: var(--danger);
+  border-color: rgba(239, 68, 68, 0.32);
+  background: rgba(254, 242, 242, 0.94);
+}
+
+@media (max-width: 980px), (max-height: 720px) {
+  .ticket-action-modal.is-support-modal {
+    overflow-y: auto !important;
+  }
+
+  .ticket-action-modal.is-support-modal .ticket-action-head-main,
+  .ticket-action-modal.is-support-modal .ticket-action-details-row,
+  .ticket-action-modal.is-support-modal .ticket-action-notes-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .ticket-action-footer-tools {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .ticket-action-footer-tools .modal-btn,
+  .ticket-action-footer-tools .ticket-autosave-status {
+    flex: 1 1 160px;
+    justify-content: center;
+  }
+}
+
+
+/* ==========================================================================
+   FINAL QUALITY LAYER — RESPONSIVE / ACCESSIBILITY / MAINTAINABILITY
+   --------------------------------------------------------------------------
+   Purpose:
+   - Preserve the existing visual language and component names.
+   - Resolve the last conflicting responsive/table/modal overrides.
+   - Improve keyboard accessibility and touch usability.
+   - Reduce layout shifts, text clipping, and accidental horizontal overflow.
+   - Keep glassmorphism while avoiding unnecessary blur on every component.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. Global rendering + accessibility foundation
+   -------------------------------------------------------------------------- */
+
+html {
+  scroll-behavior: smooth;
+  text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]) {
+  -webkit-tap-highlight-color: transparent;
+}
+
+:where(button, a, input, select, textarea):focus-visible {
+  outline: 3px solid rgba(220, 38, 38, 0.28);
+  outline-offset: 3px;
+}
+
+:where(button, a):focus:not(:focus-visible) {
+  outline: none;
+}
+
+:where(input, select, textarea)[aria-invalid="true"],
+:where(input, select, textarea):user-invalid {
+  border-color: rgba(220, 38, 38, 0.58);
+  box-shadow:
+    0 0 0 4px rgba(220, 38, 38, 0.07),
+    0 8px 20px rgba(220, 38, 38, 0.04);
+}
+
+::selection {
+  background: rgba(220, 38, 38, 0.16);
+  color: var(--text);
+}
+
+/* Prevent flex/grid children from forcing their parents wider. */
+:where(
+  .portal-view,
+  .dashboard-view,
+  .helpdesk-view,
+  .profile-view,
+  .dashboard-stack,
+  .panel-card,
+  .equal-panel,
+  .section-head,
+  .hero-panel,
+  .profile-banner,
+  .helpdesk-banner,
+  .admin-modal-head,
+  .modal-box,
+  .admin-modal-box,
+  .user-edit-modal,
+  .ticket-action-modal
+) {
+  min-width: 0;
+}
+
+/* --------------------------------------------------------------------------
+   2. Performance-aware glass surfaces
+   -------------------------------------------------------------------------- */
+
+.glass,
+.portal-topbar,
+.portal-sidebar,
+.panel-card,
+.stat-card,
+.hero-panel,
+.profile-banner,
+.helpdesk-banner,
+.admin-watch-card,
+.admin-branch-card,
+.modal-box,
+.admin-modal-box,
+.user-edit-modal {
+  isolation: isolate;
+}
+
+.glass {
+  contain: paint;
+}
+
+/* Keep blur on the primary glass surfaces, but avoid stacking multiple
+   expensive backdrop-filter layers inside one another. */
+.glass .glass,
+.panel-card .glass,
+.modal-box .glass {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* --------------------------------------------------------------------------
+   3. Buttons — consistent dimensions / interaction behavior
+   -------------------------------------------------------------------------- */
+
+.quick-action-btn,
+.user-action-btn,
+.modal-btn,
+.portal-hrmax-btn,
+.topbar-icon-btn,
+.burger,
+.password-toggle-btn,
+.report-print-btn,
+.ticket-action-btn {
+  touch-action: manipulation;
+}
+
+.quick-action-btn,
+.user-action-btn,
+.modal-btn,
+.portal-hrmax-btn,
+.topbar-icon-btn,
+.burger {
+  min-height: 44px;
+}
+
+.quick-action-btn:disabled,
+.user-action-btn:disabled,
+.modal-btn:disabled,
+.portal-hrmax-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  transform: none !important;
+  filter: none !important;
+  box-shadow: none !important;
+}
+
+/* Remove the old negative-positioning patch; alignment is handled by layout. */
+.ticket-action-btn {
+  margin-left: 0 !important;
+}
+
+/* --------------------------------------------------------------------------
+   4. Forms — consistent sizing and better keyboard/focus behavior
+   -------------------------------------------------------------------------- */
+
+.ticket-field {
+  min-width: 0;
+  min-height: 44px;
+}
+
+.ticket-input,
+.ticket-select {
+  min-height: 46px;
+}
+
+.ticket-textarea {
+  min-width: 0;
+  overflow: auto;
+}
+
+.search-field-group {
+  min-width: 0;
+}
+
+.search-field-group .ticket-input {
+  min-width: 0;
+}
+
+/* Prevent search icons from covering text on narrow devices. */
+.search-field-group .ticket-input {
+  padding-left: 3.15rem;
+}
+
+/* --------------------------------------------------------------------------
+   5. Responsive shell — stable desktop/tablet/mobile transitions
+   -------------------------------------------------------------------------- */
+
+.portal-app-main {
+  width: 100%;
+  max-width: 100%;
+}
+
+.portal-shell,
+.portal-layout,
+.portal-view {
+  min-width: 0;
+}
+
+.portal-layout {
+  grid-template-columns: minmax(220px, 250px) minmax(0, 1fr);
+}
+
+@media (max-width: 1280px) {
+  .portal-app-main {
+    padding-inline: clamp(1rem, 2vw, 1.35rem);
+  }
+
+  .portal-layout {
+    grid-template-columns: 230px minmax(0, 1fr);
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dashboard-columns,
+  .profile-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .dashboard-columns.equal-columns > .dashboard-stack {
+    height: auto;
+  }
+
+  .report-toolbar {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 1040px) {
+  .portal-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .portal-sidebar {
+    position: fixed;
+    inset: 1rem auto 1rem 1rem;
+    width: min(290px, calc(100vw - 2rem));
+    max-height: calc(100dvh - 2rem);
+    overflow-y: auto;
+    z-index: 1000;
+    transform: translateX(calc(-100% - 1.5rem));
+    transition: transform var(--transition);
+  }
+
+  .portal-sidebar.open {
+    transform: translateX(0);
+    left: 1rem;
+  }
+
+  .burger {
+    display: inline-flex;
+  }
+
+  .portal-topbar-actions {
+    flex-wrap: wrap;
+  }
+
+  .report-toolbar-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 820px) {
+  .portal-topbar {
+    align-items: flex-start;
+  }
+
+  .portal-topbar-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .hero-panel,
+  .profile-banner,
+  .helpdesk-banner {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .hero-meta,
+  .profile-banner-pills,
+  .helpdesk-banner-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .hero-meta .quick-action-btn,
+  .helpdesk-banner-actions .quick-action-btn {
+    width: 100%;
+  }
+
+  .admin-filter-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-filter-grid .ticket-form-group.full {
+    grid-column: 1 / -1;
+  }
+
+  .ticket-form-grid,
+  .admin-modal-grid,
+  .admin-report-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ticket-form-group.full {
+    grid-column: 1 / -1;
+  }
+
+  .report-period-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .report-period-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 640px) {
+  .portal-app-main {
+    padding: 0.75rem;
+  }
+
+  .portal-shell {
+    gap: 0.75rem;
+  }
+
+  .portal-topbar {
+    padding: 0.95rem;
+  }
+
+  .portal-topbar-actions {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 0.5rem;
+  }
+
+  .profile-chip {
+    max-width: none;
+    width: 100%;
+  }
+
+  .stats-grid,
+  .quick-actions-grid,
+  .admin-filter-grid,
+  .report-toolbar-metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .panel-card,
+  .hero-panel,
+  .profile-banner,
+  .helpdesk-banner,
+  .admin-account-panel,
+  .report-period-card {
+    padding: 1rem;
+  }
+
+  .section-head {
+    flex-direction: column;
+  }
+
+  .admin-form-actions,
+  .report-period-actions {
+    width: 100%;
+  }
+
+  .admin-form-actions > *,
+  .report-period-actions > * {
+    flex: 1 1 140px;
+  }
+
+  .temporary-password-panel,
+  .password-refresh-card {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .portal-app-main {
+    padding: 0.55rem;
+  }
+
+  .portal-topbar-copy h1 {
+    font-size: 1.35rem;
+  }
+
+  .portal-topbar-copy p,
+  .hero-copy p,
+  .helpdesk-banner-copy p,
+  .profile-banner-copy p {
+    font-size: 0.96rem;
+  }
+
+  .portal-status-pill,
+  .meta-pill,
+  .helpdesk-badge {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .hero-meta,
+  .profile-banner-pills,
+  .helpdesk-banner-actions {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .hero-meta > *,
+  .profile-banner-pills > *,
+  .helpdesk-banner-actions > * {
+    width: 100%;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   6. Users table — one authoritative responsive model
+   -------------------------------------------------------------------------- */
+
+/* Generic baseline: the table remains readable through horizontal scrolling
+   rather than shrinking text into unusable columns. */
+.users-table {
+  width: 100%;
+  table-layout: fixed !important;
+  min-width: 960px !important;
+}
+
+.users-table th,
+.users-table td {
+  vertical-align: middle;
+}
+
+.users-table th {
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere;
+}
+
+.users-table td {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.users-table .admin-table-main {
+  min-width: 0;
+}
+
+.users-table .admin-table-main strong,
+.users-table .admin-table-main span {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Six-column table: current operational layout. */
+.users-table:has(th:nth-child(6)):not(:has(th:nth-child(7))) {
+  min-width: 960px !important;
+}
+
+.users-table:has(th:nth-child(6)):not(:has(th:nth-child(7))) th:nth-child(1),
+.users-table:has(th:nth-child(6)):not(:has(th:nth-child(7))) td:nth-child(1) {
+  width: 18% !important;
+}
+
+.users-table:has(th:nth-child(6)):not(:has(th:nth-child(7))) th:nth-child(2),
+.users-table:has(th:nth-child(6)):not(:has(th:nth-child(7))) td:nth-child(2) {
+  width: 30% !important;
+}
+
+.users-table:has(th:nth-child(6)):not(:has(th:nth-child(7))) th:nth-child(3),
+.users-table:has(th:nth-child(6)):not(:has(th:nth-child(7))) td:nth-child(3) {
+  width: 8% !important;
+}
+
+.users-table:has(th:nth-child(6)):not(:has(th:nth-child(7))) th:nth-child(4),
+.users-table:has(th:nth-child(6)):not(:has(th:nth-child(7))) td:nth-child(4) {
+  width: 18% !important;
+}
+
+.users-table:has(th:nth-child(6)):not(:has(th:nth-child(7))) th:nth-child(5),
+.users-table:has(th:nth-child(6)):not(:has(th:nth-child(7))) td:nth-child(5) {
+  width: 16% !important;
+}
+
+.users-table:has(th:nth-child(6)):not(:has(th:nth-child(7))) th:nth-child(6),
+.users-table:has(th:nth-child(6)):not(:has(th:nth-child(7))) td:nth-child(6) {
+  width: 10% !important;
+  white-space: nowrap !important;
+}
+
+/* Seven-column compatibility layout. */
+.users-table:has(th:nth-child(7)):not(:has(th:nth-child(8))) {
+  min-width: 1040px !important;
+}
+
+.users-table:has(th:nth-child(7)):not(:has(th:nth-child(8))) th:nth-child(1),
+.users-table:has(th:nth-child(7)):not(:has(th:nth-child(8))) td:nth-child(1) { width: 18% !important; }
+
+.users-table:has(th:nth-child(7)):not(:has(th:nth-child(8))) th:nth-child(2),
+.users-table:has(th:nth-child(7)):not(:has(th:nth-child(8))) td:nth-child(2) { width: 27% !important; }
+
+.users-table:has(th:nth-child(7)):not(:has(th:nth-child(8))) th:nth-child(3),
+.users-table:has(th:nth-child(7)):not(:has(th:nth-child(8))) td:nth-child(3) { width: 8% !important; }
+
+.users-table:has(th:nth-child(7)):not(:has(th:nth-child(8))) th:nth-child(4),
+.users-table:has(th:nth-child(7)):not(:has(th:nth-child(8))) td:nth-child(4) { width: 16% !important; }
+
+.users-table:has(th:nth-child(7)):not(:has(th:nth-child(8))) th:nth-child(5),
+.users-table:has(th:nth-child(7)):not(:has(th:nth-child(8))) td:nth-child(5) { width: 15% !important; }
+
+.users-table:has(th:nth-child(7)):not(:has(th:nth-child(8))) th:nth-child(6),
+.users-table:has(th:nth-child(7)):not(:has(th:nth-child(8))) td:nth-child(6) { width: 10% !important; }
+
+.users-table:has(th:nth-child(7)):not(:has(th:nth-child(8))) th:nth-child(7),
+.users-table:has(th:nth-child(7)):not(:has(th:nth-child(8))) td:nth-child(7) { width: 6% !important; }
+
+/* Eight-column compatibility layout. */
+.users-table:has(th:nth-child(8)) {
+  min-width: 1220px !important;
+}
+
+.users-table:has(th:nth-child(8)) th:nth-child(1),
+.users-table:has(th:nth-child(8)) td:nth-child(1) { width: 18% !important; }
+
+.users-table:has(th:nth-child(8)) th:nth-child(2),
+.users-table:has(th:nth-child(8)) td:nth-child(2) { width: 9% !important; }
+
+.users-table:has(th:nth-child(8)) th:nth-child(3),
+.users-table:has(th:nth-child(8)) td:nth-child(3) { width: 22% !important; }
+
+.users-table:has(th:nth-child(8)) th:nth-child(4),
+.users-table:has(th:nth-child(8)) td:nth-child(4) { width: 10% !important; }
+
+.users-table:has(th:nth-child(8)) th:nth-child(5),
+.users-table:has(th:nth-child(8)) td:nth-child(5) { width: 13% !important; }
+
+.users-table:has(th:nth-child(8)) th:nth-child(6),
+.users-table:has(th:nth-child(8)) td:nth-child(6) { width: 13% !important; }
+
+.users-table:has(th:nth-child(8)) th:nth-child(7),
+.users-table:has(th:nth-child(8)) td:nth-child(7) { width: 7% !important; }
+
+.users-table:has(th:nth-child(8)) th:nth-child(8),
+.users-table:has(th:nth-child(8)) td:nth-child(8) { width: 8% !important; }
+
+.users-table .user-clickable-row {
+  cursor: pointer;
+}
+
+.users-table .user-clickable-row:hover td {
+  background: rgba(241, 245, 249, 0.92) !important;
+}
+
+.users-table .user-clickable-row:focus-visible {
+  outline: 3px solid rgba(220, 38, 38, 0.28);
+  outline-offset: -3px;
+}
+
+/* --------------------------------------------------------------------------
+   7. Ticket action modal — predictable overflow without clipping
+   -------------------------------------------------------------------------- */
+
+.ticket-action-overlay,
+.ticket-action-overlay.chat-open {
+  --ticket-action-edge-gap: clamp(0.55rem, 1.2dvh, 0.9rem);
+  align-items: center !important;
+  justify-content: center !important;
+  overflow: auto !important;
+  overscroll-behavior: contain;
+  padding: var(--ticket-action-edge-gap) !important;
+}
+
+.ticket-action-modal {
+  width: min(1120px, calc(100vw - (var(--ticket-action-edge-gap) * 2))) !important;
+  max-height: calc(100dvh - (var(--ticket-action-edge-gap) * 2)) !important;
+  overflow: auto !important;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.ticket-action-modal > * {
+  min-width: 0;
+}
+
+.ticket-action-modal .admin-modal-head,
+.ticket-action-modal .modal-footer {
+  position: sticky !important;
+  z-index: 10 !important;
+  background: rgba(248, 250, 252, 0.97) !important;
+}
+
+.ticket-action-modal .admin-modal-head {
+  top: 0 !important;
+}
+
+.ticket-action-modal .modal-footer {
+  bottom: 0 !important;
+}
+
+.ticket-action-modal .ticket-action-description p,
+.ticket-action-modal .ticket-action-info-grid .ticket-meta-cell p,
+.ticket-action-modal .ticket-action-head p {
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.ticket-action-modal .ticket-action-attachments-row {
+  max-width: 100%;
+  min-width: 0;
+}
+
+.ticket-action-modal img {
+  max-width: 100%;
+  height: auto;
+}
+
+@media (max-width: 980px) {
+  .ticket-action-overlay,
+  .ticket-action-overlay.chat-open {
+    align-items: flex-start !important;
+  }
+
+  .ticket-action-modal {
+    width: min(100%, calc(100vw - 1rem)) !important;
+  }
+
+  .ticket-action-modal .ticket-action-status-panel,
+  .ticket-action-modal .ticket-action-details-row,
+  .ticket-action-modal .ticket-action-notes-grid,
+  .ticket-action-modal .ticket-action-status-tools {
+    grid-template-columns: 1fr !important;
+  }
+
+  .ticket-action-modal .ticket-action-info-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .ticket-action-overlay,
+  .ticket-action-overlay.chat-open {
+    --ticket-action-edge-gap: 0.45rem;
+  }
+
+  .ticket-action-modal {
+    width: calc(100vw - 0.9rem) !important;
+    max-height: calc(100dvh - 0.9rem) !important;
+    border-radius: var(--radius-lg) !important;
+  }
+
+  .ticket-action-modal .ticket-action-info-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .ticket-action-modal .modal-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .ticket-action-modal .modal-footer .modal-btn {
+    width: 100%;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   8. Ticket handling text — no artificial offsets / clipping
+   -------------------------------------------------------------------------- */
+
+.ticket-handling-indicator {
+  min-width: 0;
+  overflow: visible !important;
+}
+
+.ticket-handling-copy,
+.ticket-handling-copy strong,
+.ticket-handling-copy p {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.ticket-handling-title-row {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.ticket-handling-title-row .ticket-handling-meta {
+  margin-left: 0 !important;
+  transform: none !important;
+  max-width: 100%;
+  white-space: normal !important;
+}
+
+/* --------------------------------------------------------------------------
+   9. Tables and scroll containers — consistent scrollbar behavior
+   -------------------------------------------------------------------------- */
+
+.admin-table-wrap {
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: visible;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+}
+
+.admin-table-wrap::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.admin-table-wrap::-webkit-scrollbar-track {
+  background: rgba(226, 232, 240, 0.42);
+  border-radius: var(--radius-pill);
+}
+
+.admin-table-wrap::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.34);
+  border-radius: var(--radius-pill);
+}
+
+.admin-table-wrap::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.5);
+}
+
+.admin-ticket-table th,
+.admin-ticket-table td {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 768px) {
+  .admin-table-wrap {
+    margin-inline: -0.15rem;
+    width: calc(100% + 0.3rem);
+  }
+
+  .admin-ticket-table {
+    min-width: 1080px;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   10. Modal base behavior
+   -------------------------------------------------------------------------- */
+
+:where(.modal-overlay, .ticket-action-overlay) {
+  overscroll-behavior: contain;
+}
+
+:where(.modal-box, .admin-modal-box, .user-edit-modal) {
+  min-width: 0;
+  max-width: min(100%, 1180px);
+  overscroll-behavior: contain;
+}
+
+:where(.modal-box, .admin-modal-box, .user-edit-modal) img {
+  max-width: 100%;
+  height: auto;
+}
+
+@media (max-width: 640px) {
+  :where(.modal-overlay, .ticket-action-overlay) {
+    padding-inline: 0.5rem;
+  }
+
+  :where(.modal-box, .admin-modal-box, .user-edit-modal) {
+    width: 100%;
+    max-height: calc(100dvh - 1rem);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   11. Reduced motion — preserve usability for motion-sensitive users
+   -------------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   12. Backdrop fallback — no visual loss when blur is unsupported
+   -------------------------------------------------------------------------- */
+
+@supports not ((backdrop-filter: blur(1px))) {
+  .glass {
+    background: rgba(255, 255, 255, 0.96);
+  }
+
+  .sidebar-overlay {
+    background: rgba(13, 21, 39, 0.42);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   13. Print — preserve meaningful ticket/report content
+   -------------------------------------------------------------------------- */
+
+@media print {
+  html,
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  body::before,
+  .portal-main::before,
+  .portal-sidebar,
+  .portal-topbar-actions,
+  .burger,
+  .sidebar-overlay,
+  .modal-overlay::before {
+    display: none !important;
+  }
+
+  .portal-main,
+  .portal-app-main,
+  .portal-shell,
+  .portal-view {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: #fff !important;
+    box-shadow: none !important;
+  }
+
+  .glass,
+  .panel-card,
+  .modal-box,
+  .admin-modal-box,
+  .user-edit-modal,
+  .ticket-action-modal {
+    background: #fff !important;
+    border: 1px solid #bbb !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  .ticket-action-overlay,
+  .modal-overlay {
+    position: static !important;
+    inset: auto !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    background: #fff !important;
+  }
+
+  .ticket-action-modal,
+  .modal-box,
+  .admin-modal-box,
+  .user-edit-modal {
+    width: 100% !important;
+    max-width: none !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  .ticket-action-modal .admin-modal-head,
+  .ticket-action-modal .modal-footer {
+    position: static !important;
+  }
+
+  .admin-table-wrap {
+    overflow: visible !important;
+  }
+
+  .admin-ticket-table,
+  .users-table {
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  a {
+    color: #000 !important;
+    text-decoration: none !important;
+  }
+}
+
+/* ============================================================================
+   FINAL PATCH — EQUAL-HEIGHT TICKET CARDS WITH ZERO CONTENT CLIPPING
+   --------------------------------------------------------------------------
+   Desktop/tablet behavior:
+   - exactly two cards per row when the queue is in the normal two-column view
+   - cards in the same row always stretch to the same height
+   - height is determined by the tallest card in that row (no arbitrary 520px
+     / 620px cap)
+   - every ticket section is allowed to grow naturally
+   - no ticket section uses overflow:hidden to hide text
+   - descriptions can grow; they do not get an internal scrollbar
+   - handling timestamps and work-timer timestamps wrap when necessary
+
+   Mobile behavior:
+   - one card per row
+   - natural card height
+   ============================================================================ */
+
+/* Queue itself. */
+.admin-ticket-queue {
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
+/* Two equal-width columns. The grid stretches every item in each row to the
+   row's tallest content height, which gives the paired cards identical size
+   without clipping either card. */
+.admin-ticket-queue:not(.compact) .admin-ticket-queue-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  grid-auto-rows: max-content !important;
+  align-items: stretch !important;
+  gap: 0.9rem !important;
+}
+
+/* Ticket card: NO fixed height. The grid supplies equal height within a row. */
+.admin-ticket-queue:not(.compact) .admin-ticket-queue-grid > .admin-ticket-card {
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  height: auto !important;
+  max-height: none !important;
+  align-self: stretch !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0.8rem !important;
+  overflow: visible !important;
+  box-sizing: border-box !important;
+}
+
+/* Ticket heading. Nothing in the heading is clipped. */
+.admin-ticket-queue:not(.compact) .admin-ticket-card-head {
+  min-width: 0 !important;
+  min-height: 0 !important;
+  height: auto !important;
+  max-height: none !important;
+  flex: 0 0 auto !important;
+  overflow: visible !important;
+}
+
+.admin-ticket-queue:not(.compact) .admin-ticket-title {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+.admin-ticket-queue:not(.compact) .admin-ticket-title h4,
+.admin-ticket-queue:not(.compact) .admin-ticket-title p {
+  display: block !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  height: auto !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+}
+
+/* Handling/status block. Timestamp is allowed to move to the next line when
+   the card is narrower; this is preferable to clipping it. */
+.admin-ticket-queue:not(.compact) .ticket-handling-indicator {
+  min-width: 0 !important;
+  min-height: 0 !important;
+  height: auto !important;
+  max-height: none !important;
+  flex: 0 0 auto !important;
+  overflow: visible !important;
+  box-sizing: border-box !important;
+}
+
+.admin-ticket-queue:not(.compact) .ticket-handling-copy {
+  min-width: 0 !important;
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+.admin-ticket-queue:not(.compact) .ticket-handling-copy strong,
+.admin-ticket-queue:not(.compact) .ticket-handling-copy p,
+.admin-ticket-queue:not(.compact) .ticket-handling-meta {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+}
+
+.admin-ticket-queue:not(.compact) .ticket-handling-title-row {
+  min-width: 0 !important;
+  width: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  flex-wrap: wrap !important;
+  gap: 0.45rem !important;
+}
+
+.admin-ticket-queue:not(.compact) .ticket-handling-title-row .ticket-handling-meta {
+  margin-left: 0 !important;
+  transform: none !important;
+  width: fit-content !important;
+  max-width: 100% !important;
+  flex: 0 1 auto !important;
+  white-space: normal !important;
+}
+
+/* Requester / branch summary boxes. */
+.admin-ticket-queue:not(.compact) .admin-ticket-summary-grid {
+  min-width: 0 !important;
+  min-height: 0 !important;
+  height: auto !important;
+  max-height: none !important;
+  flex: 0 0 auto !important;
+}
+
+.admin-ticket-queue:not(.compact) .admin-ticket-summary-grid > div {
+  min-width: 0 !important;
+  min-height: 0 !important;
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+  box-sizing: border-box !important;
+}
+
+.admin-ticket-queue:not(.compact) .admin-ticket-summary-grid span,
+.admin-ticket-queue:not(.compact) .admin-ticket-summary-grid strong,
+.admin-ticket-queue:not(.compact) .admin-ticket-summary-grid p {
+  min-width: 0 !important;
+  min-height: 0 !important;
+  height: auto !important;
+  max-height: none !important;
+  display: block !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+}
+
+/* Description: let the content determine its height. */
+.admin-ticket-queue:not(.compact) .admin-ticket-card-description {
+  min-width: 0 !important;
+  min-height: 120px !important;
+  height: auto !important;
+  max-height: none !important;
+  flex: 0 0 auto !important;
+  overflow: visible !important;
+  overflow-y: visible !important;
+  overflow-x: visible !important;
+  white-space: pre-wrap !important;
+  overflow-wrap: anywhere !important;
+  box-sizing: border-box !important;
+}
+
+/* Work timer / completed timer: do not clip the value or timestamps. */
+.admin-ticket-queue:not(.compact) .ticket-work-timer {
+  min-width: 0 !important;
+  min-height: 82px !important;
+  height: auto !important;
+  max-height: none !important;
+  flex: 0 0 auto !important;
+  overflow: visible !important;
+  box-sizing: border-box !important;
+}
+
+.admin-ticket-queue:not(.compact) .ticket-work-timer span,
+.admin-ticket-queue:not(.compact) .ticket-work-timer strong,
+.admin-ticket-queue:not(.compact) .ticket-work-timer p {
+  min-width: 0 !important;
+  min-height: 0 !important;
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+}
+
+/* Actions stay at the bottom of the stretched card but never get clipped. */
+.admin-ticket-queue:not(.compact) .admin-ticket-card-actions {
+  min-width: 0 !important;
+  min-height: 40px !important;
+  height: auto !important;
+  max-height: none !important;
+  flex: 0 0 auto !important;
+  margin-top: auto !important;
+  overflow: visible !important;
+}
+
+/* These two views explicitly use the same two-column geometry. */
+.helpdesk-view .admin-ticket-queue-grid,
+.burnout-report-view .admin-ticket-queue-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  grid-auto-rows: max-content !important;
+  align-items: stretch !important;
+}
+
+.helpdesk-view .admin-ticket-card,
+.burnout-report-view .admin-ticket-card {
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow: visible !important;
+  align-self: stretch !important;
+}
+
+/* Prevent later generic rules from re-introducing a fixed-height card. */
+.admin-ticket-queue:not(.compact) .admin-ticket-card,
+.helpdesk-view .admin-ticket-card,
+.burnout-report-view .admin-ticket-card {
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+/* Mobile: single column with completely natural card height. */
+@media (max-width: 900px) {
+  .admin-ticket-queue:not(.compact) .admin-ticket-queue-grid,
+  .helpdesk-view .admin-ticket-queue-grid,
+  .burnout-report-view .admin-ticket-queue-grid {
+    grid-template-columns: 1fr !important;
+    grid-auto-rows: max-content !important;
+    align-items: stretch !important;
+  }
+
+  .admin-ticket-queue:not(.compact) .admin-ticket-card,
+  .helpdesk-view .admin-ticket-card,
+  .burnout-report-view .admin-ticket-card {
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+  }
+}
+
+@media (max-width: 520px) {
+  .admin-ticket-queue:not(.compact) .admin-ticket-card-head,
+  .admin-ticket-queue:not(.compact) .ticket-handling-indicator,
+  .admin-ticket-queue:not(.compact) .admin-ticket-summary-grid,
+  .admin-ticket-queue:not(.compact) .admin-ticket-summary-grid > div,
+  .admin-ticket-queue:not(.compact) .ticket-work-timer {
+    min-height: 0 !important;
+    height: auto !important;
+    max-height: none !important;
+    flex-basis: auto !important;
+  }
+
+  .admin-ticket-queue:not(.compact) .admin-ticket-card-description {
+    min-height: 110px !important;
+    max-height: none !important;
+  }
+}
+
+/* ============================================================================
+   FINAL RESPONSIVE CLEANUP — TICKET CARDS + REPORT SELECTED DAY
+   --------------------------------------------------------------------------
+   Goals:
+   1. Every visible ticket in the same row has exactly the same card height.
+   2. Long ticket content never gets clipped; the variable description area
+      becomes internally scrollable instead of changing the card height.
+   3. Handling, requester, branch, timer and action content can wrap safely.
+   4. The layout remains usable at 100%, 90%, 80% and smaller zoom levels.
+   5. Report selected-day values never get clipped by nowrap/fixed widths.
+   ============================================================================ */
+
+/* -----------------------------
+   Shared text safety
+   ----------------------------- */
+.admin-ticket-queue,
+.admin-ticket-queue * {
+  min-width: 0;
+}
+
+.admin-ticket-card,
+.admin-ticket-card * {
+  box-sizing: border-box;
+}
+
+/* -----------------------------
+   Equal-height ticket grid
+   ----------------------------- */
+.admin-ticket-queue:not(.compact) .admin-ticket-queue-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  grid-auto-rows: 1fr !important;
+  align-items: stretch !important;
+  gap: 1rem !important;
+}
+
+.admin-ticket-queue:not(.compact) .admin-ticket-queue-grid > .admin-ticket-card,
+.helpdesk-view .admin-ticket-queue-grid > .admin-ticket-card,
+.burnout-report-view .admin-ticket-queue-grid > .admin-ticket-card {
+  height: 100% !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  align-self: stretch !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0.85rem !important;
+}
+
+/* The card gets one consistent desktop footprint.  The value is responsive,
+   but both cards in a row always receive the exact same grid track height. */
+.admin-ticket-queue:not(.compact) .admin-ticket-queue-grid > .admin-ticket-card {
+  min-height: clamp(560px, 68vh, 660px) !important;
+}
+
+/* -----------------------------
+   Card header / handling block
+   ----------------------------- */
+.admin-ticket-queue:not(.compact) .admin-ticket-card-head {
+  flex: 0 0 auto !important;
+  min-height: 0 !important;
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: flex-start !important;
+  gap: 0.65rem !important;
+}
+
+.admin-ticket-queue:not(.compact) .admin-ticket-title {
+  flex: 1 1 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  overflow: visible !important;
+}
+
+.admin-ticket-queue:not(.compact) .admin-ticket-title h4,
+.admin-ticket-queue:not(.compact) .admin-ticket-title p {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+  word-break: normal !important;
+}
+
+.admin-ticket-queue:not(.compact) .ticket-id {
+  max-width: 100% !important;
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  overflow-wrap: anywhere !important;
+}
+
+.admin-ticket-queue:not(.compact) .admin-inline-badges {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  flex: 1 1 auto !important;
+  justify-content: flex-start !important;
+  flex-wrap: wrap !important;
+}
+
+.admin-ticket-queue:not(.compact) .ticket-handling-indicator {
+  flex: 0 0 auto !important;
+  min-height: 76px !important;
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+  display: grid !important;
+  grid-template-columns: auto minmax(0, 1fr) !important;
+  align-items: start !important;
+}
+
+.admin-ticket-queue:not(.compact) .ticket-handling-copy {
+  min-width: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+.admin-ticket-queue:not(.compact) .ticket-handling-copy strong,
+.admin-ticket-queue:not(.compact) .ticket-handling-copy p,
+.admin-ticket-queue:not(.compact) .ticket-handling-meta,
+.admin-ticket-queue:not(.compact) .ticket-handling-title-row {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+}
+
+.admin-ticket-queue:not(.compact) .ticket-handling-title-row {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  gap: 0.4rem !important;
+}
+
+.admin-ticket-queue:not(.compact) .ticket-handling-title-row .ticket-handling-meta,
+.admin-ticket-queue:not(.compact) .ticket-handling-meta {
+  margin-left: 0 !important;
+  transform: none !important;
+  width: fit-content !important;
+  max-width: 100% !important;
+  flex: 0 1 auto !important;
+}
+
+/* -----------------------------
+   Requester / branch blocks
+   ----------------------------- */
+.admin-ticket-queue:not(.compact) .admin-ticket-summary-grid {
+  flex: 0 0 auto !important;
+  min-height: 0 !important;
+  height: auto !important;
+  max-height: none !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 0.65rem !important;
+}
+
+.admin-ticket-queue:not(.compact) .admin-ticket-summary-grid > div {
+  min-width: 0 !important;
+  min-height: 92px !important;
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+.admin-ticket-queue:not(.compact) .admin-ticket-summary-grid span,
+.admin-ticket-queue:not(.compact) .admin-ticket-summary-grid strong,
+.admin-ticket-queue:not(.compact) .admin-ticket-summary-grid p {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  display: block !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+}
+
+/* -----------------------------
+   Description = flexible content area
+   ----------------------------- */
+.admin-ticket-queue:not(.compact) .admin-ticket-card-description {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  min-height: 120px !important;
+  height: 100% !important;
+  max-height: none !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  white-space: pre-wrap !important;
+  overflow-wrap: anywhere !important;
+  word-break: normal !important;
+  scrollbar-width: thin;
+}
+
+.admin-ticket-queue:not(.compact) .admin-ticket-card-description::-webkit-scrollbar {
+  width: 6px;
+}
+
+.admin-ticket-queue:not(.compact) .admin-ticket-card-description::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.42);
+  border-radius: 999px;
+}
+
+/* -----------------------------
+   Timer / completed timer
+   ----------------------------- */
+.admin-ticket-queue:not(.compact) .ticket-work-timer {
+  flex: 0 0 auto !important;
+  min-width: 0 !important;
+  min-height: 84px !important;
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+.admin-ticket-queue:not(.compact) .ticket-work-timer span,
+.admin-ticket-queue:not(.compact) .ticket-work-timer strong,
+.admin-ticket-queue:not(.compact) .ticket-work-timer p {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+}
+
+/* -----------------------------
+   Actions / pagination
+   ----------------------------- */
+.admin-ticket-queue:not(.compact) .admin-ticket-card-actions {
+  flex: 0 0 auto !important;
+  min-width: 0 !important;
+  min-height: 40px !important;
+  height: auto !important;
+  max-height: none !important;
+  margin-top: auto !important;
+  overflow: visible !important;
+  flex-wrap: wrap !important;
+}
+
+.admin-ticket-queue:not(.compact) .admin-ticket-card-actions > * {
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+/* -----------------------------
+   Helpdesk / burnout two-column pages
+   ----------------------------- */
+.helpdesk-view .admin-ticket-queue-grid,
+.burnout-report-view .admin-ticket-queue-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  grid-auto-rows: 1fr !important;
+  align-items: stretch !important;
+  gap: 1rem !important;
+}
+
+.helpdesk-view .admin-ticket-card,
+.burnout-report-view .admin-ticket-card {
+  height: 100% !important;
+  min-height: clamp(560px, 68vh, 660px) !important;
+  max-height: none !important;
+  overflow: hidden !important;
+  align-self: stretch !important;
+}
+
+/* -----------------------------
+   Report calendar / selected day
+   ----------------------------- */
+.report-selected-day {
+  min-width: 0 !important;
+  width: 100% !important;
+  overflow: visible !important;
+}
+
+.report-selected-day-head {
+  min-width: 0 !important;
+  width: 100% !important;
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: flex-start !important;
+  justify-content: space-between !important;
+  gap: 0.45rem 0.7rem !important;
+}
+
+.report-selected-day-head span,
+.report-selected-day-head strong {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+  word-break: normal !important;
+}
+
+.report-selected-day-head span {
+  flex: 1 1 8rem !important;
+}
+
+.report-selected-day-head strong {
+  flex: 1 1 10rem !important;
+  font-size: clamp(0.86rem, 1.05vw, 1rem) !important;
+  line-height: 1.25 !important;
+  text-align: right !important;
+}
+
+.report-selected-ticket-list,
+.report-selected-ticket {
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+.report-selected-ticket strong,
+.report-selected-ticket span,
+.report-selected-ticket em {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+}
+
+.report-calendar-day {
+  min-width: 0 !important;
+  overflow: visible !important;
+}
+
+.report-calendar-day span,
+.report-calendar-day strong {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+}
+
+/* -----------------------------
+   General report/text safety
+   ----------------------------- */
+.admin-report-grid,
+.admin-report-grid > *,
+.report-calendar-card,
+.report-calendar-insights,
+.report-insight-list,
+.report-insight-item {
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+.report-insight-item strong,
+.report-insight-item span,
+.report-insight-item em {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+}
+
+/* -----------------------------
+   Responsive breakpoints
+   ----------------------------- */
+
+/* Narrow desktop / tablet landscape */
+@media (max-width: 1180px) {
+  .admin-ticket-queue:not(.compact) .admin-ticket-queue-grid,
+  .helpdesk-view .admin-ticket-queue-grid,
+  .burnout-report-view .admin-ticket-queue-grid {
+    gap: 0.8rem !important;
+  }
+
+  .admin-ticket-queue:not(.compact) .admin-ticket-card,
+  .helpdesk-view .admin-ticket-card,
+  .burnout-report-view .admin-ticket-card {
+    min-height: 600px !important;
+  }
+
+  .admin-ticket-queue:not(.compact) .ticket-work-timer strong {
+    font-size: clamp(1rem, 1.4vw, 1.2rem) !important;
+  }
+
+  .report-selected-day-head strong {
+    text-align: left !important;
+  }
+}
+
+/* Tablet */
+@media (max-width: 900px) {
+  .admin-ticket-queue:not(.compact) .admin-ticket-queue-grid,
+  .helpdesk-view .admin-ticket-queue-grid,
+  .burnout-report-view .admin-ticket-queue-grid {
+    grid-template-columns: 1fr !important;
+    grid-auto-rows: max-content !important;
+    align-items: stretch !important;
+  }
+
+  .admin-ticket-queue:not(.compact) .admin-ticket-queue-grid > .admin-ticket-card,
+  .helpdesk-view .admin-ticket-card,
+  .burnout-report-view .admin-ticket-card {
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  .admin-ticket-queue:not(.compact) .admin-ticket-card-description {
+    flex: 0 0 auto !important;
+    height: auto !important;
+    max-height: 260px !important;
+    min-height: 120px !important;
+    overflow-y: auto !important;
+  }
+
+  .admin-ticket-queue:not(.compact) .admin-ticket-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .report-selected-day-head {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr) !important;
+    align-items: start !important;
+  }
+
+  .report-selected-day-head strong {
+    text-align: right !important;
+  }
+}
+
+/* Mobile */
+@media (max-width: 640px) {
+  .admin-ticket-queue:not(.compact) .admin-ticket-card-head {
+    gap: 0.55rem !important;
+  }
+
+  .admin-ticket-queue:not(.compact) .admin-ticket-summary-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .admin-ticket-queue:not(.compact) .admin-ticket-summary-grid > div {
+    min-height: 82px !important;
+  }
+
+  .admin-ticket-queue:not(.compact) .ticket-handling-indicator {
+    min-height: 72px !important;
+  }
+
+  .admin-ticket-queue:not(.compact) .ticket-work-timer {
+    min-height: 82px !important;
+  }
+
+  .report-selected-day-head {
+    grid-template-columns: 1fr !important;
+  }
+
+  .report-selected-day-head strong {
+    text-align: left !important;
+  }
+
+  .report-calendar-grid {
+    gap: 0.22rem !important;
+  }
+
+  .report-calendar-day {
+    min-height: 52px !important;
+    padding: 0.34rem !important;
+  }
+}
+
+/* Very small phones */
+@media (max-width: 420px) {
+  .admin-ticket-queue:not(.compact) .admin-ticket-card,
+  .helpdesk-view .admin-ticket-card,
+  .burnout-report-view .admin-ticket-card {
+    padding: 0.82rem !important;
+    gap: 0.72rem !important;
+  }
+
+  .ticket-id {
+    max-width: 100% !important;
+    font-size: 0.78rem !important;
+  }
+
+  .admin-ticket-title h4 {
+    font-size: 0.98rem !important;
+  }
+
+  .admin-ticket-card-description {
+    font-size: 0.92rem !important;
+  }
+
+  .ticket-work-timer strong {
+    font-size: 1rem !important;
+  }
+}
+
+/* ============================================================================
+   FINAL PATCH — STABLE TICKET QUEUE / PRESERVE EXISTING DESIGN
+   ----------------------------------------------------------------------------
+   This patch intentionally changes ONLY the ticket queue geometry.
+
+   Goals:
+   - Preserve the existing ticket card visual design and content styling.
+   - Keep both ticket cards the same height.
+   - Keep the ticket queue geometry stable so pagination does not move.
+   - Give the card enough vertical room for the description + timer.
+   - Keep the work timer INSIDE the card.
+   - Do not introduce a scrollbar inside the ticket card.
+   - Do not override report/calendar/user/modal styling.
+   ============================================================================ */
+
+/* Queue remains full width and does not inherit a content-driven height. */
+.admin-ticket-queue {
+  width: 100%;
+  min-width: 0;
+}
+
+/* Desktop ticket row: one stable responsive height for the whole row. */
+.admin-ticket-queue:not(.compact) .admin-ticket-queue-grid,
+.helpdesk-view .admin-ticket-queue:not(.compact) .admin-ticket-queue-grid,
+.burnout-report-view .admin-ticket-queue:not(.compact) .admin-ticket-queue-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: minmax(740px, 740px);
+  grid-template-rows: 740px;
+  align-items: stretch;
+  gap: 1rem;
+}
+
+/* Every card in the row occupies the exact same reserved height.
+   No visual styling is changed here. */
+.admin-ticket-queue:not(.compact) .admin-ticket-queue-grid > .admin-ticket-card,
+.helpdesk-view .admin-ticket-queue:not(.compact) .admin-ticket-grid > .admin-ticket-card,
+.helpdesk-view .admin-ticket-queue:not(.compact) .admin-ticket-queue-grid > .admin-ticket-card,
+.burnout-report-view .admin-ticket-queue:not(.compact) .admin-ticket-queue-grid > .admin-ticket-card {
+  height: 740px;
+  min-height: 740px;
+  max-height: 740px;
+  align-self: stretch;
+  box-sizing: border-box;
+}
+
+/* IMPORTANT:
+   The card already has the correct flex-column design in the base stylesheet.
+   We only tell it to distribute its existing sections inside the reserved
+   height. We do not change fonts, colors, borders, shadows, or spacing. */
+.admin-ticket-queue:not(.compact) .admin-ticket-grid > .admin-ticket-card,
+.admin-ticket-queue:not(.compact) .admin-ticket-queue-grid > .admin-ticket-card,
+.helpdesk-view .admin-ticket-queue:not(.compact) .admin-ticket-queue-grid > .admin-ticket-card,
+.burnout-report-view .admin-ticket-queue:not(.compact) .admin-ticket-queue-grid > .admin-ticket-card {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header, handling and requester/branch sections retain natural heights. */
+.admin-ticket-queue:not(.compact) .admin-ticket-card-head,
+.helpdesk-view .admin-ticket-card-head,
+.burnout-report-view .admin-ticket-card-head,
+.admin-ticket-queue:not(.compact) .ticket-handling-indicator,
+.helpdesk-view .ticket-handling-indicator,
+.burnout-report-view .ticket-handling-indicator,
+.admin-ticket-queue:not(.compact) .admin-ticket-summary-grid,
+.helpdesk-view .admin-ticket-summary-grid,
+.burnout-report-view .admin-ticket-summary-grid {
+  flex: 0 0 auto;
+}
+
+/* The description is the ONLY flexible part of the card.
+   It fills the remaining available space instead of claiming 100% of it. */
+.admin-ticket-queue:not(.compact) .admin-ticket-card-description,
+.helpdesk-view .admin-ticket-card-description,
+.burnout-report-view .admin-ticket-card-description {
+  flex: 1 1 0;
+  min-height: 150px;
+  height: auto;
+  max-height: none;
+  overflow: visible;
+  overflow-y: visible;
+  overflow-x: visible;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  box-sizing: border-box;
+}
+
+/* Timer remains a normal flex item AFTER the description.
+   It can wrap, but it can never be pushed outside by a 100% description. */
+.admin-ticket-queue:not(.compact) .ticket-work-timer,
+.helpdesk-view .ticket-work-timer,
+.burnout-report-view .ticket-work-timer {
+  flex: 0 0 auto;
+  min-height: 88px;
+  height: auto;
+  max-height: none;
+  margin-top: 0;
+  box-sizing: border-box;
+  overflow: visible;
+}
+
+.admin-ticket-queue:not(.compact) .ticket-work-timer span,
+.admin-ticket-queue:not(.compact) .ticket-work-timer strong,
+.admin-ticket-queue:not(.compact) .ticket-work-timer p,
+.helpdesk-view .ticket-work-timer span,
+.helpdesk-view .ticket-work-timer strong,
+.helpdesk-view .ticket-work-timer p,
+.burnout-report-view .ticket-work-timer span,
+.burnout-report-view .ticket-work-timer strong,
+.burnout-report-view .ticket-work-timer p {
+  min-width: 0;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+/* Actions stay inside the card. */
+.admin-ticket-queue:not(.compact) .admin-ticket-card-actions,
+.helpdesk-view .admin-ticket-card-actions,
+.burnout-report-view .admin-ticket-card-actions {
+  flex: 0 0 auto;
+  min-height: 40px;
+  height: auto;
+  max-height: none;
+  margin-top: 0;
+}
+
+/* Stable pagination footprint. */
+.ticket-pagination {
+  flex: 0 0 auto;
+}
+
+/* --------------------------------------------------------------------------
+   Responsive sizing
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 1180px) and (min-width: 901px) {
+  .admin-ticket-queue:not(.compact) .admin-ticket-queue-grid,
+  .helpdesk-view .admin-ticket-queue:not(.compact) .admin-ticket-queue-grid,
+  .burnout-report-view .admin-ticket-queue:not(.compact) .admin-ticket-queue-grid {
+    grid-template-rows: 720px;
+    grid-auto-rows: 720px;
+  }
+
+  .admin-ticket-queue:not(.compact) .admin-ticket-queue-grid > .admin-ticket-card,
+  .helpdesk-view .admin-ticket-queue:not(.compact) .admin-ticket-queue-grid > .admin-ticket-card,
+  .burnout-report-view .admin-ticket-queue:not(.compact) .admin-ticket-queue-grid > .admin-ticket-card {
+    height: 720px;
+    min-height: 720px;
+    max-height: 720px;
+  }
+}
+
+@media (max-width: 900px) {
+  .admin-ticket-queue:not(.compact) .admin-ticket-queue-grid,
+  .helpdesk-view .admin-ticket-queue:not(.compact) .admin-ticket-queue-grid,
+  .burnout-report-view .admin-ticket-queue:not(.compact) .admin-ticket-queue-grid {
+    grid-template-columns: 1fr;
+    grid-template-rows: 700px;
+    grid-auto-rows: 700px;
+  }
+
+  .admin-ticket-queue:not(.compact) .admin-ticket-queue-grid > .admin-ticket-card,
+  .helpdesk-view .admin-ticket-queue:not(.compact) .admin-ticket-queue-grid > .admin-ticket-card,
+  .burnout-report-view .admin-ticket-queue:not(.compact) .admin-ticket-queue-grid > .admin-ticket-card {
+    height: 700px;
+    min-height: 700px;
+    max-height: 700px;
+  }
+
+  .admin-ticket-queue:not(.compact) .admin-ticket-summary-grid,
+  .helpdesk-view .admin-ticket-summary-grid,
+  .burnout-report-view .admin-ticket-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .admin-ticket-queue:not(.compact) .admin-ticket-queue-grid,
+  .helpdesk-view .admin-ticket-queue:not(.compact) .admin-ticket-queue-grid,
+  .burnout-report-view .admin-ticket-queue:not(.compact) .admin-ticket-queue-grid {
+    grid-template-rows: 720px;
+    grid-auto-rows: 720px;
+  }
+
+  .admin-ticket-queue:not(.compact) .admin-ticket-queue-grid > .admin-ticket-card,
+  .helpdesk-view .admin-ticket-queue:not(.compact) .admin-ticket-queue-grid > .admin-ticket-card,
+  .burnout-report-view .admin-ticket-queue:not(.compact) .admin-ticket-queue-grid > .admin-ticket-card {
+    height: 720px;
+    min-height: 720px;
+    max-height: 720px;
+  }
+
+  .admin-ticket-queue:not(.compact) .admin-ticket-summary-grid,
+  .helpdesk-view .admin-ticket-summary-grid,
+  .burnout-report-view .admin-ticket-summary-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 420px) {
+  .admin-ticket-queue:not(.compact) .admin-ticket-queue-grid,
+  .helpdesk-view .admin-ticket-queue:not(.compact) .admin-ticket-queue-grid,
+  .burnout-report-view .admin-ticket-queue:not(.compact) .admin-ticket-queue-grid {
+    grid-template-rows: 740px;
+    grid-auto-rows: 740px;
+  }
+
+  .admin-ticket-queue:not(.compact) .admin-ticket-queue-grid > .admin-ticket-card,
+  .helpdesk-view .admin-ticket-queue:not(.compact) .admin-ticket-queue-grid > .admin-ticket-card,
+  .burnout-report-view .admin-ticket-queue:not(.compact) .admin-ticket-queue-grid > .admin-ticket-card {
+    height: 740px;
+    min-height: 740px;
+    max-height: 740px;
+  }
+}
