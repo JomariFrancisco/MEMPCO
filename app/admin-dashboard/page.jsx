@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   BriefcaseBusiness,
@@ -780,12 +780,68 @@ const buildReportStatusSummary = (tickets = []) => {
   ];
 };
 
-const getSubmittedTime = (ticket) => {
-  const raw = ticket.createdAt || ticket.date || ticket.lastEmployeeUpdate || ticket.lastUpdated;
-  const parsed = new Date(raw || '').getTime();
+const getSubmittedTime = (ticket = {}) => {
+  const candidates = [
+    ticket.createdAt,
+    ticket.created_at,
+    ticket.submittedAt,
+    ticket.submitted_at,
+    ticket.date,
+  ];
 
-  return Number.isNaN(parsed) ? 0 : parsed;
+  for (const value of candidates) {
+    const parsed = new Date(value || '').getTime();
+    if (!Number.isNaN(parsed) && parsed > 0) return parsed;
+  }
+
+  return 0;
 };
+
+const getTicketSequenceNumber = (ticket = {}) => {
+  const candidate = String(ticket.ticketCode || ticket.id || '').trim();
+  const matches = candidate.match(/(\d+)\s*$/);
+
+  if (!matches) return Number.MIN_SAFE_INTEGER;
+
+  const sequence = Number(matches[1]);
+  return Number.isFinite(sequence) ? sequence : Number.MIN_SAFE_INTEGER;
+};
+
+/*
+ * Canonical ordering for recent-ticket surfaces.
+ *
+ * The portal ticket code is the authoritative queue sequence because the
+ * requested behavior is explicitly: 27, 26, 25 ... 1. This also prevents
+ * tickets created on the same date, imported with slightly different
+ * timestamps, or edited later from jumping into the wrong page.
+ *
+ * If a legacy record does not have a numeric ticket suffix, fall back to its
+ * original submission timestamp so the record is still displayed.
+ */
+const sortRecentTickets = (items = []) =>
+  [...items].sort((a, b) => {
+    const aSequence = getTicketSequenceNumber(a);
+    const bSequence = getTicketSequenceNumber(b);
+    const hasASequence = Number.isSafeInteger(aSequence) && aSequence >= 0;
+    const hasBSequence = Number.isSafeInteger(bSequence) && bSequence >= 0;
+
+    if (hasASequence && hasBSequence && aSequence !== bSequence) {
+      return bSequence - aSequence;
+    }
+
+    if (hasASequence !== hasBSequence) {
+      return hasBSequence ? 1 : -1;
+    }
+
+    const submittedCompare = getSubmittedTime(b) - getSubmittedTime(a);
+    if (submittedCompare !== 0) return submittedCompare;
+
+    return String(b.ticketCode || b.id || '').localeCompare(
+      String(a.ticketCode || a.id || ''),
+      undefined,
+      { numeric: true, sensitivity: 'base' }
+    );
+  });
 
 const formatReportDate = (date, options) =>
   new Intl.DateTimeFormat('en-US', options).format(date);
@@ -1369,6 +1425,9 @@ const openPrintDocument = (title, body) => {
 
 const printResolvedTicket = (ticket) => {
   const burnoutReport = isBurnoutTicket(ticket) ? normalizeBurnoutReport(ticket) : null;
+  const startedAt = getTicketWorkStartedAt(ticket);
+  const endedAt = getTicketWorkEndedAt(ticket);
+  const workTimerLabel = startedAt ? formatElapsedTime(startedAt, endedAt, Date.now()) : 'Not started';
   const printTableRows = (rows, columns) =>
     (rows || []).map((row) => `
       <tr>
@@ -1462,12 +1521,18 @@ const printResolvedTicket = (ticket) => {
     ['Resolved / Updated', ticket.adminUpdatedAt || ticket.lastUpdated || 'Not provided'],
     ['Assigned ICT Staff', ticket.technician || 'Unassigned'],
     ['Device / System', ticket.deviceName || 'Not provided'],
+    ['Contact', ticket.contactNumber || 'Not provided'],
+    ['Impact', ticket.impact || 'Not provided'],
+    ['SAAR', ticket.saarAttachment?.name || (ticket.saarRequired ? 'Required, no file found' : 'Not required')],
+    ['Work Timer', workTimerLabel],
+    ['Work Started', startedAt || 'Not started'],
+    ['Work Ended', endedAt || 'Not completed'],
   ];
   const body = `
     <main class="print-page">
       ${getPrintLetterhead()}
       <section class="doc-head">
-        <h2>Resolved Ticket Report</h2>
+        <h2>Helpdesk Ticket Report</h2>
         <div class="meta">Ticket ${escapePrintHtml(getTicketDisplayCode(ticket))}<br />Printed ${escapePrintHtml(new Date().toLocaleString())}</div>
       </section>
       <section class="grid">
@@ -1495,12 +1560,16 @@ const printResolvedTicket = (ticket) => {
           <h3 class="section-title">Admin Remarks</h3>
           <div class="note">${escapePrintHtml(ticket.adminRemarks || 'No remarks recorded.')}</div>
         </section>
+        <section>
+          <h3 class="section-title">Recommendation</h3>
+          <div class="note">${escapePrintHtml(ticket.recommendation || 'No recommendation recorded.')}</div>
+        </section>
       </div>
       ${burnoutSection}
     </main>
   `;
 
-  openPrintDocument(`Resolved Ticket ${getTicketDisplayCode(ticket)}`, body);
+  openPrintDocument(`Ticket ${getTicketDisplayCode(ticket)}`, body);
 };
 
 const getPeriodBucketForTimestamp = (timestamp, mode) => {
@@ -2395,6 +2464,7 @@ const getTicketSearchText = (ticket) =>
     ticket.actionTaken,
     ticket.adminRemarks,
     ticket.resolution,
+    ticket.recommendation,
   ]
     .filter(Boolean)
     .join(' ')
@@ -4243,25 +4313,25 @@ function ReportCalendar({
 function DashboardView({ tickets, summary, categorySummary, onGoTo, onOpenTicket, now }) {
   const [queuePage, setQueuePage] = useState(1);
   const waitingTickets = useMemo(() => {
-    const getQueueTime = (ticket) => getSubmittedTime(ticket) || normalizeDate(ticket) || Number.MAX_SAFE_INTEGER;
+    const eligibleTickets = tickets.filter((ticket) => {
+      const lockExpiresAt = new Date(ticket.lockExpiresAt || '').getTime();
+      const hasActiveLock = Boolean(
+        ticket.lockedBy &&
+        !Number.isNaN(lockExpiresAt) &&
+        lockExpiresAt > now
+      );
 
-    return tickets
-      .filter((ticket) => {
-        const lockExpiresAt = new Date(ticket.lockExpiresAt || '').getTime();
-        const hasActiveLock = Boolean(
-          ticket.lockedBy &&
-          !Number.isNaN(lockExpiresAt) &&
-          lockExpiresAt > now
-        );
+      return (
+        isUnresolved(ticket.status) &&
+        !isMovedDateTicket(ticket) &&
+        !hasActiveLock &&
+        !isTicketBeingHandled(ticket)
+      );
+    });
 
-        return (
-          isUnresolved(ticket.status) &&
-          !isMovedDateTicket(ticket) &&
-          !hasActiveLock &&
-          !isTicketBeingHandled(ticket)
-        );
-      })
-      .sort((a, b) => getQueueTime(a) - getQueueTime(b));
+    // Always sort BEFORE pagination.
+    // Example: 27 tickets -> page 1 = 27, 26; page 2 = 25, 24; ...
+    return sortRecentTickets(eligibleTickets);
   }, [tickets, now]);
   const totalQueuePages = Math.max(1, Math.ceil(waitingTickets.length / DASHBOARD_QUEUE_PAGE_SIZE));
   const currentQueuePage = Math.min(queuePage, totalQueuePages);
@@ -4281,6 +4351,11 @@ function DashboardView({ tickets, summary, categorySummary, onGoTo, onOpenTicket
   useEffect(() => {
     setQueuePage((page) => Math.min(page, totalQueuePages));
   }, [totalQueuePages]);
+
+  // A newly submitted ticket belongs on the first page immediately.
+  useEffect(() => {
+    setQueuePage(1);
+  }, [tickets.length]);
 
   return (
     <div className="dashboard-view">
@@ -6607,8 +6682,21 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
     actionTaken: ticket.actionTaken || '',
     adminRemarks: ticket.adminRemarks || '',
     resolution: ticket.resolution || '',
+    recommendation: ticket.recommendation || '',
     burnoutReport: isBurnout ? normalizeBurnoutReport(ticket, currentUser) : null,
   });
+  const [autosaveState, setAutosaveState] = useState({ status: 'idle', message: '' });
+  const autosaveTimeoutRef = useRef(null);
+  const lastAutosavedNotesRef = useRef(
+    JSON.stringify({
+      actionTaken: ticket.actionTaken || '',
+      adminRemarks: ticket.adminRemarks || '',
+      resolution: ticket.resolution || '',
+      recommendation: ticket.recommendation || '',
+    })
+  );
+  const latestDraftRef = useRef(draft);
+  const autosaveInFlightRef = useRef(null);
   const isEscalationStatus = normalizeTicketStatus(draft.status) === 'escalated';
   const staffOptions = Array.from(
     new Set([currentStaffName, assignedStaff, ...TECHNICIANS].filter((name) => name && name !== 'Unassigned'))
@@ -6617,13 +6705,17 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
     new Set(isEscalationStatus ? [...staffOptions, ...ESCALATION_PARTNERS] : staffOptions)
   );
   const visibleTechnician = technicianOptions.includes(draft.technician) ? draft.technician : 'Unassigned';
-  const canEditOutcomeFields = !isResolvedLocked && (isBurnout || normalizeTicketStatus(draft.status) !== 'in progress');
+  const canEditOutcomeFields = !isResolvedLocked;
   const lockedOutcomePlaceholder = isBurnout
     ? 'Available while the Burnout record is still active.'
     : 'Available once the ticket is updated away from In Progress.';
   const canSendConversationMessage = canTicketAcceptMessages(ticket);
   const shouldShowConversation = isTicketBeingHandled(ticket) || ticketMessages.length > 0;
   const isChatOpen = shouldShowConversation && !isChatMinimized;
+
+  useEffect(() => {
+    latestDraftRef.current = draft;
+  }, [draft]);
 
   useEffect(() => {
     isChatMinimizedRef.current = isChatMinimized;
@@ -6764,9 +6856,6 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
           ...prev,
           status: value,
           technician: ESCALATION_PARTNERS.includes(prev.technician) ? currentStaffName : prev.technician,
-          actionTaken: ticket.actionTaken || '',
-          adminRemarks: ticket.adminRemarks || '',
-          resolution: ticket.resolution || '',
         };
       }
 
@@ -6783,8 +6872,165 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
     setDraft((prev) => ({ ...prev, burnoutReport: nextReport }));
   };
 
+  const getAutosaveNotes = useCallback((sourceDraft = latestDraftRef.current) => ({
+    actionTaken: sourceDraft.actionTaken || '',
+    adminRemarks: sourceDraft.adminRemarks || '',
+    resolution: sourceDraft.resolution || '',
+    recommendation: sourceDraft.recommendation || '',
+  }), []);
+
+  const performNotesAutosave = useCallback(async ({ force = false } = {}) => {
+    if (!ticket?.id || isResolvedLocked) return null;
+
+    if (autosaveInFlightRef.current) {
+      try {
+        await autosaveInFlightRef.current;
+      } catch {
+        // The next save attempt below will surface the current result.
+      }
+    }
+
+    const notes = getAutosaveNotes();
+    const signature = JSON.stringify(notes);
+
+    if (signature === lastAutosavedNotesRef.current) {
+      return null;
+    }
+
+    setAutosaveState({ status: 'saving', message: 'Saving...' });
+
+    const timestamp = new Date().toLocaleString();
+    const savePromise = updateTicket(
+      ticket.id,
+      {
+        ...notes,
+        adminUpdatedAt: timestamp,
+      },
+      {
+        requestedByRole: currentUser?.role || 'admin',
+        updateScope: 'admin-autosave',
+        autoSave: true,
+      }
+    );
+
+    autosaveInFlightRef.current = savePromise;
+
+    try {
+      const updatedTicket = await savePromise;
+      lastAutosavedNotesRef.current = signature;
+      setAutosaveState({ status: 'saved', message: 'Saved' });
+
+      if (updatedTicket?.id) {
+        onTicketRealtimeUpdate?.(updatedTicket);
+      }
+
+      return updatedTicket;
+    } catch (error) {
+      setAutosaveState({ status: 'error', message: 'Unable to save' });
+      throw error;
+    } finally {
+      if (autosaveInFlightRef.current === savePromise) {
+        autosaveInFlightRef.current = null;
+      }
+    }
+  }, [currentUser?.role, getAutosaveNotes, isResolvedLocked, onTicketRealtimeUpdate, ticket?.id]);
+
+  const scheduleNotesAutosave = useCallback(() => {
+    if (autosaveTimeoutRef.current) {
+      window.clearTimeout(autosaveTimeoutRef.current);
+    }
+
+    autosaveTimeoutRef.current = window.setTimeout(() => {
+      autosaveTimeoutRef.current = null;
+      void performNotesAutosave().catch(() => {});
+    }, 750);
+  }, [performNotesAutosave]);
+
+  useEffect(() => {
+    if (isResolvedLocked) return undefined;
+
+    scheduleNotesAutosave();
+
+    return () => {
+      if (autosaveTimeoutRef.current) {
+        window.clearTimeout(autosaveTimeoutRef.current);
+        autosaveTimeoutRef.current = null;
+      }
+    };
+  }, [
+    draft.actionTaken,
+    draft.adminRemarks,
+    draft.resolution,
+    draft.recommendation,
+    isResolvedLocked,
+    scheduleNotesAutosave,
+  ]);
+
+  useEffect(() => {
+    if (isResolvedLocked) return undefined;
+
+    const flushAutosave = () => {
+      if (autosaveTimeoutRef.current) {
+        window.clearTimeout(autosaveTimeoutRef.current);
+        autosaveTimeoutRef.current = null;
+      }
+
+      void performNotesAutosave({ force: true }).catch(() => {});
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        flushAutosave();
+      }
+    };
+
+    window.addEventListener('beforeunload', flushAutosave);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener('beforeunload', flushAutosave);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [isResolvedLocked, performNotesAutosave]);
+
+  const handleNoteBlur = () => {
+    if (autosaveTimeoutRef.current) {
+      window.clearTimeout(autosaveTimeoutRef.current);
+      autosaveTimeoutRef.current = null;
+    }
+
+    void performNotesAutosave({ force: true }).catch(() => {});
+  };
+
+  const handleRequestClose = async () => {
+    if (autosaveTimeoutRef.current) {
+      window.clearTimeout(autosaveTimeoutRef.current);
+      autosaveTimeoutRef.current = null;
+    }
+
+    try {
+      await performNotesAutosave({ force: true });
+      onClose();
+    } catch (error) {
+      setFormError(error.message || 'Unable to autosave the latest notes. Please try again.');
+    }
+  };
+
+  const getPrintableTicketSnapshot = () => ({
+    ...ticket,
+    status: draft.status || ticket.status,
+    sla: draft.sla || ticket.sla,
+    technician: draft.technician || ticket.technician,
+    ...getAutosaveNotes(draft),
+  });
+
   const handleSubmit = (e) => {
     e.preventDefault();
+
+    if (autosaveTimeoutRef.current) {
+      window.clearTimeout(autosaveTimeoutRef.current);
+      autosaveTimeoutRef.current = null;
+    }
 
     if (isResolvedLocked) {
       setFormError(isBurnout ? 'Completed Burnout records are locked and cannot be changed.' : 'Resolved tickets are locked and cannot be changed.');
@@ -6803,9 +7049,6 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
       ? {
           ...draft,
           technician: ESCALATION_PARTNERS.includes(draft.technician) ? currentStaffName : draft.technician,
-          actionTaken: ticket.actionTaken || '',
-          adminRemarks: ticket.adminRemarks || '',
-          resolution: ticket.resolution || '',
         }
       : {
           ...draft,
@@ -6884,7 +7127,7 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
             </div>
           </div>
 
-          <button type="button" className="admin-modal-close" onClick={onClose} aria-label="Close modal">
+          <button type="button" className="admin-modal-close" onClick={handleRequestClose} aria-label="Close modal">
             &times;
           </button>
         </div>
@@ -7011,6 +7254,7 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
               className="ticket-field ticket-textarea admin-small-textarea"
               value={draft.actionTaken}
               onChange={(e) => updateDraft('actionTaken', e.target.value)}
+              onBlur={handleNoteBlur}
               placeholder={canEditOutcomeFields ? 'Write the action taken by ICT/admin...' : lockedOutcomePlaceholder}
               readOnly={!canEditOutcomeFields}
             />
@@ -7022,6 +7266,7 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
               className="ticket-field ticket-textarea admin-small-textarea"
               value={draft.adminRemarks}
               onChange={(e) => updateDraft('adminRemarks', e.target.value)}
+              onBlur={handleNoteBlur}
               placeholder={canEditOutcomeFields ? 'Write internal remarks or follow-up notes...' : lockedOutcomePlaceholder}
               readOnly={!canEditOutcomeFields}
             />
@@ -7033,7 +7278,20 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
               className="ticket-field ticket-textarea admin-small-textarea"
               value={draft.resolution}
               onChange={(e) => updateDraft('resolution', e.target.value)}
+              onBlur={handleNoteBlur}
               placeholder={canEditOutcomeFields ? (isBurnout ? 'Write unit condition, pass/fail, repair, replacement, or turnover notes...' : 'Write final resolution once completed...') : lockedOutcomePlaceholder}
+              readOnly={!canEditOutcomeFields}
+            />
+          </div>
+
+          <div className="ticket-form-group">
+            <label>Recommendation</label>
+            <textarea
+              className="ticket-field ticket-textarea admin-small-textarea"
+              value={draft.recommendation}
+              onChange={(e) => updateDraft('recommendation', e.target.value)}
+              onBlur={handleNoteBlur}
+              placeholder={canEditOutcomeFields ? 'Write any recommendation, prevention step, or follow-up action...' : lockedOutcomePlaceholder}
               readOnly={!canEditOutcomeFields}
             />
           </div>
@@ -7088,19 +7346,25 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
             </button>
           )}
 
-          {!isBurnout && isResolvedLocked && (
-            <button type="button" className="modal-btn print" onClick={() => printResolvedTicket(ticket)}>
+          <div className="ticket-action-footer-tools">
+            {!isResolvedLocked && autosaveState.message && (
+              <span className={`ticket-autosave-status ${autosaveState.status}`}>
+                {autosaveState.message}
+              </span>
+            )}
+
+            <button type="button" className="modal-btn print" onClick={() => printResolvedTicket(getPrintableTicketSnapshot())}>
               <MonoIcon icon={Printer} />
               Print Ticket
             </button>
-          )}
 
-          {!isResolvedLocked && (
-            <button type="submit" className="modal-btn confirm">
-              <MonoIcon icon={ShieldCheck} />
-              {isBurnout ? 'Save Burnout Update' : isStartMode ? 'Start Ticket' : 'Save Ticket Update'}
-            </button>
-          )}
+            {!isResolvedLocked && (
+              <button type="submit" className="modal-btn confirm">
+                <MonoIcon icon={ShieldCheck} />
+                {isBurnout ? 'Save Burnout Update' : isStartMode ? 'Start Ticket' : 'Save Ticket Update'}
+              </button>
+            )}
+          </div>
         </div>
       </form>
 
@@ -7462,22 +7726,19 @@ Current role: ${activeUser.role || 'No role found'}`
   const applyTicketFilters = (sourceTickets) => {
     const search = filters.search.toLowerCase().trim();
 
-    return sortTickets(sourceTickets)
-      .filter((ticket) => {
-        const matchesSearch = !search || getTicketSearchText(ticket).includes(search);
-        const matchesStatus = filters.status === 'All' || ticket.status === filters.status;
-        const matchesBranch = filters.branch === 'All' || ticket.branch === filters.branch;
-        const matchesCategory = filters.category === 'All' || ticket.supportCategory === filters.category;
-        const matchesSla = filters.sla === 'All' || ticket.sla === filters.sla;
+    const filtered = sourceTickets.filter((ticket) => {
+      const matchesSearch = !search || getTicketSearchText(ticket).includes(search);
+      const matchesStatus = filters.status === 'All' || ticket.status === filters.status;
+      const matchesBranch = filters.branch === 'All' || ticket.branch === filters.branch;
+      const matchesCategory = filters.category === 'All' || ticket.supportCategory === filters.category;
+      const matchesSla = filters.sla === 'All' || ticket.sla === filters.sla;
 
-        return matchesSearch && matchesStatus && matchesBranch && matchesCategory && matchesSla;
-      })
-      .sort((a, b) => {
-        const statusCompare = getStatusRank(a.status) - getStatusRank(b.status);
-        const slaCompare = getSlaRank(a.sla) - getSlaRank(b.sla);
+      return matchesSearch && matchesStatus && matchesBranch && matchesCategory && matchesSla;
+    });
 
-        return statusCompare || slaCompare || normalizeDate(b) - normalizeDate(a);
-      });
+    // Filtering first, then recent-first ordering, then pagination.
+    // This guarantees the newest matching ticket always occupies the first slot.
+    return sortRecentTickets(filtered);
   };
 
   const supportTickets = useMemo(() => sortTickets(tickets.filter((ticket) => !isBurnoutTicket(ticket))), [tickets]);

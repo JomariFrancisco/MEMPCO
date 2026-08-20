@@ -442,6 +442,7 @@ create table if not exists public.tickets (
   action_taken text not null default '',
   admin_remarks text not null default '',
   resolution text not null default '',
+  recommendation text not null default '',
   saar_required boolean not null default false,
   saar_attachment jsonb,
   photo_attachments jsonb not null default '[]'::jsonb,
@@ -485,6 +486,7 @@ add column if not exists technician text not null default 'Unassigned',
 add column if not exists action_taken text not null default '',
 add column if not exists admin_remarks text not null default '',
 add column if not exists resolution text not null default '',
+add column if not exists recommendation text not null default '',
 add column if not exists saar_required boolean not null default false,
 add column if not exists saar_attachment jsonb,
 add column if not exists photo_attachments jsonb not null default '[]'::jsonb,
@@ -533,6 +535,7 @@ set
   action_taken = coalesce(action_taken, ''),
   admin_remarks = coalesce(admin_remarks, ''),
   resolution = coalesce(resolution, ''),
+  recommendation = coalesce(recommendation, ''),
   saar_required = coalesce(saar_required, false),
   photo_attachments = coalesce(photo_attachments, '[]'::jsonb),
   burnout_report = coalesce(burnout_report, '{}'::jsonb),
@@ -563,6 +566,7 @@ alter column technician set not null,
 alter column action_taken set not null,
 alter column admin_remarks set not null,
 alter column resolution set not null,
+alter column recommendation set not null,
 alter column saar_required set not null,
 alter column photo_attachments set default '[]'::jsonb,
 alter column photo_attachments set not null,
@@ -637,6 +641,7 @@ begin
   new.action_taken := coalesce(new.action_taken, '');
   new.admin_remarks := coalesce(new.admin_remarks, '');
   new.resolution := coalesce(new.resolution, '');
+  new.recommendation := coalesce(new.recommendation, '');
   new.saar_required := coalesce(new.saar_required, false);
   new.photo_attachments := coalesce(new.photo_attachments, '[]'::jsonb);
   new.burnout_report := coalesce(new.burnout_report, '{}'::jsonb);

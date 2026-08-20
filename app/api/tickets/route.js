@@ -31,6 +31,7 @@ const TICKET_RETURN_COLUMNS = `
   action_taken,
   admin_remarks,
   resolution,
+  recommendation,
   saar_required,
   saar_attachment,
   photo_attachments,
@@ -47,6 +48,32 @@ const TICKET_RETURN_COLUMNS = `
   created_at,
   updated_at
 `;
+const OPTIONAL_TICKET_RETURN_COLUMNS = ['recommendation'];
+const stripTicketReturnColumns = (columns, columnNames = OPTIONAL_TICKET_RETURN_COLUMNS) =>
+  columnNames.reduce(
+    (nextColumns, column) => nextColumns.replace(new RegExp(`\\s*${column},\\s*`, 'm'), ''),
+    columns
+  );
+const FALLBACK_TICKET_RETURN_COLUMNS = stripTicketReturnColumns(TICKET_RETURN_COLUMNS);
+const isMissingOptionalTicketColumnError = (error) => {
+  const message = String(error?.message || '').toLowerCase();
+
+  return (
+    error?.code === '42703' ||
+    error?.code === 'PGRST204' ||
+    OPTIONAL_TICKET_RETURN_COLUMNS.some((column) => message.includes(column))
+  );
+};
+
+const selectTicketColumns = async (buildQuery) => {
+  const result = await buildQuery(TICKET_RETURN_COLUMNS);
+
+  if (!result.error || !isMissingOptionalTicketColumnError(result.error)) {
+    return result;
+  }
+
+  return buildQuery(FALLBACK_TICKET_RETURN_COLUMNS);
+};
 
 const formatDateTime = (value = new Date()) => {
   const parsedDate = new Date(value);
@@ -339,6 +366,7 @@ const isEmployeeTicketLocked = (ticket = {}) => {
       String(ticket.action_taken || '').trim() ||
       String(ticket.admin_remarks || '').trim() ||
       String(ticket.resolution || '').trim() ||
+      String(ticket.recommendation || '').trim() ||
       lockedStatuses.includes(status)
   );
 };
@@ -385,6 +413,7 @@ const updateFieldMap = {
   actionTaken: 'action_taken',
   adminRemarks: 'admin_remarks',
   resolution: 'resolution',
+  recommendation: 'recommendation',
   saarRequired: 'saar_required',
   saarAttachment: 'saar_attachment',
   photoAttachments: 'photo_attachments',
@@ -409,11 +438,13 @@ const mapUpdatesToColumns = (updates = {}) =>
   }, {});
 
 const getTicketById = async (supabase, ticketId) => {
-  const { data, error } = await supabase
-    .from('tickets')
-    .select(TICKET_RETURN_COLUMNS)
-    .eq('id', ticketId)
-    .single();
+  const { data, error } = await selectTicketColumns((columns) =>
+    supabase
+      .from('tickets')
+      .select(columns)
+      .eq('id', ticketId)
+      .single()
+  );
 
   if (error || !data) {
     throw new Error(error?.message || 'Ticket was not found.');
@@ -563,6 +594,7 @@ export async function POST(request) {
       action_taken: '',
       admin_remarks: '',
       resolution: '',
+      recommendation: '',
       saar_required: Boolean(form.saarRequired || form.saarAttachment?.name),
       saar_attachment: await processSaarAttachment(dbClient, form.saarAttachment, requesterProfile.id),
       photo_attachments: await processPhotoAttachments(dbClient, form.photoAttachments, requesterProfile.id),
@@ -586,24 +618,32 @@ export async function POST(request) {
       throw new Error('Issue Description is required.');
     }
 
-    let insertResult = await dbClient
-      .from('tickets')
-      .insert(ticketPayload)
-      .select(TICKET_RETURN_COLUMNS)
-      .single();
+    const insertTicketPayload = (payload) =>
+      selectTicketColumns((columns) =>
+        dbClient
+          .from('tickets')
+          .insert(payload)
+          .select(columns)
+          .single()
+      );
+
+    let insertPayload = ticketPayload;
+    let insertResult = await insertTicketPayload(insertPayload);
+
+    if (insertResult.error && isMissingOptionalTicketColumnError(insertResult.error)) {
+      insertPayload = { ...ticketPayload };
+      delete insertPayload.recommendation;
+      insertResult = await insertTicketPayload(insertPayload);
+    }
 
     if (insertResult.error?.code === '23505' && burnoutTicket) {
-      ticketPayload.ticket_code = await getNextBurnoutTicketCode(dbClient, {
-        branch: ticketPayload.branch,
-        brand: ticketPayload.brand,
-        deviceType: ticketPayload.device_type,
+      insertPayload.ticket_code = await getNextBurnoutTicketCode(dbClient, {
+        branch: insertPayload.branch,
+        brand: insertPayload.brand,
+        deviceType: insertPayload.device_type,
       });
 
-      insertResult = await dbClient
-        .from('tickets')
-        .insert(ticketPayload)
-        .select(TICKET_RETURN_COLUMNS)
-        .single();
+      insertResult = await insertTicketPayload(insertPayload);
     }
 
     const { data, error } = insertResult;
@@ -717,12 +757,28 @@ export async function PATCH(request) {
 
     payload = applyServerTicketStateRules(payload, currentTicket);
 
-    const { data, error } = await dbClient
-      .from('tickets')
-      .update(payload)
-      .eq('id', ticketId)
-      .select(TICKET_RETURN_COLUMNS)
-      .single();
+    const updateTicketPayload = (nextPayload) =>
+      selectTicketColumns((columns) =>
+        dbClient
+          .from('tickets')
+          .update(nextPayload)
+          .eq('id', ticketId)
+          .select(columns)
+          .single()
+      );
+
+    let updateResult = await updateTicketPayload(payload);
+
+    if (updateResult.error && isMissingOptionalTicketColumnError(updateResult.error) && payload.recommendation !== undefined) {
+      const fallbackPayload = { ...payload };
+      delete fallbackPayload.recommendation;
+
+      if (Object.keys(fallbackPayload).length) {
+        updateResult = await updateTicketPayload(fallbackPayload);
+      }
+    }
+
+    const { data, error } = updateResult;
 
     if (error) {
       throw new Error(error.message || 'Unable to update ticket.');
