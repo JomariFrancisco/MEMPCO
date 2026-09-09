@@ -203,6 +203,180 @@ after insert on auth.users
 for each row execute function public.handle_new_user();
 
 -- =====================================================
+-- PORTAL SESSION CONTROL
+-- One active portal session per account. Activity extends the session for 15 minutes.
+-- =====================================================
+
+create table if not exists public.portal_session_state (
+  user_id uuid primary key references public.profiles(id) on delete cascade,
+  session_id uuid not null,
+  last_activity_at timestamptz not null default now(),
+  expires_at timestamptz not null default (now() + interval '15 minutes'),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+alter table public.portal_session_state
+add column if not exists user_id uuid references public.profiles(id) on delete cascade,
+add column if not exists session_id uuid,
+add column if not exists last_activity_at timestamptz not null default now(),
+add column if not exists expires_at timestamptz not null default (now() + interval '15 minutes'),
+add column if not exists created_at timestamptz not null default now(),
+add column if not exists updated_at timestamptz not null default now();
+
+create index if not exists portal_session_state_expires_at_idx
+on public.portal_session_state (expires_at);
+
+alter table public.portal_session_state enable row level security;
+
+revoke all on table public.portal_session_state from anon, authenticated;
+
+create or replace function public.current_portal_session_id()
+returns uuid
+language sql
+stable
+set search_path = public
+as $$
+  select nullif(auth.jwt() ->> 'session_id', '')::uuid;
+$$;
+
+create or replace function public.is_current_auth_session()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from auth.sessions s
+    where s.id = public.current_portal_session_id()
+      and s.user_id = auth.uid()
+  );
+$$;
+
+create or replace function public.has_valid_portal_session()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from public.portal_session_state s
+    where s.user_id = auth.uid()
+      and s.session_id = public.current_portal_session_id()
+      and s.expires_at > now()
+  )
+  and public.is_current_auth_session();
+$$;
+
+create or replace function public.claim_portal_session()
+returns boolean
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  active_session_id uuid := public.current_portal_session_id();
+begin
+  if auth.uid() is null then
+    raise exception 'Login required.';
+  end if;
+
+  if active_session_id is null or not public.is_current_auth_session() then
+    raise exception 'The current login session could not be verified. Please sign in again.';
+  end if;
+
+  if not exists (select 1 from public.profiles where id = auth.uid()) then
+    raise exception 'Login succeeded, but no portal profile was found for this account.';
+  end if;
+
+  insert into public.portal_session_state (
+    user_id,
+    session_id,
+    last_activity_at,
+    expires_at,
+    updated_at
+  )
+  values (
+    auth.uid(),
+    active_session_id,
+    now(),
+    now() + interval '15 minutes',
+    now()
+  )
+  on conflict (user_id) do update set
+    session_id = excluded.session_id,
+    last_activity_at = excluded.last_activity_at,
+    expires_at = excluded.expires_at,
+    updated_at = excluded.updated_at;
+
+  return true;
+end;
+$$;
+
+create or replace function public.touch_portal_session()
+returns boolean
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  active_session_id uuid := public.current_portal_session_id();
+  session_is_active boolean := false;
+begin
+  if auth.uid() is null or active_session_id is null or not public.is_current_auth_session() then
+    return false;
+  end if;
+
+  update public.portal_session_state
+  set
+    last_activity_at = now(),
+    expires_at = now() + interval '15 minutes',
+    updated_at = now()
+  where user_id = auth.uid()
+    and session_id = active_session_id
+    and expires_at > now()
+  returning true into session_is_active;
+
+  return coalesce(session_is_active, false);
+end;
+$$;
+
+create or replace function public.is_portal_session_active()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select public.has_valid_portal_session();
+$$;
+
+create or replace function public.end_portal_session()
+returns boolean
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  active_session_id uuid := public.current_portal_session_id();
+begin
+  if auth.uid() is null or active_session_id is null then
+    return false;
+  end if;
+
+  delete from public.portal_session_state
+  where user_id = auth.uid()
+    and session_id = active_session_id;
+
+  return found;
+end;
+$$;
+
+-- =====================================================
 -- ROLE HELPERS
 -- =====================================================
 
@@ -219,6 +393,7 @@ as $$
     where id = auth.uid()
       and role::text in ('admin', 'superadmin')
       and coalesce(status, 'Active') = 'Active'
+      and public.has_valid_portal_session()
   );
 $$;
 
@@ -235,6 +410,7 @@ as $$
     where id = auth.uid()
       and role::text = 'superadmin'
       and coalesce(status, 'Active') = 'Active'
+      and public.has_valid_portal_session()
   );
 $$;
 
@@ -250,6 +426,7 @@ as $$
     from public.profiles
     where id = auth.uid()
       and coalesce(status, 'Active') = 'Active'
+      and public.has_valid_portal_session()
       and (
         role::text = 'superadmin'
         or role::text = any(allowed_roles)
@@ -325,7 +502,7 @@ alter table public.profiles enable row level security;
 drop policy if exists "Users can read own profile" on public.profiles;
 create policy "Users can read own profile"
 on public.profiles for select
-using (auth.uid() = id);
+using (auth.uid() = id and public.has_valid_portal_session());
 
 drop policy if exists "Admins can read all profiles" on public.profiles;
 create policy "Admins can read all profiles"
@@ -366,6 +543,10 @@ declare
 begin
   if auth.uid() is null then
     raise exception 'Login required.';
+  end if;
+
+  if not public.has_valid_portal_session() then
+    raise exception 'Your portal session is no longer active. Please sign in again.';
   end if;
 
   update public.profiles
@@ -685,7 +866,7 @@ alter table public.tickets enable row level security;
 drop policy if exists "Employees can read own tickets" on public.tickets;
 create policy "Employees can read own tickets"
 on public.tickets for select
-using (auth.uid() = owner_id);
+using (auth.uid() = owner_id and public.has_valid_portal_session());
 
 drop policy if exists "Admins can read all tickets" on public.tickets;
 create policy "Admins can read all tickets"
@@ -695,13 +876,13 @@ using (public.is_admin());
 drop policy if exists "Employees can create own tickets" on public.tickets;
 create policy "Employees can create own tickets"
 on public.tickets for insert
-with check (auth.uid() = owner_id);
+with check (auth.uid() = owner_id and public.has_valid_portal_session());
 
 drop policy if exists "Employees can update own tickets" on public.tickets;
 create policy "Employees can update own tickets"
 on public.tickets for update
-using (auth.uid() = owner_id)
-with check (auth.uid() = owner_id);
+using (auth.uid() = owner_id and public.has_valid_portal_session())
+with check (auth.uid() = owner_id and public.has_valid_portal_session());
 
 drop policy if exists "Admins can update tickets" on public.tickets;
 create policy "Admins can update tickets"
@@ -861,12 +1042,15 @@ drop policy if exists "Ticket participants can read ticket messages" on public.t
 create policy "Ticket participants can read ticket messages"
 on public.ticket_messages for select
 using (
-  public.is_admin()
-  or exists (
-    select 1
-    from public.tickets t
-    where t.id = ticket_messages.ticket_id
-      and t.owner_id = auth.uid()
+  public.has_valid_portal_session()
+  and (
+    public.is_admin()
+    or exists (
+      select 1
+      from public.tickets t
+      where t.id = ticket_messages.ticket_id
+        and t.owner_id = auth.uid()
+    )
   )
 );
 
@@ -874,7 +1058,8 @@ drop policy if exists "Ticket participants can create ticket messages" on public
 create policy "Ticket participants can create ticket messages"
 on public.ticket_messages for insert
 with check (
-  sender_id = auth.uid()
+  public.has_valid_portal_session()
+  and sender_id = auth.uid()
   and (
     public.is_admin()
     or exists (
@@ -975,7 +1160,7 @@ alter table public.ticket_status_events enable row level security;
 drop policy if exists "Ticket owners can read own status events" on public.ticket_status_events;
 create policy "Ticket owners can read own status events"
 on public.ticket_status_events for select
-using (auth.uid() = owner_id);
+using (auth.uid() = owner_id and public.has_valid_portal_session());
 
 drop policy if exists "Admins can read all ticket status events" on public.ticket_status_events;
 create policy "Admins can read all ticket status events"
@@ -986,12 +1171,15 @@ drop policy if exists "System can insert ticket status events" on public.ticket_
 create policy "System can insert ticket status events"
 on public.ticket_status_events for insert
 with check (
-  public.is_admin()
-  or exists (
-    select 1
-    from public.tickets t
-    where t.id = ticket_status_events.ticket_id
-      and t.owner_id = auth.uid()
+  public.has_valid_portal_session()
+  and (
+    public.is_admin()
+    or exists (
+      select 1
+      from public.tickets t
+      where t.id = ticket_status_events.ticket_id
+        and t.owner_id = auth.uid()
+    )
   )
 );
 
@@ -1081,7 +1269,7 @@ alter table public.user_notifications enable row level security;
 drop policy if exists "Users can read own notifications" on public.user_notifications;
 create policy "Users can read own notifications"
 on public.user_notifications for select
-using (auth.uid() = user_id);
+using (auth.uid() = user_id and public.has_valid_portal_session());
 
 drop policy if exists "Admins can read all notifications" on public.user_notifications;
 create policy "Admins can read all notifications"
@@ -1091,8 +1279,8 @@ using (public.is_admin());
 drop policy if exists "Users can update own notifications" on public.user_notifications;
 create policy "Users can update own notifications"
 on public.user_notifications for update
-using (auth.uid() = user_id)
-with check (auth.uid() = user_id);
+using (auth.uid() = user_id and public.has_valid_portal_session())
+with check (auth.uid() = user_id and public.has_valid_portal_session());
 
 drop policy if exists "Superadmins can delete notifications" on public.user_notifications;
 create policy "Superadmins can delete notifications"
@@ -1306,7 +1494,7 @@ alter table public.other_service_requests enable row level security;
 drop policy if exists "Employees can read own other service requests" on public.other_service_requests;
 create policy "Employees can read own other service requests"
 on public.other_service_requests for select
-using (auth.uid() = owner_id);
+using (auth.uid() = owner_id and public.has_valid_portal_session());
 
 drop policy if exists "Admins can read all other service requests" on public.other_service_requests;
 create policy "Admins can read all other service requests"
@@ -1316,13 +1504,13 @@ using (public.is_admin());
 drop policy if exists "Employees can create own other service requests" on public.other_service_requests;
 create policy "Employees can create own other service requests"
 on public.other_service_requests for insert
-with check (auth.uid() = owner_id);
+with check (auth.uid() = owner_id and public.has_valid_portal_session());
 
 drop policy if exists "Employees can update own other service requests" on public.other_service_requests;
 create policy "Employees can update own other service requests"
 on public.other_service_requests for update
-using (auth.uid() = owner_id)
-with check (auth.uid() = owner_id);
+using (auth.uid() = owner_id and public.has_valid_portal_session())
+with check (auth.uid() = owner_id and public.has_valid_portal_session());
 
 drop policy if exists "Admins can update other service requests" on public.other_service_requests;
 create policy "Admins can update other service requests"
@@ -1724,6 +1912,7 @@ to authenticated
 with check (
   bucket_id = 'profile-photos'
   and auth.uid()::text = (storage.foldername(name))[1]
+  and public.has_valid_portal_session()
 );
 
 drop policy if exists "Users can update own profile photos" on storage.objects;
@@ -1733,10 +1922,12 @@ to authenticated
 using (
   bucket_id = 'profile-photos'
   and auth.uid()::text = (storage.foldername(name))[1]
+  and public.has_valid_portal_session()
 )
 with check (
   bucket_id = 'profile-photos'
   and auth.uid()::text = (storage.foldername(name))[1]
+  and public.has_valid_portal_session()
 );
 
 drop policy if exists "Users can delete own profile photos" on storage.objects;
@@ -1746,6 +1937,7 @@ to authenticated
 using (
   bucket_id = 'profile-photos'
   and auth.uid()::text = (storage.foldername(name))[1]
+  and public.has_valid_portal_session()
 );
 
 drop policy if exists "Public can read ticket attachments" on storage.objects;
@@ -1761,6 +1953,7 @@ to authenticated
 with check (
   bucket_id = 'ticket-attachments'
   and auth.uid()::text = (storage.foldername(name))[1]
+  and public.has_valid_portal_session()
 );
 
 -- =====================================================
@@ -1827,6 +2020,11 @@ grant execute on function public.claim_ticket_lock(text, uuid, text) to authenti
 grant execute on function public.release_ticket_lock(text, uuid) to authenticated;
 grant execute on function public.delete_helpdesk_ticket(text) to authenticated;
 grant execute on function public.update_own_profile_photo(text) to authenticated;
+grant execute on function public.claim_portal_session() to authenticated;
+grant execute on function public.touch_portal_session() to authenticated;
+grant execute on function public.is_portal_session_active() to authenticated;
+grant execute on function public.end_portal_session() to authenticated;
+grant execute on function public.has_valid_portal_session() to authenticated;
 grant execute on function public.generate_ticket_id() to authenticated;
 grant execute on function public.generate_other_service_id() to authenticated;
 grant execute on function public.is_admin() to authenticated;

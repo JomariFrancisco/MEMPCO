@@ -514,8 +514,8 @@ export async function POST(request) {
 
     const authClient = await createServerClient();
     const authUser = await getRequestUser(request, authClient);
+    const profile = await getActiveProfile(authClient, authUser);
     const dbClient = hasSupabaseAdminConfig() ? createAdminClient() : authClient;
-    const profile = await getActiveProfile(dbClient, authUser);
     const submittedForUserId = String(form.submittedForUserId || '').trim();
 
     if (submittedForUserId && submittedForUserId !== authUser.id && !isSuperAdminProfile(profile)) {
@@ -681,8 +681,8 @@ export async function PATCH(request) {
 
     const authClient = await createServerClient();
     const authUser = await getRequestUser(request, authClient);
+    const profile = await getActiveProfile(authClient, authUser);
     const dbClient = hasSupabaseAdminConfig() ? createAdminClient() : authClient;
-    const profile = await getActiveProfile(dbClient, authUser);
     const currentTicket = await getTicketById(dbClient, ticketId);
     const adminProfile = isAdminProfile(profile);
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { CheckCircle2, Eye, EyeOff, LogIn } from 'lucide-react';
+import { CheckCircle2, Eye, EyeOff, LogIn, Mail } from 'lucide-react';
 import {
   completeRequiredPasswordChange,
   getCurrentPortalUser,
@@ -9,6 +9,7 @@ import {
   INACTIVE_ACCOUNT_MESSAGE,
   isInactivePortalUser,
   isPasswordChangeRequired,
+  sendPasswordResetEmail,
   signInPortal,
   signOutPortal,
   updatePortalPassword,
@@ -17,6 +18,7 @@ import './login.css';
 
 const authLoadingCopy = {
   signin: 'Securing portal access...',
+  forgot: 'Sending password reset email...',
   reset: 'Updating secure password...',
   redirect: 'Redirecting to portal...',
 };
@@ -40,6 +42,7 @@ function AuthLoadingOverlay({ label }) {
 export default function LoginPage() {
   const [authMode, setAuthMode] = useState('signin');
   const [loginForm, setLoginForm] = useState({ email: '', password: '' });
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
   const [resetForm, setResetForm] = useState({ password: '', confirmPassword: '' });
   const [forcedPasswordForm, setForcedPasswordForm] = useState({ password: '', confirmPassword: '' });
   const [forcedPasswordUser, setForcedPasswordUser] = useState(null);
@@ -92,6 +95,22 @@ export default function LoginPage() {
       setMessage({
         type: 'success',
         text: 'Enter a new password for your portal account.',
+      });
+      return;
+    }
+
+    if (params.get('reason') === 'inactive') {
+      setMessage({
+        type: 'error',
+        text: 'You were signed out after 15 minutes of inactivity.',
+      });
+      return;
+    }
+
+    if (params.get('reason') === 'session-ended') {
+      setMessage({
+        type: 'error',
+        text: 'Your portal session has ended. Please sign in again to continue.',
       });
       return;
     }
@@ -223,6 +242,31 @@ export default function LoginPage() {
     }
   };
 
+  const handleForgotPassword = async (e) => {
+    e.preventDefault();
+
+    if (isSubmitting || isRedirecting) return;
+
+    setIsSubmitting(true);
+    setLoadingLabel(authLoadingCopy.forgot);
+    setMessage({ type: '', text: '' });
+
+    try {
+      await sendPasswordResetEmail(forgotPasswordEmail);
+      setMessage({
+        type: 'success',
+        text: 'If an account uses this email address, a password reset link has been sent. Check your inbox and spam folder.',
+      });
+    } catch (error) {
+      setMessage({
+        type: 'error',
+        text: error.message || 'Unable to send a password reset email. Please try again.',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleUpdatePassword = async (e) => {
     e.preventDefault();
 
@@ -278,6 +322,10 @@ export default function LoginPage() {
   };
 
   const switchMode = (mode) => {
+    if (mode === 'forgot') {
+      setForgotPasswordEmail(loginForm.email);
+    }
+
     setAuthMode(mode);
     setMessage({ type: '', text: '' });
   };
@@ -373,7 +421,62 @@ export default function LoginPage() {
                     </button>
 
                     <p className="auth-switch-text">
+                      <button
+                        type="button"
+                        className="text-link"
+                        onClick={() => switchMode('forgot')}
+                        disabled={isBusy}
+                      >
+                        Forgot password?
+                      </button>
+                    </p>
+
+                    <p className="auth-switch-text">
                       Need access? Contact the MEMPCO admin office.
+                    </p>
+                  </form>
+
+                  <form
+                    onSubmit={handleForgotPassword}
+                    className={`auth-form forgot-password-form ${authMode === 'forgot' ? 'active' : ''}`}
+                  >
+                    <div className="auth-form-head">
+                      <span className="auth-kicker">Password Reset</span>
+                      <h2>Forgot your password?</h2>
+                      <p>Enter your email address and we will send a password reset link.</p>
+                    </div>
+
+                    <div className="form-grid single">
+                      <div className="form-group">
+                        <label htmlFor="forgot-password-email">Email Address</label>
+                        <input
+                          id="forgot-password-email"
+                          type="email"
+                          required
+                          autoComplete="email"
+                          placeholder="Enter your email"
+                          value={forgotPasswordEmail}
+                          onChange={(e) => setForgotPasswordEmail(e.target.value)}
+                          disabled={isBusy}
+                        />
+                      </div>
+                    </div>
+
+                    <button type="submit" className="auth-submit-btn login-submit-btn" disabled={isBusy}>
+                      <AuthButtonIcon icon={Mail} />
+                      {isBusy ? 'Sending reset link...' : 'Send Reset Link'}
+                    </button>
+
+                    <p className="auth-switch-text">
+                      Return to{' '}
+                      <button
+                        type="button"
+                        className="text-link"
+                        onClick={() => switchMode('signin')}
+                        disabled={isBusy}
+                      >
+                        sign in
+                      </button>
                     </p>
                   </form>
 
