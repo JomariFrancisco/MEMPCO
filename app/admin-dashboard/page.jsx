@@ -94,7 +94,7 @@ const REPORT_PERIOD_OPTIONS = [
   { key: 'month', label: 'Month', title: 'Tickets by Month', meta: 'Monthly trend' },
 ];
 const REPORT_PERIOD_PAGE_SIZE = 8;
-const DASHBOARD_QUEUE_PAGE_SIZE = 2;
+const DASHBOARD_QUEUE_PAGE_SIZE = 3;
 const SELECTED_DAY_TICKET_PAGE_SIZE = 2;
 const PHOTO_MAX_SIZE = 4 * 1024 * 1024;
 const PHOTO_MAX_COUNT = 5;
@@ -838,6 +838,53 @@ const sortRecentTickets = (items = []) =>
 
     return String(b.ticketCode || b.id || '').localeCompare(
       String(a.ticketCode || a.id || ''),
+      undefined,
+      { numeric: true, sensitivity: 'base' }
+    );
+  });
+
+const getTicketQueueSlaRank = (ticket = {}) => {
+  const sla = String(ticket.sla || '').trim().toLowerCase();
+
+  if (sla === 'critical') return 0;
+  if (sla === 'high') return 1;
+  return 2;
+};
+
+// Critical and High SLA tickets are escalated first. Low and Medium tickets
+// continue in first-come-first-served order, and other ticket surfaces retain
+// their existing newest-first ordering.
+const sortTicketQueueFirstComeFirstServed = (items = []) =>
+  [...items].sort((a, b) => {
+    const slaCompare = getTicketQueueSlaRank(a) - getTicketQueueSlaRank(b);
+    if (slaCompare !== 0) return slaCompare;
+
+    const aSubmittedAt = getSubmittedTime(a);
+    const bSubmittedAt = getSubmittedTime(b);
+
+    if (aSubmittedAt && bSubmittedAt && aSubmittedAt !== bSubmittedAt) {
+      return aSubmittedAt - bSubmittedAt;
+    }
+
+    if (aSubmittedAt !== bSubmittedAt) {
+      return aSubmittedAt ? -1 : 1;
+    }
+
+    const aSequence = getTicketSequenceNumber(a);
+    const bSequence = getTicketSequenceNumber(b);
+    const hasASequence = Number.isSafeInteger(aSequence) && aSequence >= 0;
+    const hasBSequence = Number.isSafeInteger(bSequence) && bSequence >= 0;
+
+    if (hasASequence && hasBSequence && aSequence !== bSequence) {
+      return aSequence - bSequence;
+    }
+
+    if (hasASequence !== hasBSequence) {
+      return hasASequence ? -1 : 1;
+    }
+
+    return String(a.ticketCode || a.id || '').localeCompare(
+      String(b.ticketCode || b.id || ''),
       undefined,
       { numeric: true, sensitivity: 'base' }
     );
@@ -2708,6 +2755,38 @@ const formatTicketLockTime = (value) => {
   });
 };
 
+const formatTicketHandlingTimestamp = (value) => {
+  const parsed = parsePortalTimestamp(value);
+
+  if (!parsed) return String(value || '');
+
+  return new Intl.DateTimeFormat('en-PH', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(parsed);
+};
+
+const formatTicketQueueDateTime = (value) => {
+  const parsed = parsePortalTimestamp(value);
+
+  if (!parsed) return String(value || 'Submitted');
+
+  const date = new Intl.DateTimeFormat('en-PH', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  }).format(parsed);
+  const time = new Intl.DateTimeFormat('en-PH', {
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(parsed);
+
+  return `${date} • ${time}`;
+};
+
 const getTicketHandlingState = (ticket = {}) => {
   const activeLock = isTicketLockActive(ticket);
   const lockOwner = String(ticket.lockedByName || '').trim() || 'IT staff';
@@ -2742,7 +2821,9 @@ const getTicketHandlingState = (ticket = {}) => {
       icon: ShieldCheck,
       title: closedTitle,
       detail: assignedTechnician ? `Handled by ${assignedTechnician}` : 'ICT action recorded',
-      meta: endedAt ? `Ended ${endedAt}` : ticket.lastUpdated || ticket.adminUpdatedAt || '',
+      meta: endedAt
+        ? `Ended ${formatTicketHandlingTimestamp(endedAt)}`
+        : formatTicketHandlingTimestamp(ticket.lastUpdated || ticket.adminUpdatedAt),
     };
   }
 
@@ -2766,7 +2847,9 @@ const getTicketHandlingState = (ticket = {}) => {
       icon: Clock3,
       title: 'Queued for inspection',
       detail: assignedTechnician ? `Assigned to ${assignedTechnician}` : 'ICT review is underway',
-      meta: startedAt ? `Started ${startedAt}` : ticket.lastUpdated || '',
+      meta: startedAt
+        ? `Started ${formatTicketHandlingTimestamp(startedAt)}`
+        : formatTicketHandlingTimestamp(ticket.lastUpdated),
     };
   }
 
@@ -2776,7 +2859,9 @@ const getTicketHandlingState = (ticket = {}) => {
       icon: Monitor,
       title: 'Under burnout monitoring',
       detail: assignedTechnician ? `Assigned to ${assignedTechnician}` : 'Unit is being monitored',
-      meta: startedAt ? `Started ${startedAt}` : ticket.lastUpdated || '',
+      meta: startedAt
+        ? `Started ${formatTicketHandlingTimestamp(startedAt)}`
+        : formatTicketHandlingTimestamp(ticket.lastUpdated),
     };
   }
 
@@ -2785,7 +2870,9 @@ const getTicketHandlingState = (ticket = {}) => {
     icon: status === 'escalated' ? ExternalLink : Wrench,
     title: status === 'moved date' ? 'Scheduled work' : 'Being catered',
     detail: assignedTechnician ? `Assigned to ${assignedTechnician}` : 'ICT has started work',
-    meta: startedAt ? `Started ${startedAt}` : ticket.lastUpdated || '',
+    meta: startedAt
+      ? `Started ${formatTicketHandlingTimestamp(startedAt)}`
+      : formatTicketHandlingTimestamp(ticket.lastUpdated),
   };
 };
 
@@ -3201,7 +3288,13 @@ function AdminProfileView({
   );
 }
 
-function TicketHandlingIndicator({ ticket, compact = false, inline = false, metaPlacement = 'inline' }) {
+function TicketHandlingIndicator({
+  ticket,
+  compact = false,
+  inline = false,
+  metaPlacement = 'inline',
+  primaryOnly = false,
+}) {
   const handlingState = getTicketHandlingState(ticket);
 
   if (!handlingState) return null;
@@ -3212,6 +3305,7 @@ function TicketHandlingIndicator({ ticket, compact = false, inline = false, meta
     handlingState.detail,
     handlingState.meta,
   ].filter(Boolean).join('\n');
+  const displayedHandlingLabel = primaryOnly ? handlingState.title : fullHandlingLabel;
 
   return (
     <div
@@ -3221,22 +3315,29 @@ function TicketHandlingIndicator({ ticket, compact = false, inline = false, meta
         compact ? 'compact' : '',
         inline ? 'inline' : '',
         showMetaBelow ? 'meta-below' : '',
+        primaryOnly ? 'primary-only' : '',
       ].filter(Boolean).join(' ')}
-      aria-label={fullHandlingLabel.replace(/\n/g, '. ')}
-      data-handling-summary={fullHandlingLabel}
-      title={fullHandlingLabel}
+      aria-label={displayedHandlingLabel.replace(/\n/g, '. ')}
+      data-handling-summary={displayedHandlingLabel}
+      title={displayedHandlingLabel}
     >
-      <span className="ticket-handling-icon">
-        <MonoIcon icon={handlingState.icon} />
-      </span>
-      <div className="ticket-handling-copy">
-        <div className="ticket-handling-title-row">
-          <strong>{handlingState.title}</strong>
-          {!showMetaBelow && handlingState.meta && <span className="ticket-handling-meta">{handlingState.meta}</span>}
-        </div>
-        <p>{handlingState.detail}</p>
-        {showMetaBelow && handlingState.meta && <span className="ticket-handling-meta">{handlingState.meta}</span>}
-      </div>
+      {primaryOnly ? (
+        <strong>{handlingState.title}</strong>
+      ) : (
+        <>
+          <span className="ticket-handling-icon">
+            <MonoIcon icon={handlingState.icon} />
+          </span>
+          <div className="ticket-handling-copy">
+            <div className="ticket-handling-title-row">
+              <strong>{handlingState.title}</strong>
+              {!showMetaBelow && handlingState.meta && <span className="ticket-handling-meta">{handlingState.meta}</span>}
+            </div>
+            <p>{handlingState.detail}</p>
+            {showMetaBelow && handlingState.meta && <span className="ticket-handling-meta">{handlingState.meta}</span>}
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -3754,6 +3855,8 @@ function TicketConversationPanel({
 function TicketWorkTimer({ ticket, now, compact = false }) {
   const startedAt = getTicketWorkStartedAt(ticket);
   const endedAt = getTicketWorkEndedAt(ticket);
+  const startedAtLabel = formatTicketHandlingTimestamp(startedAt);
+  const endedAtLabel = formatTicketHandlingTimestamp(endedAt);
 
   if (!startedAt) return null;
 
@@ -3768,8 +3871,8 @@ function TicketWorkTimer({ ticket, now, compact = false }) {
       <strong>{formatElapsedTime(startedAt, endedAt, now)}</strong>
       {!compact && (
         <p>
-          Started {startedAt}
-          {endedAt ? ` · Ended ${endedAt}` : ''}
+          Started {startedAtLabel}
+          {endedAt ? ` - Ended ${endedAtLabel}` : ''}
         </p>
       )}
     </div>
@@ -3784,9 +3887,11 @@ function TicketStatusTools({
   inline = false,
   className = '',
   metaPlacement = 'inline',
+  indicatorPrimaryOnly = false,
+  showTimer = true,
 }) {
   const hasIndicator = Boolean(getTicketHandlingState(ticket));
-  const hasTimer = Boolean(getTicketWorkStartedAt(ticket));
+  const hasTimer = showTimer && Boolean(getTicketWorkStartedAt(ticket));
 
   if (!hasIndicator && !hasTimer) return null;
 
@@ -3804,14 +3909,15 @@ function TicketStatusTools({
         compact={compact}
         inline={inline}
         metaPlacement={metaPlacement}
+        primaryOnly={indicatorPrimaryOnly}
       />
-      <TicketWorkTimer ticket={ticket} now={now} compact={timerCompact} />
+      {showTimer && <TicketWorkTimer ticket={ticket} now={now} compact={timerCompact} />}
     </div>
   );
 }
 
-function TicketPagination({ page, totalPages, totalItems, pageSize, onPageChange }) {
-  if (totalPages <= 1) return null;
+function TicketPagination({ page, totalPages, totalItems, pageSize, onPageChange, alwaysShow = false }) {
+  if (totalPages <= 1 && !alwaysShow) return null;
 
   const start = (page - 1) * pageSize + 1;
   const end = Math.min(page * pageSize, totalItems);
@@ -3846,10 +3952,72 @@ function TicketPagination({ page, totalPages, totalItems, pageSize, onPageChange
   );
 }
 
+function TicketQueueSummaryRow({ ticket, onOpenTicket }) {
+  const ticketCode = getTicketDisplayCode(ticket);
+  const concernType = ticket.concernType || 'Unspecified concern';
+  const description = String(ticket.description || '').trim() || 'No description provided';
+  const sla = ticket.sla || 'Low';
+  const submittedAt = ticket.createdAt || ticket.date || '';
+  const submittedAtLabel = formatTicketQueueDateTime(submittedAt);
+  const requester = ticket.requester || ticket.ownerEmail || 'Employee';
+  const branch = ticket.branch || 'Unspecified';
+  const department = ticket.department || 'No department';
+
+  return (
+    <article
+      className="ticket-queue-summary-row"
+      role="button"
+      tabIndex={0}
+      aria-label={`View ticket ${ticketCode}: ${concernType}. ${description}. SLA ${sla}. Submitted ${submittedAtLabel}. Requester ${requester}, branch ${branch}, department ${department}.`}
+      onClick={() => onOpenTicket(ticket)}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          onOpenTicket(ticket);
+        }
+      }}
+    >
+      <div className="ticket-queue-summary-primary">
+        <div className="ticket-queue-summary-identity">
+          <span className="ticket-id ticket-queue-summary-id">{ticketCode}</span>
+          <span className={`priority ticket-queue-summary-sla ${slugify(sla)}`} title={`SLA: ${sla}`}>
+            {sla}
+          </span>
+        </div>
+        <span className="ticket-queue-summary-date" title={formatTicketHandlingTimestamp(submittedAt)}>
+          {submittedAtLabel}
+        </span>
+      </div>
+
+      <div className="ticket-queue-summary-problem">
+        <strong className="ticket-queue-summary-concern" title={concernType}>{concernType}</strong>
+        <span className="ticket-queue-summary-description" title={description}>{description}</span>
+      </div>
+
+      <div className="ticket-queue-summary-details">
+        <span className="ticket-queue-summary-detail" title={`Requester: ${requester}`}>
+          <strong>Requester:</strong>
+          <span>{requester}</span>
+        </span>
+        <span className="ticket-queue-summary-detail" title={`Branch: ${branch}`}>
+          <strong>Branch:</strong>
+          <span>{branch}</span>
+        </span>
+        <span className="ticket-queue-summary-detail" title={`Department: ${department}`}>
+          <strong>Department:</strong>
+          <span>{department}</span>
+        </span>
+      </div>
+    </article>
+  );
+}
+
 function TicketTable({
   tickets,
   onOpenTicket,
   compact = false,
+  queueSummary = false,
+  renderPagination = true,
   handlingMetaPlacement = 'inline',
   emptyTitle = 'No tickets found',
   emptyDescription = 'New employee requests will appear here once submitted.',
@@ -3860,7 +4028,7 @@ function TicketTable({
   const visibleTickets = pagination ? pagination.tickets : tickets;
 
   return (
-    <div className={`admin-ticket-queue${compact ? ' compact' : ''}`}>
+    <div className={`admin-ticket-queue${compact ? ' compact' : ''}${queueSummary ? ' queue-summary' : ''}`}>
       {tickets.length === 0 && (
         <div className="empty-state">
           <div className="empty-icon"><MonoIcon icon={FileText} /></div>
@@ -3873,7 +4041,10 @@ function TicketTable({
         <>
           <div className="admin-ticket-queue-grid">
             {visibleTickets.map((ticket) => (
-              <article
+              queueSummary ? (
+                <TicketQueueSummaryRow key={ticket.id} ticket={ticket} onOpenTicket={onOpenTicket} />
+              ) : (
+                <article
                 key={ticket.id}
                 className="admin-ticket-card"
                 role="button"
@@ -3936,17 +4107,19 @@ function TicketTable({
                     {renderExtraActions(ticket)}
                   </div>
                 )}
-              </article>
+                </article>
+              )
             ))}
           </div>
 
-          {pagination && (
+          {pagination && renderPagination && (
             <TicketPagination
               page={pagination.page}
               totalPages={pagination.totalPages}
               totalItems={pagination.totalItems}
               pageSize={pagination.pageSize}
               onPageChange={pagination.onPageChange}
+              alwaysShow={pagination.alwaysShow}
             />
           )}
         </>
@@ -4329,9 +4502,8 @@ function DashboardView({ tickets, summary, categorySummary, onGoTo, onOpenTicket
       );
     });
 
-    // Always sort BEFORE pagination.
-    // Example: 27 tickets -> page 1 = 27, 26; page 2 = 25, 24; ...
-    return sortRecentTickets(eligibleTickets);
+    // Critical, then High SLA tickets are escalated; remaining tickets stay FIFO.
+    return sortTicketQueueFirstComeFirstServed(eligibleTickets);
   }, [tickets, now]);
   const totalQueuePages = Math.max(1, Math.ceil(waitingTickets.length / DASHBOARD_QUEUE_PAGE_SIZE));
   const currentQueuePage = Math.min(queuePage, totalQueuePages);
@@ -4374,7 +4546,7 @@ function DashboardView({ tickets, summary, categorySummary, onGoTo, onOpenTicket
 
       <div className="dashboard-columns equal-columns">
         <div className="dashboard-stack">
-          <section className="panel-card glass equal-panel">
+          <section className="panel-card glass equal-panel ticket-queue-panel">
             <div className="section-head">
               <div>
                 <span className="section-kicker">Ticket Queue</span>
@@ -4385,6 +4557,8 @@ function DashboardView({ tickets, summary, categorySummary, onGoTo, onOpenTicket
             <TicketTable
               tickets={waitingTickets}
               onOpenTicket={onOpenTicket}
+              queueSummary
+              renderPagination={false}
               emptyTitle="No new tickets waiting"
               emptyDescription="Newly submitted tickets will appear here before ICT starts catering them."
               now={now}
@@ -4398,6 +4572,19 @@ function DashboardView({ tickets, summary, categorySummary, onGoTo, onOpenTicket
               }}
             />
           </section>
+
+          {waitingTickets.length > 0 && (
+            <div className="ticket-queue-pagination-outside">
+              <TicketPagination
+                page={currentQueuePage}
+                totalPages={totalQueuePages}
+                totalItems={waitingTickets.length}
+                pageSize={DASHBOARD_QUEUE_PAGE_SIZE}
+                onPageChange={setQueuePage}
+                alwaysShow
+              />
+            </div>
+          )}
         </div>
 
         <div className="dashboard-stack">
@@ -7122,6 +7309,8 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
                 timerCompact
                 inline
                 metaPlacement="below"
+                indicatorPrimaryOnly
+                showTimer={false}
                 className="ticket-action-status-tools title-row-tools"
               />
             </div>
@@ -7132,6 +7321,7 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
           </button>
         </div>
 
+        <div className="ticket-action-scroll-content">
         <div className="admin-modal-grid ticket-action-info-grid">
           <div className="ticket-meta-cell">
             <span>Ticket Code</span>
@@ -7178,10 +7368,6 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
           <div className="ticket-meta-cell">
             <span>Contact</span>
             <p>{ticket.contactNumber || 'Not provided'}</p>
-          </div>
-          <div className="ticket-meta-cell">
-            <span>Impact</span>
-            <p>{ticket.impact || 'Not provided'}</p>
           </div>
           <div className="ticket-meta-cell">
             <span>SAAR</span>
@@ -7337,6 +7523,7 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
         )}
 
         {formError && <div className="form-error">{formError}</div>}
+        </div>
 
         <div className="modal-footer">
           {canDelete && (
