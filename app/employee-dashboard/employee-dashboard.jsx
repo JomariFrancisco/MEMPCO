@@ -1551,153 +1551,178 @@ function EmployeeTicketDetailModal({
   const canEditTicket = canEmployeeEditTicket(ticket);
   const employeeStatusLabel = getEmployeeTicketStatusLabel(ticket.status);
   const closedTicketMessage = getEmployeeClosedTicketMessage(ticket);
-  const isClosedTicket = Boolean(closedTicketMessage);
   const lockReason =
     closedTicketMessage ||
     ticket.employeeLockReason ||
     ticket.employeeEditLockReason ||
     'Locked because ICT is already handling this ticket.';
-  const lastUpdated = ticket.lastUpdated || ticket.lastEmployeeUpdate || ticket.date || ticket.createdAt || 'Not available';
+  const hasAttachments = Boolean(ticket.saarAttachment?.name || ticket.photoAttachments?.length > 0);
   const isChatOpen = shouldShowConversation && !isChatMinimized;
-  const statusPanelTitle = canEditTicket
-    ? 'This request can still be edited.'
-    : isClosedTicket
-      ? 'This request has been completed.'
-      : 'ICT is already handling this request.';
-  const statusPanelDescription = canEditTicket
-    ? 'You may update the ticket while it is still pending review.'
-    : lockReason;
+  const requesterName = ticket.requester || user?.fullName || user?.name || user?.email || 'Employee';
+  const submittedLabel = ticket.createdAt || ticket.date || 'Submitted';
+  const assignedStaff = ticket.technician || ticket.assignedTo || 'Unassigned';
+  const saarLabel =
+    ticket.saarAttachment?.name ||
+    (ticket.saarRequired ? 'Required, no file found' : 'Not required');
 
   return (
     <div
       className={[
         'modal-overlay',
         'employee-ticket-action-overlay',
+        'ticket-action-overlay',
         isChatOpen ? 'chat-open' : '',
       ].filter(Boolean).join(' ')}
       role="dialog"
       aria-modal="true"
       aria-label="Ticket details"
     >
-      <article className="modal-box glass employee-admin-modal-box employee-ticket-modal">
-        {/* Header — mirrors admin ticket-action-head */}
-        <div className="admin-modal-head ticket-action-head">
-          <div>
-            <div className="ticket-action-title-row">
-              <span className="ticket-id">{getTicketDisplayCode(ticket)}</span>
+      <article
+        className={[
+          'modal-box glass employee-admin-modal-box employee-ticket-modal ticket-action-modal is-support-modal',
+          hasAttachments ? 'has-attachments' : '',
+        ].filter(Boolean).join(' ')}
+      >
+        {/* Admin-identical modal header */}
+        <div className="admin-modal-head ticket-action-head employee-admin-ticket-head">
+          <div className="ticket-action-head-main">
+            <div className="ticket-action-identity-group">
+              <span className="ticket-id employee-admin-ticket-id">
+                {getTicketDisplayCode(ticket)}
+              </span>
+
               <div className="ticket-action-title-copy">
-                <h3>{ticket.concernType}</h3>
-                <p>{ticket.branch} - {ticket.department}</p>
+                <h3>{ticket.concernType || 'Helpdesk Ticket'}</h3>
+                <p>{ticket.branch || 'No branch'} - {ticket.department || 'No department'}</p>
+              </div>
+            </div>
+
+            <div className="ticket-action-header-status employee-ticket-action-header-status" aria-label="Ticket status">
+              <div className={`employee-admin-status-badge ${slugify(employeeStatusLabel)}`}>
+                <strong>{employeeStatusLabel}</strong>
               </div>
             </div>
           </div>
 
-          <button type="button" className="admin-modal-close" onClick={onClose} aria-label="Close modal">
+          <button
+            type="button"
+            className="admin-modal-close"
+            onClick={onClose}
+            aria-label="Close modal"
+          >
             &times;
           </button>
         </div>
 
-        {/* Status panel — mirrors admin ticket-action-status-panel */}
-        <div className="admin-workflow-box ticket-action-status-panel">
-          <div className="ticket-action-workflow-copy">
-            <span className="section-kicker">Employee Ticket</span>
-            <h4>{statusPanelTitle}</h4>
-            <p>{statusPanelDescription}</p>
-          </div>
-
-          <div className="employee-ticket-status-stack" aria-label="Ticket status">
-            <span className={`status ${slugify(employeeStatusLabel)}`}>
-              {employeeStatusLabel}
-            </span>
-            <span className={`priority ${slugify(ticket.sla)}`}>{ticket.sla}</span>
-            {isMbwinRequest(ticket) && <span className="status saar">SAAR Required</span>}
-          </div>
-        </div>
-
-        {/* Info grid — mirrors admin ticket-action-info-grid */}
-        <div className="admin-modal-grid ticket-action-info-grid">
+        <div className="ticket-action-scroll-content employee-admin-scroll-content">
+          {/* Same 4-column / 2-row information grid used by the Admin modal */}
+          <div className="admin-modal-grid ticket-action-info-grid employee-admin-info-grid">
           <div className="ticket-meta-cell">
             <span>Ticket Code</span>
             <p>{getTicketDisplayCode(ticket)}</p>
           </div>
+
           <div className="ticket-meta-cell">
-            <span>Branch</span>
-            <p>{ticket.branch || 'Not specified'}</p>
+            <span>Requester</span>
+            <p>{requesterName}</p>
           </div>
+
           <div className="ticket-meta-cell">
-            <span>Department</span>
-            <p>{ticket.department || 'Not specified'}</p>
+            <span>Employee ID</span>
+            <p>{ticket.employeeId || user?.employeeId || 'Not provided'}</p>
           </div>
+
           <div className="ticket-meta-cell">
             <span>Support Category</span>
             <p>{ticket.supportCategory || 'Unspecified'}</p>
           </div>
+
           <div className="ticket-meta-cell">
             <span>Submitted</span>
-            <p>{ticket.createdAt || ticket.date || 'Submitted'}</p>
+            <p>{submittedLabel}</p>
           </div>
+
           <div className="ticket-meta-cell">
             <span>Device / System</span>
             <p>{ticket.deviceName || 'Not specified'}</p>
           </div>
-          {ticket.brand && (
-            <div className="ticket-meta-cell">
-              <span>Brand & Model</span>
-              <p>{ticket.brand}</p>
-            </div>
-          )}
-          {ticket.serialNumber && (
-            <div className="ticket-meta-cell">
-              <span>Serial Number</span>
-              <p>{ticket.serialNumber}</p>
-            </div>
-          )}
-          {ticket.custodian && (
-            <div className="ticket-meta-cell">
-              <span>Custodian</span>
-              <p>{ticket.custodian}</p>
-            </div>
-          )}
+
           <div className="ticket-meta-cell">
             <span>Contact</span>
             <p>{ticket.contactNumber || 'Not specified'}</p>
           </div>
+
           <div className="ticket-meta-cell">
-            <span>Impact</span>
-            <p>{ticket.impact || 'Not specified'}</p>
-          </div>
-          <div className="ticket-meta-cell">
-            <span>Assigned Technician</span>
-            <p>{ticket.technician || 'Unassigned'}</p>
+            <span>SAAR</span>
+            <p>{saarLabel}</p>
           </div>
         </div>
 
-        {/* Details row — mirrors admin ticket-action-details-row */}
-        <div className="ticket-action-details-row">
+        {/* Same description + right-side status control layout as Admin */}
+        <div className="ticket-action-details-row employee-admin-details-row">
           <div className="admin-description-box ticket-action-description">
             <span>Description of Problem</span>
-            <p style={{ whiteSpace: 'pre-wrap' }}>{ticket.description || 'No description provided.'}</p>
+            <p>{ticket.description || 'No description provided.'}</p>
           </div>
 
-          <div className="ticket-action-control-stack employee-ticket-update-stack">
-            <div className="employee-update-note">
-              <span>ICT Action</span>
-              <p>{ticket.actionTaken || 'No action recorded yet.'}</p>
+          <div className="ticket-action-control-stack employee-ticket-update-stack employee-admin-control-stack">
+            <div className="ticket-form-group">
+              <label>Status</label>
+              <div className="ticket-field ticket-input employee-admin-readonly-field">
+                {employeeStatusLabel}
+              </div>
             </div>
-            <div className="employee-update-note">
-              <span>Remarks</span>
-              <p>{ticket.adminRemarks || 'No remarks yet.'}</p>
+
+            <div className="ticket-form-group">
+              <label>SLA</label>
+              <div className="ticket-field ticket-input employee-admin-readonly-field">
+                {ticket.sla || 'Low'}
+              </div>
             </div>
-            <div className="employee-update-note">
-              <span>Resolution</span>
-              <p>{ticket.resolution || 'No resolution yet.'}</p>
+
+            <div className="ticket-form-group">
+              <label>Assigned ICT Staff</label>
+              <div className="ticket-field ticket-input employee-admin-readonly-field">
+                {assignedStaff}
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Attachments */}
+        {/* Read-only Employee view, but using the exact Admin notes-field presentation */}
+        <div className="ticket-action-notes-grid employee-admin-notes-grid">
+          <div className="ticket-form-group">
+            <label>Action Taken</label>
+            <div className="ticket-field ticket-textarea admin-small-textarea employee-admin-readonly-textarea">
+              {ticket.actionTaken || 'No action recorded yet.'}
+            </div>
+          </div>
+
+          <div className="ticket-form-group">
+            <label>Admin Remarks</label>
+            <div className="ticket-field ticket-textarea admin-small-textarea employee-admin-readonly-textarea">
+              {ticket.adminRemarks || 'No remarks yet.'}
+            </div>
+          </div>
+
+          <div className="ticket-form-group">
+            <label>Resolution Notes</label>
+            <div className="ticket-field ticket-textarea admin-small-textarea employee-admin-readonly-textarea">
+              {ticket.resolution || 'No resolution yet.'}
+            </div>
+          </div>
+
+          <div className="ticket-form-group">
+            <label>Recommendation</label>
+            <div className="ticket-field ticket-textarea admin-small-textarea employee-admin-readonly-textarea">
+              {ticket.recommendation || 'No recommendation recorded yet.'}
+            </div>
+          </div>
+        </div>
+
+        {/* Existing Employee attachments remain available; only their presentation is synchronized. */}
         {(ticket.saarAttachment?.name || ticket.photoAttachments?.length > 0) && (
-          <div className="ticket-action-attachments-row">
+          <div className="ticket-action-attachments-row employee-admin-attachments-row">
             {ticket.saarAttachment?.name && (
               <div className="admin-attachment-box">
                 <div>
@@ -1716,7 +1741,10 @@ function EmployeeTicketDetailModal({
               <div className="admin-attachment-box admin-photo-attachment-box">
                 <div>
                   <strong>Photo / Screenshot Attachments</strong>
-                  <p>{ticket.photoAttachments.length} photo{ticket.photoAttachments.length === 1 ? '' : 's'} attached for ICT review</p>
+                  <p>
+                    {ticket.photoAttachments.length} photo
+                    {ticket.photoAttachments.length === 1 ? '' : 's'} attached for ICT review
+                  </p>
                 </div>
                 <PhotoAttachmentGallery photos={ticket.photoAttachments} emptyText="" />
               </div>
@@ -1724,26 +1752,31 @@ function EmployeeTicketDetailModal({
           </div>
         )}
 
-        <p className="modal-date-note">Last updated: {lastUpdated}</p>
+        </div>
 
-        {/* Footer — mirrors admin modal-footer */}
-        <div className="modal-footer">
-          <button type="button" className="modal-btn cancel" onClick={onClose}>
-            Close
-          </button>
-
+        {/* Same Admin footer geometry; Employee-only actions are preserved. */}
+        <div className="modal-footer employee-admin-modal-footer">
           {canEditTicket ? (
-            <button type="button" className="modal-btn confirm" onClick={onEdit}>
+            <button
+              type="button"
+              className="modal-btn employee-admin-footer-btn"
+              onClick={onEdit}
+            >
               <MonoIcon icon={PenLine} />
               Edit Ticket
             </button>
           ) : (
-            <span className="ticket-locked-pill modal-locked-pill">{lockReason}</span>
+            <span
+              className="ticket-locked-pill modal-locked-pill employee-admin-lock-pill"
+              title={lockReason}
+            >
+              {lockReason}
+            </span>
           )}
         </div>
       </article>
 
-      {/* Floating chat — shown when chat is open (same pattern as admin) */}
+      {/* Existing Employee conversation behavior is unchanged. */}
       {isChatOpen && (
         <TicketConversationPanel
           ticket={ticket}
@@ -1764,7 +1797,6 @@ function EmployeeTicketDetailModal({
         />
       )}
 
-      {/* Chat launcher button — shown when chat is minimized (same as admin) */}
       {shouldShowConversation && isChatMinimized && (
         <button
           type="button"
@@ -2273,6 +2305,7 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
   const [formError, setFormError] = useState('');
   const [photoPasteNotice, setPhotoPasteNotice] = useState('');
   const [ticketPage, setTicketPage] = useState(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Conversation state — matches admin pattern exactly
   const [ticketMessages, setTicketMessages] = useState([]);
@@ -2287,6 +2320,7 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
   const isChatMinimizedRef = useRef(true);
   const currentUserIdRef = useRef(user?.id || '');
   const ticketMessageIdsRef = useRef(new Set());
+  const ticketSubmissionInFlightRef = useRef(false);
 
   const queueCount = tickets.filter(isEmployeeQueueTicket).length;
   const activeCount = tickets.filter((ticket) => isUnresolved(ticket.status)).length;
@@ -2326,7 +2360,7 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
 
   const shouldShowConversation = Boolean(viewTicket);
 
-  useBodyScrollLock(showConfirm || Boolean(successNotice));
+  useBodyScrollLock(showConfirm || Boolean(successNotice) || Boolean(viewTicket));
 
   useEffect(() => {
     if (viewTicket || showConfirm || successNotice || typeof document === 'undefined') return undefined;
@@ -2729,12 +2763,19 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
   const handleSubmit = (e) => {
     e.preventDefault();
 
+    if (isSubmitting || showConfirm || ticketSubmissionInFlightRef.current) return;
+
     if (!validateForm()) return;
 
     setShowConfirm(true);
   };
 
   const confirmSubmit = async () => {
+    if (ticketSubmissionInFlightRef.current) return;
+
+    ticketSubmissionInFlightRef.current = true;
+    setIsSubmitting(true);
+
     const wasEditing = Boolean(editingId);
     const cleanDescription = sanitizeDescriptionForSubmit(form.description, form);
     const finalImpact = deriveTicketImpact(form);
@@ -2766,16 +2807,23 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
       setFormError('');
       setShowConfirm(false);
       setTab('tickets');
-      await reloadTickets();
       setSuccessNotice({
         title: wasEditing ? 'Ticket Updated' : 'Ticket Submitted',
         message: wasEditing
           ? 'Your ticket changes were saved successfully and sent back to ICT for review.'
           : 'Your ticket has been submitted successfully. ICT will review your concern and update the ticket status.',
       });
+
+      // The write has completed, so refresh the list without delaying confirmation.
+      void Promise.resolve()
+        .then(() => reloadTickets?.())
+        .catch(() => {});
     } catch (error) {
       setFormError(error.message || 'Unable to save ticket. Please try again.');
       setShowConfirm(false);
+    } finally {
+      ticketSubmissionInFlightRef.current = false;
+      setIsSubmitting(false);
     }
   };
 
@@ -2898,7 +2946,7 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
         </div>
 
         {tab === 'tickets' && (
-          <div className="ticket-list compact-ticket-grid">
+          <div className="employee-ticket-queue">
             {tickets.length === 0 ? (
               <div className="empty-state">
                 <div className="empty-icon"><MonoIcon icon={Ticket} /></div>
@@ -2907,107 +2955,109 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
               </div>
             ) : (
               <>
-                {pagedTickets.map((ticket) => {
-                  const employeeStatusLabel = getEmployeeTicketStatusLabel(ticket.status);
-                  const requesterName = getCompactTicketRequester(ticket, user);
-                  const startedLabel = formatCompactDateTime(ticket.workStartedAt);
-                  const endedLabel = formatCompactDateTime(ticket.workEndedAt);
-                  const durationLabel = formatCompactDuration(ticket.workStartedAt, ticket.workEndedAt);
-                  const hasWorkSummary = Boolean(ticket.workStartedAt || ticket.workEndedAt || durationLabel);
-                  const assignedStaff = ticket.technician || ticket.assignedTo;
-                  const handlingCopy = assignedStaff ? `Handled by ${assignedStaff}` : 'Awaiting ICT assignment';
+                <div className="employee-ticket-queue-grid">
+                  {pagedTickets.map((ticket) => {
+                    const employeeStatusLabel = getEmployeeTicketStatusLabel(ticket.status);
+                    const requesterName = getCompactTicketRequester(ticket, user);
+                    const startedLabel = formatCompactDateTime(ticket.workStartedAt);
+                    const endedLabel = formatCompactDateTime(ticket.workEndedAt);
+                    const durationLabel = formatCompactDuration(ticket.workStartedAt, ticket.workEndedAt);
+                    const hasWorkSummary = Boolean(ticket.workStartedAt || ticket.workEndedAt || durationLabel);
+                    const assignedStaff = ticket.technician || ticket.assignedTo;
+                    const handlingCopy = assignedStaff ? `Handled by ${assignedStaff}` : 'Awaiting ICT assignment';
+                    const handlingTone =
+                      employeeStatusLabel === 'Resolved'
+                        ? 'done'
+                        : employeeStatusLabel === 'In Progress'
+                          ? 'active'
+                          : employeeStatusLabel === 'Escalated'
+                            ? 'escalated'
+                            : employeeStatusLabel === 'Cancelled'
+                              ? 'cancelled'
+                              : 'queued';
+                    const handlingMeta = endedLabel
+                      ? `Ended ${endedLabel}`
+                      : startedLabel
+                        ? `Started ${startedLabel}`
+                        : '';
 
-                  return (
-                    <div key={ticket.id} className="ticket-card compact-ticket-card">
-                      <div className="compact-ticket-top">
-                        <span className="ticket-id">{getTicketDisplayCode(ticket)}</span>
-                        <h4>{ticket.concernType}</h4>
-                        <span className="ticket-date">{getCompactTicketDate(ticket)}</span>
-                      </div>
+                    return (
+                      <article
+                        key={ticket.id}
+                        className="employee-admin-ticket-card"
+                        role="button"
+                        tabIndex={0}
+                        aria-label={`View ticket ${getTicketDisplayCode(ticket)}`}
+                        onClick={() => openTicketDetails(ticket)}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault();
+                            openTicketDetails(ticket);
+                          }
+                        }}
+                      >
+                        <div className="employee-admin-ticket-card-head">
+                          <div className="employee-admin-ticket-title">
+                            <span className="ticket-id">{getTicketDisplayCode(ticket)}</span>
+                            <h4>{ticket.concernType}</h4>
+                            <p>{getCompactTicketDate(ticket)}</p>
+                          </div>
 
-                      <div className="ticket-badges">
-                        <span className={`status ${slugify(employeeStatusLabel)}`}>
-                          {employeeStatusLabel}
-                        </span>
-                        <span className={`priority ${slugify(ticket.sla)}`}>{ticket.sla}</span>
-                        {isMbwinRequest(ticket) && <span className="status saar">SAAR Required</span>}
-                      </div>
-
-                      <div className="compact-ticket-status-box">
-                        <span className="compact-status-icon"><MonoIcon icon={ShieldCheck} /></span>
-                        <div>
-                          <strong>{employeeStatusLabel}</strong>
-                          <p>{handlingCopy}</p>
-                          {endedLabel && <span>Ended {endedLabel}</span>}
-                          {!endedLabel && startedLabel && <span>Started {startedLabel}</span>}
+                          <div className="ticket-badges employee-admin-inline-badges">
+                            <span className={`status ${slugify(employeeStatusLabel)}`}>
+                              {employeeStatusLabel}
+                            </span>
+                            <span className={`priority ${slugify(ticket.sla || 'Low')}`}>
+                              {ticket.sla || 'Low'}
+                            </span>
+                            {isMbwinRequest(ticket) && <span className="status saar">SAAR Required</span>}
+                          </div>
                         </div>
-                      </div>
 
-                      <div className="ticket-meta-grid compact-ticket-meta-grid">
-                        <div className="ticket-meta-cell">
-                          <span><MonoIcon icon={UserRound} />Requester</span>
-                          <p>{requesterName}</p>
-                          <small>{ticket.department || user.department || 'Department not set'}</small>
+                        <div className={`employee-admin-handling-indicator ${handlingTone}`}>
+                          <span className="employee-admin-handling-icon">
+                            <MonoIcon icon={ShieldCheck} />
+                          </span>
+                          <div className="employee-admin-handling-copy">
+                            <strong>{employeeStatusLabel}</strong>
+                            <p>{handlingCopy}</p>
+                            {handlingMeta && (
+                              <span className="employee-admin-handling-meta">{handlingMeta}</span>
+                            )}
+                          </div>
                         </div>
-                        <div className="ticket-meta-cell">
-                          <span><MonoIcon icon={Building2} />Branch</span>
-                          <p>{ticket.branch || user.branch || user.office || 'Branch not set'}</p>
-                          <small>{ticket.supportCategory || 'Support category not set'}</small>
+
+                        <div className="employee-admin-ticket-summary-grid">
+                          <div>
+                            <span><MonoIcon icon={UserRound} />Requester</span>
+                            <strong>{requesterName}</strong>
+                            <p>{ticket.department || user.department || 'Department not set'}</p>
+                          </div>
+                          <div>
+                            <span><MonoIcon icon={Building2} />Branch</span>
+                            <strong>{ticket.branch || user.branch || user.office || 'Branch not set'}</strong>
+                            <p>{ticket.supportCategory || 'Support category not set'}</p>
+                          </div>
                         </div>
-                      </div>
 
-                      <p className="ticket-description compact-ticket-description">{ticket.description}</p>
+                        <p className="employee-admin-ticket-description">
+                          {ticket.description || 'No description provided.'}
+                        </p>
 
-                    {ticket.saarAttachment?.name && (
-                      <div className="ticket-attachment-note">
-                        <strong>SAAR PDF Attached</strong>
-                        <p>{ticket.saarAttachment.name} · {ticket.saarAttachment.sizeLabel}</p>
-                      </div>
-                    )}
-
-                    {ticket.photoAttachments?.length > 0 && (
-                      <div className="ticket-attachment-note">
-                        <strong>Photo Attachments</strong>
-                        <p>{ticket.photoAttachments.length} photo{ticket.photoAttachments.length === 1 ? '' : 's'} attached for ICT review.</p>
-                      </div>
-                    )}
-
-                      {ticket.actionTaken && (
-                        <div className="ticket-admin-note compact-ticket-admin-note">
-                          <strong>ICT Action Taken</strong>
-                          <p>{ticket.actionTaken}</p>
-                        </div>
-                      )}
-
-                      {hasWorkSummary && (
-                        <div className="compact-work-summary">
-                          <span><MonoIcon icon={Clock3} />Work Completed</span>
-                          {durationLabel && <strong>{durationLabel}</strong>}
-                          <p>
-                            {startedLabel ? `Started ${startedLabel}` : 'Started time not recorded'}
-                            {endedLabel ? ` - Ended ${endedLabel}` : ''}
-                          </p>
-                        </div>
-                      )}
-
-                      <div className="ticket-footer">
-                        <button type="button" className="ticket-action-btn" onClick={() => openTicketDetails(ticket)}>
-                          <MonoIcon icon={Eye} />
-                          View Details
-                        </button>
-
-                        {canEmployeeEditTicket(ticket) ? (
-                          <button type="button" className="ticket-action-btn" onClick={() => handleEdit(ticket)}>
-                            <MonoIcon icon={PenLine} />
-                            Edit
-                          </button>
-                        ) : (
-                          <span className="ticket-locked-pill">Locked</span>
+                        {hasWorkSummary && (
+                          <div className="employee-admin-ticket-work-timer">
+                            <span><MonoIcon icon={Clock3} />Work Completed</span>
+                            {durationLabel && <strong>{durationLabel}</strong>}
+                            <p>
+                              {startedLabel ? `Started ${startedLabel}` : 'Started time not recorded'}
+                              {endedLabel ? ` - Ended ${endedLabel}` : ''}
+                            </p>
+                          </div>
                         )}
-                      </div>
-                    </div>
-                  );
-                })}
+                      </article>
+                    );
+                  })}
+                </div>
 
                 <TicketPagination
                   page={currentPage}
@@ -3230,9 +3280,14 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
 
             {formError && <div className="form-error">{formError}</div>}
 
-            <button type="submit" className="auth-submit-btn">
+            <button
+              type="submit"
+              className="auth-submit-btn"
+              disabled={isSubmitting || showConfirm}
+              aria-busy={isSubmitting}
+            >
               <MonoIcon icon={editingId ? PenLine : Send} />
-              {editingId ? 'Save Ticket Changes' : 'Submit Ticket'}
+              {isSubmitting ? (editingId ? 'Saving Ticket...' : 'Submitting Ticket...') : (editingId ? 'Save Ticket Changes' : 'Submit Ticket')}
             </button>
           </form>
         )}
@@ -3261,12 +3316,23 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
             </div>
 
             <div className="modal-footer">
-              <button type="button" className="modal-btn cancel" onClick={() => setShowConfirm(false)}>
+              <button
+                type="button"
+                className="modal-btn cancel"
+                onClick={() => setShowConfirm(false)}
+                disabled={isSubmitting}
+              >
                 Cancel
               </button>
-              <button type="button" className="modal-btn confirm" onClick={confirmSubmit}>
+              <button
+                type="button"
+                className="modal-btn confirm"
+                onClick={confirmSubmit}
+                disabled={isSubmitting}
+                aria-busy={isSubmitting}
+              >
                 <MonoIcon icon={editingId ? PenLine : Send} />
-                {editingId ? 'Save Changes' : 'Confirm Submission'}
+                {isSubmitting ? (editingId ? 'Saving...' : 'Submitting...') : (editingId ? 'Save Changes' : 'Confirm Submission')}
               </button>
             </div>
           </div>
