@@ -195,7 +195,6 @@ export const DEVICE_OPTIONS = [
   'Server',
   'MBWin / Sky360',
   'Excel / Office Application',
-  'Application Account',
   'Other ICT Device',
 ];
 

@@ -228,8 +228,45 @@ const getBurnoutBranchCode = (branch) =>
   BURNOUT_BRANCH_CODES[String(branch || '').trim().toLowerCase()] ||
   normalizeCodePart(branch, 'BR');
 
+const normalizeComparable = (value = '') =>
+  String(value || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '');
+
 const isBurnoutTicket = (form = {}) =>
-  String(form.supportCategory || '').trim().toLowerCase() === 'burnout';
+  normalizeComparable(form.supportCategory) === 'burnout';
+
+const isOtherIctRequest = (supportCategory = '') =>
+  normalizeComparable(supportCategory) === 'otherictrequest';
+
+const isAdminDepartment = (department = '') =>
+  normalizeComparable(department) === 'admin';
+
+const getTicketRequestContext = (form = {}) =>
+  [form.supportCategory, form.concernType, form.deviceName, form.description]
+    .map((value) => String(value || '').trim().toLowerCase())
+    .join(' ');
+
+const isMbwinSky360Request = (form = {}) => {
+  const context = getTicketRequestContext(form);
+
+  return ['mbwin', 'sky360', 'mb win', 'mbwim', 'mb wim'].some((keyword) => context.includes(keyword));
+};
+
+const isMbwinTellerRoleModificationRequest = (form = {}) => {
+  if (!isMbwinSky360Request(form)) return false;
+
+  const requestText = getTicketRequestContext(form).replace(/[^a-z0-9]+/g, ' ');
+  const referencesRole = /\b(?:teller\s+)?(?:user\s+)?role\b/.test(requestText);
+  const requestsModification = /\b(?:modify|modification|change|update|amend|add|remove)\b/.test(requestText);
+
+  return referencesRole && requestsModification;
+};
+
+const hasStoredSaarAttachment = (attachment) =>
+  Boolean(
+    attachment &&
+      typeof attachment === 'object' &&
+      (attachment.dataUrl || attachment.url || attachment.publicUrl || attachment.path)
+  );
 
 const getNextBurnoutTicketCode = async (supabase, { branch, brand, deviceType }) => {
   const branchCode = getBurnoutBranchCode(branch);
@@ -527,13 +564,35 @@ export async function POST(request) {
         ? await getProfileById(dbClient, submittedForUserId)
         : profile;
 
+    const supportCategory = String(form.supportCategory || '').trim();
+
+    if (!supportCategory) {
+      throw new Error('Support category is required.');
+    }
+
+    if (!isAdminProfile(profile) && isOtherIctRequest(supportCategory)) {
+      throw new Error('Other ICT Request is no longer available for employee accounts.');
+    }
+
+    const burnoutTicket = isBurnoutTicket({ supportCategory });
+
+    if (burnoutTicket && !isAdminDepartment(requesterProfile.department)) {
+      throw new Error('Burnout requests can only be submitted by accounts registered under the Admin department.');
+    }
+
+    const saarRequired = isMbwinTellerRoleModificationRequest(form);
+    const saarAttachment = await processSaarAttachment(dbClient, form.saarAttachment, requesterProfile.id);
+
+    if (saarRequired && !hasStoredSaarAttachment(saarAttachment)) {
+      throw new Error('SAAR PDF attachment is required when modifying an MBWin / Sky360 teller role.');
+    }
+
     const now = new Date();
-    const burnoutTicket = isBurnoutTicket(form);
     const deviceType = form.deviceType || form.deviceName || '';
     const affectedBranch = String(form.branch || '').trim();
     const affectedDepartment = String(form.department || '').trim();
     const derivedImpact = deriveTicketImpact({
-      supportCategory: form.supportCategory || (burnoutTicket ? 'Burnout' : ''),
+      supportCategory,
       concernType: form.concernType || (burnoutTicket ? 'Helpdesk Burnout' : ''),
       deviceName: form.deviceName,
       deviceType,
@@ -581,7 +640,7 @@ export async function POST(request) {
       brand: burnoutTicket ? normalizeCodePart(form.brand, '') : form.brand || '',
       device_type: burnoutTicket ? normalizeDeviceCode(deviceType, '') : form.deviceType || '',
       serial_number: String(form.serialNumber || '').trim().toUpperCase(),
-      support_category: form.supportCategory || 'Other ICT Request',
+      support_category: supportCategory,
       concern_type: form.concernType || (burnoutTicket ? 'Helpdesk Burnout' : 'Concern not listed'),
       device_name: deviceType || '',
       contact_number: form.contactNumber || requesterProfile.phone || '',
@@ -595,8 +654,8 @@ export async function POST(request) {
       admin_remarks: '',
       resolution: '',
       recommendation: '',
-      saar_required: Boolean(form.saarRequired || form.saarAttachment?.name),
-      saar_attachment: await processSaarAttachment(dbClient, form.saarAttachment, requesterProfile.id),
+      saar_required: saarRequired,
+      saar_attachment: saarAttachment,
       photo_attachments: await processPhotoAttachments(dbClient, form.photoAttachments, requesterProfile.id),
       date_label: formatDateOnly(now),
       last_employee_update: form.lastEmployeeUpdate || formatDateTime(now),
@@ -711,6 +770,31 @@ export async function PATCH(request) {
 
     const nextUpdates = { ...updates };
 
+    if (nextUpdates.supportCategory !== undefined) {
+      const supportCategory = String(nextUpdates.supportCategory || '').trim();
+      const categoryChanged =
+        normalizeComparable(supportCategory) !== normalizeComparable(currentTicket.support_category);
+
+      if (!supportCategory) {
+        throw new Error('Support category is required.');
+      }
+
+      if (categoryChanged && !isAdminProfile(profile) && isOtherIctRequest(supportCategory)) {
+        throw new Error('Other ICT Request is no longer available for employee accounts.');
+      }
+
+      if (categoryChanged && isBurnoutTicket({ supportCategory })) {
+        const ticketOwnerProfile =
+          currentTicket.owner_id === profile.id
+            ? profile
+            : await getProfileById(dbClient, currentTicket.owner_id);
+
+        if (!isAdminDepartment(ticketOwnerProfile.department)) {
+          throw new Error('Burnout requests can only be submitted by accounts registered under the Admin department.');
+        }
+      }
+    }
+
     if (!adminProfile) {
       const derivedImpact = deriveTicketImpact({
         supportCategory: nextUpdates.supportCategory || currentTicket.support_category,
@@ -747,6 +831,34 @@ export async function PATCH(request) {
         nextUpdates.saarAttachment,
         currentTicket.owner_id
       );
+    }
+
+    const shouldRecalculateSaarRequirement = [
+      'supportCategory',
+      'concernType',
+      'deviceName',
+      'description',
+      'saarAttachment',
+      'saarRequired',
+    ].some((field) => Object.prototype.hasOwnProperty.call(nextUpdates, field));
+
+    if (shouldRecalculateSaarRequirement) {
+      const saarRequired = isMbwinTellerRoleModificationRequest({
+        supportCategory: nextUpdates.supportCategory ?? currentTicket.support_category,
+        concernType: nextUpdates.concernType ?? currentTicket.concern_type,
+        deviceName: nextUpdates.deviceName ?? currentTicket.device_name,
+        description: nextUpdates.description ?? currentTicket.description,
+      });
+      const saarAttachment =
+        nextUpdates.saarAttachment !== undefined
+          ? nextUpdates.saarAttachment
+          : currentTicket.saar_attachment;
+
+      if (saarRequired && !hasStoredSaarAttachment(saarAttachment)) {
+        throw new Error('SAAR PDF attachment is required when modifying an MBWin / Sky360 teller role.');
+      }
+
+      nextUpdates.saarRequired = saarRequired;
     }
 
     let payload = mapUpdatesToColumns(nextUpdates);

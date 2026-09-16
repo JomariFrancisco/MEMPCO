@@ -703,7 +703,7 @@ set
   brand = coalesce(brand, ''),
   device_type = coalesce(device_type, ''),
   serial_number = coalesce(serial_number, ''),
-  support_category = coalesce(nullif(support_category, ''), 'Other ICT Request'),
+  support_category = coalesce(nullif(support_category, ''), 'Legacy ICT Request'),
   concern_type = coalesce(nullif(concern_type, ''), 'Concern not listed'),
   device_name = coalesce(device_name, ''),
   contact_number = coalesce(contact_number, ''),
@@ -764,6 +764,11 @@ set search_path = public
 as $$
 declare
   active_profile public.profiles;
+  actor_profile public.profiles;
+  owner_profile public.profiles;
+  category_changed boolean := false;
+  ticket_context text := '';
+  saar_required_for_request boolean := false;
 begin
   if TG_OP = 'INSERT' then
     if new.owner_id is null then
@@ -796,7 +801,45 @@ begin
     new.created_at := coalesce(new.created_at, now());
   end if;
 
-  new.support_category := coalesce(nullif(new.support_category, ''), 'Other ICT Request');
+  new.support_category := nullif(trim(coalesce(new.support_category, '')), '');
+
+  if new.support_category is null then
+    raise exception 'Support category is required.';
+  end if;
+
+  if TG_OP = 'INSERT' then
+    category_changed := true;
+  else
+    category_changed := new.support_category is distinct from old.support_category;
+  end if;
+
+  if category_changed then
+    select *
+    into owner_profile
+    from public.profiles
+    where id = new.owner_id;
+
+    if lower(new.support_category) = 'burnout'
+      and (
+        owner_profile.id is null
+        or regexp_replace(lower(coalesce(owner_profile.department, '')), '[^a-z0-9]+', '', 'g') <> 'admin'
+      ) then
+      raise exception 'Burnout requests can only be submitted by accounts registered under the Admin department.';
+    end if;
+
+    if auth.uid() is not null then
+      select *
+      into actor_profile
+      from public.profiles
+      where id = auth.uid();
+
+      if lower(new.support_category) = 'other ict request'
+        and coalesce(actor_profile.role::text, 'employee') not in ('admin', 'superadmin') then
+        raise exception 'Other ICT Request is no longer available for employee accounts.';
+      end if;
+    end if;
+  end if;
+
   new.concern_type := coalesce(nullif(new.concern_type, ''), 'Concern not listed');
   new.ticket_code := nullif(new.ticket_code, '');
   new.custodian := coalesce(new.custodian, '');
@@ -823,7 +866,24 @@ begin
   new.admin_remarks := coalesce(new.admin_remarks, '');
   new.resolution := coalesce(new.resolution, '');
   new.recommendation := coalesce(new.recommendation, '');
-  new.saar_required := coalesce(new.saar_required, false);
+  ticket_context := lower(concat_ws(
+    ' ',
+    new.support_category,
+    new.concern_type,
+    new.device_name,
+    new.description
+  ));
+  saar_required_for_request :=
+    ticket_context ~ '(mbwin|mb[[:space:]]+win|sky360|mbwim|mb[[:space:]]+wim)'
+    and ticket_context ~ '(^|[[:space:]])(teller[[:space:]]+)?(user[[:space:]]+)?role([[:space:]]|$)'
+    and ticket_context ~ '(^|[[:space:]])(modify|modification|change|update|amend|add|remove)([[:space:]]|$)';
+
+  if saar_required_for_request
+    and coalesce(nullif(new.saar_attachment ->> 'dataUrl', ''), nullif(new.saar_attachment ->> 'url', ''), nullif(new.saar_attachment ->> 'publicUrl', ''), nullif(new.saar_attachment ->> 'path', '')) is null then
+    raise exception 'SAAR PDF attachment is required when modifying an MBWin / Sky360 teller role.';
+  end if;
+
+  new.saar_required := saar_required_for_request;
   new.photo_attachments := coalesce(new.photo_attachments, '[]'::jsonb);
   new.burnout_report := coalesce(new.burnout_report, '{}'::jsonb);
   new.updated_at := now();
@@ -894,6 +954,65 @@ drop policy if exists "Superadmins can delete tickets" on public.tickets;
 create policy "Superadmins can delete tickets"
 on public.tickets for delete
 using (public.is_superadmin());
+
+-- =====================================================
+-- EMPLOYEE HELP DESK QUEUE STATUS
+-- Calculates each employee's own position in the active ICT review queue.
+-- Higher SLA / priority tickets are reviewed first, then oldest submissions.
+-- =====================================================
+
+create or replace function public.get_my_ticket_queue_status()
+returns table (
+  ticket_id text,
+  queue_position integer,
+  queue_size integer
+)
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  with waiting_tickets as (
+    select
+      t.id,
+      t.owner_id,
+      (row_number() over (
+        order by
+          case lower(coalesce(nullif(trim(t.priority), ''), nullif(trim(t.sla), ''), 'low'))
+            when 'critical' then 1
+            when 'high' then 2
+            when 'medium' then 3
+            else 4
+          end,
+          t.created_at asc,
+          t.id asc
+      ))::integer as queue_position,
+      (count(*) over ())::integer as queue_size
+    from public.tickets t
+    where trim(lower(regexp_replace(
+      regexp_replace(coalesce(t.status, ''), '[-_]+', ' ', 'g'),
+      '[[:space:]]+',
+      ' ',
+      'g'
+    ))) in ('created', 'submitted', 'pending', 'modified')
+      and lower(coalesce(nullif(trim(t.technician), ''), 'unassigned')) = 'unassigned'
+      and t.work_started_at is null
+      and nullif(trim(coalesce(t.action_taken, '')), '') is null
+      and nullif(trim(coalesce(t.admin_remarks, '')), '') is null
+      and nullif(trim(coalesce(t.resolution, '')), '') is null
+      and nullif(trim(coalesce(t.recommendation, '')), '') is null
+      and lower(trim(coalesce(t.support_category, ''))) <> 'burnout'
+  )
+  select
+    waiting_tickets.id,
+    waiting_tickets.queue_position,
+    waiting_tickets.queue_size
+  from waiting_tickets
+  where waiting_tickets.owner_id = auth.uid()
+    and public.has_valid_portal_session();
+$$;
+
+revoke all on function public.get_my_ticket_queue_status() from public;
 
 -- =====================================================
 -- TICKET LOCKING RPC
@@ -2019,6 +2138,7 @@ grant insert on public.job_applications to anon;
 grant execute on function public.claim_ticket_lock(text, uuid, text) to authenticated;
 grant execute on function public.release_ticket_lock(text, uuid) to authenticated;
 grant execute on function public.delete_helpdesk_ticket(text) to authenticated;
+grant execute on function public.get_my_ticket_queue_status() to authenticated;
 grant execute on function public.update_own_profile_photo(text) to authenticated;
 grant execute on function public.claim_portal_session() to authenticated;
 grant execute on function public.touch_portal_session() to authenticated;

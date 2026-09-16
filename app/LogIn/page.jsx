@@ -24,6 +24,11 @@ const authLoadingCopy = {
 };
 
 const REMEMBERED_EMAIL_KEY = 'mempco.portal.rememberedEmail';
+const SESSION_TIMEOUT_MESSAGE = 'You were signed out after 15 minutes of inactivity.';
+const INVALID_LOGIN_MESSAGE = 'Invalid email or password. Please check your login details.';
+
+const isInvalidLoginError = (error) =>
+  String(error?.message || '').trim() === INVALID_LOGIN_MESSAGE;
 
 const AuthButtonIcon = ({ icon: IconComponent }) => (
   <IconComponent className="auth-button-icon" aria-hidden="true" />
@@ -47,11 +52,17 @@ export default function LoginPage() {
   const [forcedPasswordForm, setForcedPasswordForm] = useState({ password: '', confirmPassword: '' });
   const [forcedPasswordUser, setForcedPasswordUser] = useState(null);
   const [message, setMessage] = useState({ type: '', text: '' });
+  const [failedLogin, setFailedLogin] = useState({ email: '', count: 0 });
+  const [shouldDismissSessionTimeout, setShouldDismissSessionTimeout] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [loadingLabel, setLoadingLabel] = useState(authLoadingCopy.signin);
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [showForcedPassword, setShowForcedPassword] = useState(false);
+  const normalizedLoginEmail = loginForm.email.trim().toLowerCase();
+  const failedLoginAttempts =
+    failedLogin.email === normalizedLoginEmail ? failedLogin.count : 0;
+  const canRecoverPassword = failedLoginAttempts >= 3;
 
   const redirectToRoute = (route = '/') => {
     const destination = String(route || '/').startsWith('/') ? route : '/';
@@ -102,8 +113,17 @@ export default function LoginPage() {
     if (params.get('reason') === 'inactive') {
       setMessage({
         type: 'error',
-        text: 'You were signed out after 15 minutes of inactivity.',
+        text: SESSION_TIMEOUT_MESSAGE,
       });
+      setShouldDismissSessionTimeout(true);
+
+      params.delete('reason');
+      const cleanedSearch = params.toString();
+      window.history.replaceState(
+        window.history.state,
+        '',
+        `${window.location.pathname}${cleanedSearch ? `?${cleanedSearch}` : ''}${window.location.hash}`
+      );
       return;
     }
 
@@ -123,6 +143,19 @@ export default function LoginPage() {
     }
   }, []);
 
+  useEffect(() => {
+    if (!shouldDismissSessionTimeout) return undefined;
+
+    const timeoutId = window.setTimeout(() => {
+      setMessage((current) =>
+        current.text === SESSION_TIMEOUT_MESSAGE ? { type: '', text: '' } : current
+      );
+      setShouldDismissSessionTimeout(false);
+    }, 5000);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [shouldDismissSessionTimeout]);
+
   const updateLogin = (field, value) => {
     setLoginForm((prev) => ({ ...prev, [field]: value }));
   };
@@ -134,11 +167,13 @@ export default function LoginPage() {
 
     setIsSubmitting(true);
     setLoadingLabel(authLoadingCopy.signin);
+    setShouldDismissSessionTimeout(false);
     setMessage({ type: '', text: '' });
 
     try {
       const user = await signInPortal(loginForm);
       window.localStorage.removeItem(REMEMBERED_EMAIL_KEY);
+      setFailedLogin({ email: '', count: 0 });
 
       if (isInactivePortalUser(user)) {
         await signOutPortal().catch(() => {});
@@ -174,6 +209,13 @@ export default function LoginPage() {
 
       redirectToRoute(destination);
     } catch (error) {
+      if (isInvalidLoginError(error) && normalizedLoginEmail) {
+        setFailedLogin((current) => ({
+          email: normalizedLoginEmail,
+          count: current.email === normalizedLoginEmail ? current.count + 1 : 1,
+        }));
+      }
+
       setMessage({
         type: 'error',
         text: error.message || 'Unable to login. Please try again.',
@@ -327,6 +369,7 @@ export default function LoginPage() {
     }
 
     setAuthMode(mode);
+    setShouldDismissSessionTimeout(false);
     setMessage({ type: '', text: '' });
   };
 
@@ -344,11 +387,6 @@ export default function LoginPage() {
                   alt="MEMPCO Logo"
                   className="auth-company-logo"
                 />
-
-                <div className="auth-showcase-summary">
-                  <span>Employee and Admin Access</span>
-                  <strong>Helpdesk Operations Portal</strong>
-                </div>
               </div>
             </div>
 
@@ -417,23 +455,21 @@ export default function LoginPage() {
 
                     <button type="submit" className="auth-submit-btn login-submit-btn" disabled={isBusy}>
                       <AuthButtonIcon icon={LogIn} />
-                      {isBusy ? 'Please wait...' : 'Sign In'}
+                      {isBusy ? 'Please wait...' : 'Sign in'}
                     </button>
 
-                    <p className="auth-switch-text">
-                      <button
-                        type="button"
-                        className="text-link"
-                        onClick={() => switchMode('forgot')}
-                        disabled={isBusy}
-                      >
-                        Forgot password?
-                      </button>
-                    </p>
-
-                    <p className="auth-switch-text">
-                      Need access? Contact the MEMPCO admin office.
-                    </p>
+                    {canRecoverPassword && (
+                      <p className="auth-switch-text">
+                        <button
+                          type="button"
+                          className="text-link"
+                          onClick={() => switchMode('forgot')}
+                          disabled={isBusy}
+                        >
+                          Forgot password?
+                        </button>
+                      </p>
+                    )}
                   </form>
 
                   <form
