@@ -10338,6 +10338,33 @@ button {
   overflow-wrap: anywhere;
 }
 
+.employee-admin-queue-note {
+  justify-self: start;
+  width: fit-content;
+  max-width: 100%;
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.34rem;
+  margin-top: 0.15rem;
+  padding: 0.28rem 0.48rem;
+  border: 1px solid rgba(217, 119, 6, 0.24);
+  border-radius: 6px;
+  color: #92400e;
+  background: rgba(255, 251, 235, 0.94);
+  font-size: 0.78rem;
+  font-weight: 850;
+  line-height: 1.2;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.employee-admin-queue-note svg {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 14px;
+}
+
 .employee-admin-handling-meta {
   justify-self: start;
   width: fit-content;
@@ -10594,5 +10621,16 @@ button {
 
   .employee-admin-ticket-work-timer strong {
     font-size: 1rem;
+  }
+}
+
+/* Keep the minimized chat launcher clear of the employee ticket modal on desktop. */
+@media (min-width: 1280px) {
+  .employee-ticket-action-overlay:not(.chat-open) .employee-ticket-modal.ticket-action-modal.is-support-modal {
+    transform: translateX(-2rem) !important;
+  }
+
+  .employee-ticket-action-overlay:not(.chat-open) .ticket-chat-launcher {
+    right: max(0.5rem, env(safe-area-inset-right)) !important;
   }
 }

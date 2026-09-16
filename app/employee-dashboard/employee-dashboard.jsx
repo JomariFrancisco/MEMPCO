@@ -141,12 +141,6 @@ const HELPDESK_CATEGORY_CONCERNS = {
     'Database or system connection issue',
     'Other server concern',
   ],
-  'Other ICT Request': [
-    'General ICT assistance',
-    'ICT equipment request',
-    'Technical consultation',
-    'Concern not listed',
-  ],
 };
 
 const HELPDESK_SUPPORT_CATEGORIES = Object.keys(HELPDESK_CATEGORY_CONCERNS);
@@ -157,41 +151,34 @@ const DEVICE_SUPPORT_CATEGORY_MAP = {
     'Account / Access Support',
     'Computer / Laptop Support',
     'Network / Internet Support',
-    'Other ICT Request',
   ],
   Laptop: [
     'Software / System Support',
     'Account / Access Support',
     'Computer / Laptop Support',
     'Network / Internet Support',
-    'Other ICT Request',
   ],
   Printer: [
     'Printer Support',
     'Network / Internet Support',
-    'Other ICT Request',
   ],
   'Biometric Device': ['Biometric / Attendance Support'],
   'ATM / Kiosk': [
     'Software / System Support',
     'Account / Access Support',
     'Network / Internet Support',
-    'Other ICT Request',
   ],
   'Network / Wi-Fi': [
     'Network / Internet Support',
     'Server / NAS / Database Support',
-    'Other ICT Request',
   ],
   Server: [
     'Server / NAS / Database Support',
     'Network / Internet Support',
     'Software / System Support',
-    'Other ICT Request',
   ],
-  'MBWin / Sky360': ['Software / System Support', 'Account / Access Support'],
+  'MBWin / Sky360': ['Account / Access Support', 'Software / System Support'],
   'Excel / Office Application': ['Software / System Support', 'Account / Access Support'],
-  'Application Account': ['Account / Access Support', 'Software / System Support'],
 };
 
 const DEVICE_CONCERN_TYPE_MAP = {
@@ -206,7 +193,8 @@ const DEVICE_CONCERN_TYPE_MAP = {
       'Password reset',
       'Login problem',
       'Access permission request',
-      'Teller role / user role concern',
+      'Teller reactivation request',
+      'Teller role modification request',
       'Other account access concern',
     ],
   },
@@ -225,20 +213,12 @@ const getSupportCategoriesForDevice = (deviceName = '') =>
 const getConcernOptionsForSelection = (category = '', deviceName = '') =>
   DEVICE_CONCERN_TYPE_MAP[deviceName]?.[category] || HELPDESK_CATEGORY_CONCERNS[category] || [];
 
-const OTHER_SERVICES_STORAGE_KEY = 'mempcop-employee-other-services';
-const OTHER_SERVICE_CATEGORIES = [
-  'Burnout',
-  'Other',
-];
+const BURNOUT_REQUESTS_STORAGE_KEY = 'mempcop-employee-burnout-requests';
 
-const createOtherServiceId = () => {
-  const year = new Date().getFullYear();
-  const randomPart = String(Math.floor(Math.random() * 10000)).padStart(4, '0');
+const isAdminDepartment = (department = '') =>
+  String(department || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '') === 'admin';
 
-  return `OS-${year}-${randomPart}`;
-};
-
-const getNewOtherServiceForm = (user = {}) => ({
+const getNewBurnoutRequestForm = (user = {}) => ({
   branch: user.branch || user.office || '',
   custodian: '',
   brand: '',
@@ -246,24 +226,12 @@ const getNewOtherServiceForm = (user = {}) => ({
   serialNumber: '',
   deviceName: '',
   department: user.department || '',
-  supportCategory: '',
-  requestedService: '',
+  supportCategory: 'Burnout',
   remarks: '',
 });
 
-const getOtherServiceRemarksPlaceholder = (category = '') => {
-  if (!category) return 'Select an Other Services category, then write the request details here.';
-
-  if (category === 'Burnout') {
-    return 'Write the burnout details, affected device, location, and assistance needed.';
-  }
-
-  if (category === 'Other') {
-    return 'Write the service details, preferred location, schedule, or special instructions.';
-  }
-
-  return `Write additional details about the ${category} request.`;
-};
+const getBurnoutRemarksPlaceholder = () =>
+  'Write the burnout details, affected device, location, and assistance needed.';
 
 const getTicketDisplayCode = (ticket = {}) => ticket.ticketCode || ticket.id || '';
 
@@ -384,6 +352,7 @@ const CONCERN_DESCRIPTION_TEMPLATES = {
     'Page or Module:',
     'What Happened:',
     'Error Message:',
+    'AnyDesk Number:',
   ].join('\n'),
   network: [
     'Connection Type:',
@@ -483,6 +452,22 @@ const isEmployeeQueueTicket = (ticket = {}) => {
   return statusLabel === 'Pending' || statusLabel === 'In Progress';
 };
 
+const getEmployeeQueueLabel = (ticket = {}) => {
+  const queuePosition = Number(ticket.queuePosition);
+  const queueSize = Number(ticket.queueSize);
+
+  if (
+    !Number.isSafeInteger(queuePosition) ||
+    !Number.isSafeInteger(queueSize) ||
+    queuePosition < 1 ||
+    queueSize < queuePosition
+  ) {
+    return '';
+  }
+
+  return `Queue #${queuePosition} of ${queueSize}`;
+};
+
 const getEmployeeClosedTicketMessage = (ticket = {}) => {
   const normalized = normalize(ticket.status).replace(/[-_]+/g, ' ').replace(/\s+/g, ' ');
 
@@ -522,6 +507,22 @@ const isMbwinRequest = (formOrTicket) => {
     haystack.includes('mb wim')
   );
 };
+
+const isMbwinTellerRoleModificationRequest = (formOrTicket = {}) => {
+  if (!isMbwinRequest(formOrTicket)) return false;
+
+  const requestText = getIssueContextText(formOrTicket).replace(/[^a-z0-9]+/g, ' ');
+  const referencesRole = /\b(?:teller\s+)?(?:user\s+)?role\b/.test(requestText);
+  const requestsModification = /\b(?:modify|modification|change|update|amend|add|remove)\b/.test(requestText);
+
+  return referencesRole && requestsModification;
+};
+
+const hasSaarAttachment = (attachment) =>
+  Boolean(
+    attachment &&
+      (attachment.dataUrl || attachment.url || attachment.publicUrl || attachment.path)
+  );
 
 const isOtherConcernSelected = (formOrTicket = {}) => {
   const concern = normalize(formOrTicket.concernType);
@@ -565,10 +566,6 @@ const getIssueDescriptionTemplate = (context = {}) => {
 
   if (supportCategory === 'Server / NAS / Database Support') {
     return CONCERN_DESCRIPTION_TEMPLATES.server;
-  }
-
-  if (supportCategory === 'Other ICT Request') {
-    return CONCERN_DESCRIPTION_TEMPLATES.other;
   }
 
   if (
@@ -1127,7 +1124,6 @@ const Icon = {
   Dashboard: () => <LayoutDashboard className="sidebar-nav-icon" aria-hidden="true" />,
   Profile: () => <UserRound className="sidebar-nav-icon" aria-hidden="true" />,
   Helpdesk: () => <Ticket className="sidebar-nav-icon" aria-hidden="true" />,
-  OtherServices: () => <Wrench className="sidebar-nav-icon" aria-hidden="true" />,
   HRMax: () => <BriefcaseBusiness className="sidebar-nav-icon" aria-hidden="true" />,
   Connect: () => <Link2 className="sidebar-nav-icon" aria-hidden="true" />,
   Logout: () => <LogOut className="sidebar-nav-icon" aria-hidden="true" />,
@@ -1564,6 +1560,7 @@ function EmployeeTicketDetailModal({
   const saarLabel =
     ticket.saarAttachment?.name ||
     (ticket.saarRequired ? 'Required, no file found' : 'Not required');
+  const queueLabel = getEmployeeQueueLabel(ticket);
 
   return (
     <div
@@ -1686,6 +1683,18 @@ function EmployeeTicketDetailModal({
                 {assignedStaff}
               </div>
             </div>
+
+            {queueLabel && (
+              <div className="ticket-form-group">
+                <label>Queue Status</label>
+                <div
+                  className="ticket-field ticket-input employee-admin-readonly-field"
+                  title="Priority-based ICT review position. Urgent tickets may move ahead."
+                >
+                  {queueLabel}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -2030,7 +2039,7 @@ function DashboardView({ user, tickets, openTickets, onGoTo }) {
               </div>
               <div className="submission-guide-item">
                 <span className="submission-guide-number">04</span>
-                <p>For MBWin / Sky360 role requests, attach the approved SAAR PDF. Photos or screenshots are optional and limited to {PHOTO_MAX_COUNT} files.</p>
+                <p>For MBWin / Sky360 teller role modifications, attach the approved SAAR PDF. Teller reactivation does not require SAAR. Photos or screenshots are optional and limited to {PHOTO_MAX_COUNT} files.</p>
               </div>
             </div>
 
@@ -2325,7 +2334,8 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
   const queueCount = tickets.filter(isEmployeeQueueTicket).length;
   const activeCount = tickets.filter((ticket) => isUnresolved(ticket.status)).length;
   const resolvedCount = tickets.filter(isEmployeeResolvedTicket).length;
-  const mbwinRequired = isMbwinRequest(form);
+  const canSubmitBurnout = isAdminDepartment(user?.department);
+  const saarRequired = isMbwinTellerRoleModificationRequest(form);
   const derivedImpact = useMemo(
     () => deriveTicketImpact(form),
     [form.supportCategory, form.concernType, form.deviceName]
@@ -2363,6 +2373,12 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
   useBodyScrollLock(showConfirm || Boolean(successNotice) || Boolean(viewTicket));
 
   useEffect(() => {
+    if (!canSubmitBurnout && tab === 'burnout') {
+      setTab('tickets');
+    }
+  }, [canSubmitBurnout, tab]);
+
+  useEffect(() => {
     if (viewTicket || showConfirm || successNotice || typeof document === 'undefined') return undefined;
 
     document.body.style.overflow = '';
@@ -2384,6 +2400,20 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
   useEffect(() => {
     currentUserIdRef.current = user?.id || '';
   }, [user?.id]);
+
+  useEffect(() => {
+    if (!viewTicket?.id) return;
+
+    const refreshedTicket = tickets.find((ticket) => ticket.id === viewTicket.id);
+
+    if (!refreshedTicket) return;
+
+    setViewTicket((current) => {
+      if (!current || current.id !== refreshedTicket.id) return current;
+
+      return { ...current, ...refreshedTicket };
+    });
+  }, [tickets, viewTicket?.id]);
 
   useEffect(() => {
     if (ticketPage > totalPages) {
@@ -2512,6 +2542,13 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
 
       if (field === 'description') {
         next.description = normalizeTextareaValue(value);
+      }
+
+      if (
+        ['deviceName', 'supportCategory', 'concernType'].includes(field) &&
+        !isMbwinTellerRoleModificationRequest(next)
+      ) {
+        next.saarAttachment = null;
       }
 
       return next;
@@ -2752,8 +2789,8 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
       return false;
     }
 
-    if (mbwinRequired && !form.saarAttachment?.dataUrl) {
-      setFormError('SAAR PDF attachment is required for MBWin / Sky360 role requests.');
+    if (saarRequired && !hasSaarAttachment(form.saarAttachment)) {
+      setFormError('SAAR PDF attachment is required when modifying an MBWin / Sky360 teller role.');
       return false;
     }
 
@@ -2786,7 +2823,7 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
       description: cleanDescription,
       sla: finalImpact.sla,
       priority: finalImpact.priority,
-      saarRequired: mbwinRequired,
+      saarRequired,
       lastEmployeeUpdate: new Date().toLocaleString(),
     };
 
@@ -2934,15 +2971,17 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
             {editingId ? 'Edit Ticket' : 'Submit Ticket'}
           </button>
 
-          <button
-            type="button"
-            role="tab"
-            aria-selected={tab === 'burnout'}
-            className={tab === 'burnout' ? 'active' : ''}
-            onClick={() => setTab('burnout')}
-          >
-            Burnout / Other Request
-          </button>
+          {canSubmitBurnout && (
+            <button
+              type="button"
+              role="tab"
+              aria-selected={tab === 'burnout'}
+              className={tab === 'burnout' ? 'active' : ''}
+              onClick={() => setTab('burnout')}
+            >
+              Burnout Request
+            </button>
+          )}
         </div>
 
         {tab === 'tickets' && (
@@ -2958,13 +2997,21 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
                 <div className="employee-ticket-queue-grid">
                   {pagedTickets.map((ticket) => {
                     const employeeStatusLabel = getEmployeeTicketStatusLabel(ticket.status);
+                    const queueLabel = getEmployeeQueueLabel(ticket);
                     const requesterName = getCompactTicketRequester(ticket, user);
                     const startedLabel = formatCompactDateTime(ticket.workStartedAt);
                     const endedLabel = formatCompactDateTime(ticket.workEndedAt);
                     const durationLabel = formatCompactDuration(ticket.workStartedAt, ticket.workEndedAt);
                     const hasWorkSummary = Boolean(ticket.workStartedAt || ticket.workEndedAt || durationLabel);
-                    const assignedStaff = ticket.technician || ticket.assignedTo;
-                    const handlingCopy = assignedStaff ? `Handled by ${assignedStaff}` : 'Awaiting ICT assignment';
+                    const assignedStaff = [ticket.technician, ticket.assignedTo].find((staff) => {
+                      const normalizedStaff = String(staff || '').trim().toLowerCase();
+                      return normalizedStaff && normalizedStaff !== 'unassigned';
+                    });
+                    const handlingCopy = assignedStaff
+                      ? `Handled by ${assignedStaff}`
+                      : queueLabel
+                        ? 'Awaiting ICT review'
+                        : 'Awaiting ICT assignment';
                     const handlingTone =
                       employeeStatusLabel === 'Resolved'
                         ? 'done'
@@ -3010,7 +3057,7 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
                             <span className={`priority ${slugify(ticket.sla || 'Low')}`}>
                               {ticket.sla || 'Low'}
                             </span>
-                            {isMbwinRequest(ticket) && <span className="status saar">SAAR Required</span>}
+                            {ticket.saarRequired && <span className="status saar">SAAR Required</span>}
                           </div>
                         </div>
 
@@ -3021,6 +3068,15 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
                           <div className="employee-admin-handling-copy">
                             <strong>{employeeStatusLabel}</strong>
                             <p>{handlingCopy}</p>
+                            {queueLabel && (
+                              <span
+                                className="employee-admin-queue-note"
+                                title="Priority-based ICT review position. Urgent tickets may move ahead."
+                              >
+                                <MonoIcon icon={Clock3} />
+                                {queueLabel}
+                              </span>
+                            )}
                             {handlingMeta && (
                               <span className="employee-admin-handling-meta">{handlingMeta}</span>
                             )}
@@ -3216,9 +3272,9 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
                 />
               </div>
 
-              {mbwinRequired && (
+              {saarRequired && (
                 <div className="ticket-form-group full saar-upload-card required">
-                  <label htmlFor="ticket-saar">SAAR PDF Attachment (Required for MBWin / Sky360 role requests)</label>
+                  <label htmlFor="ticket-saar">SAAR PDF Attachment (Required for Teller Role Modification)</label>
 
                   <input
                     id="ticket-saar"
@@ -3226,7 +3282,7 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
                     type="file"
                     accept="application/pdf,.pdf"
                     onChange={handleSaarFileChange}
-                    required={!form.saarAttachment?.dataUrl}
+                    required={!hasSaarAttachment(form.saarAttachment)}
                   />
 
                   {form.saarAttachment?.name ? (
@@ -3235,15 +3291,24 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
                         <strong>{form.saarAttachment.name}</strong>
                         <span>{form.saarAttachment.sizeLabel} · Attached {form.saarAttachment.uploadedAt}</span>
                       </div>
-                      {form.saarAttachment.dataUrl && (
-                        <a href={form.saarAttachment.dataUrl} target="_blank" rel="noopener noreferrer">
+                      {hasSaarAttachment(form.saarAttachment) && (
+                        <a
+                          href={
+                            form.saarAttachment.dataUrl ||
+                            form.saarAttachment.url ||
+                            form.saarAttachment.publicUrl ||
+                            '#'
+                          }
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
                           View PDF
                         </a>
                       )}
                     </div>
                   ) : (
                     <span className="ticket-form-hint">
-                      Attach an approved SAAR PDF for MBWin / Sky360 account, teller, role, or function requests.
+                      Attach the approved SAAR PDF when changing an MBWin / Sky360 teller role.
                     </span>
                   )}
                 </div>
@@ -3292,8 +3357,8 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
           </form>
         )}
 
-        {tab === 'burnout' && (
-          <OtherServicesView user={user} reloadTickets={reloadTickets} embedded />
+        {canSubmitBurnout && tab === 'burnout' && (
+          <BurnoutRequestView user={user} reloadTickets={reloadTickets} />
         )}
       </section>
 
@@ -3393,26 +3458,22 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
 
 
 /* =========================
-   OTHER SERVICES VIEW
+   BURNOUT REQUEST VIEW
 ========================= */
 
-function OtherServicesView({ user, reloadTickets, embedded = false }) {
-  const [form, setForm] = useState(() => getNewOtherServiceForm(user));
+function BurnoutRequestView({ user, reloadTickets }) {
+  const [form, setForm] = useState(() => getNewBurnoutRequestForm(user));
   const [requests, setRequests] = useState([]);
   const [formError, setFormError] = useState('');
   const [successNotice, setSuccessNotice] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const isBurnoutRequest = form.supportCategory === 'Burnout';
-  const isOtherRequest = form.supportCategory === 'Other';
-  const requestedServiceLabel = String(form.requestedService || '').trim();
-
   useBodyScrollLock(Boolean(successNotice));
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
     try {
-      const savedRequests = JSON.parse(window.localStorage.getItem(OTHER_SERVICES_STORAGE_KEY) || '[]');
+      const savedRequests = JSON.parse(window.localStorage.getItem(BURNOUT_REQUESTS_STORAGE_KEY) || '[]');
       setRequests(Array.isArray(savedRequests) ? savedRequests : []);
     } catch {
       setRequests([]);
@@ -3430,19 +3491,6 @@ function OtherServicesView({ user, reloadTickets, embedded = false }) {
   const handleChange = (field, value) => {
     setFormError('');
     setForm((current) => {
-      if (field === 'supportCategory') {
-        return {
-          ...current,
-          supportCategory: value,
-          custodian: value === 'Burnout' ? current.custodian : '',
-          brand: value === 'Burnout' ? current.brand : '',
-          model: value === 'Burnout' ? current.model : '',
-          serialNumber: value === 'Burnout' ? current.serialNumber : '',
-          deviceName: '',
-          requestedService: value === 'Other' ? current.requestedService : '',
-        };
-      }
-
       return { ...current, [field]: value };
     });
   };
@@ -3451,7 +3499,7 @@ function OtherServicesView({ user, reloadTickets, embedded = false }) {
     setRequests(nextRequests);
 
     if (typeof window !== 'undefined') {
-      window.localStorage.setItem(OTHER_SERVICES_STORAGE_KEY, JSON.stringify(nextRequests));
+      window.localStorage.setItem(BURNOUT_REQUESTS_STORAGE_KEY, JSON.stringify(nextRequests));
     }
   };
 
@@ -3459,9 +3507,8 @@ function OtherServicesView({ user, reloadTickets, embedded = false }) {
     e.preventDefault();
 
     const requiredFields = [
-      ['branch', isBurnoutRequest ? 'Branch / Location to be Assigned' : 'Branch or Location'],
-      ['department', isBurnoutRequest ? 'Department of the custodian' : 'Department'],
-      ['supportCategory', 'Service Type'],
+      ['branch', 'Branch / Location to be Assigned'],
+      ['department', 'Department of the custodian'],
     ];
 
     const missing = requiredFields.find(([field]) => !String(form[field] || '').trim());
@@ -3471,27 +3518,22 @@ function OtherServicesView({ user, reloadTickets, embedded = false }) {
       return;
     }
 
-    if (isOtherRequest && !requestedServiceLabel) {
-      setFormError('Requested service is required.');
-      return;
-    }
-
-    if (isBurnoutRequest && !String(form.custodian || '').trim()) {
+    if (!String(form.custodian || '').trim()) {
       setFormError('Custodian is required for Helpdesk Burnout.');
       return;
     }
 
-    if (isBurnoutRequest && !String(form.brand || '').trim()) {
+    if (!String(form.brand || '').trim()) {
       setFormError('Brand is required for Helpdesk Burnout.');
       return;
     }
 
-    if (isBurnoutRequest && !String(form.model || '').trim()) {
+    if (!String(form.model || '').trim()) {
       setFormError('Model is required for Helpdesk Burnout.');
       return;
     }
 
-    if (isBurnoutRequest && !String(form.serialNumber || '').trim()) {
+    if (!String(form.serialNumber || '').trim()) {
       setFormError('Serial number is required for Helpdesk Burnout.');
       return;
     }
@@ -3500,71 +3542,56 @@ function OtherServicesView({ user, reloadTickets, embedded = false }) {
 
     try {
       const submittedAt = new Date().toLocaleString();
-      let savedRequest;
+      const brandModel = `${String(form.brand || '').trim()} ${String(form.model || '').trim()}`.trim();
+      const description = [
+        'Helpdesk Burnout Request',
+        `Custodian: ${form.custodian}`,
+        `Brand: ${form.brand}`,
+        `Model: ${form.model}`,
+        `Serial Number: ${form.serialNumber}`,
+        'Service Type: Burnout',
+        `Branch / Location to be Assigned: ${form.branch}`,
+        `Department of the custodian: ${form.department}`,
+        `Remarks: ${form.remarks || 'None'}`,
+      ].join('\n');
 
-      if (isBurnoutRequest) {
-        const brandModel = `${String(form.brand || '').trim()} ${String(form.model || '').trim()}`.trim();
-        const description = [
-          'Helpdesk Burnout Request',
-          `Custodian: ${form.custodian}`,
-          `Brand: ${form.brand}`,
-          `Model: ${form.model}`,
-          `Serial Number: ${form.serialNumber}`,
-          'Service Type: Burnout',
-          `Branch / Location to be Assigned: ${form.branch}`,
-          `Department of the custodian: ${form.department}`,
-          `Remarks: ${form.remarks || 'None'}`,
-        ].join('\n');
-
-        const ticket = await createTicket({
-          user,
-          form: {
-            ...form,
-            brand: brandModel,
-            model: form.model,
-            deviceType: 'Unit',
-            deviceName: 'Unit',
-            serialNumber: form.serialNumber,
-            supportCategory: 'Burnout',
-            concernType: 'Helpdesk Burnout',
-            description,
-            sla: 'Low',
-            impact: 'Device burnout request',
-            lastEmployeeUpdate: submittedAt,
-          },
-        });
-
-        savedRequest = {
-          id: ticket.ticketCode || ticket.id,
-          ticketId: ticket.id,
-          ticketCode: ticket.ticketCode,
+      const ticket = await createTicket({
+        user,
+        form: {
           ...form,
           brand: brandModel,
-          status: 'Submitted',
-          date: submittedAt,
-        };
+          model: form.model,
+          deviceType: 'Unit',
+          deviceName: 'Unit',
+          serialNumber: form.serialNumber,
+          supportCategory: 'Burnout',
+          concernType: 'Helpdesk Burnout',
+          description,
+          sla: 'Low',
+          impact: 'Device burnout request',
+          lastEmployeeUpdate: submittedAt,
+        },
+      });
 
-        await reloadTickets?.();
-      } else {
-        savedRequest = {
-          id: createOtherServiceId(),
-          ...form,
-          supportCategory: requestedServiceLabel || form.supportCategory,
-          serviceType: form.supportCategory,
-          requestedService: requestedServiceLabel,
-          status: 'Submitted',
-          date: submittedAt,
-        };
-      }
+      const savedRequest = {
+        id: ticket.ticketCode || ticket.id,
+        ticketId: ticket.id,
+        ticketCode: ticket.ticketCode,
+        ...form,
+        brand: brandModel,
+        deviceName: 'Unit',
+        status: 'Submitted',
+        date: submittedAt,
+      };
+
+      await reloadTickets?.();
 
       saveRequests([savedRequest, ...requests]);
-      setForm(getNewOtherServiceForm(user));
+      setForm(getNewBurnoutRequestForm(user));
       setFormError('');
       setSuccessNotice({
-        title: isBurnoutRequest ? 'Helpdesk Burnout Submitted' : 'Other Service Submitted',
-        message: isBurnoutRequest
-          ? `Your Helpdesk Burnout ticket ${savedRequest.id} was submitted successfully.`
-          : `Your ${requestedServiceLabel || form.supportCategory} request was submitted successfully and saved in Other Services.`,
+        title: 'Helpdesk Burnout Submitted',
+        message: `Your Helpdesk Burnout ticket ${savedRequest.id} was submitted successfully.`,
       });
     } catch (error) {
       setFormError(error.message || 'Unable to submit request. Please try again.');
@@ -3574,50 +3601,19 @@ function OtherServicesView({ user, reloadTickets, embedded = false }) {
   };
 
   return (
-    <div className={`other-services-view${embedded ? ' embedded-helpdesk-request' : ''}`}>
-      {!embedded && (
-        <section className="panel-card glass helpdesk-banner other-services-banner">
-          <div className="helpdesk-banner-copy">
-            <span className="section-kicker">Other Services</span>
-            <h2>Submit non-helpdesk service requests.</h2>
-            <p>
-              This page follows the Helpdesk layout but uses a separate form for service concerns outside ICT ticketing.
-            </p>
-          </div>
-        </section>
-      )}
-
-      <section className={embedded ? 'embedded-request-section' : 'panel-card glass'}>
+    <div className="other-services-view burnout-request-view embedded-helpdesk-request">
+      <section className="embedded-request-section">
         <div className="section-head">
           <div>
-            <span className="section-kicker">{embedded ? 'Helpdesk Request' : 'Other Services Request'}</span>
-            <h3>{embedded ? 'Burnout / Other ICT Request' : 'Service Request Form'}</h3>
+            <span className="section-kicker">Helpdesk Request</span>
+            <h3>Burnout Request</h3>
           </div>
         </div>
 
         <form className="ticket-form-wrap" onSubmit={handleSubmit}>
           <div className="ticket-form-grid other-service-grid">
-            <div className="ticket-form-group full other-service-category-row">
-              <label htmlFor="other-category">Service Type</label>
-              <select
-                id="other-category"
-                className="ticket-field ticket-select other-service-category-select"
-                value={form.supportCategory}
-                onChange={(e) => handleChange('supportCategory', e.target.value)}
-                required
-              >
-                <option value="" disabled>Select other service</option>
-                {OTHER_SERVICE_CATEGORIES.map((category) => (
-                  <option key={category} value={category}>{category}</option>
-                ))}
-              </select>
-              <span className="ticket-form-hint">Choose Burnout for unit preparation, or Other for ICT requests that do not fit the regular ticket form.</span>
-            </div>
-
             <div className="ticket-form-group">
-              <label htmlFor="other-branch">
-                {isBurnoutRequest ? 'Branch / Location to be Assigned' : 'Branch / Location'}
-              </label>
+              <label htmlFor="other-branch">Branch / Location to be Assigned</label>
               <select
                 id="other-branch"
                 className="ticket-field ticket-select"
@@ -3632,83 +3628,60 @@ function OtherServicesView({ user, reloadTickets, embedded = false }) {
               </select>
             </div>
 
-            {isBurnoutRequest && (
-              <div className="ticket-form-group">
-                <label htmlFor="other-custodian">Custodian</label>
-                <input
-                  id="other-custodian"
-                  className="ticket-field ticket-input"
-                  type="text"
-                  value={form.custodian}
-                  onChange={(e) => handleChange('custodian', e.target.value)}
-                  placeholder="Name of custodian"
-                  required
-                />
-              </div>
-            )}
-
-            {isOtherRequest && (
-              <div className="ticket-form-group">
-                <label htmlFor="other-requested-service">Requested Service</label>
-                <input
-                  id="other-requested-service"
-                  className="ticket-field ticket-input"
-                  type="text"
-                  value={form.requestedService}
-                  onChange={(e) => handleChange('requestedService', e.target.value)}
-                  placeholder="Example: Cabling, office transfer, maintenance support"
-                  maxLength={120}
-                  required
-                />
-                <span className="ticket-form-hint">Enter the exact service you need if it is not Burnout.</span>
-              </div>
-            )}
-
-            {isBurnoutRequest && (
-              <>
-                <div className="ticket-form-group">
-                  <label htmlFor="other-brand">Brand</label>
-                  <input
-                    id="other-brand"
-                    className="ticket-field ticket-input"
-                    type="text"
-                    value={form.brand}
-                    onChange={(e) => handleChange('brand', e.target.value)}
-                    placeholder="ASUS, HP, LENOVO, EPSON"
-                    required
-                  />
-                </div>
-
-                <div className="ticket-form-group">
-                  <label htmlFor="other-model">Model</label>
-                  <input
-                    id="other-model"
-                    className="ticket-field ticket-input"
-                    type="text"
-                    value={form.model}
-                    onChange={(e) => handleChange('model', e.target.value)}
-                    placeholder="ThinkPad T14, LaserJet M404, etc."
-                    required
-                  />
-                </div>
-
-                <div className="ticket-form-group">
-                  <label htmlFor="other-serial">Serial Number</label>
-                  <input
-                    id="other-serial"
-                    className="ticket-field ticket-input"
-                    type="text"
-                    value={form.serialNumber}
-                    onChange={(e) => handleChange('serialNumber', e.target.value)}
-                    placeholder="Enter asset serial number"
-                    required
-                  />
-                </div>
-              </>
-            )}
+            <div className="ticket-form-group">
+              <label htmlFor="other-custodian">Custodian</label>
+              <input
+                id="other-custodian"
+                className="ticket-field ticket-input"
+                type="text"
+                value={form.custodian}
+                onChange={(e) => handleChange('custodian', e.target.value)}
+                placeholder="Name of custodian"
+                required
+              />
+            </div>
 
             <div className="ticket-form-group">
-              <label htmlFor="other-department">{isBurnoutRequest ? 'Department of the custodian' : 'Department'}</label>
+              <label htmlFor="other-brand">Brand</label>
+              <input
+                id="other-brand"
+                className="ticket-field ticket-input"
+                type="text"
+                value={form.brand}
+                onChange={(e) => handleChange('brand', e.target.value)}
+                placeholder="ASUS, HP, LENOVO, EPSON"
+                required
+              />
+            </div>
+
+            <div className="ticket-form-group">
+              <label htmlFor="other-model">Model</label>
+              <input
+                id="other-model"
+                className="ticket-field ticket-input"
+                type="text"
+                value={form.model}
+                onChange={(e) => handleChange('model', e.target.value)}
+                placeholder="ThinkPad T14, LaserJet M404, etc."
+                required
+              />
+            </div>
+
+            <div className="ticket-form-group">
+              <label htmlFor="other-serial">Serial Number</label>
+              <input
+                id="other-serial"
+                className="ticket-field ticket-input"
+                type="text"
+                value={form.serialNumber}
+                onChange={(e) => handleChange('serialNumber', e.target.value)}
+                placeholder="Enter asset serial number"
+                required
+              />
+            </div>
+
+            <div className="ticket-form-group">
+              <label htmlFor="other-department">Department of the custodian</label>
               <select
                 id="other-department"
                 className="ticket-field ticket-select"
@@ -3730,7 +3703,7 @@ function OtherServicesView({ user, reloadTickets, embedded = false }) {
                 className="ticket-field ticket-textarea"
                 value={form.remarks}
                 onChange={(e) => handleChange('remarks', e.target.value)}
-                placeholder={getOtherServiceRemarksPlaceholder(form.supportCategory)}
+                placeholder={getBurnoutRemarksPlaceholder()}
                 maxLength={800}
               />
             </div>
@@ -3740,16 +3713,16 @@ function OtherServicesView({ user, reloadTickets, embedded = false }) {
 
           <button type="submit" className="auth-submit-btn" disabled={isSubmitting}>
             <MonoIcon icon={Send} />
-            {isSubmitting ? 'Submitting...' : 'Submit Other Service'}
+            {isSubmitting ? 'Submitting...' : 'Submit Burnout Request'}
           </button>
         </form>
       </section>
 
-      <section className={embedded ? 'embedded-request-section' : 'panel-card glass'}>
+      <section className="embedded-request-section">
         <div className="section-head">
           <div>
             <span className="section-kicker">Request History</span>
-            <h3>Recent Other Services</h3>
+            <h3>Recent Burnout Requests</h3>
           </div>
         </div>
 
@@ -3767,7 +3740,7 @@ function OtherServicesView({ user, reloadTickets, embedded = false }) {
 
                 <div className="ticket-meta-grid">
                   <div className="ticket-meta-cell">
-                    <span>{request.supportCategory === 'Burnout' ? 'Assigned Location' : 'Branch'}</span>
+                    <span>Assigned Location</span>
                     <p>{request.branch}</p>
                   </div>
                   {request.custodian && (
@@ -3778,7 +3751,7 @@ function OtherServicesView({ user, reloadTickets, embedded = false }) {
                   )}
                   {request.deviceName && (
                     <div className="ticket-meta-cell">
-                      <span>{request.supportCategory === 'Burnout' ? 'Asset Type / Device' : 'Device'}</span>
+                      <span>Asset Type / Device</span>
                       <p>{request.deviceName}</p>
                     </div>
                   )}
@@ -3806,15 +3779,15 @@ function OtherServicesView({ user, reloadTickets, embedded = false }) {
           ) : (
             <div className="empty-state compact">
               <div className="empty-icon"><MonoIcon icon={Wrench} /></div>
-              <h4>No other service request yet</h4>
-              <p>Submit an Other Services request and it will appear here.</p>
+              <h4>No Burnout request yet</h4>
+              <p>Submitted Burnout requests will appear here.</p>
             </div>
           )}
         </div>
       </section>
 
       {successNotice && (
-        <div className="modal-overlay" role="dialog" aria-modal="true" aria-label="Other service submitted">
+        <div className="modal-overlay" role="dialog" aria-modal="true" aria-label="Burnout request submitted">
           <div className="modal-box glass success-modal">
             <div className="success-icon"><MonoIcon icon={CheckCircle2} /></div>
             <h3>{successNotice.title}</h3>
@@ -3913,11 +3886,13 @@ export default function EmployeeDashboardPage() {
   useEffect(() => {
     const handleStorage = () => void loadTickets();
     const handleFocus = () => void loadTickets();
+    const queueRefreshInterval = window.setInterval(handleFocus, 30000);
 
     window.addEventListener('storage', handleStorage);
     window.addEventListener('focus', handleFocus);
 
     return () => {
+      window.clearInterval(queueRefreshInterval);
       window.removeEventListener('storage', handleStorage);
       window.removeEventListener('focus', handleFocus);
     };
@@ -4057,9 +4032,6 @@ export default function EmployeeDashboardPage() {
                 />
               )}
 
-              {activeSection === 'otherServices' && (
-                <OtherServicesView user={user} reloadTickets={() => loadTickets(user)} />
-              )}
             </section>
           </div>
         </div>

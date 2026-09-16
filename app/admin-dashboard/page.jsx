@@ -94,7 +94,7 @@ const REPORT_PERIOD_OPTIONS = [
   { key: 'month', label: 'Month', title: 'Tickets by Month', meta: 'Monthly trend' },
 ];
 const REPORT_PERIOD_PAGE_SIZE = 8;
-const DASHBOARD_QUEUE_PAGE_SIZE = 3;
+const DASHBOARD_QUEUE_PAGE_SIZE = 4;
 const SELECTED_DAY_TICKET_PAGE_SIZE = 2;
 const PHOTO_MAX_SIZE = 4 * 1024 * 1024;
 const PHOTO_MAX_COUNT = 5;
@@ -141,7 +141,6 @@ const ADMIN_DEVICE_SUPPORT_CATEGORY_MAP = {
   ],
   'MBWin / Sky360': ['Software / System Support', 'Account / Access Support'],
   'Excel / Office Application': ['Software / System Support', 'Account / Access Support'],
-  'Application Account': ['Account / Access Support', 'Software / System Support'],
 };
 const ADMIN_DEVICE_CONCERN_TYPE_MAP = {
   'MBWin / Sky360': {
@@ -851,44 +850,44 @@ const getTicketQueueSlaRank = (ticket = {}) => {
   return 2;
 };
 
-// Critical and High SLA tickets are escalated first. Low and Medium tickets
-// continue in first-come-first-served order, and other ticket surfaces retain
-// their existing newest-first ordering.
+// Later edits do not affect FIFO; ticket sequence breaks submission-time ties.
+const compareTicketSubmissionOrder = (a, b) => {
+  const aSubmittedAt = getSubmittedTime(a);
+  const bSubmittedAt = getSubmittedTime(b);
+
+  if (aSubmittedAt && bSubmittedAt && aSubmittedAt !== bSubmittedAt) {
+    return aSubmittedAt - bSubmittedAt;
+  }
+
+  if (aSubmittedAt !== bSubmittedAt) {
+    return aSubmittedAt ? -1 : 1;
+  }
+
+  const aSequence = getTicketSequenceNumber(a);
+  const bSequence = getTicketSequenceNumber(b);
+  const hasASequence = Number.isSafeInteger(aSequence) && aSequence >= 0;
+  const hasBSequence = Number.isSafeInteger(bSequence) && bSequence >= 0;
+
+  if (hasASequence && hasBSequence && aSequence !== bSequence) {
+    return aSequence - bSequence;
+  }
+
+  if (hasASequence !== hasBSequence) {
+    return hasASequence ? -1 : 1;
+  }
+
+  return String(a.ticketCode || a.id || '').localeCompare(
+    String(b.ticketCode || b.id || ''),
+    undefined,
+    { numeric: true, sensitivity: 'base' }
+  );
+};
+
+// Critical and High SLA tickets are escalated first; Low and Medium stay FIFO.
 const sortTicketQueueFirstComeFirstServed = (items = []) =>
-  [...items].sort((a, b) => {
-    const slaCompare = getTicketQueueSlaRank(a) - getTicketQueueSlaRank(b);
-    if (slaCompare !== 0) return slaCompare;
-
-    const aSubmittedAt = getSubmittedTime(a);
-    const bSubmittedAt = getSubmittedTime(b);
-
-    if (aSubmittedAt && bSubmittedAt && aSubmittedAt !== bSubmittedAt) {
-      return aSubmittedAt - bSubmittedAt;
-    }
-
-    if (aSubmittedAt !== bSubmittedAt) {
-      return aSubmittedAt ? -1 : 1;
-    }
-
-    const aSequence = getTicketSequenceNumber(a);
-    const bSequence = getTicketSequenceNumber(b);
-    const hasASequence = Number.isSafeInteger(aSequence) && aSequence >= 0;
-    const hasBSequence = Number.isSafeInteger(bSequence) && bSequence >= 0;
-
-    if (hasASequence && hasBSequence && aSequence !== bSequence) {
-      return aSequence - bSequence;
-    }
-
-    if (hasASequence !== hasBSequence) {
-      return hasASequence ? -1 : 1;
-    }
-
-    return String(a.ticketCode || a.id || '').localeCompare(
-      String(b.ticketCode || b.id || ''),
-      undefined,
-      { numeric: true, sensitivity: 'base' }
-    );
-  });
+  [...items].sort((a, b) =>
+    getTicketQueueSlaRank(a) - getTicketQueueSlaRank(b) || compareTicketSubmissionOrder(a, b)
+  );
 
 const formatReportDate = (date, options) =>
   new Intl.DateTimeFormat('en-US', options).format(date);
@@ -3040,9 +3039,112 @@ function TicketBadges({ ticket }) {
   );
 }
 
+
+function DashboardWatchSummary({ tickets, type, activeIndex = 0, onChangeIndex, onOpenTicket }) {
+  const summaryRef = useRef(null);
+  const lastIndex = Math.max(0, tickets.length - 1);
+  const currentIndex = Math.min(Math.max(activeIndex, 0), lastIndex);
+  const ticket = tickets[currentIndex];
+  const ticketLabel = type === 'urgent' ? 'urgent ticket' : 'moved-date ticket';
+
+  useEffect(() => {
+    const summary = summaryRef.current;
+    const panel = summary?.closest('.dashboard-watch-panel');
+    if (!panel) return;
+
+    const heading = panel.querySelector('.section-head');
+    let frame;
+    const updateOverflow = () => {
+      // Measure the original layout so fitting cards keep their existing spacing.
+      summary.classList.remove('is-constrained');
+      if (!window.matchMedia('(min-width: 1281px)').matches) return;
+
+      const panelBounds = panel.getBoundingClientRect();
+      const summaryBounds = summary.getBoundingClientRect();
+      const headingBounds = heading.getBoundingClientRect();
+      const headingBottom = Math.max(
+        headingBounds.bottom,
+        ...Array.from(heading.children, child => child.getBoundingClientRect().bottom)
+      );
+      summary.classList.toggle('is-constrained',
+        summaryBounds.bottom > panelBounds.bottom - 8 || summaryBounds.top < headingBottom
+      );
+    };
+    const observer = new ResizeObserver(() => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(updateOverflow);
+    });
+    observer.observe(panel);
+    observer.observe(heading);
+    observer.observe(summary);
+    observer.observe(summary.querySelector('.dashboard-watch-summary-copy'));
+    updateOverflow();
+    return () => {
+      observer.disconnect();
+      cancelAnimationFrame(frame);
+    };
+  }, [ticket]);
+
+  if (!ticket) return null;
+
+  return (
+    <div ref={summaryRef} className={'dashboard-watch-summary is-' + type}>
+      <article
+        className="dashboard-watch-summary-ticket"
+        role="button"
+        tabIndex={0}
+        aria-label={'View ticket ' + getTicketDisplayCode(ticket)}
+        onClick={() => onOpenTicket(ticket)}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            onOpenTicket(ticket);
+          }
+        }}
+      >
+        <div className="dashboard-watch-summary-copy">
+          <div className="dashboard-watch-summary-ticket-topline">
+            <span className="ticket-id">{getTicketDisplayCode(ticket)}</span>
+            <TicketBadges ticket={ticket} />
+          </div>
+          <h4>{ticket.concernType || 'Unspecified concern'}</h4>
+          <p>{ticket.branch || 'No branch'} - {ticket.requester || ticket.ownerEmail || 'Employee'}</p>
+        </div>
+      </article>
+
+      {tickets.length > 1 && (
+        <div className="dashboard-watch-summary-footer">
+          <p className="dashboard-watch-summary-position">
+            Ticket {currentIndex + 1} of {tickets.length}
+          </p>
+          <div className="dashboard-watch-summary-nav" aria-label={ticketLabel + ' navigation'}>
+            <button
+              type="button"
+              onClick={() => onChangeIndex((index) => Math.max(0, index - 1))}
+              disabled={currentIndex === 0}
+              aria-label={'Previous ' + ticketLabel}
+              title={'Previous ' + ticketLabel}
+            >
+              <MonoIcon icon={ChevronLeft} />
+            </button>
+            <button
+              type="button"
+              onClick={() => onChangeIndex((index) => Math.min(lastIndex, index + 1))}
+              disabled={currentIndex === lastIndex}
+              aria-label={'Next ' + ticketLabel}
+              title={'Next ' + ticketLabel}
+            >
+              <MonoIcon icon={ChevronRight} />
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function AdminProfileView({
   admin,
-  users = [],
   tickets = [],
   canCreateUsers,
   canCreateIctTickets,
@@ -3051,14 +3153,11 @@ function AdminProfileView({
   onGoTo,
 }) {
   const [isSavingPhoto, setIsSavingPhoto] = useState(false);
-  const [photoMessage, setPhotoMessage] = useState('');
   const photoInputRef = useRef(null);
   const adminName = admin?.name || 'Admin User';
   const assignedOffice = admin?.branch || admin?.office || 'Not assigned';
   const department = admin?.department || 'Not assigned';
   const designation = admin?.designation || formatRoleLabel(admin?.role);
-  const adminRole = normalizePortalRole(admin?.role);
-  const isSuperAdmin = adminRole === 'superadmin';
 
   const handledTickets = sortTickets(tickets.filter((ticket) => {
     const staffName = normalizeComparable(adminName);
@@ -3078,12 +3177,11 @@ function AdminProfileView({
 
   const activeHandledTickets = handledTickets.filter((ticket) => isUnresolved(ticket.status)).length;
   const resolvedHandledTickets = handledTickets.filter(isTicketResolved).length;
-  const activeUserAccounts = users.filter((user) => !isInactivePortalUser(user)).length;
   const recentHandledTickets = handledTickets.slice(0, 3);
 
   const profileFacts = [
+    { label: 'Job Title', value: designation || 'Not provided', icon: BriefcaseBusiness, fullWidth: true },
     { label: 'Employee ID', value: admin?.employeeId || 'Not provided', icon: UserRound },
-    { label: 'Job Title', value: designation || 'Not provided', icon: BriefcaseBusiness },
     { label: 'Department', value: department, icon: Building2 },
     { label: 'Branch / Office', value: assignedOffice, icon: Building2 },
     { label: 'Email Address', value: admin?.email || 'Not provided', icon: Mail },
@@ -3092,9 +3190,9 @@ function AdminProfileView({
 
   const profileStats = [
     {
-      label: isSuperAdmin ? 'Portal Users' : 'Handled Tickets',
-      value: isSuperAdmin ? users.length : handledTickets.length,
-      meta: isSuperAdmin ? `${activeUserAccounts} active accounts` : 'assigned or updated',
+      label: 'Handled Tickets',
+      value: handledTickets.length,
+      meta: 'assigned or updated',
     },
     { label: 'Active Load', value: activeHandledTickets, meta: 'currently unresolved' },
     { label: 'Resolved Work', value: resolvedHandledTickets, meta: 'completed tickets' },
@@ -3116,30 +3214,13 @@ function AdminProfileView({
     if (!file) return;
 
     setIsSavingPhoto(true);
-    setPhotoMessage('');
 
     try {
       const profilePhoto = await fileToProfilePhotoDataUrl(file);
       const updatedAdmin = await updateCurrentPortalUserProfilePhoto(profilePhoto);
       onAdminUpdate(updatedAdmin);
-      setPhotoMessage('Profile photo updated.');
     } catch (error) {
-      setPhotoMessage(error.message || 'Unable to update profile photo.');
-    } finally {
-      setIsSavingPhoto(false);
-    }
-  };
-
-  const handleRemovePhoto = async () => {
-    setIsSavingPhoto(true);
-    setPhotoMessage('');
-
-    try {
-      const updatedAdmin = await updateCurrentPortalUserProfilePhoto('');
-      onAdminUpdate(updatedAdmin);
-      setPhotoMessage('Profile photo removed.');
-    } catch (error) {
-      setPhotoMessage(error.message || 'Unable to remove profile photo.');
+      window.alert(error.message || 'Unable to update profile photo.');
     } finally {
       setIsSavingPhoto(false);
     }
@@ -3154,7 +3235,9 @@ function AdminProfileView({
             className="admin-profile-photo"
             onClick={() => photoInputRef.current?.click()}
             disabled={isSavingPhoto}
-            aria-label="Upload admin profile photo"
+            aria-label={admin?.profilePhoto ? 'Change profile photo' : 'Upload profile photo'}
+            aria-busy={isSavingPhoto}
+            title={admin?.profilePhoto ? 'Change profile photo' : 'Upload profile photo'}
           >
             {admin?.profilePhoto ? (
               <img src={admin.profilePhoto} alt={`${adminName} profile`} />
@@ -3172,7 +3255,7 @@ function AdminProfileView({
           />
 
           <div className="admin-profile-title">
-            <span className="section-kicker">{isSuperAdmin ? 'Super Admin Profile' : 'Admin Profile'}</span>
+            <span className="section-kicker">Admin Profile</span>
             <h2>{adminName}</h2>
             <p>{designation} - {department}</p>
             <div className="admin-profile-pills">
@@ -3181,21 +3264,6 @@ function AdminProfileView({
               <span>{admin?.status || 'Active'}</span>
             </div>
           </div>
-        </div>
-
-        <div className="admin-profile-photo-actions">
-          <button type="button" className="modal-btn confirm" onClick={() => photoInputRef.current?.click()} disabled={isSavingPhoto}>
-            <MonoIcon icon={Camera} />
-            {admin?.profilePhoto ? 'Change Photo' : 'Upload Photo'}
-          </button>
-          {admin?.profilePhoto && (
-            <button type="button" className="modal-btn cancel" onClick={handleRemovePhoto} disabled={isSavingPhoto}>
-              Remove
-            </button>
-          )}
-          {(isSavingPhoto || photoMessage) && (
-            <span className="admin-profile-photo-note">{isSavingPhoto ? 'Saving photo...' : photoMessage}</span>
-          )}
         </div>
       </section>
 
@@ -3220,7 +3288,7 @@ function AdminProfileView({
 
           <div className="admin-profile-facts">
             {profileFacts.map((item) => (
-              <article key={item.label} className="admin-profile-fact">
+              <article key={item.label} className={`admin-profile-fact${item.fullWidth ? ' full-width' : ''}`}>
                 <span><MonoIcon icon={item.icon} /></span>
                 <div>
                   <small>{item.label}</small>
@@ -3682,7 +3750,7 @@ function BurnoutReportEditor({ ticket, report, onChange, readOnly }) {
           ))}
         </div>
 
-        <div className="burnout-table-block">
+        <div className="burnout-table-block burnout-final-evaluation">
           <h5>Final Evaluation</h5>
           {(report.finalEvaluation || []).map((item) => (
             <div className="burnout-compact-row" key={item.id}>
@@ -3852,7 +3920,7 @@ function TicketConversationPanel({
   );
 }
 
-function TicketWorkTimer({ ticket, now, compact = false }) {
+function TicketWorkTimer({ ticket, now, compact = false, showLabel = true }) {
   const startedAt = getTicketWorkStartedAt(ticket);
   const endedAt = getTicketWorkEndedAt(ticket);
   const startedAtLabel = formatTicketHandlingTimestamp(startedAt);
@@ -3864,15 +3932,29 @@ function TicketWorkTimer({ ticket, now, compact = false }) {
   const timerLabel = isBurnoutTicket(ticket)
     ? isRunning ? 'Burnout timer' : 'Burnout completed'
     : isRunning ? 'Work timer' : 'Work completed';
+  const timerClassName = [
+    'ticket-work-timer',
+    compact && 'compact',
+    !showLabel && 'icon-only',
+    isRunning ? 'running' : 'ended',
+  ].filter(Boolean).join(' ');
 
   return (
-    <div className={`ticket-work-timer${compact ? ' compact' : ''}${isRunning ? ' running' : ' ended'}`}>
-      <span><MonoIcon icon={Clock3} />{timerLabel}</span>
+    <div className={timerClassName}>
+      <span
+        className={showLabel ? '' : 'ticket-work-timer-icon'}
+        role={showLabel ? undefined : 'img'}
+        aria-label={showLabel ? undefined : timerLabel}
+        title={showLabel ? undefined : timerLabel}
+      >
+        <MonoIcon icon={Clock3} />
+        {showLabel && timerLabel}
+      </span>
       <strong>{formatElapsedTime(startedAt, endedAt, now)}</strong>
       {!compact && (
         <p>
           Started {startedAtLabel}
-          {endedAt ? ` - Ended ${endedAtLabel}` : ''}
+          {endedAt ? ' - Ended ' + endedAtLabel : ''}
         </p>
       )}
     </div>
@@ -4485,6 +4567,8 @@ function ReportCalendar({
 
 function DashboardView({ tickets, summary, categorySummary, onGoTo, onOpenTicket, now }) {
   const [queuePage, setQueuePage] = useState(1);
+  const [urgentWatchIndex, setUrgentWatchIndex] = useState(0);
+  const [movedDateWatchIndex, setMovedDateWatchIndex] = useState(0);
   const waitingTickets = useMemo(() => {
     const eligibleTickets = tickets.filter((ticket) => {
       const lockExpiresAt = new Date(ticket.lockExpiresAt || '').getTime();
@@ -4513,12 +4597,14 @@ function DashboardView({ tickets, summary, categorySummary, onGoTo, onOpenTicket
   );
   const urgentTickets = tickets
     .filter(isSlaWatchTicket)
-    .sort((a, b) => getSlaRank(a.sla) - getSlaRank(b.sla) || normalizeDate(b) - normalizeDate(a))
-    .slice(0, 5);
+    .sort((a, b) => getSlaRank(a.sla) - getSlaRank(b.sla) || compareTicketSubmissionOrder(a, b))
+    .slice(0, 3);
   const movedDateTickets = tickets
     .filter(isMovedDateTicket)
-    .sort((a, b) => normalizeDate(b) - normalizeDate(a))
-    .slice(0, 5);
+    .sort(compareTicketSubmissionOrder)
+    .slice(0, 3);
+  const urgentActiveTicket = urgentTickets[urgentWatchIndex] || null;
+  const movedDateActiveTicket = movedDateTickets[movedDateWatchIndex] || null;
 
   useEffect(() => {
     setQueuePage((page) => Math.min(page, totalQueuePages));
@@ -4528,6 +4614,14 @@ function DashboardView({ tickets, summary, categorySummary, onGoTo, onOpenTicket
   useEffect(() => {
     setQueuePage(1);
   }, [tickets.length]);
+
+  useEffect(() => {
+    setUrgentWatchIndex((index) => Math.min(index, Math.max(urgentTickets.length - 1, 0)));
+  }, [urgentTickets.length]);
+
+  useEffect(() => {
+    setMovedDateWatchIndex((index) => Math.min(index, Math.max(movedDateTickets.length - 1, 0)));
+  }, [movedDateTickets.length]);
 
   return (
     <div className="dashboard-view">
@@ -4544,7 +4638,7 @@ function DashboardView({ tickets, summary, categorySummary, onGoTo, onOpenTicket
         <StatCard icon={ShieldCheck} label="High / Critical" value={summary.critical} meta="Needs immediate attention" />
       </section>
 
-      <div className="dashboard-columns equal-columns">
+      <div className="dashboard-columns equal-columns dashboard-ticket-columns">
         <div className="dashboard-stack">
           <section className="panel-card glass equal-panel ticket-queue-panel">
             <div className="section-head">
@@ -4571,6 +4665,7 @@ function DashboardView({ tickets, summary, categorySummary, onGoTo, onOpenTicket
                 onPageChange: setQueuePage,
               }}
             />
+
           </section>
 
           {waitingTickets.length > 0 && (
@@ -4588,12 +4683,26 @@ function DashboardView({ tickets, summary, categorySummary, onGoTo, onOpenTicket
         </div>
 
         <div className="dashboard-stack">
-          <section className="panel-card glass equal-panel">
+          <section className="panel-card glass equal-panel dashboard-watch-panel">
             <div className="section-head">
               <div>
                 <span className="section-kicker">SLA Watchlist</span>
-                <h3>Urgent Concerns</h3>
+                <div className="dashboard-watch-heading">
+                  <h3>Urgent Concerns</h3>
+                  {urgentTickets.length > 0 && (
+                    <span
+                      className="dashboard-watch-count urgent"
+                      aria-label={urgentTickets.length + ' urgent ticket' + (urgentTickets.length === 1 ? '' : 's')}
+                      title={urgentTickets.length + ' urgent ticket' + (urgentTickets.length === 1 ? '' : 's')}
+                    >
+                      {urgentTickets.length}
+                    </span>
+                  )}
+                </div>
               </div>
+              {urgentActiveTicket && (
+                <TicketWorkTimer ticket={urgentActiveTicket} now={now} compact showLabel={false} />
+              )}
             </div>
 
             <div className="admin-watchlist">
@@ -4603,41 +4712,37 @@ function DashboardView({ tickets, summary, categorySummary, onGoTo, onOpenTicket
                   <p>High and critical tickets will appear here automatically.</p>
                 </div>
               ) : (
-                urgentTickets.map((ticket) => (
-                  <article
-                    key={ticket.id}
-                    className="admin-watch-card"
-                    role="button"
-                    tabIndex={0}
-                    aria-label={`View ticket ${getTicketDisplayCode(ticket)}`}
-                    onClick={() => onOpenTicket(ticket)}
-                    onKeyDown={(event) => {
-                      if (event.key === 'Enter' || event.key === ' ') {
-                        event.preventDefault();
-                        onOpenTicket(ticket);
-                      }
-                    }}
-                  >
-                    <div>
-                      <span className="ticket-id">{getTicketDisplayCode(ticket)}</span>
-                      <h4>{ticket.concernType || 'Unspecified concern'}</h4>
-                      <p>{ticket.branch || 'No branch'} · {ticket.requester || ticket.ownerEmail || 'Employee'}</p>
-                    </div>
-
-                    <TicketBadges ticket={ticket} />
-                    <TicketWorkTimer ticket={ticket} now={now} compact />
-                  </article>
-                ))
+                <DashboardWatchSummary
+                  tickets={urgentTickets}
+                  type="urgent"
+                  activeIndex={urgentWatchIndex}
+                  onChangeIndex={setUrgentWatchIndex}
+                  onOpenTicket={onOpenTicket}
+                />
               )}
             </div>
           </section>
 
-          <section className="panel-card glass equal-panel">
+          <section className="panel-card glass equal-panel dashboard-watch-panel">
             <div className="section-head">
               <div>
                 <span className="section-kicker">Moved Date</span>
-                <h3>Moved Date Concerns</h3>
+                <div className="dashboard-watch-heading">
+                  <h3>Moved Date Concerns</h3>
+                  {movedDateTickets.length > 0 && (
+                    <span
+                      className="dashboard-watch-count moved"
+                      aria-label={movedDateTickets.length + ' moved-date ticket' + (movedDateTickets.length === 1 ? '' : 's')}
+                      title={movedDateTickets.length + ' moved-date ticket' + (movedDateTickets.length === 1 ? '' : 's')}
+                    >
+                      {movedDateTickets.length}
+                    </span>
+                  )}
+                </div>
               </div>
+              {movedDateActiveTicket && (
+                <TicketWorkTimer ticket={movedDateActiveTicket} now={now} compact showLabel={false} />
+              )}
             </div>
 
             <div className="admin-watchlist">
@@ -4647,32 +4752,13 @@ function DashboardView({ tickets, summary, categorySummary, onGoTo, onOpenTicket
                   <p>Concerns moved to another date will appear here for follow-up.</p>
                 </div>
               ) : (
-                movedDateTickets.map((ticket) => (
-                  <article
-                    key={ticket.id}
-                    className="admin-watch-card"
-                    role="button"
-                    tabIndex={0}
-                    aria-label={`View ticket ${getTicketDisplayCode(ticket)}`}
-                    onClick={() => onOpenTicket(ticket)}
-                    onKeyDown={(event) => {
-                      if (event.key === 'Enter' || event.key === ' ') {
-                        event.preventDefault();
-                        onOpenTicket(ticket);
-                      }
-                    }}
-                  >
-                    <div>
-                      <span className="ticket-id">{getTicketDisplayCode(ticket)}</span>
-                      <h4>{ticket.concernType || 'Unspecified concern'}</h4>
-                      <p>{ticket.branch || 'No branch'} · {ticket.requester || ticket.ownerEmail || 'Employee'}</p>
-                      <p>Moved / Updated: {ticket.adminUpdatedAt || ticket.lastUpdated || 'No moved date recorded'}</p>
-                    </div>
-
-                    <TicketBadges ticket={ticket} />
-                    <TicketWorkTimer ticket={ticket} now={now} compact />
-                  </article>
-                ))
+                <DashboardWatchSummary
+                  tickets={movedDateTickets}
+                  type="moved"
+                  activeIndex={movedDateWatchIndex}
+                  onChangeIndex={setMovedDateWatchIndex}
+                  onOpenTicket={onOpenTicket}
+                />
               )}
             </div>
           </section>
@@ -7603,7 +7689,7 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
         />
       )}
 
-      {shouldShowConversation && isChatMinimized && (
+      {!isBurnout && shouldShowConversation && isChatMinimized && (
         <button
           type="button"
           className="ticket-chat-launcher"
@@ -8277,7 +8363,6 @@ Current role: ${activeUser.role || 'No role found'}`
               {activeSection === 'profile' && (
                 <AdminProfileView
                   admin={admin}
-                  users={users}
                   tickets={tickets}
                   canCreateUsers={canCreateUsers}
                   canCreateIctTickets={canCreateIctTickets}
