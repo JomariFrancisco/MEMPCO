@@ -76,6 +76,7 @@ const toMemberStory = (post) => ({
   role: post.storyRole || 'MEMPCO Member',
   location: post.storyLocation || 'MEMPCO Community',
   image: post.image || '/Logos/Logo.png',
+  imageAlt: post.imageAlt || post.title || 'MEMPCO member story',
   emoji: '',
   fullStory: post.fullArticle?.length ? post.fullArticle : [post.excerpt || ''],
   tags: post.tags?.length ? post.tags : ['#MEMPCOStories'],
@@ -200,7 +201,7 @@ function StoryModal({ story, onClose }) {
     >
       <div className="ms-modal">
         <div className="ms-modal__left">
-          <img src={story.image} alt={story.name} className="ms-modal__photo" />
+          <img src={story.image} alt={story.imageAlt || story.name} className="ms-modal__photo" />
           <div className="ms-modal__photo-scrim" aria-hidden="true" />
 
           <div className="ms-modal__identity">
@@ -276,7 +277,7 @@ function StoryCard({ story, onOpenModal, className = 'ms-card' }) {
   return (
     <article className={className}>
       <div className="ms-card__media">
-        <img src={story.image} alt={story.name} className="ms-card__photo" loading="lazy" />
+        <img src={story.image} alt={story.imageAlt || story.name} className="ms-card__photo" loading="lazy" />
         <span className="ms-card__role-tag">{story.role}</span>
       </div>
 

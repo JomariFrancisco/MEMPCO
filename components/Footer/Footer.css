@@ -33,19 +33,10 @@
     'Helvetica Neue', Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
 
-  /* entrance animation */
-  opacity: 0;
-  transform: translateY(24px);
-  transition: opacity 0.7s ease, transform 0.7s ease;
 }
 
 .ft * {
   min-width: 0;
-}
-
-.ft--visible {
-  opacity: 1;
-  transform: none;
 }
 
 /* ─── dot grid overlay ─── */

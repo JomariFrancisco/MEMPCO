@@ -1,0 +1,152 @@
+.committee-page {
+  min-height: 70svh;
+  padding: calc(var(--navbar-height, 70px) + 2rem) 2rem 4rem;
+  background: #f9fafb;
+  color: #111827;
+}
+
+.committee-page__container {
+  width: 100%;
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+.committee-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 2rem;
+  color: #4b5563;
+  font-size: 0.92rem;
+}
+
+.committee-breadcrumb a {
+  color: #dc2626;
+  text-decoration: none;
+}
+
+.committee-page__heading {
+  max-width: 760px;
+  margin-inline: auto;
+  margin-bottom: 2.5rem;
+  text-align: center;
+}
+
+.committee-page__eyebrow {
+  color: #b91c1c;
+  font-size: 0.78rem;
+  font-weight: 750;
+  text-transform: uppercase;
+}
+
+.committee-page__heading h1 {
+  margin: 0.75rem 0;
+  color: #111827;
+  font-size: 2.75rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.committee-group + .committee-group {
+  margin-top: 2.5rem;
+  padding-top: 2rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.committee-group h2 {
+  margin: 0 0 1.25rem;
+  color: #111827;
+  font-size: 1.35rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.committee-officers-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 275px));
+  justify-content: center;
+  gap: 1rem;
+}
+
+.committee-officer-card {
+  display: flex;
+  height: 330px;
+  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+  padding: 1.5rem 1rem 1rem;
+  border: 1px solid #e1e5eb;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 10px 26px rgba(17, 24, 39, 0.05);
+  text-align: center;
+}
+
+.committee-officer-card__portrait {
+  display: grid;
+  width: 116px;
+  height: 145px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.committee-officer-card__portrait span {
+  font-size: 1.75rem;
+  font-weight: 700;
+}
+
+.committee-officer-card__role {
+  margin: 0.7rem 0 0;
+  color: #dc2626;
+  font-size: 0.78rem;
+  font-weight: 750;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+
+.committee-officer-card h3 {
+  display: flex;
+  min-height: 2.4em;
+  align-items: center;
+  justify-content: center;
+  margin: 0.35rem 0 0;
+  color: #111827;
+  font-size: 1.18rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.committee-officer-card__committee {
+  display: flex;
+  min-height: 2.4em;
+  align-items: flex-start;
+  justify-content: center;
+  margin: 0.35rem 0 0;
+  color: #4b5563;
+  font-size: 0.92rem;
+  line-height: 1.25;
+}
+
+@media (max-width: 900px) {
+  .committee-officers-grid {
+    grid-template-columns: repeat(2, minmax(0, 275px));
+  }
+}
+
+@media (max-width: 640px) {
+  .committee-page {
+    padding: calc(var(--navbar-height, 70px) + 1.5rem) 1.1rem 3rem;
+  }
+
+  .committee-page__heading h1 {
+    font-size: 2rem;
+  }
+
+  .committee-officers-grid {
+    grid-template-columns: minmax(0, 275px);
+  }
+}

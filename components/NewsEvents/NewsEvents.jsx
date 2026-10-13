@@ -152,6 +152,41 @@ function ArrowIcon() {
   );
 }
 
+const formatEventDate = (value) => {
+  if (!value) return '';
+  const date = new Date(`${value}T00:00:00`);
+  return Number.isNaN(date.getTime())
+    ? value
+    : new Intl.DateTimeFormat('en-PH', { month: 'long', day: 'numeric', year: 'numeric' }).format(date);
+};
+
+function PostDetails({ post }) {
+  const eventDate = post.type === 'event' && post.eventDate ? formatEventDate(post.eventDate) : '';
+  const location = post.type === 'event' ? post.eventLocation : '';
+  const isImportant = post.type === 'announcement' && post.announcementPriority === 'important';
+
+  if (!eventDate && !location && !isImportant) return null;
+
+  return (
+    <div className="ne-post-details">
+      {isImportant && <span className="ne-important-label">Important</span>}
+      {eventDate && <time dateTime={post.eventDate}>{eventDate}</time>}
+      {location && <span>{location}</span>}
+    </div>
+  );
+}
+
+function RegistrationLink({ post }) {
+  const href = String(post.registrationUrl || '').trim();
+  if (post.type !== 'event' || !/^https?:\/\//i.test(href)) return null;
+
+  return (
+    <a className="ne-registration-link" href={href} target="_blank" rel="noopener noreferrer">
+      Register <ArrowIcon />
+    </a>
+  );
+}
+
 export default function NewsEvents() {
   const ref = useRef(null);
 
@@ -334,8 +369,10 @@ export default function NewsEvents() {
               <h3 className="ne-featured__title">{featured.title}</h3>
 
               <p className="ne-featured__excerpt">{featured.excerpt}</p>
+              <PostDetails post={featured} />
 
               <div className="ne-featured__actions">
+                <RegistrationLink post={featured} />
                 <Link href={getPostHref(featured)} className="ne-cta-btn">
                   <span>Read full story</span>
                   <span className="ne-cta-btn__icon" aria-hidden="true">
@@ -387,7 +424,9 @@ export default function NewsEvents() {
                 <h4 className="ne-card__title">{story.title}</h4>
 
                 <p className="ne-card__excerpt">{story.excerpt}</p>
+                <PostDetails post={story} />
 
+                <RegistrationLink post={story} />
                 <Link href={getPostHref(story)} className="ne-link">
                   Read more <ArrowIcon />
                 </Link>

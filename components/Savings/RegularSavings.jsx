@@ -1,4 +1,6 @@
 import Image from 'next/image'
+import Link from 'next/link'
+import { ArrowUpRight } from 'lucide-react'
 import './RegularSavings.css'
 
 /* ─── data ─────────────────────────────────────────── */
@@ -6,71 +8,6 @@ const stats = [
   { value: 'Php', num: '100', label: 'Minimum opening deposit' },
   { value: 'Php', num: '100', label: 'Maintaining balance' },
   { value: '3%',  num: null,  label: 'Interest per annum' },
-]
-
-const features = [
-  {
-    label: 'Steady annual interest',
-    desc:  'Your savings earns 3% interest per annum while keeping the account simple and accessible.',
-    icon: (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-      </svg>
-    ),
-  },
-  {
-    label: 'Php 100 maintaining balance',
-    desc:  'Keep at least Php 100 in the account to maintain active Regular Savings status.',
-    icon: (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <rect x="2" y="5" width="20" height="14" rx="2"/>
-        <path d="M2 10h20"/>
-      </svg>
-    ),
-  },
-  {
-    label: 'One-year dormancy policy',
-    desc:  'Accounts follow a one-year dormancy policy, so members are encouraged to keep their savings active.',
-    icon: (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-        <circle cx="9" cy="7" r="4"/>
-        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-      </svg>
-    ),
-  },
-]
-
-const cards = [
-  {
-    num:   '01',
-    title: 'How it works',
-    text:  'Open your Regular Savings account with Php 100. Maintain at least Php 100 and earn 3% interest per annum.',
-  },
-  {
-    num:   '02',
-    title: 'Dormancy',
-    text:  'The account follows a one-year dormancy policy. Keep the account active through regular savings activity.',
-  },
-]
-
-const whyCards = [
-  {
-    num:   '01',
-    title: 'Build saving discipline',
-    text:  'A mandatory account from day one helps every member start their financial journey on the right foot.',
-  },
-  {
-    num:   '02',
-    title: 'Grow without worry',
-    text:  'At 3% per annum, your savings continues to grow while staying easy to manage.',
-  },
-  {
-    num:   '03',
-    title: 'Accessible anytime',
-    text:  'Your funds are never locked away. Withdraw when you need to — the cooperative is here to serve you.',
-  },
 ]
 
 /* ─── component ────────────────────────────────────── */
@@ -81,36 +18,36 @@ export default function RegularSavings() {
       {/* ══ 1. HERO ══════════════════════════════════════ */}
       <section className="rs-section rs-hero" aria-labelledby="rs-heading">
         <div className="rs-inner">
+          <div className="rs-hero-layout">
+            <div className="rs-hero-copy">
+              <nav className="rs-breadcrumb" aria-label="Breadcrumb">
+                <span>Services</span>
+                <span className="rs-breadcrumb-sep">/</span>
+                <span>Savings</span>
+                <span className="rs-breadcrumb-sep">/</span>
+                <span className="rs-breadcrumb-active">Regular Savings</span>
+              </nav>
 
-          {/* breadcrumb */}
-          <nav className="rs-breadcrumb" aria-label="Breadcrumb">
-            <span>Services</span>
-            <span className="rs-breadcrumb-sep">/</span>
-            <span>Savings</span>
-            <span className="rs-breadcrumb-sep">/</span>
-            <span className="rs-breadcrumb-active">Regular Savings</span>
-          </nav>
+              <span className="rs-eyebrow">MEMPCO Savings Program</span>
+              <h1 className="rs-hero-title" id="rs-heading">
+                Regular <em>Savings.</em>
+              </h1>
+              <p className="rs-hero-tagline">
+                A simple place to begin your MEMPCO savings journey.
+              </p>
+            </div>
 
-          {/* headline */}
-          <span className="rs-eyebrow">MEMPCO Savings Program</span>
-          <h1 className="rs-hero-title" id="rs-heading">Regular <em>Savings.</em></h1>
-          <p className="rs-hero-tagline">
-            Save early to help in the long run.<br />
-            Built for every member from day one.
-          </p>
-
-          {/* product image */}
-          <div className="rs-product-stage">
-            <Image
-              src="/Savings/RegularSavingsPassbook.png"
-              alt="MEMPCO Regular Savings Passbook"
-              width={900}
-              height={700}
-              className="rs-product-img"
-              priority
-            />
+            <div className="rs-product-stage">
+              <Image
+                src="/Savings/RegularSavingsPassbook.png"
+                alt="MEMPCO Regular Savings Passbook"
+                width={900}
+                height={700}
+                className="rs-product-img"
+                priority
+              />
+            </div>
           </div>
-
         </div>
       </section>
 
@@ -137,68 +74,33 @@ export default function RegularSavings() {
         <div className="rs-inner">
           <div className="rs-details-grid">
 
-            {/* left — copy + feature list */}
+            {/* Account activity */}
             <div className="rs-details-copy">
-              <p className="rs-details-kicker">The essentials</p>
+              <p className="rs-details-kicker">Account activity</p>
               <h2 className="rs-details-title" id="rs-details-heading">
-                Everything you <em>need.</em><br />Nothing you don&apos;t.
+                One-year <em>dormancy policy.</em>
               </h2>
               <p className="rs-details-body">
-                The Regular Savings account is the foundation of your MEMPCO membership.
-                Open with as little as <strong>Php 100.00</strong> and earn{' '}
-                <strong>3% interest per annum</strong>.
+                Keep your account active through regular savings activity.
               </p>
-              <p className="rs-details-body">
-                Keep a <strong>Php 100 maintaining balance</strong> and keep
-                the account active under the one-year dormancy policy.
-              </p>
-
-              <ul className="rs-feature-list">
-                {features.map((f) => (
-                  <li className="rs-feature-item" key={f.label}>
-                    <div className="rs-feature-icon" aria-hidden="true">
-                      {f.icon}
-                    </div>
-                    <div className="rs-feature-text">
-                      <p className="rs-feature-name">{f.label}</p>
-                      <p className="rs-feature-desc">{f.desc}</p>
-                    </div>
-                  </li>
-                ))}
-              </ul>
             </div>
 
-            {/* right — info cards */}
-            <div className="rs-details-cards" aria-label="Product details">
-              {cards.map((c) => (
-                <div className="rs-detail-card" key={c.num}>
-                  <p className="rs-detail-card-num">{c.num}</p>
-                  <p className="rs-detail-card-title">{c.title}</p>
-                  <p className="rs-detail-card-text">{c.text}</p>
-                </div>
-              ))}
-            </div>
-
-          </div>
-        </div>
-      </section>
-
-      {/* ══ 4. WHY CHOOSE ════════════════════════════════ */}
-      <section className="rs-section rs-why" aria-labelledby="rs-why-heading">
-        <div className="rs-inner">
-          <p className="rs-why-kicker">Why it matters</p>
-          <h2 className="rs-why-title" id="rs-why-heading">
-            Designed for <em>real life.</em>
-          </h2>
-
-          <div className="rs-why-grid">
-            {whyCards.map((c) => (
-              <div className="rs-why-card" key={c.num}>
-                <p className="rs-why-card-num">{c.num}</p>
-                <p className="rs-why-card-title">{c.title}</p>
-                <p className="rs-why-card-text">{c.text}</p>
+            <aside className="rs-help-panel" aria-label="Account assistance">
+              <p className="rs-help-kicker">MEMPCO support</p>
+              <h3 className="rs-help-title">Questions about your account?</h3>
+              <p className="rs-help-text">
+                Visit a branch or contact our team for assistance with Regular Savings.
+              </p>
+              <div className="rs-help-links">
+                <Link href="/branches" className="rs-help-link">
+                  Find a branch <ArrowUpRight size={16} aria-hidden="true" />
+                </Link>
+                <Link href="/contact-details" className="rs-help-link">
+                  Contact MEMPCO <ArrowUpRight size={16} aria-hidden="true" />
+                </Link>
               </div>
-            ))}
+            </aside>
+
           </div>
         </div>
       </section>

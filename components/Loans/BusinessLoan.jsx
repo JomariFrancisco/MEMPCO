@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import './BusinessLoan.css';
+import '../ProductPage/ProductPage.css';
+import ProductSupportSection from '../ProductPage/ProductSupportSection';
 
 const categories = [
   {
@@ -147,25 +149,6 @@ const stats = [
   { value: 'Up to 5 yrs', label: 'Longest term shown' },
 ];
 
-const quickGuide = [
-  {
-    title: 'Individual Business Loan',
-    text: 'For members who need larger financing for expansion, working capital, and long-term business growth.',
-  },
-  {
-    title: 'Group Business Loan',
-    text: 'For entrepreneurs borrowing as a group with simpler evaluation and shared accountability.',
-  },
-  {
-    title: 'Back to Back Loan',
-    text: 'For existing depositors who want to borrow while leveraging their savings relationship.',
-  },
-  {
-    title: 'EC Tricycle Loan',
-    text: 'For qualified driver-operators needing support for units, sidecars, or franchise-related expenses.',
-  },
-];
-
 function LoanTable({ product, isOpen, onToggle }) {
   return (
     <article
@@ -253,70 +236,52 @@ export default function BusinessLoan() {
   };
 
   return (
-    <div className="bl">
-      <section className="bl-section bl-hero" aria-labelledby="bl-heading">
-        <div className="bl-inner">
-          <nav className="bl-breadcrumb" aria-label="Breadcrumb">
-            <span>Services</span>
-            <span className="bl-breadcrumb-sep">/</span>
-            <span>Loans</span>
-            <span className="bl-breadcrumb-sep">/</span>
-            <span className="bl-breadcrumb-active">Business Loan</span>
-          </nav>
+    <div className="bl mem-product-page">
+      <section className="bl-section bl-hero mem-product-hero" aria-labelledby="bl-heading">
+        <div className="bl-inner mem-product-hero__inner">
+          <div className="mem-product-hero__copy">
+            <nav className="bl-breadcrumb" aria-label="Breadcrumb">
+              <span>Services</span>
+              <span className="bl-breadcrumb-sep">/</span>
+              <span>Loans</span>
+              <span className="bl-breadcrumb-sep">/</span>
+              <span className="bl-breadcrumb-active">Business Loan</span>
+            </nav>
 
-          <span className="bl-eyebrow">MEMPCO Loan Program</span>
+            <span className="bl-eyebrow">MEMPCO Loan Program</span>
 
-          <h1 className="bl-hero-title" id="bl-heading">
-            Business Loan.<br />
-            <span className="accent">For growth.</span>
-          </h1>
+            <h1 className="bl-hero-title" id="bl-heading">
+              Business Loan.<br />
+              <span className="accent">For growth.</span>
+            </h1>
 
-          <p className="bl-hero-tagline">
-            MEMPCO business loan options designed for entrepreneurs, groups,
-            depositors, and driver-operators who need practical financing for
-            livelihood, expansion, and income-generating activities.
-          </p>
+            <p className="bl-hero-tagline">
+              MEMPCO business loan options designed for entrepreneurs, groups,
+              depositors, and driver-operators who need practical financing for
+              livelihood, expansion, and income-generating activities.
+            </p>
+          </div>
 
-          <div className="bl-hero-chips">
-            {categories[0].products.map((product) => (
-              <a href={`#${product.id}`} className="bl-hero-chip" key={product.id}>
-                <span className="bl-hero-chip-kicker">{product.abbr}</span>
-                <span className="bl-hero-chip-title">{product.name}</span>
-              </a>
-            ))}
+          <div className="mem-product-hero__media">
+            <div className="bl-hero-chips">
+              {categories[0].products.map((product) => (
+                <a href={`#${product.id}`} className="bl-hero-chip" key={product.id}>
+                  <span className="bl-hero-chip-kicker">{product.abbr}</span>
+                  <span className="bl-hero-chip-title">{product.name}</span>
+                </a>
+              ))}
+            </div>
           </div>
         </div>
       </section>
 
-      <section className="bl-section bl-stats" aria-label="Key figures">
-        <div className="bl-inner">
-          <div className="bl-stats-grid">
+      <section className="bl-section bl-stats mem-product-stats" aria-label="Key figures">
+        <div className="bl-inner mem-product-stats__inner">
+          <div className="bl-stats-grid mem-product-stats__grid mem-product-stats__grid--four">
             {stats.map((item) => (
-              <div className="bl-stat" key={item.label}>
-                <span className="bl-stat-value">{item.value}</span>
-                <span className="bl-stat-label">{item.label}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="bl-section bl-overview" aria-labelledby="bl-overview-heading">
-        <div className="bl-inner">
-          <p className="bl-section-kicker">Loan portfolio</p>
-          <h2 className="bl-section-title" id="bl-overview-heading">
-            Structured by <em>borrower type.</em>
-          </h2>
-          <p className="bl-section-text">
-            This layout presents the Business Loan page as a clean product catalog
-            so each loan option is easier to compare, explain, and update later.
-          </p>
-
-          <div className="bl-overview-grid">
-            {quickGuide.map((item) => (
-              <div className="bl-overview-card" key={item.title}>
-                <h3>{item.title}</h3>
-                <p>{item.text}</p>
+              <div className="bl-stat mem-product-stats__item" key={item.label}>
+                <span className="bl-stat-value mem-product-stats__value">{item.value}</span>
+                <span className="bl-stat-label mem-product-stats__label">{item.label}</span>
               </div>
             ))}
           </div>
@@ -351,6 +316,15 @@ export default function BusinessLoan() {
           </div>
         </section>
       ))}
+
+      <ProductSupportSection
+        id="bl-support"
+        kicker="Business Loan"
+        title={<>Financing for <em>business plans.</em></>}
+        description="Compare the available business loan programs above, then confirm the current requirements, fees, and repayment terms for the option that fits your needs."
+        supportTitle="Need help comparing options?"
+        supportText="Visit a branch or contact our team to discuss eligibility, documents, and the application process."
+      />
 
     </div>
   );

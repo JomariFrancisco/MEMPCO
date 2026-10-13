@@ -10,26 +10,24 @@ const FacebookIcon = () => (
   </svg>
 );
 
-const heroLinks = [
+const overviewLinks = [
   {
     id: 'mlc-purpose',
     kicker: 'Purpose',
-    title: 'See how MLC builds responsible savers, future leaders, and cooperative champions.',
+    title: 'A youth-centered platform for savings, learning, and leadership.',
+    action: 'Discover MLC',
   },
   {
     id: 'mlc-catalog',
-    kicker: 'Catalog',
-    title: 'Browse the two savings tracks and jump directly to their full pages.',
-  },
-  {
-    id: 'mlc-membership',
-    kicker: 'Memberships',
-    title: 'Review school-based and non-school-based saver categories.',
+    kicker: 'Savings programs',
+    title: 'Compare the school-based and non-school-based savings tracks.',
+    action: 'Explore savings',
   },
   {
     id: 'mlc-qualifications',
-    kicker: 'Join',
-    title: 'Check qualifications, submission requirements, and membership notes.',
+    kicker: 'Joining MLC',
+    title: 'Review eligibility and the documents to prepare before applying.',
+    action: 'Check requirements',
   },
 ];
 
@@ -139,43 +137,6 @@ const savingsCatalog = [
   },
 ];
 
-const membershipGroups = [
-  {
-    title: 'School Based Savers',
-    rows: [
-      {
-        type: 'Aflatoun Savers',
-        age: '6–12 y/o',
-        initialDeposit: '₱50',
-        membershipFee: 'None',
-      },
-      {
-        type: 'Aflateen Savers',
-        age: '13–17 y/o',
-        initialDeposit: '₱50',
-        membershipFee: 'None',
-      },
-    ],
-  },
-  {
-    title: 'Non-School Based Savers',
-    rows: [
-      {
-        type: 'Kiddie Savers',
-        age: '6–12 y/o',
-        initialDeposit: '₱50',
-        membershipFee: '₱50',
-      },
-      {
-        type: 'Teen Savers',
-        age: '13–17 y/o',
-        initialDeposit: '₱50',
-        membershipFee: '₱50',
-      },
-    ],
-  },
-];
-
 const qualifications = [
   'Filipino citizen',
   'At least six (6) years old and not over eighteen (18) years of age',
@@ -254,16 +215,23 @@ const campaignMoments = [
   },
 ];
 
-const learningNetwork = [
-  'Ayala Senior High School',
-  'Ateneo de Zamboanga University OJTs',
-  'Culianan National High School',
-  'Youth members',
-  'MEMPCO staff',
-  'Division Chiefs',
-  'Board of Directors',
-  'Volunteers',
-  'Community partners',
+const learningNetworkGroups = [
+  {
+    title: 'School Partners',
+    items: [
+      'Ayala Senior High School',
+      'Ateneo de Zamboanga University OJTs',
+      'Culianan National High School',
+    ],
+  },
+  {
+    title: 'Youth & Community',
+    items: ['Youth members', 'Volunteers', 'Community partners'],
+  },
+  {
+    title: 'Cooperative Guidance',
+    items: ['MEMPCO staff', 'Division Chiefs', 'Board of Directors'],
+  },
 ];
 
 const advocacyTracks = [
@@ -301,23 +269,21 @@ export default function MLC() {
               <span className="mlc-breadcrumb-active">MEMPCO Laboratory Cooperative</span>
             </nav>
 
-            <span className="mlc-eyebrow">MEMPCO Youth Development Platform</span>
+            <span className="mlc-eyebrow">MEMPCO Allied Services</span>
 
             <h1 className="mlc-hero-title" id="mlc-heading">
-              Get Started with
+              MEMPCO Laboratory
               <br />
-              <span className="accent">MLC Savings.</span>
+              <span className="accent">Cooperative.</span>
             </h1>
 
-            <p className="mlc-hero-tagline">Empowering young minds for tomorrow</p>
+            <p className="mlc-hero-tagline">
+              A youth savings and development platform empowering young minds through saving, learning, and action.
+            </p>
 
-            <div className="mlc-hero-links">
-              {heroLinks.map((item) => (
-                <a href={`#${item.id}`} className="mlc-hero-link" key={item.id}>
-                  <span className="mlc-hero-link-kicker">{item.kicker}</span>
-                  <span className="mlc-hero-link-title">{item.title}</span>
-                </a>
-              ))}
+            <div className="mlc-hero-actions">
+              <a className="mlc-hero-action primary" href="#mlc-catalog">Explore savings programs</a>
+              <a className="mlc-hero-action secondary" href="#mlc-qualifications">Membership requirements</a>
             </div>
           </div>
 
@@ -373,6 +339,32 @@ export default function MLC() {
         </div>
       </section>
 
+      <section className="mlc-section mlc-overview" aria-labelledby="mlc-overview-heading">
+        <div className="mlc-inner">
+          <div className="mlc-section-head">
+            <div>
+              <p className="mlc-section-kicker">Explore MLC</p>
+              <h2 className="mlc-section-title" id="mlc-overview-heading">
+                Find the right place to begin.
+              </h2>
+              <p className="mlc-section-text">
+                Explore the savings programs, membership pathways, and youth development work of MLC.
+              </p>
+            </div>
+          </div>
+
+          <div className="mlc-overview-grid">
+            {overviewLinks.map((item) => (
+              <a className="mlc-overview-card" href={`#${item.id}`} key={item.id}>
+                <span className="mlc-overview-kicker">{item.kicker}</span>
+                <h3>{item.title}</h3>
+                <span className="mlc-overview-action">{item.action}</span>
+              </a>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <section
         id="mlc-purpose"
         className="mlc-section mlc-purpose"
@@ -418,12 +410,11 @@ export default function MLC() {
             <div>
               <p className="mlc-section-kicker">Savings catalog</p>
               <h2 className="mlc-section-title" id="mlc-catalog-heading">
-                Two youth savings types, presented with a warm MLC visual direction.
+                Two savings pathways for young members.
               </h2>
               <p className="mlc-section-text">
-                The Aflatoun Savings card keeps its existing savings color identity,
-                while the full MLC page now follows the orange and yellow tones from the
-                official MLC logo.
+                Compare who each program serves, what it focuses on, and the membership
+                options available.
               </p>
             </div>
           </div>
@@ -444,7 +435,7 @@ export default function MLC() {
                 </div>
 
                 <div className="mlc-program-body">
-                  <div className="mlc-program-column">
+                  <section className="mlc-program-focus">
                     <h4>Program focus</h4>
                     <ul className="mlc-program-list">
                       {item.points.map((detail) => (
@@ -454,97 +445,40 @@ export default function MLC() {
                         </li>
                       ))}
                     </ul>
-                  </div>
+                  </section>
 
-                  <div className="mlc-program-column">
+                  <section className="mlc-program-membership">
                     <h4>Membership options</h4>
-
-                    <div className="mlc-program-memberships">
-                      {item.memberships.map((membership) => (
-                        <div className="mlc-program-membership-card" key={membership.name}>
-                          <div className="mlc-program-membership-head">
-                            <h5>{membership.name}</h5>
-                            <span>{membership.age}</span>
-                          </div>
-
-                          <div className="mlc-program-membership-grid">
-                            <div>
-                              <small>Initial deposit</small>
-                              <strong>{membership.initialDeposit}</strong>
-                            </div>
-                            <div>
-                              <small>Membership fee</small>
-                              <strong>{membership.membershipFee}</strong>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
+                    <div className="mlc-program-table-wrap">
+                      <table className="mlc-program-table">
+                        <thead>
+                          <tr>
+                            <th scope="col">Saver type</th>
+                            <th scope="col">Age</th>
+                            <th scope="col">Initial deposit</th>
+                            <th scope="col">Membership fee</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {item.memberships.map((membership) => (
+                            <tr key={membership.name}>
+                              <th scope="row">{membership.name}</th>
+                              <td data-label="Age">{membership.age}</td>
+                              <td data-label="Initial deposit">{membership.initialDeposit}</td>
+                              <td data-label="Membership fee">{membership.membershipFee}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
                     </div>
-                  </div>
+                  </section>
                 </div>
 
                 <div className="mlc-program-footer">
-                  <p>
-                    This section is already connected to the dedicated savings page, so
-                    users can move from the overview card to the full savings details.
-                  </p>
-
                   <Link href={item.route} className="mlc-program-button">
                     {item.buttonLabel}
                   </Link>
                 </div>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section
-        id="mlc-membership"
-        className="mlc-section mlc-membership"
-        aria-labelledby="mlc-membership-heading"
-      >
-        <div className="mlc-inner">
-          <div className="mlc-section-head">
-            <div>
-              <p className="mlc-section-kicker">Kinds of memberships</p>
-              <h2 className="mlc-section-title" id="mlc-membership-heading">
-                Clear membership groupings for school-based and non-school-based savers.
-              </h2>
-              <p className="mlc-section-text">
-                This section follows the poster details so visitors can quickly compare the
-                saver types, age range, initial deposit, and membership fee.
-              </p>
-            </div>
-          </div>
-
-          <div className="mlc-membership-stack">
-            {membershipGroups.map((group, gi) => (
-              <article
-                className={`mlc-membership-table-card mlc-membership-table-card--${
-                  gi === 0 ? 'aflatoun' : 'youth'
-                }`}
-                key={group.title}
-              >
-                <div className="mlc-membership-table-head">
-                  <h3>{group.title}</h3>
-                </div>
-
-                <div className="mlc-membership-table-grid mlc-membership-table-grid--head">
-                  <span>Saver type</span>
-                  <span>Age</span>
-                  <span>Initial deposit</span>
-                  <span>Membership fee</span>
-                </div>
-
-                {group.rows.map((row) => (
-                  <div className="mlc-membership-table-grid" key={row.type}>
-                    <span className="mlc-membership-type">{row.type}</span>
-                    <span>{row.age}</span>
-                    <span>{row.initialDeposit}</span>
-                    <span>{row.membershipFee}</span>
-                  </div>
-                ))}
               </article>
             ))}
           </div>
@@ -674,31 +608,37 @@ export default function MLC() {
       </section>
 
       <section className="mlc-section mlc-network" aria-labelledby="mlc-network-heading">
-        <div className="mlc-inner mlc-network-grid">
-          <div className="mlc-network-copy">
+        <div className="mlc-inner">
+          <div className="mlc-network-intro">
             <p className="mlc-section-kicker">Learning network</p>
             <h2 className="mlc-section-title" id="mlc-network-heading">
-              Built with schools, youth members, leadership, and community support.
+              Built with schools, young people, and the community.
             </h2>
             <p className="mlc-section-text">
-              The MLC page does not only present savings programs. It also shows the
-              ecosystem around them: school partnerships, youth participation, cooperative
-              guidance, and community-oriented support.
+              MLC grows through shared guidance, youth participation, and partnerships that
+              connect financial learning with everyday community life.
             </p>
           </div>
 
-          <div className="mlc-network-card">
-            <div className="mlc-network-chipset">
-              {learningNetwork.map((item, i) => (
-                <span
-                  className="mlc-network-chip"
-                  key={item}
-                  style={{ '--chip-index': String(i) }}
-                >
-                  {item}
-                </span>
-              ))}
-            </div>
+          <div className="mlc-network-grid" aria-label="MLC learning network">
+            {learningNetworkGroups.map((group, index) => (
+              <section
+                className="mlc-network-group"
+                key={group.title}
+                aria-labelledby={`mlc-network-group-${index}`}
+                style={{ '--group-index': String(index) }}
+              >
+                <div className="mlc-network-group-head">
+                  <span aria-hidden="true">0{index + 1}</span>
+                  <h3 id={`mlc-network-group-${index}`}>{group.title}</h3>
+                </div>
+                <ul className="mlc-network-list">
+                  {group.items.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </section>
+            ))}
           </div>
         </div>
       </section>
@@ -738,23 +678,6 @@ export default function MLC() {
         </div>
       </section>
 
-      <section className="mlc-section mlc-note" aria-labelledby="mlc-note-heading">
-        <div className="mlc-inner">
-          <div className="mlc-note-inner">
-            <p className="mlc-note-kicker">MLC closing statement</p>
-            <h2 className="mlc-note-title" id="mlc-note-heading">
-              Empowering young minds for tomorrow
-              <br />
-              through savings, learning, and action.
-            </h2>
-            <p className="mlc-note-text">
-              This structure is ready for future catalog expansion, additional MLC
-              updates, new school activities, and deeper savings information without
-              changing the design language of the page.
-            </p>
-          </div>
-        </div>
-      </section>
     </div>
   );
 }

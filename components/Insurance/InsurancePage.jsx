@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { ChevronDown } from 'lucide-react';
 import './InsurancePage.css';
 
 const familyColumns = [
@@ -365,28 +365,50 @@ const categories = [
 const stats = [
   { value: '15', label: 'Insurance products catalogued' },
   { value: '4', label: 'Coverage groups' },
-  { value: 'Add-ons', label: 'Life insurance packages' },
+  {
+    value: 'Life + Accident',
+    label: 'Natural + accidental death',
+    detail: 'Benefit amounts and eligibility vary by plan.',
+  },
   { value: 'Non-Life', label: 'Property and vehicle coverage' },
 ];
 
 const quickGuide = [
   {
+    id: 'life-insurance',
     title: 'Life Insurance Products',
     text: 'Includes GADDDI-4, Expanded Life Insurance, yearly renewable term, accident coverage, and deposit-linked insurance.',
+    action: 'Explore life coverage',
   },
   {
+    id: 'care-members',
     title: 'C.A.R.E Member Plans',
     text: 'Family-oriented products for principals, spouses, parents, children, and siblings.',
+    action: 'View member plans',
   },
   {
+    id: 'loan-protection',
     title: 'Loan Protection',
     text: 'Coverage tied to loan amount, borrower age, and term.',
+    action: 'Compare loan coverage',
   },
   {
+    id: 'non-life',
     title: 'Non-Life Insurance',
     text: 'Coverage for vehicles, calamities, and property protection.',
+    action: 'Explore non-life plans',
   },
 ];
+
+const heroShowcase = [
+  categories[0].products[0],
+  categories[1].products[0],
+  categories[2].products[0],
+].map((product) => ({
+  name: product.name,
+  price: `${product.premium} ${product.period}`,
+  text: product.summary,
+}));
 
 const coverageByProduct = {
   gadddi: [
@@ -472,46 +494,57 @@ const getCoverageItems = (product) => {
   ];
 };
 
-function CoverageDetails({ product }) {
+function CoverageDetails({ product, index }) {
   const coverageItems = getCoverageItems(product);
 
   return (
-    <article
+    <details
       id={product.id}
-      className="ins-coverage-card"
+      className="ins-product-card"
       style={{
         '--accent': product.tone,
         '--accent-soft': product.toneSoft,
+        '--card-index': index,
       }}
     >
-      <div className="ins-coverage-topbar" />
+      <summary className="ins-product-summary">
+        <div className="ins-product-topbar" />
 
-      <div className="ins-coverage-header">
-        <div className="ins-coverage-copy">
-          <div className="ins-coverage-meta">
-            <span className="ins-coverage-abbr">{product.abbr}</span>
-            <span className="ins-coverage-pill">{product.summary}</span>
+        <div className="ins-product-header">
+          <div className="ins-product-copy">
+            <div className="ins-product-meta">
+              <span className="ins-product-abbr">{product.abbr}</span>
+            </div>
+            <h3 className="ins-product-name">{product.name}</h3>
+            <p className="ins-product-description">{product.summary}</p>
           </div>
-          <h3 className="ins-coverage-name">{product.name}</h3>
+          <div className="ins-product-premium">
+            <span>{product.premiumLabel}</span>
+            <strong>{product.premium}</strong>
+            <small>{product.period}</small>
+          </div>
+          <span className="ins-product-toggle" aria-hidden="true">
+            <ChevronDown />
+          </span>
         </div>
-        <div className="ins-coverage-premium">
-          <span>{product.premiumLabel}</span>
-          <strong>{product.premium}</strong>
-          <small>{product.period}</small>
-        </div>
-      </div>
+      </summary>
 
-      <div className="ins-coverage-body">
-        <p className="ins-coverage-label">Coverage included</p>
-        <ul className="ins-coverage-list">
+      <div className="ins-product-body">
+        <p className="ins-product-label">Coverage included</p>
+        <ul className="ins-product-list">
           {coverageItems.map((item) => (
             <li key={`${product.id}-${item}`}>
-              <span className="ins-coverage-mark" aria-hidden="true" />
+              <span className="ins-product-mark" aria-hidden="true" />
               <span>{item}</span>
             </li>
           ))}
         </ul>
-        <div className="ins-benefit-table-wrap">
+        <div
+          className="ins-benefit-table-wrap"
+          role="region"
+          aria-label={`${product.name} benefits table`}
+          tabIndex={0}
+        >
           <table className="ins-benefit-table">
             <thead>
               <tr>
@@ -539,70 +572,11 @@ function CoverageDetails({ product }) {
           </table>
         </div>
       </div>
-    </article>
-  );
-}
-
-function AccordionItem({ product, isOpen, onToggle }) {
-  return (
-    <div
-      className={`ins-acc-item ${isOpen ? 'is-open' : ''}`}
-      style={{ '--accent': product.tone, '--accent-soft': product.toneSoft }}
-    >
-      <button
-        id={`acc-header-${product.id}`}
-        className="ins-acc-header"
-        type="button"
-        aria-expanded={isOpen}
-        aria-controls={`acc-body-${product.id}`}
-        onClick={onToggle}
-      >
-        <span className="ins-acc-bar" aria-hidden="true" />
-
-        <span
-          className="ins-acc-dot"
-          style={{ background: product.tone }}
-          aria-hidden="true"
-        />
-
-        <span className="ins-acc-abbr" style={{ background: product.tone }}>
-          {product.abbr}
-        </span>
-
-        <span className="ins-acc-name">{product.name}</span>
-
-        <span className="ins-acc-chevron" aria-hidden="true">
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <path
-              d="M3 5l4 4 4-4"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </span>
-      </button>
-
-      <div
-        id={`acc-body-${product.id}`}
-        className="ins-acc-body"
-        role="region"
-        aria-labelledby={`acc-header-${product.id}`}
-      >
-        <div className="ins-acc-body-inner">
-          <CoverageDetails product={product} />
-        </div>
-      </div>
-    </div>
+    </details>
   );
 }
 
 function CategoryShowcase({ category }) {
-  const [openId, setOpenId] = useState(null);
-
-  const toggle = (id) => setOpenId((prev) => (prev === id ? null : id));
-
   return (
     <section
       id={category.id}
@@ -620,13 +594,12 @@ function CategoryShowcase({ category }) {
           </div>
         </div>
 
-        <div className="ins-acc-list">
-          {category.products.map((product) => (
-            <AccordionItem
+        <div className="ins-product-stack">
+          {category.products.map((product, index) => (
+            <CoverageDetails
               key={product.id}
               product={product}
-              isOpen={openId === product.id}
-              onToggle={() => toggle(product.id)}
+              index={index}
             />
           ))}
         </div>
@@ -652,22 +625,14 @@ export default function InsurancePage() {
             <span className="ins-eyebrow">MEMPCO Allied Services</span>
 
             <h1 className="ins-hero-title" id="ins-heading">
-              <span className="ins-section-title-line1">Insurance Catalog.</span>
-              <span className="ins-section-title-line2 accent">For Members</span>
+              <span className="ins-hero-title-main">Insurance Catalog</span>
+              <br />
+              <span className="accent">For Members.</span>
             </h1>
 
             <p className="ins-hero-tagline">
-              A complete catalog of MEMPCO insurance products covering life insurance, family plans, loan protection, and non-life coverage.
+              Explore member life plans, family protection, loan coverage, and insurance for vehicles and property.
             </p>
-
-            <div className="ins-hero-chips">
-              {categories.map((category) => (
-                <a href={`#${category.id}`} className="ins-hero-chip" key={category.id}>
-                  <span className="ins-hero-chip-kicker">{category.kicker}</span>
-                  <span className="ins-hero-chip-title">{category.title}</span>
-                </a>
-              ))}
-            </div>
           </div>
 
           <div className="ins-hero-visual" aria-label="COOPAssurance logo">
@@ -677,6 +642,16 @@ export default function InsurancePage() {
                 alt="MEMPCO COOPAssurance logo"
                 className="ins-logo-image"
               />
+
+              <div className="ins-showcase-grid">
+                {heroShowcase.map((item) => (
+                  <article className="ins-showcase-card" key={item.name}>
+                    <span className="ins-showcase-price">{item.price}</span>
+                    <h3>{item.name}</h3>
+                    <p>{item.text}</p>
+                  </article>
+                ))}
+              </div>
 
               <a
                 href="https://www.facebook.com/profile.php?id=61568883475888"
@@ -702,6 +677,7 @@ export default function InsurancePage() {
               <div className="ins-stat" key={item.label} style={{ '--stat-index': i }}>
                 <span className="ins-stat-value">{item.value}</span>
                 <span className="ins-stat-label">{item.label}</span>
+                {item.detail && <span className="ins-stat-detail">{item.detail}</span>}
               </div>
             ))}
           </div>
@@ -717,18 +693,23 @@ export default function InsurancePage() {
                 Structured by insurance type.
               </h2>
               <p className="ins-section-text">
-                This layout turns the page into a full product catalog so every insurance
-                entry is easier to browse, compare, and update later.
+                Compare coverage types, plan benefits, and premiums across the MEMPCO insurance catalog.
               </p>
             </div>
           </div>
 
           <div className="ins-overview-grid">
             {quickGuide.map((item, i) => (
-              <div className="ins-overview-card" key={item.title} style={{ '--card-index': i }}>
+              <a
+                className="ins-overview-card"
+                href={`#${item.id}`}
+                key={item.title}
+                style={{ '--card-index': i }}
+              >
                 <h3>{item.title}</h3>
                 <p>{item.text}</p>
-              </div>
+                <span className="ins-overview-action">{item.action}</span>
+              </a>
             ))}
           </div>
         </div>
@@ -743,9 +724,7 @@ export default function InsurancePage() {
           <div className="ins-note-inner">
             <p className="ins-note-kicker">Get covered</p>
             <h2 className="ins-note-title" id="ins-note-heading">
-              For enrollment, claims, and full terms,
-              <br />
-              coordinate with MEMPCO.
+              For enrollment, claims, and full terms, coordinate with MEMPCO.
             </h2>
             <p className="ins-note-text">
               For final enrollment requirements, updated terms, and claims

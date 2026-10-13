@@ -1,6 +1,5 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import Navbar from '@/components/Navbar/Navbar'
 import Footer from '@/components/Footer/Footer'
@@ -15,26 +14,6 @@ const ceo = {
   title: 'Chief Executive Officer',
   label: 'Executive Leadership',
   category: 'Executive Management',
-  photo: '',
-}
-
-const execSec = {
-  id: 'exec-sec',
-  initials: 'LJB',
-  name: 'Liezl Jade A. Bernardo',
-  title: 'Executive Secretary',
-  label: 'Office of the CEO',
-  category: 'Executive Support',
-  photo: '',
-}
-
-const audit = {
-  id: 'audit',
-  initials: 'SSS',
-  name: 'Sherrydee-Ann S. Sarabi',
-  title: 'Audit',
-  label: 'Internal Audit',
-  category: 'Governance & Assurance',
   photo: '',
 }
 
@@ -106,7 +85,7 @@ const divisions = [
         id: 'amv',
         initials: 'AMV',
         name: 'Alma M. Vidal',
-        title: 'Enterprise Development Services',
+        title: 'Member Enterprise Development Service',
         label: 'Div 01',
         category: 'Department Leadership',
         photo: '',
@@ -229,6 +208,10 @@ const divisions = [
   },
 ]
 
+const chiefs = ['div-2', 'div-3', 'div-4', 'div-1'].map((id) =>
+  divisions.find((division) => division.id === id)
+)
+
 const branchManagers = [
   {
     id: 'cu',
@@ -320,229 +303,109 @@ const branchManagers = [
   },
 ]
 
+const areaManagers = [
+  divisions[1].reports.find((person) => person.id === 'ebd'),
+  divisions[1].reports.find((person) => person.id === 'frf'),
+]
+
+const areaOneBranches = branchManagers.filter(({ id }) =>
+  ['cu', 'ca', 'vb', 'cl', 'ay', 'vi'].includes(id)
+)
+const areaOneIndependentUnits = branchManagers.filter(({ id }) => ['ne', 'lh'].includes(id))
+const areaTwoBranches = branchManagers.filter(({ id }) => ['ip', 'dp', 'pg'].includes(id))
+
 /* ─── Small components ──────────────────────────────────── */
 
-function Avatar({ initials, size = 'md' }) {
-  return <div className={`oc-avatar oc-avatar--${size}`}>{initials}</div>
+function Avatar({ item, size = 'md' }) {
+  return (
+    <div className={`oc-avatar oc-avatar--${size} management-node-portrait${item.photo ? ' has-photo' : ''}`}>
+      {item.photo ? <img src={item.photo} alt={item.name} /> : <span>{item.initials}</span>}
+    </div>
+  )
 }
 
-function NodeCard({ item, size = 'md', onClick, dashed = false }) {
+function NodeCard({ item, size = 'md', dashed = false }) {
   return (
-    <button
-      type="button"
-      className={`oc-node oc-node--${size}${dashed ? ' oc-node--dashed' : ''}`}
-      onClick={() => onClick?.(item)}
-    >
-      <Avatar initials={item.initials} size={size} />
+    <article className={`oc-node oc-node--${size}${dashed ? ' oc-node--dashed' : ''}`}>
+      <Avatar item={item} size={size} />
+      <p className="oc-node-title management-node-role">{item.title}</p>
       {item.name && <p className="oc-node-name">{item.name}</p>}
-      <p className="oc-node-title">{item.title}</p>
-    </button>
+      <p className="oc-node-title management-node-subtitle">{item.category || item.label}</p>
+    </article>
+  )
+}
+
+function BranchPortrait({ item }) {
+  const altText = item.name || item.label || item.title
+
+  return (
+    <div className={`branch-avatar branch-portrait${item.photo ? ' has-photo' : ''}`}>
+      {item.photo ? <img src={item.photo} alt={altText} /> : <span>{item.initials}</span>}
+    </div>
+  )
+}
+
+function BranchCard({ branch }) {
+  return (
+    <article className="branch-card">
+      <BranchPortrait item={branch} />
+      <div className="branch-info">
+        <p className="branch-title branch-role">{branch.title}</p>
+        <p className="branch-label">{branch.label}</p>
+        <p className="branch-title branch-subtitle">{branch.category}</p>
+      </div>
+    </article>
+  )
+}
+
+function AreaManagerCard({ manager }) {
+  return (
+    <article className="branch-card area-manager-card">
+      <BranchPortrait item={manager} />
+      <div className="branch-info">
+        <p className="branch-title branch-role">{manager.title}</p>
+        <p className="branch-label">{manager.name}</p>
+        <p className="branch-title branch-subtitle">{manager.category}</p>
+      </div>
+    </article>
   )
 }
 
 /* ─── Clean Modal ───────────────────────────────────────── */
 
-function Modal({ leader, onClose }) {
-  const [imageError, setImageError] = useState(false)
-
-  useEffect(() => {
-    const onKey = (e) => {
-      if (e.key === 'Escape') onClose()
-    }
-
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [onClose])
-
-  useEffect(() => {
-    setImageError(false)
-  }, [leader?.id])
-
-  const photo = leader.photo || leader.image || leader.imageUrl
-  const displayName = leader.name || leader.label || 'Management Profile'
-  const displayTitle = leader.title || 'Leadership Assignment'
-  const displayAssignment = leader.label || leader.category || 'MEMPCO Management'
-  const displayCategory = leader.category || 'Management'
-  const altText = displayName
-
-  return (
-    <div className="mgmt-modal" onClick={onClose} role="dialog" aria-modal="true">
-      <div className="mgmt-modal-card" onClick={(e) => e.stopPropagation()}>
-        <button type="button" className="mgmt-modal-close" onClick={onClose} aria-label="Close">
-          &times;
-        </button>
-
-        <div className="mgmt-modal-photo-wrap">
-          {photo && !imageError ? (
-            <img
-              className="mgmt-modal-photo"
-              src={photo}
-              alt={altText}
-              onError={() => setImageError(true)}
-            />
-          ) : (
-            <div className="mgmt-modal-photo-fallback">
-              {leader.initials}
-            </div>
-          )}
-        </div>
-
-        <div className="mgmt-modal-info">
-          <span className="mgmt-modal-kicker">{displayCategory}</span>
-          <h2>{displayName}</h2>
-          <p className="mgmt-modal-title">{displayTitle}</p>
-
-          <div className="mgmt-modal-mini-details">
-            <div>
-              <span>Assignment</span>
-              <strong>{displayAssignment}</strong>
-            </div>
-
-            <div>
-              <span>Reference</span>
-              <strong>{leader.initials}</strong>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
 /* ─── Page ──────────────────────────────────────────────── */
 
 export default function ManagementPage() {
-  const [selected, setSelected] = useState(null)
-
-  useEffect(() => {
-    document.body.style.overflow = selected ? 'hidden' : ''
-
-    return () => {
-      document.body.style.overflow = ''
-    }
-  }, [selected])
-
   return (
     <>
       <Navbar />
 
-      {selected && <Modal leader={selected} onClose={() => setSelected(null)} />}
-
       <main className="mgmt-page">
-        {/* ── Hero ─────────────────────────────────────────── */}
-        <section className="mgmt-hero">
+        {/* ── Org Chart ────────────────────────────────────── */}
+        <section className="oc-section" id="management-structure">
           <div className="mgmt-container">
             <div className="mgmt-breadcrumb">
-              <Link href="/governance">Governance</Link>
+              <Link href="/about">About</Link>
+              <span>/</span>
+              <span>Governance</span>
               <span>/</span>
               <span>Management</span>
             </div>
-
-            <div className="mgmt-hero-grid">
-              <div className="mgmt-hero-copy">
-                <span className="mgmt-eyebrow">Operational Leadership</span>
-                <h1>
-                  Executive <em>Management</em>
-                </h1>
-
-                <p className="mgmt-hero-subtitle">
-                  Clear structure, coordinated execution, and member-centered operational leadership across the organization.
-                </p>
-                <div className="mgmt-hero-actions">
-                  <a href="#management-structure" className="mgmt-btn-primary">
-                    View Structure
-                  </a>
-                  <Link href="/governance" className="mgmt-btn-secondary">
-                    View Overview
-                  </Link>
-                </div>
-              </div>
-
-              <div className="mgmt-hero-aside">
-                <span className="mgmt-aside-kicker">Management Mandate</span>
-                <h3>Coordinated execution across divisions, areas, and branches.</h3>
-                <p>
-                  Management translates institutional direction into organized
-                  operations, accountable service delivery, and continuity across
-                  all operating units.
-                </p>
-              </div>
-            </div>
-
-            <div className="mgmt-hero-metrics" aria-label="Management overview">
-              <div>
-                <h3>01</h3>
-                <p>Chief Executive Officer</p>
-              </div>
-
-              <div>
-                <h3>04</h3>
-                <p>Division Chiefs</p>
-              </div>
-
-              <div>
-                <h3>02</h3>
-                <p>Area Managers</p>
-              </div>
-
-              <div>
-                <h3>11</h3>
-                <p>Branch / Unit Leaders</p>
-              </div>
-            </div>
           </div>
-        </section>
 
-        {/* ── Org Chart ────────────────────────────────────── */}
-        <section className="oc-section" id="management-structure">
           <div className="oc-section-head">
-            <span className="mgmt-tag">Organizational Structure</span>
-            <h2>Management <em>Hierarchy</em></h2>
-            <p>One Chief Executive Officer, four Division Chiefs, two Area Managers, and eleven branch-based operating units.</p>
+            <span className="mgmt-tag">Management Team</span>
+            <h1 className="management-page-title">Management</h1>
           </div>
 
           <div className="oc-wrap">
-            <div className="oc-row oc-row--top">
-              <div className="oc-ceo-group">
-                <NodeCard item={ceo} size="lg" onClick={setSelected} />
-
-                <div className="oc-h-connector">
-                  <div className="oc-h-line" />
-                  <NodeCard item={execSec} size="sm" onClick={setSelected} />
-                </div>
-              </div>
+            <div className="management-executive" aria-label="Chief Executive Officer">
+              <NodeCard item={ceo} size="md" />
             </div>
-
-            <div className="oc-trunk" />
-
-            <div className="oc-top-bar">
-              <div className="oc-top-bar-line" />
-            </div>
-
-            <div className="oc-row oc-row--divs">
-              {divisions.map((div) => (
-                <div key={div.id} className="oc-div-col">
-                  <div className="oc-leg" />
-                  <NodeCard item={div} size="md" onClick={setSelected} />
-
-                  {div.reports && div.reports.length > 0 && (
-                    <>
-                      <div className="oc-leg oc-leg--short" />
-
-                      <div className={`oc-sub-row oc-sub-row--${div.reports.length}`}>
-                        {div.reports.map((r) => (
-                          <NodeCard key={r.id} item={r} size="xs" onClick={setSelected} />
-                        ))}
-                      </div>
-                    </>
-                  )}
-                </div>
+            <div className="management-leadership-grid" aria-label="Division chiefs">
+              {chiefs.map((div) => (
+                <NodeCard key={div.id} item={div} size="md" />
               ))}
-
-              <div className="oc-div-col oc-div-col--audit">
-                <div className="oc-leg oc-leg--dashed" />
-                <NodeCard item={audit} size="md" onClick={setSelected} dashed />
-              </div>
             </div>
           </div>
         </section>
@@ -553,25 +416,49 @@ export default function ManagementPage() {
             <div className="mgmt-section-head">
               <span className="mgmt-tag">Branch Operations</span>
               <h2>Branch &amp; Unit <em>Managers</em></h2>
-              <p>Eleven branch and unit managers provide localized operational leadership across all service areas and satellite offices.</p>
             </div>
 
-            <div className="branch-grid">
-              {branchManagers.map((bm) => (
-                <button
-                  type="button"
-                  key={bm.id}
-                  className="branch-card"
-                  onClick={() => setSelected(bm)}
-                >
-                  <div className="branch-avatar">{bm.initials}</div>
+            <div className="branch-areas">
+              <section className="branch-area" aria-labelledby="area-one-title">
+                <div className="branch-area-heading">
+                  <span className="mgmt-tag">Area 1</span>
+                  <h3 id="area-one-title">Area 1 Operations</h3>
+                </div>
 
-                  <div className="branch-info">
-                    <p className="branch-label">{bm.label}</p>
-                    <p className="branch-title">{bm.title}</p>
+                <div className="area-manager-row">
+                  <AreaManagerCard manager={areaManagers[0]} />
+                </div>
+
+                <div className="area-branch-group">
+                  <div className="branch-grid branch-area-grid">
+                    {areaOneBranches.map((branch) => <BranchCard key={branch.id} branch={branch} />)}
                   </div>
-                </button>
-              ))}
+                </div>
+
+                <div className="area-branch-group area-independent-group">
+                  <h4>Other Area 1 Units</h4>
+                  <div className="branch-grid branch-independent-grid">
+                    {areaOneIndependentUnits.map((branch) => <BranchCard key={branch.id} branch={branch} />)}
+                  </div>
+                </div>
+              </section>
+
+              <section className="branch-area" aria-labelledby="area-two-title">
+                <div className="branch-area-heading">
+                  <span className="mgmt-tag">Area 2</span>
+                  <h3 id="area-two-title">Area 2 Operations</h3>
+                </div>
+
+                <div className="area-manager-row">
+                  <AreaManagerCard manager={areaManagers[1]} />
+                </div>
+
+                <div className="area-branch-group">
+                  <div className="branch-grid branch-area-grid">
+                    {areaTwoBranches.map((branch) => <BranchCard key={branch.id} branch={branch} />)}
+                  </div>
+                </div>
+              </section>
             </div>
           </div>
         </section>

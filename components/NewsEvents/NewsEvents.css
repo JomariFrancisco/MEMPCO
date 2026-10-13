@@ -282,6 +282,34 @@
   line-height: 1.7;
 }
 
+.ne-post-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.75rem;
+  color: var(--ne-ink-2);
+  font-size: 0.84rem;
+  font-weight: 750;
+  line-height: 1.4;
+}
+
+.ne-important-label {
+  color: var(--ne-red-dk);
+  font-size: 0.7rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.ne-registration-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  width: fit-content;
+  color: var(--ne-red);
+  font-size: 0.88rem;
+  font-weight: 850;
+  text-decoration: none;
+}
+
 .ne-featured__actions {
   display: flex;
   flex-wrap: wrap;

@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import { listPublishedAwardPosts } from '@/lib/marketing/marketingPosts';
 
 const getAwardYear = (award) => {
-  if (award.year) return award.year;
+  if (award.awardYear || award.year) return award.awardYear || award.year;
 
   const date = new Date(award.publishedAt || award.updatedAt || award.createdAt || '');
   return Number.isNaN(date.getTime()) ? 'Current' : String(date.getFullYear());
@@ -23,13 +23,14 @@ const normalizeAwardPost = (post) => ({
   organization: post.organization || 'Current Recognition',
   description: getAwardDescription(post),
   image: post.image,
+  imageAlt: post.imageAlt,
 });
 
 function AwardCard({ award }) {
   return (
     <article className="ad-card">
       {award.image ? (
-        <img src={award.image} alt={award.title} className="ad-award-image" loading="lazy" decoding="async" />
+        <img src={award.image} alt={award.imageAlt || award.title} className="ad-award-image" loading="lazy" decoding="async" />
       ) : (
         <div className="ad-award-image ad-award-image-placeholder" role="img" aria-label={`${award.title} image not available`}>
           <span>No image available</span>

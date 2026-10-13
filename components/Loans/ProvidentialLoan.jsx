@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import './Providential.css';
+import '../ProductPage/ProductPage.css';
+import ProductSupportSection from '../ProductPage/ProductSupportSection';
 
 const categories = [
   {
@@ -366,25 +368,6 @@ const stats = [
   { value: '6+ Uses', label: 'Household and personal purposes' },
 ];
 
-const quickGuide = [
-  {
-    title: 'Household and Family Needs',
-    text: 'Includes appliance and furniture, house improvement, and instant loan support for daily and urgent needs.',
-  },
-  {
-    title: 'Mobility and Assets',
-    text: 'Includes motorcycle and vehicle financing for transport, livelihood, and major purchases.',
-  },
-  {
-    title: 'Income and Public Service',
-    text: 'Includes salary and honorarium loans for employees and qualified barangay officials.',
-  },
-  {
-    title: 'Education and Pension Support',
-    text: 'Includes Study Now Pay Later support and loan support for qualified SSS pensioners.',
-  },
-];
-
 function ProvidentialTable({ product, isOpen, onToggle }) {
   return (
     <article
@@ -472,71 +455,52 @@ export default function ProvidentialLoan() {
   };
 
   return (
-    <div className="pl">
-      <section className="pl-section pl-hero" aria-labelledby="pl-heading">
-        <div className="pl-inner">
-          <nav className="pl-breadcrumb" aria-label="Breadcrumb">
-            <span>Services</span>
-            <span className="pl-breadcrumb-sep">/</span>
-            <span>Loans</span>
-            <span className="pl-breadcrumb-sep">/</span>
-            <span className="pl-breadcrumb-active">Providential Loan</span>
-          </nav>
+    <div className="pl mem-product-page">
+      <section className="pl-section pl-hero mem-product-hero" aria-labelledby="pl-heading">
+        <div className="pl-inner mem-product-hero__inner">
+          <div className="mem-product-hero__copy">
+            <nav className="pl-breadcrumb" aria-label="Breadcrumb">
+              <span>Services</span>
+              <span className="pl-breadcrumb-sep">/</span>
+              <span>Loans</span>
+              <span className="pl-breadcrumb-sep">/</span>
+              <span className="pl-breadcrumb-active">Providential Loan</span>
+            </nav>
 
-          <span className="pl-eyebrow">MEMPCO Loan Program</span>
+            <span className="pl-eyebrow">MEMPCO Loan Program</span>
 
-          <h1 className="pl-hero-title" id="pl-heading">
-            Providential Loan.<br />
-            <span className="accent">For practical needs.</span>
-          </h1>
+            <h1 className="pl-hero-title" id="pl-heading">
+              Providential Loan.<br />
+              <span className="accent">For practical needs.</span>
+            </h1>
 
-          <p className="pl-hero-tagline">
-            MEMPCO’s Providential Loan supports members with flexible financing
-            for household needs, employee support, education, transportation,
-            emergencies, and pension-related priorities.
-          </p>
+            <p className="pl-hero-tagline">
+              MEMPCO’s Providential Loan supports members with flexible financing
+              for household needs, employee support, education, transportation,
+              emergencies, and pension-related priorities.
+            </p>
+          </div>
 
-          <div className="pl-hero-chips">
-            {categories[0].products.map((product) => (
-              <a href={`#${product.id}`} className="pl-hero-chip" key={product.id}>
-                <span className="pl-hero-chip-kicker">{product.abbr}</span>
-                <span className="pl-hero-chip-title">{product.name}</span>
-              </a>
-            ))}
+          <div className="mem-product-hero__media">
+            <div className="pl-hero-chips">
+              {categories[0].products.map((product) => (
+                <a href={`#${product.id}`} className="pl-hero-chip" key={product.id}>
+                  <span className="pl-hero-chip-kicker">{product.abbr}</span>
+                  <span className="pl-hero-chip-title">{product.name}</span>
+                </a>
+              ))}
+            </div>
           </div>
         </div>
       </section>
 
-      <section className="pl-section pl-stats" aria-label="Key figures">
-        <div className="pl-inner">
-          <div className="pl-stats-grid">
+      <section className="pl-section pl-stats mem-product-stats" aria-label="Key figures">
+        <div className="pl-inner mem-product-stats__inner">
+          <div className="pl-stats-grid mem-product-stats__grid mem-product-stats__grid--four">
             {stats.map((item) => (
-              <div className="pl-stat" key={item.label}>
-                <span className="pl-stat-value">{item.value}</span>
-                <span className="pl-stat-label">{item.label}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="pl-section pl-overview" aria-labelledby="pl-overview-heading">
-        <div className="pl-inner">
-          <p className="pl-section-kicker">Loan portfolio</p>
-          <h2 className="pl-section-title" id="pl-overview-heading">
-            Structured by <em>member need.</em>
-          </h2>
-          <p className="pl-section-text">
-            This layout turns the Providential Loan page into a cleaner product
-            catalog so members can compare loan options, requirements, and
-            eligibility more easily.
-          </p>
-
-          <div className="pl-overview-grid">
-            {quickGuide.map((item) => (
-              <div className="pl-overview-card" key={item.title}>
-                <h3>{item.title}</h3>
-                <p>{item.text}</p>
+              <div className="pl-stat mem-product-stats__item" key={item.label}>
+                <span className="pl-stat-value mem-product-stats__value">{item.value}</span>
+                <span className="pl-stat-label mem-product-stats__label">{item.label}</span>
               </div>
             ))}
           </div>
@@ -571,6 +535,15 @@ export default function ProvidentialLoan() {
           </div>
         </section>
       ))}
+
+      <ProductSupportSection
+        id="pl-support"
+        kicker="Providential Loan"
+        title={<>Support for <em>everyday needs.</em></>}
+        description="Review the loan options above to find support for household, education, transportation, and other member needs. Confirm current eligibility and final terms before applying."
+        supportTitle="Questions about a loan option?"
+        supportText="Visit a branch or contact our team to review requirements, repayment terms, and the application process."
+      />
 
     </div>
   );
