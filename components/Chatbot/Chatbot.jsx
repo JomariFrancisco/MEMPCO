@@ -326,7 +326,7 @@ export const SITE_MAP = {
   },
   employeePortal: {
     label: 'Employee Portal',
-    href: '/LogIn',
+    href: '/helpdesk',
     icon: 'portal',
     keywords: ['employee portal', 'employee login', 'log in', 'sign in', 'staff access', 'portal', 'admin login', 'hr login'],
     description: 'Access the MEMPCO internal portal login for authorized employees and administrators.',
@@ -1202,7 +1202,10 @@ export default function Chatbot() {
     pathname?.startsWith('/admin-dashboard') ||
     pathname?.startsWith('/marketing-admin') ||
     pathname?.startsWith('/hr-admin') ||
-    pathname?.startsWith('/LogIn');
+    pathname?.startsWith('/superadmin') ||
+    pathname?.startsWith('/helpdesk') ||
+    pathname?.startsWith('/marketing') ||
+    pathname?.startsWith('/hr');
 
   const scrollRef = useRef(null);
   const endRef = useRef(null);

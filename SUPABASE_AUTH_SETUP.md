@@ -63,7 +63,7 @@ https://your-production-domain.com/auth/callback
 
 ## 5. Disable Public Signup
 
-Public account creation has been removed from `/LogIn`. For stricter protection, also disable public email signups in Supabase Dashboard > Authentication > Providers > Email after creating your first superadmin. Superadmin-created users will still be created through the protected server endpoint using the service-role key.
+Public account creation has been removed from the superadmin sign-in. For stricter protection, also disable public email signups in Supabase Dashboard > Authentication > Providers > Email after creating your first superadmin. Superadmin-created users will still be created through the protected server endpoint using the service-role key.
 
 ## 6. Create The First Super Admin
 
@@ -118,7 +118,7 @@ After that, signing in with that email routes to `/admin-dashboard` and shows th
 2. Open `/admin-dashboard`.
 3. Go to **Create User**.
 4. Enter the employee profile details, role, and temporary password.
-5. Submit the form. The user can then sign in from `/LogIn`.
+5. Submit the form. Employees and ICT admins sign in from `/helpdesk`; Marketing admins use `/marketing`; HR admins use `/hr`. Only superadmins can sign in from `/superadmin`.
 
 ## 8. Current Scope
 

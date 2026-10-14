@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { listPublishedMemberStories } from '@/lib/marketing/marketingPosts';
+import { useMarketingPreview } from '@/lib/marketing/marketingPreview';
 import './MemberStories.css';
 
 const COMPANY_YOUTUBE_URL = 'https://www.youtube.com/@mempcoph3541';
@@ -76,6 +77,7 @@ const toMemberStory = (post) => ({
   role: post.storyRole || 'MEMPCO Member',
   location: post.storyLocation || 'MEMPCO Community',
   image: post.image || '/Logos/Logo.png',
+  imageAlt: post.imageAlt || post.title || 'MEMPCO member story',
   emoji: '',
   fullStory: post.fullArticle?.length ? post.fullArticle : [post.excerpt || ''],
   tags: post.tags?.length ? post.tags : ['#MEMPCOStories'],
@@ -200,7 +202,7 @@ function StoryModal({ story, onClose }) {
     >
       <div className="ms-modal">
         <div className="ms-modal__left">
-          <img src={story.image} alt={story.name} className="ms-modal__photo" />
+          <img src={story.image} alt={story.imageAlt || story.name} className="ms-modal__photo" />
           <div className="ms-modal__photo-scrim" aria-hidden="true" />
 
           <div className="ms-modal__identity">
@@ -276,7 +278,7 @@ function StoryCard({ story, onOpenModal, className = 'ms-card' }) {
   return (
     <article className={className}>
       <div className="ms-card__media">
-        <img src={story.image} alt={story.name} className="ms-card__photo" loading="lazy" />
+        <img src={story.image} alt={story.imageAlt || story.name} className="ms-card__photo" loading="lazy" />
         <span className="ms-card__role-tag">{story.role}</span>
       </div>
 
@@ -336,6 +338,13 @@ export default function MemberStories() {
   const [stories, setStories] = useState(STORIES);
   const [featuredIndex, setFeaturedIndex] = useState(0);
   const [activeStory, setActiveStory] = useState(null);
+  const previewPost = useMarketingPreview();
+  const displayedStories = useMemo(() => {
+    if (previewPost?.type !== 'member_story') return stories;
+
+    const previewStory = toMemberStory(previewPost);
+    return [previewStory, ...stories.filter((story) => story.name !== previewStory.name)];
+  }, [previewPost, stories]);
 
   useEffect(() => {
     const section = sectionRef.current;
@@ -376,7 +385,7 @@ export default function MemberStories() {
       io.disconnect();
       sio.disconnect();
     };
-  }, [stories.length]);
+  }, [displayedStories.length]);
 
   useEffect(() => {
     let cancelled = false;
@@ -404,22 +413,22 @@ export default function MemberStories() {
   }, []);
 
   useEffect(() => {
-    if (featuredIndex > stories.length - 1) {
+    if (featuredIndex > displayedStories.length - 1) {
       setFeaturedIndex(0);
     }
-  }, [featuredIndex, stories.length]);
+  }, [displayedStories.length, featuredIndex]);
 
   const openModal = useCallback((story) => setActiveStory(story), []);
   const closeModal = useCallback(() => setActiveStory(null), []);
-  const featuredStory = stories[featuredIndex] || stories[0];
+  const featuredStory = displayedStories[featuredIndex] || displayedStories[0];
 
   const showPreviousStory = useCallback(() => {
     setFeaturedIndex((current) => Math.max(0, current - 1));
   }, []);
 
   const showNextStory = useCallback(() => {
-    setFeaturedIndex((current) => Math.min(stories.length - 1, current + 1));
-  }, [stories.length]);
+    setFeaturedIndex((current) => Math.min(displayedStories.length - 1, current + 1));
+  }, [displayedStories.length]);
 
   return (
     <>
@@ -442,7 +451,7 @@ export default function MemberStories() {
           </header>
 
           <div className="ms-story-showcase ms-reveal ms-reveal--up" data-reveal>
-            {stories.length > 1 && featuredIndex > 0 && (
+            {displayedStories.length > 1 && featuredIndex > 0 && (
               <button
                 type="button"
                 className="ms-story-arrow ms-story-arrow--prev"
@@ -462,7 +471,7 @@ export default function MemberStories() {
               />
             )}
 
-            {stories.length > 1 && featuredIndex < stories.length - 1 && (
+            {displayedStories.length > 1 && featuredIndex < displayedStories.length - 1 && (
               <button
                 type="button"
                 className="ms-story-arrow ms-story-arrow--next"
@@ -473,7 +482,7 @@ export default function MemberStories() {
               </button>
             )}
 
-            {stories.length > 1 && (
+            {displayedStories.length > 1 && (
               <div className="ms-story-controls" aria-label="Member story navigation">
                 <button
                   type="button"
@@ -487,7 +496,7 @@ export default function MemberStories() {
 
                 <span className="ms-story-counter" aria-live="polite">
                   {String(featuredIndex + 1).padStart(2, '0')} /{' '}
-                  {String(stories.length).padStart(2, '0')}
+                  {String(displayedStories.length).padStart(2, '0')}
                 </span>
 
                 <button

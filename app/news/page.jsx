@@ -8,6 +8,7 @@ import {
   getMarketingPostBuckets,
   listPublishedMarketingPosts,
 } from '@/lib/marketing/marketingPosts';
+import { useMarketingPreview } from '@/lib/marketing/marketingPreview';
 import './news.css';
 
 const CATEGORIES = ['All', 'News', 'Events', 'Announcement'];
@@ -71,6 +72,41 @@ function getTypeLabel(type) {
   return 'News';
 }
 
+const formatEventDate = (value) => {
+  if (!value) return '';
+  const date = new Date(`${value}T00:00:00`);
+  return Number.isNaN(date.getTime())
+    ? value
+    : new Intl.DateTimeFormat('en-PH', { month: 'long', day: 'numeric', year: 'numeric' }).format(date);
+};
+
+function PostDetails({ post }) {
+  const eventDate = post.type === 'event' && post.eventDate ? formatEventDate(post.eventDate) : '';
+  const location = post.type === 'event' ? post.eventLocation : '';
+  const isImportant = post.type === 'announcement' && post.announcementPriority === 'important';
+
+  if (!eventDate && !location && !isImportant) return null;
+
+  return (
+    <div className="np-post-details">
+      {isImportant && <span className="np-important-label">Important</span>}
+      {eventDate && <time dateTime={post.eventDate}>{eventDate}</time>}
+      {location && <span>{location}</span>}
+    </div>
+  );
+}
+
+function RegistrationLink({ post }) {
+  const href = String(post.registrationUrl || '').trim();
+  if (post.type !== 'event' || !href || !/^https?:\/\//i.test(href)) return null;
+
+  return (
+    <a className="np-link np-registration-link" href={href} target="_blank" rel="noopener noreferrer">
+      Event registration <ArrowIcon />
+    </a>
+  );
+}
+
 export default function News() {
   const [activeCategory, setActiveCategory] = useState('All');
   const [selectedArticle, setSelectedArticle] = useState(null);
@@ -78,16 +114,24 @@ export default function News() {
   const [pageReady, setPageReady] = useState(false);
   const [newsItems, setNewsItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const previewPost = useMarketingPreview();
+  const displayedNewsItems = useMemo(() => {
+    const isNewsPost = ['News', 'Events', 'Announcement'].includes(previewPost?.category);
+
+    if (!isNewsPost) return newsItems;
+
+    return [previewPost, ...newsItems.filter((item) => item.id !== previewPost.id)];
+  }, [newsItems, previewPost]);
 
   const getCategoryCount = (cat) =>
     cat === 'All'
-      ? newsItems.length
-      : newsItems.filter((item) => item.category === cat).length;
+      ? displayedNewsItems.length
+      : displayedNewsItems.filter((item) => item.category === cat).length;
 
   const filteredItems = useMemo(() => {
-    if (activeCategory === 'All') return newsItems;
-    return newsItems.filter((item) => item.category === activeCategory);
-  }, [activeCategory, newsItems]);
+    if (activeCategory === 'All') return displayedNewsItems;
+    return displayedNewsItems.filter((item) => item.category === activeCategory);
+  }, [activeCategory, displayedNewsItems]);
 
   const storyBuckets = useMemo(
     () => getMarketingPostBuckets(filteredItems),
@@ -200,7 +244,7 @@ export default function News() {
     revealItems.forEach((item) => observer.observe(item));
 
     return () => observer.disconnect();
-  }, [activeCategory, newsItems]);
+  }, [activeCategory, displayedNewsItems]);
 
   useEffect(() => {
     if (!selectedArticle) return;
@@ -231,17 +275,19 @@ export default function News() {
       <main className={`np${pageReady ? ' np--ready' : ''}`}>
         <div className="np-page-transition" aria-hidden="true" />
 
-        <section className="np-hero">
+        <header className="np-page-header">
           <div className="np-wrap">
-            <div className="np-hero-inner">
-              <h1 className="np-hero-title">
-                <span>News &amp;</span> <em>Events</em>
-              </h1>
+            <div className="np-page-header-inner">
+              <div className="np-page-header-copy">
+                <span className="np-label">MEMPCO Updates</span>
+                <h1 className="np-page-title">
+                  <span>News &amp;</span> <em>Events</em>
+                </h1>
 
-              <p className="np-hero-sub">
-                Explore official MEMPCO news, cooperative events, and public
-                announcements from across the organization.
-              </p>
+                <p className="np-page-sub">
+                  The latest cooperative news, announcements, and events.
+                </p>
+              </div>
 
               <nav className="np-tabs" aria-label="Filter by category">
                 {CATEGORIES.map((cat) => (
@@ -250,6 +296,7 @@ export default function News() {
                     type="button"
                     className={`np-tab${activeCategory === cat ? ' np-tab--on' : ''}`}
                     onClick={() => setActiveCategory(cat)}
+                    aria-pressed={activeCategory === cat}
                   >
                     {cat}
                     <span className="np-tab-count">
@@ -260,7 +307,7 @@ export default function News() {
               </nav>
             </div>
           </div>
-        </section>
+        </header>
 
         {loading && (
           <section className="np-latest-section np-reveal np-reveal--visible">
@@ -270,7 +317,7 @@ export default function News() {
           </section>
         )}
 
-        {!loading && newsItems.length === 0 && (
+        {!loading && displayedNewsItems.length === 0 && (
           <section className="np-latest-section np-reveal np-reveal--visible">
             <div className="np-wrap">
               <header className="np-section-head">
@@ -311,7 +358,7 @@ export default function News() {
                 >
                   <StoryImage
                     src={featured.image}
-                    alt={featured.title}
+                    alt={featured.imageAlt || featured.title}
                     className="np-spotlight-image"
                     loading="eager"
                   />
@@ -332,6 +379,8 @@ export default function News() {
 
                   <h2 className="np-spotlight-title">{featured.title}</h2>
                   <p className="np-spotlight-excerpt">{featured.excerpt}</p>
+                  <PostDetails post={featured} />
+                  <RegistrationLink post={featured} />
 
                   <button
                     type="button"
@@ -346,7 +395,7 @@ export default function News() {
           </section>
         )}
 
-        {!loading && newsItems.length > 0 && (
+        {!loading && displayedNewsItems.length > 0 && (
           <section className="np-latest-section np-reveal">
             <div className="np-wrap">
               <header className="np-section-head">
@@ -378,7 +427,7 @@ export default function News() {
                       >
                         <StoryImage
                           src={item.image}
-                          alt={item.title}
+                          alt={item.imageAlt || item.title}
                           className="np-news-card-image"
                         />
 
@@ -393,6 +442,8 @@ export default function News() {
                       <div className="np-news-card-body">
                         <h3 className="np-news-card-title">{item.title}</h3>
                         <p className="np-news-card-excerpt">{item.excerpt}</p>
+                        <PostDetails post={item} />
+                        <RegistrationLink post={item} />
 
                         <button
                           type="button"
@@ -437,7 +488,7 @@ export default function News() {
                     >
                       <StoryImage
                         src={item.image}
-                        alt={item.title}
+                        alt={item.imageAlt || item.title}
                         className="np-more-card-image"
                       />
 
@@ -454,6 +505,8 @@ export default function News() {
 
                       <h3 className="np-more-card-title">{item.title}</h3>
                       <p className="np-more-card-excerpt">{item.excerpt}</p>
+                      <PostDetails post={item} />
+                      <RegistrationLink post={item} />
 
                       <button
                         type="button"
@@ -506,7 +559,7 @@ export default function News() {
               >
                 <StoryImage
                   src={selectedArticle.image}
-                  alt={selectedArticle.title}
+                  alt={selectedArticle.imageAlt || selectedArticle.title}
                   className="np-modal-image"
                 />
                 <span className="np-modal-image-hint">View full image</span>
@@ -527,6 +580,8 @@ export default function News() {
               <h2 className="np-modal-title">{selectedArticle.title}</h2>
 
               <p className="np-modal-lead">{selectedArticle.excerpt}</p>
+              <PostDetails post={selectedArticle} />
+              <RegistrationLink post={selectedArticle} />
 
               <div className="np-modal-article">
                 {Array.isArray(selectedArticle.fullArticle) &&

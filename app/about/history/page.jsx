@@ -3,52 +3,64 @@ import Navbar from '@/components/Navbar/Navbar';
 import Footer from '@/components/Footer/Footer';
 import { HISTORY } from '../aboutData';
 import '../about-pages.css';
+import './history.css';
 
 export default function HistoryPage() {
   return (
     <>
       <Navbar />
-      <main className="ad-page">
-        <header className="ad-hero">
+      <main className="ad-page ad-history-page">
+        <header className="ad-history-hero">
           <div className="ad-shell">
             <nav className="ad-breadcrumb" aria-label="Breadcrumb">
               <Link href="/about">About</Link>
-              <span>/</span>
-              <span>History</span>
+              <span aria-hidden="true">/</span>
+              <span aria-current="page">History &amp; Milestones</span>
             </nav>
-            <p className="ad-kicker">History & Milestones</p>
-            <h1 className="ad-title">The MEMPCO <em>journey.</em></h1>
-            <p className="ad-lead">
-              A timeline of the cooperative's growth, service expansion, and continuing commitment to members.
-            </p>
+            <p className="ad-kicker">About MEMPCO</p>
+            <h1 className="ad-title">History &amp; Milestones</h1>
           </div>
         </header>
 
-        <section className="ad-content ad-history-section" aria-labelledby="history-timeline-heading">
-          <div className="ad-shell">
-            <div className="ad-history-intro">
-              <p className="ad-kicker">Milestone Timeline</p>
-              <h2 id="history-timeline-heading">From microfinance roots to expanded cooperative service.</h2>
+        <section className="ad-history-overview" aria-labelledby="history-overview-title">
+          <div className="ad-shell ad-history-overview-inner">
+            <div className="ad-history-overview-copy">
+              <p className="ad-history-section-label">The MEMPCO Journey</p>
+              <h2 id="history-overview-title">Shaped by our members.</h2>
               <p>
-                Each milestone reflects how MEMPCO continued to grow its reach, strengthen member support,
-                and respond to the changing needs of the communities it serves.
+                From its early microfinance work supporting women entrepreneurs in Zamboanga City to a broader
+                range of cooperative services, MEMPCO&apos;s journey has followed the needs and aspirations of
+                its members.
               </p>
             </div>
+            <figure className="ad-history-anniversary">
+              <img
+                src="/Hero/24Years%26Logo.png"
+                alt="MEMPCO, 24 years in service"
+                loading="lazy"
+              />
+            </figure>
+          </div>
+        </section>
 
-            <div className="ad-history">
-              {HISTORY.map(([period, title, description], index) => (
-                <article className="ad-history-item" key={`${period}-${title}`}>
-                  <div className="ad-history-marker">
-                    <span>{String(index + 1).padStart(2, '0')}</span>
-                    <time>{period}</time>
-                  </div>
-                  <div className="ad-history-card">
-                    <h2>{title}</h2>
+        <section className="ad-history-timeline-section" aria-labelledby="history-timeline-title">
+          <div className="ad-shell">
+            <header className="ad-history-timeline-header">
+              <p className="ad-history-section-label">Milestones</p>
+              <h2 id="history-timeline-title">The journey, year by year.</h2>
+            </header>
+
+            <ol className="ad-history-timeline">
+              {HISTORY.map(([period, title, description]) => (
+                <li className="ad-history-entry" key={`${period}-${title}`}>
+                  <time className="ad-history-year">{period}</time>
+                  <div className="ad-history-entry-copy">
+                    <h3>{title}</h3>
                     <p>{description}</p>
                   </div>
-                </article>
+                </li>
               ))}
-            </div>
+            </ol>
           </div>
         </section>
       </main>

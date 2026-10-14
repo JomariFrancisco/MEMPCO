@@ -8,11 +8,17 @@ const privateNetworkDevOrigins = [
 ]
 
 const nextConfig = {
+  async redirects() {
+    return [
+      {
+        source: '/LogIn',
+        destination: '/superadmin',
+        permanent: false,
+      },
+    ];
+  },
   typescript: {
     ignoreBuildErrors: true,
-  },
-  images: {
-    unoptimized: true,
   },
   allowedDevOrigins: privateNetworkDevOrigins,
 }

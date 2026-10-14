@@ -1,4 +1,6 @@
 import './CareProgram.css';
+import '../ProductPage/ProductPage.css';
+import ProductSupportSection from '../ProductPage/ProductSupportSection';
 
 const features = [
   {
@@ -40,66 +42,54 @@ const stats = [
 
 export default function CareProgram() {
   return (
-    <div className="cp">
+    <div className="cp mem-product-page">
       {/* HERO */}
-      <section className="cp-section cp-hero" aria-labelledby="cp-heading">
-        <div className="cp-inner">
-          <nav className="cp-breadcrumb" aria-label="Breadcrumb">
-            <span>Services</span>
-            <span className="cp-breadcrumb-sep">/</span>
-            <span>Loans</span>
-            <span className="cp-breadcrumb-sep">/</span>
-            <span className="cp-breadcrumb-active">CARE Program</span>
-          </nav>
+      <section className="cp-section cp-hero mem-product-hero" aria-labelledby="cp-heading">
+        <div className="cp-inner mem-product-hero__inner">
+          <div className="mem-product-hero__copy">
+            <nav className="cp-breadcrumb" aria-label="Breadcrumb">
+              <span>Services</span>
+              <span className="cp-breadcrumb-sep">/</span>
+              <span>Loans</span>
+              <span className="cp-breadcrumb-sep">/</span>
+              <span className="cp-breadcrumb-active">CARE Program</span>
+            </nav>
 
-          <span className="cp-eyebrow">MEMPCO Flagship Initiative</span>
+            <span className="cp-eyebrow">MEMPCO Flagship Initiative</span>
 
-          <h1 className="cp-hero-title" id="cp-heading">
-            CARE Program.<br />
-            <span className="accent">Helping members move forward.</span>
-          </h1>
+            <h1 className="cp-hero-title" id="cp-heading">
+              CARE Program.<br />
+              <span className="accent">Helping members move forward.</span>
+            </h1>
 
-          <p className="cp-hero-tagline">
-            MEMPCO&apos;s CARE Program gives members a clear loan facility for
-            practical financing needs, with transparent amount limits, repayment
-            terms, and service fees.
-          </p>
+            <p className="cp-hero-tagline">
+              MEMPCO&apos;s CARE Program gives members a clear loan facility for
+              practical financing needs, with transparent amount limits, repayment
+              terms, and service fees.
+            </p>
+          </div>
 
-          <div className="cp-hero-badge-row">
-            <span className="cp-hero-badge">2.75% Monthly Interest</span>
-            <span className="cp-hero-badge">Php 4K Minimum</span>
-            <span className="cp-hero-badge">Up to Php 200K</span>
+          <div className="mem-product-hero__media">
+            <div className="cp-hero-badge-row">
+              <span className="cp-hero-badge">2.75% Monthly Interest</span>
+              <span className="cp-hero-badge">Php 4K Minimum</span>
+              <span className="cp-hero-badge">Up to Php 200K</span>
+            </div>
           </div>
         </div>
       </section>
 
       {/* STATS */}
-      <section className="cp-section cp-stats" aria-label="Key figures">
-        <div className="cp-inner">
-          <div className="cp-stats-grid">
+      <section className="cp-section cp-stats mem-product-stats" aria-label="Key figures">
+        <div className="cp-inner mem-product-stats__inner">
+          <div className="cp-stats-grid mem-product-stats__grid mem-product-stats__grid--four">
             {stats.map((item) => (
-              <div className="cp-stat" key={item.label}>
-                <span className="cp-stat-value">{item.value}</span>
-                <span className="cp-stat-label">{item.label}</span>
+              <div className="cp-stat mem-product-stats__item" key={item.label}>
+                <span className="cp-stat-value mem-product-stats__value">{item.value}</span>
+                <span className="cp-stat-label mem-product-stats__label">{item.label}</span>
               </div>
             ))}
           </div>
-        </div>
-      </section>
-
-      {/* ABOUT THE PROGRAM */}
-      <section className="cp-section cp-about" aria-labelledby="cp-about-heading">
-        <div className="cp-inner">
-          <p className="cp-section-kicker">About the program</p>
-          <h2 className="cp-section-title" id="cp-about-heading">
-            Built to help members move forward.
-          </h2>
-          <p className="cp-section-text">
-            The CARE Program supports members through the CARE Loan facility:
-            2.75% interest per month, a Php 4,000 minimum loan amount, a Php
-            200,000 maximum loan amount, 4 to 12 months to pay, and a 4%
-            service fee.
-          </p>
         </div>
       </section>
 
@@ -157,23 +147,14 @@ export default function CareProgram() {
           </div>
         </div>
       </section>
-
-      {/* NOTE / CTA */}
-      <section className="cp-section cp-note" aria-labelledby="cp-note-heading">
-        <div className="cp-inner">
-          <div className="cp-note-inner">
-            <p className="cp-note-kicker">Apply with MEMPCO</p>
-            <h2 className="cp-note-title" id="cp-note-heading">
-              Ready to build your livelihood<br />with the CARE Program?
-            </h2>
-            <p className="cp-note-text">
-              For updated requirements, application review, and final loan terms,
-              coordinate directly with MEMPCO. Final approval and eligibility evaluation
-              may vary depending on borrower profile and loan assessment.
-            </p>
-          </div>
-        </div>
-      </section>
+      <ProductSupportSection
+        id="cp-support"
+        kicker="CARE Loan Facility"
+        title={<>Confirm your <em>loan terms.</em></>}
+        description="The facility offers Php 4,000 to Php 200,000, 2.75% monthly interest, a 4% service fee, and 4 to 12 months to pay. Final approval and eligibility depend on borrower assessment."
+        supportTitle="Questions about CARE?"
+        supportText="Contact MEMPCO for current requirements, application review, and final loan terms."
+      />
     </div>
   );
 }

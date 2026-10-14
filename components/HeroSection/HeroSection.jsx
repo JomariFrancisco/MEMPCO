@@ -130,6 +130,19 @@ export default function HeroSection() {
 
   const [activeSlide, setActiveSlide] = useState(0);
 
+  /* Keep the transparent navbar readable as the hero leaves its video slide. */
+  useEffect(() => {
+    const root = document.documentElement;
+
+    if (activeSlide === 0) {
+      root.setAttribute('data-home-hero-nav', 'video');
+    } else {
+      root.setAttribute('data-home-hero-nav', 'dark');
+    }
+
+    return () => root.removeAttribute('data-home-hero-nav');
+  }, [activeSlide]);
+
   /* Automatic hero structure carousel */
   useEffect(() => {
     const timers = [];

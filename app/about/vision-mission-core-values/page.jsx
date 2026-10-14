@@ -3,53 +3,49 @@ import Navbar from '@/components/Navbar/Navbar';
 import Footer from '@/components/Footer/Footer';
 import { PRINCIPLES, VALUES } from '../aboutData';
 import '../about-pages.css';
+import './foundation.css';
 
 export default function PrinciplesPage() {
   return (
     <>
       <Navbar />
-      <main className="ad-page">
-        <header className="ad-hero">
+      <main className="ad-page ad-foundation-page">
+        <header className="ad-foundation-hero">
           <div className="ad-shell">
             <nav className="ad-breadcrumb" aria-label="Breadcrumb">
               <Link href="/about">About</Link>
-              <span>/</span>
-              <span>Vision, Mission & Core Values</span>
+              <span aria-hidden="true">/</span>
+              <span aria-current="page">Our Foundation</span>
             </nav>
-            <p className="ad-kicker">Our Foundation</p>
-            <h1 className="ad-title">Purpose that guides <em>service.</em></h1>
-            <p className="ad-lead">
-              The principles that shape MEMPCO's direction, leadership, and commitment to its members.
-            </p>
+            <p className="ad-kicker">About MEMPCO</p>
+            <h1 className="ad-title">Our Foundation</h1>
           </div>
         </header>
 
-        <section className="ad-content ad-principles">
-          <div className="ad-shell">
-            <div className="ad-principles-grid">
-              {PRINCIPLES.map((item) => (
-                <article className="ad-principle-card" key={item.title}>
+        <section className="ad-foundation-purpose" aria-label="Vision and mission">
+          <div className="ad-shell ad-foundation-purpose-grid">
+            {PRINCIPLES.map((item, index) => (
+              <article className="ad-foundation-principle" key={item.title}>
+                <span className="ad-foundation-index">{String(index + 1).padStart(2, '0')}</span>
+                <div>
                   <h2>{item.title}</h2>
                   <p>{item.description}</p>
-                </article>
-              ))}
-            </div>
+                </div>
+              </article>
+            ))}
           </div>
         </section>
 
-        <section className="ad-content ad-values" aria-labelledby="core-values-heading">
+        <section className="ad-foundation-values" aria-labelledby="core-values-heading">
           <div className="ad-shell">
-            <div className="ad-values-header">
-              <p className="ad-kicker">Core Values</p>
-              <h2 id="core-values-heading">The standards behind every service.</h2>
-              <p>
-                These values guide how MEMPCO works with members, teams, and communities every day.
-              </p>
-            </div>
-            <div className="ad-values-grid">
+            <header className="ad-foundation-values-header">
+              <p className="ad-kicker">Our Principles</p>
+              <h2 id="core-values-heading">Core Values</h2>
+            </header>
+            <div className="ad-foundation-values-grid">
               {VALUES.map(([number, title, description]) => (
-                <article className="ad-value-card" key={number}>
-                  <span className="ad-value-number">{number}</span>
+                <article className="ad-foundation-value" key={number}>
+                  <span className="ad-foundation-value-number">{number}</span>
                   <div>
                     <h3>{title}</h3>
                     <p>{description}</p>

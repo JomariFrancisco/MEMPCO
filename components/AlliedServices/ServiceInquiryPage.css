@@ -1,0 +1,299 @@
+.allied-inquiry,
+.allied-inquiry * {
+  box-sizing: border-box;
+}
+
+.allied-inquiry {
+  --service-accent: #c8102e;
+  --service-accent-dark: #8f1025;
+  --service-tint: #fff1f2;
+  --ink: #111111;
+  --muted: #111111;
+  --border: #e6d9db;
+  width: 100%;
+  color: var(--ink);
+  background: #fff;
+  font-family: "SF Pro Display", "SF Pro Text", -apple-system, BlinkMacSystemFont,
+    "Helvetica Neue", "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.allied-inquiry-inner {
+  width: min(1120px, calc(100% - 40px));
+  margin: 0 auto;
+}
+
+.allied-inquiry-hero {
+  padding: 112px 0 58px;
+  border-bottom: 1px solid var(--border);
+  background: #fff8f8;
+}
+
+.allied-inquiry-breadcrumb {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-bottom: 32px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.allied-inquiry-breadcrumb a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.allied-inquiry-breadcrumb a:hover {
+  color: var(--service-accent-dark);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.allied-inquiry-breadcrumb [aria-current="page"] {
+  color: var(--service-accent-dark);
+  font-weight: 700;
+}
+
+.allied-inquiry-eyebrow,
+.allied-inquiry-kicker {
+  display: block;
+  margin: 0 0 14px;
+  color: var(--service-accent-dark);
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.allied-inquiry-hero h1 {
+  max-width: 850px;
+  margin: 0;
+  color: var(--ink);
+  font-size: 60px;
+  line-height: 1.05;
+  font-weight: 800;
+}
+
+.allied-inquiry-intro {
+  max-width: 700px;
+  margin: 20px 0 0;
+  color: var(--muted);
+  font-size: 19px;
+  line-height: 1.6;
+}
+
+.allied-inquiry-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 25px;
+}
+
+.allied-inquiry-button {
+  min-height: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 16px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  font-size: 15px;
+  font-weight: 750;
+  text-decoration: none;
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+.allied-inquiry-button.primary {
+  color: #fff;
+  background: var(--service-accent);
+}
+
+.allied-inquiry-button.primary:hover {
+  background: var(--service-accent-dark);
+}
+
+.allied-inquiry-button.secondary {
+  color: var(--service-accent-dark);
+  border-color: var(--service-accent);
+  background: #fff;
+}
+
+.allied-inquiry-button.secondary:hover {
+  border-color: var(--service-accent);
+  background: var(--service-tint);
+}
+
+.allied-inquiry-note {
+  margin: 19px 0 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.allied-inquiry-topics {
+  padding: 62px 0 72px;
+}
+
+.allied-inquiry-section-head {
+  max-width: 690px;
+  margin-bottom: 28px;
+}
+
+.allied-inquiry-section-head h2,
+.allied-inquiry-contact h2 {
+  margin: 0;
+  font-size: 34px;
+  line-height: 1.15;
+  font-weight: 780;
+}
+
+.allied-inquiry-section-head > p:last-child,
+.allied-inquiry-contact-inner > div > p:last-child {
+  margin: 12px 0 0;
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.allied-inquiry-topic-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: start;
+  gap: 16px;
+}
+
+.allied-inquiry-topic {
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  flex-direction: column;
+  padding: 22px;
+  border: 1px solid var(--border);
+  border-top: 2px solid var(--service-accent);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.allied-inquiry-topic-label {
+  margin: 0 0 6px;
+  color: var(--service-accent-dark);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.allied-inquiry-topic h3 {
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.25;
+}
+
+.allied-inquiry-topic > p:last-child {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.allied-inquiry .allied-inquiry-contact {
+  padding: 40px 0;
+  color: #111;
+  border-top: 3px solid var(--service-accent);
+  background-color: #fff !important;
+}
+
+.allied-inquiry-contact-inner {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 32px;
+}
+
+.allied-inquiry .allied-inquiry-contact .allied-inquiry-kicker {
+  color: var(--service-accent-dark);
+}
+
+.allied-inquiry .allied-inquiry-contact h2 {
+  max-width: 720px;
+  color: var(--service-accent) !important;
+}
+
+.allied-inquiry .allied-inquiry-contact-inner > div > p:last-child {
+  color: #111;
+}
+
+.allied-inquiry-button.contact-button {
+  align-self: flex-start;
+  flex: 0 0 auto;
+  color: #fff;
+  border-color: var(--service-accent);
+  background: var(--service-accent);
+}
+
+.allied-inquiry-button.contact-button:hover {
+  color: #fff;
+  border-color: var(--service-accent-dark);
+  background: var(--service-accent-dark);
+}
+
+@media (max-width: 760px) {
+  .allied-inquiry-inner {
+    width: min(100% - 28px, 1120px);
+  }
+
+  .allied-inquiry-hero {
+    padding: 96px 0 42px;
+  }
+
+  .allied-inquiry-breadcrumb {
+    margin-bottom: 24px;
+    font-size: 13px;
+  }
+
+  .allied-inquiry-hero h1 {
+    font-size: 44px;
+  }
+
+  .allied-inquiry-intro {
+    font-size: 17px;
+  }
+
+  .allied-inquiry-topics {
+    padding: 42px 0 48px;
+  }
+
+  .allied-inquiry-section-head h2,
+  .allied-inquiry-contact h2 {
+    font-size: 28px;
+  }
+
+  .allied-inquiry-topic-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .allied-inquiry-topic {
+    padding: 18px;
+  }
+
+  .allied-inquiry-contact {
+    padding: 32px 0;
+  }
+
+  .allied-inquiry-contact-inner {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 22px;
+  }
+}
+
+@media (max-width: 380px) {
+  .allied-inquiry-hero h1 {
+    font-size: 35px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .allied-inquiry-button {
+    transition: none;
+  }
+}

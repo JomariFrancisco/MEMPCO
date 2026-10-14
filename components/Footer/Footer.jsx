@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import { Clock, Mail, MapPin, Phone } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
 import './Footer.css';
 
 const NAV_LINKS = {
@@ -57,30 +56,9 @@ const CONTACT_INFO = [
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
-  const footerRef = useRef(null);
-  const [isVisible, setIsVisible] = useState(false);
-
-  useEffect(() => {
-    const node = footerRef.current;
-    if (!node) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true);
-          observer.unobserve(node);
-        }
-      },
-      { threshold: 0.08 }
-    );
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, []);
 
   return (
-    <footer
-      ref={footerRef}
-      className={`ft${isVisible ? ' ft--visible' : ''}`}
-    >
+    <footer className="ft">
       <div className="ft-grid" aria-hidden="true" />
       <div className="ft-glow" aria-hidden="true" />
 

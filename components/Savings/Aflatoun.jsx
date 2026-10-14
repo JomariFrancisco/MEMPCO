@@ -1,5 +1,7 @@
 import Image from 'next/image'
 import './Aflatoun.css'
+import '../ProductPage/ProductPage.css'
+import ProductSupportSection from '../ProductPage/ProductSupportSection'
 
 /* ─── data ─────────────────────────────────────────── */
 const stats = [
@@ -17,59 +19,6 @@ const stats = [
   },
 ]
 
-const features = [
-  {
-    label: 'Free membership fee',
-    desc:  'Children can join without a membership fee, making it easier to begin saving early.',
-    icon: (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-        <circle cx="9" cy="7" r="4" />
-        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-      </svg>
-    ),
-  },
-  {
-    label: 'Social and financial education',
-    desc:  'In partnership with NATCCO and DepEd-selected schools, Aflatoun teaches children real life skills alongside saving.',
-    icon: (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
-        <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
-      </svg>
-    ),
-  },
-  {
-    label: 'Php 50 initial deposit',
-    desc:  'A small initial deposit gives young savers a simple and practical starting point.',
-    icon: (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
-        <polyline points="17 6 23 6 23 12" />
-      </svg>
-    ),
-  },
-]
-
-const cards = [
-  {
-    num:   '01',
-    title: 'Who can open',
-    text:  'Young savers can open an Aflatoun account with free membership and a Php 50 initial deposit.',
-  },
-  {
-    num:   '02',
-    title: 'How interest is earned',
-    text:  'The account earns 3% interest per annum, helping children see how saving can make money grow over time.',
-  },
-  {
-    num:   '03',
-    title: 'Part of a bigger program',
-    text:  'Aflatoun is a globally recognized financial education program. MEMPCO brings it to local communities in partnership with NATCCO.',
-  },
-]
-
 const pillars = [
   { num: '01', name: 'Personal Exploration' },
   { num: '02', name: 'Rights and Responsibilities' },
@@ -78,130 +27,73 @@ const pillars = [
   { num: '05', name: 'Social & Financial Enterprise' },
 ]
 
-const whyCards = [
-  {
-    num:   '01',
-    title: 'More than a passbook',
-    text:  'Aflatoun combines real savings with life skills education — children learn not just to save, but why saving matters.',
-  },
-  {
-    num:   '02',
-    title: 'No cost to start',
-    text:  'Free membership and a Php 50 initial deposit keep the starting point simple for young savers.',
-  },
-  {
-    num:   '03',
-    title: 'Globally proven, locally delivered',
-    text:  'Aflatoun is used in over 100 countries. MEMPCO brings this proven framework directly to children in the community.',
-  },
-]
-
 /* ─── component ────────────────────────────────────── */
 export default function Aflatoun() {
   return (
-    <div className="af">
+    <div className="af mem-product-page">
 
       {/* ══ 1. HERO ══════════════════════════════════════ */}
-      <section className="af-section af-hero" aria-labelledby="af-heading">
-        <div className="af-inner">
+      <section className="af-section af-hero mem-product-hero" aria-labelledby="af-heading">
+        <div className="af-inner mem-product-hero__inner">
+          <div className="mem-product-hero__copy">
 
-          {/* breadcrumb */}
-          <nav className="af-breadcrumb" aria-label="Breadcrumb">
-            <span>Services</span>
-            <span className="af-breadcrumb-sep">/</span>
-            <span>Savings</span>
-            <span className="af-breadcrumb-sep">/</span>
-            <span className="af-breadcrumb-active">Aflatoun Savings</span>
-          </nav>
+            {/* breadcrumb */}
+            <nav className="af-breadcrumb" aria-label="Breadcrumb">
+              <span>Services</span>
+              <span className="af-breadcrumb-sep">/</span>
+              <span>Savings</span>
+              <span className="af-breadcrumb-sep">/</span>
+              <span className="af-breadcrumb-active">Aflatoun Savings</span>
+            </nav>
 
-          {/* headline */}
-          <span className="af-eyebrow">MEMPCO Savings Program</span>
-          <h1 className="af-hero-title" id="af-heading">Aflatoun Savings.</h1>
-          <p className="af-hero-tagline">
-            Teach children to start saving early.<br />
-            Simple deposits and financial learning, together.
-          </p>
+            {/* headline */}
+            <span className="af-eyebrow">MEMPCO Savings Program</span>
+            <h1 className="af-hero-title" id="af-heading">Aflatoun Savings.</h1>
+            <p className="af-hero-tagline">
+              Teach children to start saving early.<br />
+              Simple deposits and financial learning, together.
+            </p>
+          </div>
 
           {/* product image */}
-          <div className="af-product-stage">
-            <Image
-              src="/Savings/AflatounPassbook.png"
-              alt="MEMPCO Aflatoun Savings Passbook"
-              width={900}
-              height={700}
-              className="af-product-img"
-              priority
-            />
+          <div className="mem-product-hero__media">
+            <div className="af-product-stage">
+              <Image
+                src="/Savings/AflatounPassbook.png"
+                alt="MEMPCO Aflatoun Savings Passbook"
+                width={900}
+                height={700}
+                className="af-product-img"
+                priority
+              />
+            </div>
           </div>
 
         </div>
       </section>
 
       {/* ══ 2. STATS BAR ═════════════════════════════════ */}
-      <section className="af-section af-stats" aria-label="Key figures">
-        <div className="af-inner">
-          <div className="af-stats-grid">
+      <section className="af-section af-stats mem-product-stats" aria-label="Key figures">
+        <div className="af-inner mem-product-stats__inner">
+          <div className="af-stats-grid mem-product-stats__grid mem-product-stats__grid--three">
             {stats.map((s) => (
-              <div className="af-stat" key={s.label}>
-                <span className="af-stat-value">{s.value}</span>
-                <span className="af-stat-label">{s.label}</span>
+              <div className="af-stat mem-product-stats__item" key={s.label}>
+                <span className="af-stat-value mem-product-stats__value">{s.value}</span>
+                <span className="af-stat-label mem-product-stats__label">{s.label}</span>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ══ 3. DETAILS ═══════════════════════════════════ */}
-      <section className="af-section af-details" aria-labelledby="af-details-heading">
-        <div className="af-inner">
-          <div className="af-details-grid">
-
-            {/* left — copy + features */}
-            <div>
-              <p className="af-details-kicker">The program</p>
-              <h2 className="af-details-title" id="af-details-heading">
-                Save money.<br />Learn life.
-              </h2>
-              <p className="af-details-body">
-                Aflatoun is a globally recognized social and financial education
-                program delivered locally by MEMPCO in partnership with{' '}
-                <strong>NATCCO and DepEd-selected schools</strong>.
-              </p>
-              <p className="af-details-body">
-                Children can open an account for as low as{' '}
-                <strong>Php 50</strong> with <strong>free membership</strong>,
-                and begin earning <strong>3% interest per annum</strong>.
-              </p>
-
-              <ul className="af-feature-list">
-                {features.map((f) => (
-                  <li className="af-feature-item" key={f.label}>
-                    <div className="af-feature-icon" aria-hidden="true">
-                      {f.icon}
-                    </div>
-                    <div>
-                      <p className="af-feature-name">{f.label}</p>
-                      <p className="af-feature-desc">{f.desc}</p>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* right — stacked info cards */}
-            <div className="af-detail-cards" aria-label="Program details">
-              {cards.map((c) => (
-                <div className="af-detail-card" key={c.num}>
-                  <p className="af-detail-card-num">{c.num}</p>
-                  <p className="af-detail-card-title">{c.title}</p>
-                  <p className="af-detail-card-text">{c.text}</p>
-                </div>
-              ))}
-            </div>
-
-          </div>
-        </div>
-      </section>
+      <ProductSupportSection
+        id="af-support"
+        kicker="Aflatoun Savings"
+        title={<>Save money. <em>Learn life.</em></>}
+        description="Aflatoun combines a child-friendly savings account with social and financial education, delivered by MEMPCO with NATCCO and DepEd-selected schools. Children can start with a Php 50 deposit, free membership, and earn 3% interest per annum."
+        supportTitle="Questions about Aflatoun Savings?"
+        supportText="Visit a branch or contact our team for account-opening details, school participation, and current terms."
+      />
 
       {/* ══ 4. FIVE CORE ELEMENTS ════════════════════════ */}
       <section className="af-section af-pillars" aria-labelledby="af-pillars-heading">
@@ -220,26 +112,6 @@ export default function Aflatoun() {
               <div className="af-pillar-card" key={p.num}>
                 <span className="af-pillar-num">{p.num}</span>
                 <span className="af-pillar-name">{p.name}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ══ 5. WHY CHOOSE ════════════════════════════════ */}
-      <section className="af-section af-why" aria-labelledby="af-why-heading">
-        <div className="af-inner">
-          <p className="af-why-kicker">Why Aflatoun</p>
-          <h2 className="af-why-title" id="af-why-heading">
-            Education that earns.
-          </h2>
-
-          <div className="af-why-grid">
-            {whyCards.map((c) => (
-              <div className="af-why-card" key={c.num}>
-                <p className="af-why-card-num">{c.num}</p>
-                <p className="af-why-card-title">{c.title}</p>
-                <p className="af-why-card-text">{c.text}</p>
               </div>
             ))}
           </div>

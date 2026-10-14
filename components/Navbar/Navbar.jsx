@@ -31,13 +31,13 @@ export default function Navbar() {
     return pathname === path || pathname.startsWith(`${path}/`)
   }
 
-  const isGovernanceOverviewActive = pathname === '/governance'
   const isBoardActive = pathname === '/governance/board-of-directors'
+  const isCommitteeActive = pathname === '/governance/committee'
   const isManagementActive = pathname === '/governance/management'
 
   const isGovernanceActive =
-    isGovernanceOverviewActive ||
     isBoardActive ||
+    isCommitteeActive ||
     isManagementActive
 
   const isAboutActive =
@@ -304,49 +304,49 @@ export default function Navbar() {
                 onClick={toggleAbout}
                 aria-expanded={aboutOpen}
               >
-                <span>About</span>
+                <span>About Us</span>
                 <span className="arrow"></span>
               </button>
 
               <ul className="nav-dropdown-menu about-dropdown-menu">
                 <li className="about-mega__column">
-                  <Link href="/about/history" onClick={handleNavigation} className="about-mega__heading">
+                  <h3 className="about-mega__heading">
                     History
-                  </Link>
+                  </h3>
                   <ul className="about-mega__links">
-                    <li><Link href="/about/history" onClick={handleNavigation}>Journey & Milestones</Link></li>
+                    <li><Link href="/about/history" onClick={handleNavigation}>History & Milestones</Link></li>
                   </ul>
                 </li>
                 <li className="about-mega__column">
-                  <Link href="/about/vision-mission-core-values" onClick={handleNavigation} className="about-mega__heading">
+                  <h3 className="about-mega__heading">
                     Vision, Mission &amp; Core Values
-                  </Link>
+                  </h3>
                   <ul className="about-mega__links">
                     <li><Link href="/about/vision-mission-core-values" onClick={handleNavigation}>Our Foundation</Link></li>
                   </ul>
                 </li>
                 <li className="about-mega__column">
-                  <Link href="/governance" onClick={handleNavigation} className="about-mega__heading">
+                  <h3 className="about-mega__heading">
                     Governance
-                  </Link>
+                  </h3>
                   <ul className="about-mega__links">
-                    <li><Link href="/governance" onClick={handleNavigation}>Governance Overview</Link></li>
                     <li><Link href="/governance/board-of-directors" onClick={handleNavigation}>Board of Directors</Link></li>
+                    <li><Link href="/governance/committee" onClick={handleNavigation}>Committee</Link></li>
                     <li><Link href="/governance/management" onClick={handleNavigation}>Management</Link></li>
                   </ul>
                 </li>
                 <li className="about-mega__column">
-                  <Link href="/about/awards" onClick={handleNavigation} className="about-mega__heading">
+                  <h3 className="about-mega__heading">
                     Awards
-                  </Link>
+                  </h3>
                   <ul className="about-mega__links">
                     <li><Link href="/about/awards" onClick={handleNavigation}>Awards & Recognition</Link></li>
                   </ul>
                 </li>
                 <li className="about-mega__column">
-                  <Link href="/about/member-stories" onClick={handleNavigation} className="about-mega__heading">
+                  <h3 className="about-mega__heading">
                     Member Stories
-                  </Link>
+                  </h3>
                   <ul className="about-mega__links">
                     <li><Link href="/about/member-stories" onClick={handleNavigation}>Member Experiences</Link></li>
                   </ul>
@@ -367,27 +367,27 @@ export default function Navbar() {
 
               <ul className="nav-dropdown-menu whats-new-dropdown-menu">
                 <li className="whats-new-mega__column">
-                  <Link href="/news" onClick={handleNavigation} className="whats-new-mega__heading">
+                  <h3 className="whats-new-mega__heading">
                     News &amp; Events
-                  </Link>
+                  </h3>
                   <ul className="whats-new-mega__links">
                     <li><Link href="/news" onClick={handleNavigation}>Latest announcements</Link></li>
                   </ul>
                 </li>
 
                 <li className="whats-new-mega__column">
-                  <Link href="/promos" onClick={handleNavigation} className="whats-new-mega__heading">
+                  <h3 className="whats-new-mega__heading">
                     Promos
-                  </Link>
+                  </h3>
                   <ul className="whats-new-mega__links">
                     <li><Link href="/promos" onClick={handleNavigation}>Current offers</Link></li>
                   </ul>
                 </li>
 
                 <li className="whats-new-mega__column">
-                  <Link href={CAREER_PATH} onClick={handleNavigation} className="whats-new-mega__heading">
+                  <h3 className="whats-new-mega__heading">
                     Career
-                  </Link>
+                  </h3>
                   <ul className="whats-new-mega__links">
                     <li><Link href={CAREER_PATH} onClick={handleNavigation}>Open positions</Link></li>
                   </ul>
@@ -408,9 +408,9 @@ export default function Navbar() {
 
               <ul className="nav-dropdown-menu services-dropdown-menu">
                 <li className="services-mega__column">
-                  <Link href="/services" onClick={handleNavigation} className="services-mega__heading">
+                  <h3 className="services-mega__heading">
                     Savings
-                  </Link>
+                  </h3>
                   <ul className="services-mega__links">
                     <li><Link href="/services/savings/regular-savings" onClick={handleMenuClose}>Regular Savings</Link></li>
                     <li><Link href="/services/savings/kkt" onClick={handleMenuClose}>KKT Savings</Link></li>
@@ -421,9 +421,9 @@ export default function Navbar() {
                 </li>
 
                 <li className="services-mega__column">
-                  <Link href="/services" onClick={handleNavigation} className="services-mega__heading">
+                  <h3 className="services-mega__heading">
                     Loans
-                  </Link>
+                  </h3>
                   <ul className="services-mega__links">
                     <li><Link href="/services/loans/care-program" onClick={handleMenuClose}>CARE Program</Link></li>
                     <li><Link href="/services/loans/business-loan" onClick={handleMenuClose}>Business Loan</Link></li>
@@ -432,21 +432,21 @@ export default function Navbar() {
                 </li>
 
                 <li className="services-mega__column">
-                  <Link href="/services" onClick={handleNavigation} className="services-mega__heading">
+                  <h3 className="services-mega__heading">
                     Allied Services
-                  </Link>
+                  </h3>
                   <ul className="services-mega__links">
                     <li><Link href="/services/insurance" onClick={handleMenuClose}>Insurance</Link></li>
-                    <li><Link href="/services/transportation" onClick={handleMenuClose}>Transportation</Link></li>
                     <li><Link href="/services/funeral" onClick={handleMenuClose}>Funeral Services</Link></li>
+                    <li><Link href="/services/transportation" onClick={handleMenuClose}>Transportation</Link></li>
                     <li><Link href="/services/wellness" onClick={handleMenuClose}>Wellness &amp; Diagnostics</Link></li>
                   </ul>
                 </li>
 
                 <li className="services-mega__column">
-                  <Link href={MLC_PATH} onClick={handleMenuClose} className="services-mega__heading">
+                  <h3 className="services-mega__heading">
                     Laboratory Cooperative
-                  </Link>
+                  </h3>
                   <ul className="services-mega__links">
                     <li><Link href={MLC_PATH} onClick={handleMenuClose}>MEMPCO Laboratory Cooperative</Link></li>
                     <li><Link href="/services" onClick={handleNavigation}>View All Services</Link></li>
@@ -468,27 +468,27 @@ export default function Navbar() {
 
               <ul className="nav-dropdown-menu membership-dropdown-menu">
                 <li className="membership-mega__column">
-                  <Link href="/membership" onClick={handleNavigation} className="membership-mega__heading">
+                  <h3 className="membership-mega__heading">
                     How to Apply?
-                  </Link>
+                  </h3>
                   <ul className="membership-mega__links">
                     <li><Link href="/membership" onClick={handleNavigation}>Application guide</Link></li>
                   </ul>
                 </li>
 
                 <li className="membership-mega__column">
-                  <Link href="/membership/pmes" onClick={handleNavigation} className="membership-mega__heading">
+                  <h3 className="membership-mega__heading">
                     PMES
-                  </Link>
+                  </h3>
                   <ul className="membership-mega__links">
                     <li><Link href="/membership/pmes" onClick={handleNavigation}>Pre-membership seminar</Link></li>
                   </ul>
                 </li>
 
                 <li className="membership-mega__column">
-                  <Link href="/membership/package" onClick={handleNavigation} className="membership-mega__heading">
+                  <h3 className="membership-mega__heading">
                     Membership Package
-                  </Link>
+                  </h3>
                   <ul className="membership-mega__links">
                     <li><Link href="/membership/package" onClick={handleNavigation}>Fees and inclusions</Link></li>
                   </ul>
@@ -509,9 +509,9 @@ export default function Navbar() {
 
               <ul className="nav-dropdown-menu contact-dropdown-menu">
                 <li className="contact-mega__column">
-                  <Link href="/branches" onClick={handleNavigation} className="contact-mega__heading">
+                  <h3 className="contact-mega__heading">
                     Visit MEMPCO
-                  </Link>
+                  </h3>
                   <ul className="contact-mega__links">
                     <li><Link href="/branches" onClick={handleNavigation}>Branches and ATMs</Link></li>
                     <li><Link href="/contact-details" onClick={handleNavigation}>Contact Details</Link></li>

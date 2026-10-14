@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { Check } from 'lucide-react';
 import Navbar from '@/components/Navbar/Navbar';
 import Footer from '@/components/Footer/Footer';
 import './membership.css';
@@ -25,7 +26,7 @@ const MEMBERSHIP_STEPS = [
   {
     number: '04',
     title: 'Pay the required fees',
-    text: 'Pay the required fees: Associate - 300 for depositor, Regular - 1200 for loan.',
+    text: 'Pay the applicable membership package fee. Review the current fee breakdown before your visit.',
   },
 ];
 
@@ -96,7 +97,7 @@ export default function MembershipPage() {
     <>
       <Navbar />
 
-      <main className="membership-page">
+      <main className="membership-page membership-guide-page">
         <section className="membership-hero">
           <div className="membership-shell membership-hero__inner">
             <div className="membership-hero__copy">
@@ -112,6 +113,9 @@ export default function MembershipPage() {
                 <a href="#membership-process" className="membership-button membership-button--quiet">
                   View the process
                 </a>
+                <Link href="/membership/package" className="membership-button membership-button--primary">
+                  Fees and inclusions
+                </Link>
               </div>
             </div>
 
@@ -139,6 +143,11 @@ export default function MembershipPage() {
                   <span>{step.number}</span>
                   <h3>{step.title}</h3>
                   <p>{step.text}</p>
+                  {step.number === '04' && (
+                    <Link className="membership-step__link" href="/membership/package">
+                      View membership fees
+                    </Link>
+                  )}
                 </article>
               ))}
             </div>
@@ -159,7 +168,7 @@ export default function MembershipPage() {
             <ul className="membership-checklist">
               {PREPARATION_ITEMS.map((item) => (
                 <li key={item}>
-                  <span aria-hidden="true">✓</span>
+                  <span className="membership-checklist__icon" aria-hidden="true"><Check size={17} strokeWidth={3} /></span>
                   {item}
                 </li>
               ))}
@@ -177,7 +186,7 @@ export default function MembershipPage() {
                 information, and bring it with your supporting documents to
                 the nearest MEMPCO branch.
               </p>
-              <span>PDF document · 2.7 MB</span>
+              <span>PDF document - 2.7 MB</span>
             </div>
 
             <div className="membership-form-card__actions">
@@ -204,11 +213,11 @@ export default function MembershipPage() {
           <div className="membership-shell membership-contact">
             <div>
               <p className="membership-label">Main office</p>
-              <h2>Visit MEMPCO in Zamboanga City</h2>
+              <h2>Visit MEMPCO</h2>
               <p className="membership-contact__details">
-                3D–3E HC Marketing Building, Zamboanga City
+                3D-3E HC Marketing Building, Zamboanga City
                 <br />
-                Monday to Friday · 8:00 AM–4:00 PM
+                Monday to Friday - 8:00 AM to 4:00 PM
               </p>
             </div>
           </div>

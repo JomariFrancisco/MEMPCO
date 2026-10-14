@@ -4,34 +4,21 @@ import { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import './FuneralPage.css';
 
+const packagePhotos = {
+  rosalOne: '/Funeral/packages/ROSAL%201.JPG',
+  rosalTwo: '/Funeral/packages/ROSAL%202.JPG',
+  rosalThree: '/Funeral/packages/ROSAL%203.JPG',
+  damaDeNoche: '/Funeral/packages/DAMA%20DE%20NOCHE.JPG',
+  jasmin: '/Funeral/packages/JASMINE.JPG',
+  clavel: '/Funeral/packages/CLAVEL.JPG',
+  orquidea: '/Funeral/packages/ORQUIDEA.JPG',
+};
+
 const FacebookIcon = () => (
   <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
     <path d="M22 12.06C22 6.5 17.52 2 12 2S2 6.5 2 12.06c0 5.02 3.66 9.18 8.44 9.94v-7.03H7.9v-2.91h2.54V9.84c0-2.52 1.49-3.91 3.77-3.91 1.09 0 2.23.2 2.23.2v2.47h-1.26c-1.24 0-1.63.78-1.63 1.57v1.89h2.78l-.44 2.91h-2.34V22C18.34 21.24 22 17.08 22 12.06z" />
   </svg>
 );
-
-const heroLinks = [
-  {
-    id: 'funeral-packages',
-    kicker: 'Packages',
-    title: 'Browse memorial packages from Rosal to Orquidea.',
-  },
-  {
-    id: 'chapel-services',
-    kicker: 'Chapels',
-    title: 'View daily chapel rates and chapel inclusions.',
-  },
-  {
-    id: 'urn-viewing',
-    kicker: 'Urn viewing',
-    title: 'See the recommended setup and service provisions.',
-  },
-  {
-    id: 'additional-services',
-    kicker: 'Add-ons',
-    title: 'Check additional products and supporting services.',
-  },
-];
 
 const heroShowcase = [
   {
@@ -60,20 +47,28 @@ const stats = [
 
 const quickGuide = [
   {
+    id: 'funeral-packages',
     title: 'Funeral Packages',
-    text: 'Structured offerings from standard memorial support to premium full-service packages.',
+    text: 'Review package inclusions and available pricing options.',
+    action: 'Explore packages',
   },
   {
+    id: 'chapel-services',
     title: 'Chapel Services',
-    text: 'Daily chapel options with different comfort levels, amenities, and inclusions.',
+    text: 'Compare daily chapel rates, room options, and amenities.',
+    action: 'View chapel services',
   },
   {
+    id: 'urn-viewing',
     title: 'Urn Viewing',
-    text: 'A respectful setup for families preferring urn-centered memorial arrangements.',
+    text: 'Review seating, lighting, security, and tribute arrangements.',
+    action: 'Explore urn viewing',
   },
   {
+    id: 'additional-services',
     title: 'Additional Services',
-    text: 'Upgrade options and supporting arrangements for memorial needs.',
+    text: 'Browse optional products and support for memorial arrangements.',
+    action: 'View additional services',
   },
 ];
 
@@ -82,8 +77,9 @@ const packages = [
     id: 'rosal-1',
     tone: '#8A4B1A',
     toneSoft: 'rgba(138, 75, 26, 0.10)',
-    abbr: 'ROSAL 1',
     name: 'Rosal 1 Package',
+    photo: packagePhotos.rosalOne,
+    photoAlt: 'Rosal 1 memorial arrangement with a white casket, flowers, and chapel seating',
     description:
       'Plain white, wood casket, single top cover, curve cover, and with handle.',
     priceOptions: [
@@ -92,7 +88,7 @@ const packages = [
       { id: 'senior', label: 'Senior Citizen & PWD', value: '₱23,920.00' },
       {
         id: 'depositor',
-        label: 'Depositor / Dependents / Spot Cash / Insti',
+        label: 'Depositor / Dependents / Spot Cash / Institutional',
         value: '₱26,910.00',
       },
     ],
@@ -113,8 +109,9 @@ const packages = [
     id: 'rosal-2',
     tone: '#A5602B',
     toneSoft: 'rgba(165, 96, 43, 0.10)',
-    abbr: 'ROSAL 2',
     name: 'Rosal 2 Package',
+    photo: packagePhotos.rosalTwo,
+    photoAlt: 'Rosal 2 white casket with gold handles and a chapel viewing arrangement',
     description:
       'Plain white, wood casket, single top and elegant interiors, with silver or gold corners and handle.',
     priceOptions: [
@@ -123,7 +120,7 @@ const packages = [
       { id: 'senior', label: 'Senior Citizen & PWD', value: '₱39,920.00' },
       {
         id: 'depositor',
-        label: 'Depositor / Dependents / Spot Cash / Insti',
+        label: 'Depositor / Dependents / Spot Cash / Institutional',
         value: '₱44,910.00',
       },
     ],
@@ -152,8 +149,9 @@ const packages = [
     id: 'rosal-3',
     tone: '#B87535',
     toneSoft: 'rgba(184, 117, 53, 0.11)',
-    abbr: 'ROSAL 3',
     name: 'Rosal 3 Package',
+    photo: packagePhotos.rosalThree,
+    photoAlt: 'Rosal 3 memorial arrangement viewed from the chapel seating area',
     description:
       'Plain white, metal casket, single top, full glass with elegant interiors, with silver or gold corners and handle.',
     priceOptions: [
@@ -162,7 +160,7 @@ const packages = [
       { id: 'senior', label: 'Senior Citizen & PWD', value: '₱78,400.00' },
       {
         id: 'depositor',
-        label: 'Depositor / Dependents / Spot Cash / Insti',
+        label: 'Depositor / Dependents / Spot Cash / Institutional',
         value: '₱88,200.00',
       },
     ],
@@ -192,8 +190,9 @@ const packages = [
     id: 'dama-de-noche',
     tone: '#7C5137',
     toneSoft: 'rgba(124, 81, 55, 0.10)',
-    abbr: 'DAMA',
     name: 'Dama de Noche Package',
+    photo: packagePhotos.damaDeNoche,
+    photoAlt: 'Dama de Noche white casket surrounded by flowers in the chapel',
     description:
       'Plain white, metal casket, full/half glass, with elegant interiors and silver or gold corners and handle.',
     priceOptions: [
@@ -202,7 +201,7 @@ const packages = [
       { id: 'senior', label: 'Senior Citizen & PWD', value: '₱119,920.00' },
       {
         id: 'depositor',
-        label: 'Depositor / Dependents / Spot Cash / Insti',
+        label: 'Depositor / Dependents / Spot Cash / Institutional',
         value: '₱134,910.00',
       },
     ],
@@ -230,8 +229,9 @@ const packages = [
     id: 'jasmin',
     tone: '#9C6A44',
     toneSoft: 'rgba(156, 106, 68, 0.11)',
-    abbr: 'JASMIN',
     name: 'Jasmin Package',
+    photo: packagePhotos.jasmin,
+    photoAlt: 'Jasmin funeral package arrangement with casket and floral display',
     description:
       'Plain white or brown metal casket, double top split lid cover, full glass, elegant interiors, silver or gold corners and handle.',
     priceOptions: [
@@ -240,7 +240,7 @@ const packages = [
       { id: 'senior', label: 'Senior Citizen & PWD', value: '₱168,000.00' },
       {
         id: 'depositor',
-        label: 'Depositor / Dependents / Spot Cash / Insti',
+        label: 'Depositor / Dependents / Spot Cash / Institutional',
         value: '₱189,000.00',
       },
     ],
@@ -269,8 +269,9 @@ const packages = [
     id: 'clavel',
     tone: '#B88C54',
     toneSoft: 'rgba(184, 140, 84, 0.12)',
-    abbr: 'CLAVEL',
     name: 'Clavel Package',
+    photo: packagePhotos.clavel,
+    photoAlt: 'Clavel white and gold casket with floral arrangements and chapel lighting',
     description:
       'High quality metal casket, jango class, with color options (blue, golden, brown), double top slit lid cover, full-glass and elegant interiors, silver or gold corners and handles.',
     priceOptions: [
@@ -279,7 +280,7 @@ const packages = [
       { id: 'senior', label: 'Senior Citizen & PWD', value: '₱400,000.00' },
       {
         id: 'depositor',
-        label: 'Depositor / Dependents / Spot Cash / Insti',
+        label: 'Depositor / Dependents / Spot Cash / Institutional',
         value: '₱450,000.00',
       },
     ],
@@ -310,8 +311,9 @@ const packages = [
     id: 'orquidea',
     tone: '#D09B45',
     toneSoft: 'rgba(208, 155, 69, 0.13)',
-    abbr: 'ORQ',
     name: 'Orquidea Package',
+    photo: packagePhotos.orquidea,
+    photoAlt: 'Orquidea white and gold casket with a full floral memorial arrangement',
     description:
       'Imported High Quality Metal Casket, Double Top Split Lid Cover, Full Glass Elegant Interior, Silver or Gold corner and handle, with key.',
     priceOptions: [
@@ -320,7 +322,7 @@ const packages = [
       { id: 'senior', label: 'Senior Citizen & PWD', value: '₱800,000.00' },
       {
         id: 'depositor',
-        label: 'Depositor / Dependents / Spot Cash / Insti',
+        label: 'Depositor / Dependents / Spot Cash / Institutional',
         value: '₱900,000.00',
       },
     ],
@@ -356,18 +358,10 @@ const packages = [
   },
 ];
 
-const chapelRates = [
-  { name: 'Orquidea', rate: '₱20,000 / day' },
-  { name: 'Clavel', rate: '₱15,000 / day' },
-  { name: 'Jasmin', rate: '₱12,500 / day' },
-  { name: 'Dama de Noche', rate: '₱10,000 / day' },
-  { name: 'Rosal', rate: '₱1,000 / day' },
-];
-
 const chapelSpaces = [
   {
     title: 'Orquidea Chapel',
-    rate: '₱20,000 per day',
+    rate: '₱20,000',
     features: [
       'Fully airconditioned chapel',
       'Family room with bathroom inside',
@@ -379,8 +373,32 @@ const chapelSpaces = [
     ],
   },
   {
+    title: 'Clavel Chapel',
+    rate: '₱15,000',
+    features: [
+      'Fully airconditioned chapel 24/7',
+      'Family room with comfort room / bathroom',
+      'Pantry',
+      'Refrigerator',
+      'Water dispenser',
+      'Tables and extra chairs',
+    ],
+  },
+  {
+    title: 'Jasmin Chapel',
+    rate: '₱12,500',
+    features: [
+      'Fully airconditioned chapel 24/7',
+      'Pantry',
+      'Private comfort room',
+      'Refrigerator',
+      'Water dispenser',
+      'Tables and extra chairs',
+    ],
+  },
+  {
     title: 'Dama de Noche Chapel',
-    rate: '₱10,000 per day',
+    rate: '₱10,000',
     features: [
       'Fully airconditioned chapel',
       'Pantry',
@@ -391,7 +409,7 @@ const chapelSpaces = [
   },
   {
     title: 'Rosal Chapels',
-    rate: '₱1,000 per day',
+    rate: '₱1,000',
     features: [
       'Natural air',
       'Additional chairs if needed',
@@ -403,82 +421,35 @@ const chapelSpaces = [
 
 const urnViewingSections = [
   {
-    title: '1. Altar or Pedestal for the Urn',
-    tone: '#8A4B1A',
-    toneSoft: 'rgba(138, 75, 26, 0.10)',
+    title: 'Memorial Display',
     items: [
-      'A dedicated altar, pedestal, or table to hold the urn, ideally covered with a decorative cloth or a velvet cushion.',
-      'A framed photo of the deceased placed beside or behind the urn.',
-      'A flower arrangement around the urn to enhance the solemnity.',
+      'Urn altar or pedestal',
+      'Framed portrait and floral arrangement',
+      'Condolence book or tribute table',
     ],
   },
   {
-    title: '2. Seating Arrangement',
-    tone: '#A5602B',
-    toneSoft: 'rgba(165, 96, 43, 0.10)',
+    title: 'Guest Comfort',
     items: [
-      'Comfortable chairs or pews for family and guests, arranged in a semi-circle or rows facing the urn.',
-      'Space for immediate family to be seated in front or near the urn.',
+      'Seating for family and visitors',
+      'Air-conditioning or proper ventilation',
+      'Refreshments and accessible seating',
     ],
   },
   {
-    title: '3. Lighting & Ambiance',
-    tone: '#B87535',
-    toneSoft: 'rgba(184, 117, 53, 0.11)',
+    title: 'Ceremony & Tribute',
     items: [
-      'Soft, warm lighting to create a peaceful environment.',
-      'LED candles or real candles placed on either side of the urn.',
-      'Option for adjustable lighting to suit different preferences.',
+      'Lighting and candles',
+      'Sound system, microphone, or podium',
+      'Screen for a tribute slideshow',
+      'Religious or cultural elements by family preference',
     ],
   },
   {
-    title: '4. Religious & Cultural Elements (If Applicable)',
-    tone: '#7C5137',
-    toneSoft: 'rgba(124, 81, 55, 0.10)',
+    title: 'Privacy & Assistance',
     items: [
-      "A cross, religious icon, or symbolic structure based on the family's beliefs.",
-      'Incense burners or essential oil diffusers to create a calm atmosphere.',
-      'Scriptures, hymn books, or sacred texts for readings.',
-    ],
-  },
-  {
-    title: '5. Digital & Sound Features',
-    tone: '#9C6A44',
-    toneSoft: 'rgba(156, 106, 68, 0.11)',
-    items: [
-      'A sound system for background music, prayers, or eulogies.',
-      'A microphone or podium for speeches or reflections.',
-      'A screen or projector for slideshow presentations or tribute videos.',
-    ],
-  },
-  {
-    title: '6. Comfort & Accessibility',
-    tone: '#B88C54',
-    toneSoft: 'rgba(184, 140, 84, 0.12)',
-    items: [
-      'Air-conditioning or proper ventilation for guest comfort.',
-      'Refreshment area with water, coffee, or tea for guests.',
-      'Wheelchair accessibility and ramps for elderly guests.',
-    ],
-  },
-  {
-    title: '7. Memorial & Tribute Area',
-    tone: '#D09B45',
-    toneSoft: 'rgba(208, 155, 69, 0.13)',
-    items: [
-      'Condolence book or digital message station for visitors to write messages.',
-      'Memorial table for guests to place personal notes, letters, or tribute gifts.',
-      'Option for personalized decorations such as candles, custom name banners, or draped fabric.',
-    ],
-  },
-  {
-    title: '8. Privacy & Security',
-    tone: '#6B3410',
-    toneSoft: 'rgba(107, 52, 16, 0.10)',
-    items: [
-      'Partitions or curtains for added privacy if the family prefers an intimate setting.',
-      'Security personnel or attendants to assist guests and maintain decorum.',
-      'Signage and direction markers to guide guests smoothly through the chapel.',
+      'Partitions or curtains for privacy',
+      'Attendant assistance and directional signs',
     ],
   },
 ];
@@ -511,7 +482,9 @@ function formatPeso(value) {
 
 function AnimatedPrice({ value, startValue, animationKey }) {
   const targetValue = useMemo(() => parsePeso(value), [value]);
-  const [displayValue, setDisplayValue] = useState(targetValue);
+  const [displayValue, setDisplayValue] = useState(() =>
+    animationKey ? startValue : targetValue
+  );
 
   useEffect(() => {
     if (animationKey === 0) {
@@ -539,25 +512,48 @@ function AnimatedPrice({ value, startValue, animationKey }) {
       }
     };
 
+    setDisplayValue(startValue);
     frameId = window.requestAnimationFrame(animate);
 
     return () => window.cancelAnimationFrame(frameId);
   }, [animationKey, startValue, targetValue]);
 
   return (
-    <span className="fun-package-price" aria-live="polite">
+    <strong className="fun-package-price" aria-live="polite">
       {formatPeso(displayValue)}
-    </span>
+    </strong>
+  );
+}
+
+function FuneralPackagePhoto({ item }) {
+  if (!item.photo) {
+    return (
+      <div className="fun-package-photo fun-package-photo-placeholder" role="img" aria-label={`${item.name} photo coming soon`}>
+        <span>Package photo coming soon</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="fun-package-photo">
+      <Image
+        src={item.photo}
+        alt={item.photoAlt}
+        fill
+        sizes="(max-width: 640px) calc(100vw - 1.2rem), (max-width: 920px) calc(100vw - 3rem), (max-width: 1248px) 46vw, 570px"
+        className="fun-package-image"
+      />
+    </div>
   );
 }
 
 function FuneralPackageCard({ item, index }) {
   const [activePriceId, setActivePriceId] = useState('standard');
-  const [animationKey, setAnimationKey] = useState(0);
-  const [animationStart, setAnimationStart] = useState(parsePeso(item.priceOptions[0].value));
-
+  const [animationKey, setAnimationKey] = useState(1);
+  const [animationStart, setAnimationStart] = useState(0);
   const activeOption =
     item.priceOptions.find((option) => option.id === activePriceId) ?? item.priceOptions[0];
+  const hasPhotoPanel = Boolean(item.photo || item.photoPlaceholder);
 
   const handleSelectPrice = (option) => {
     const currentValue = parsePeso(activeOption.value);
@@ -565,16 +561,12 @@ function FuneralPackageCard({ item, index }) {
 
     setAnimationStart(activePriceId === option.id ? 0 : currentValue);
     setActivePriceId(option.id);
-    setAnimationKey((prev) => prev + 1);
-
-    if (activePriceId === option.id && currentValue === nextValue) {
-      setAnimationStart(0);
-    }
+    setAnimationKey((current) => current + 1);
   };
 
   return (
     <article
-      className="fun-package-card"
+      className={`fun-package-card${hasPhotoPanel ? ' has-photo' : ''}`}
       style={{
         '--accent': item.tone,
         '--accent-soft': item.toneSoft,
@@ -583,46 +575,56 @@ function FuneralPackageCard({ item, index }) {
     >
       <div className="fun-package-topbar" />
 
-      <div className="fun-package-header">
-        <div className="fun-package-copy">
-          <div className="fun-package-meta">
-            <span className="fun-package-abbr">{item.abbr}</span>
+      <div className="fun-package-layout">
+        {hasPhotoPanel && <FuneralPackagePhoto item={item} />}
+        <div className="fun-package-header">
+          <div className="fun-package-copy">
+            <h3 className="fun-package-name">{item.name}</h3>
+            <p className="fun-package-desc">{item.description}</p>
 
-            <div
-              className="fun-package-note-group"
-              role="group"
-              aria-label={`${item.name} price options`}
-            >
-              {item.priceOptions.map((option) => (
-                <button
-                  key={option.id}
-                  type="button"
-                  className={`fun-package-note-button ${
-                    activePriceId === option.id ? 'is-active' : ''
-                  }`}
-                  onClick={() => handleSelectPrice(option)}
-                  aria-pressed={activePriceId === option.id}
-                >
-                  {option.label}
-                </button>
-              ))}
+            <div className="fun-package-meta">
+              <span className="fun-package-rate-caption">Choose a rate category</span>
+              <div
+                className="fun-package-note-group"
+                role="group"
+                aria-label={`${item.name} rate categories`}
+              >
+                {item.priceOptions.map((option) => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    className={`fun-package-note-button ${
+                      activePriceId === option.id ? 'is-active' : ''
+                    }`}
+                    onClick={() => handleSelectPrice(option)}
+                    aria-pressed={activePriceId === option.id}
+                  >
+                    <span className="fun-package-note-label">
+                      {option.id === 'depositor' ? (
+                        <>
+                          Depositor / Dependents
+                          <br />
+                          Spot Cash / Institutional
+                        </>
+                      ) : option.label}
+                    </span>
+                  </button>
+                ))}
+              </div>
+              <div className="fun-package-pricebox">
+                <span className="fun-package-price-label">Package price</span>
+                <AnimatedPrice
+                  value={activeOption.value}
+                  startValue={animationStart}
+                  animationKey={animationKey}
+                />
+              </div>
             </div>
+
           </div>
 
-          <h3 className="fun-package-name">{item.name}</h3>
-          <p className="fun-package-desc">{item.description}</p>
-        </div>
-
-        <div className="fun-package-pricebox">
-          <span className="fun-package-price-label">Package price</span>
-          <AnimatedPrice
-            value={activeOption.value}
-            startValue={animationStart}
-            animationKey={animationKey}
-          />
         </div>
       </div>
-
     </article>
   );
 }
@@ -644,19 +646,11 @@ export default function FuneralPage() {
             <span className="fun-eyebrow">MEMPCO Allied Services</span>
 
             <h1 className="fun-hero-title" id="fun-heading">
-              Funeral & Memorial
+              <span className="fun-hero-title-main">Funeral &amp; Memorial</span>
               <br />
               <span className="accent">Service Packages.</span>
             </h1>
 
-            <div className="fun-hero-links">
-              {heroLinks.map((item) => (
-                <a href={`#${item.id}`} className="fun-hero-link" key={item.id}>
-                  <span className="fun-hero-link-kicker">{item.kicker}</span>
-                  <span className="fun-hero-link-title">{item.title}</span>
-                </a>
-              ))}
-            </div>
           </div>
 
           <div className="fun-hero-visual" aria-label="Funeral service preview">
@@ -718,26 +712,26 @@ export default function FuneralPage() {
             <div>
               <p className="fun-section-kicker">Service overview</p>
               <h2 className="fun-section-title" id="fun-overview-heading">
-                Structured for easier browsing and future updates.
+                Find the service you need.
               </h2>
               <p className="fun-section-text">
-                This page adapts the same organized product-page structure from your
-                reference and applies it to funeral services, so package details,
-                chapel rates, memorial support, and add-ons are easier to present.
+                Explore packages, chapel services, urn viewing, and additional services.
               </p>
             </div>
           </div>
 
           <div className="fun-overview-grid">
             {quickGuide.map((item, i) => (
-              <article
+              <a
                 className="fun-overview-card"
-                key={item.title}
+                href={`#${item.id}`}
+                key={item.id}
                 style={{ '--card-index': String(i) }}
               >
                 <h3>{item.title}</h3>
                 <p>{item.text}</p>
-              </article>
+                <span className="fun-overview-action">{item.action}</span>
+              </a>
             ))}
           </div>
         </div>
@@ -781,25 +775,12 @@ export default function FuneralPage() {
             <div>
               <p className="fun-section-kicker">Chapel services</p>
               <h2 className="fun-section-title" id="fun-chapel-heading">
-                Daily chapel rates and room-based support.
+                Chapel Rooms &amp; Daily Rates
               </h2>
               <p className="fun-section-text">
-                Chapel rates and key amenities are grouped here for faster comparison.
+                Compare all five chapel options and their daily rates. Amenity details are listed where available.
               </p>
             </div>
-          </div>
-
-          <div className="fun-rate-grid">
-            {chapelRates.map((item, i) => (
-              <article
-                className="fun-rate-card"
-                key={item.name}
-                style={{ '--card-index': String(i) }}
-              >
-                <h3>{item.name}</h3>
-                <p>{item.rate}</p>
-              </article>
-            ))}
           </div>
 
           <div className="fun-chapel-grid">
@@ -811,13 +792,20 @@ export default function FuneralPage() {
               >
                 <div className="fun-chapel-card-top">
                   <h3>{item.title}</h3>
-                  <span>{item.rate}</span>
+                  <p><strong>{item.rate}</strong><span>per day</span></p>
                 </div>
-                <ul>
-                  {item.features.map((feature) => (
-                    <li key={feature}>{feature}</li>
-                  ))}
-                </ul>
+                {item.features.length > 0 ? (
+                  <>
+                    <span className="fun-service-list-label">Amenities</span>
+                    <ul>
+                      {item.features.map((feature) => (
+                        <li key={feature}>{feature}</li>
+                      ))}
+                    </ul>
+                  </>
+                ) : (
+                  <p className="fun-service-card-note">Contact the funeral services team for amenity details.</p>
+                )}
               </article>
             ))}
           </div>
@@ -827,14 +815,19 @@ export default function FuneralPage() {
       <section className="fun-section fun-necro" aria-labelledby="fun-necro-heading">
         <div className="fun-inner">
           <div className="fun-necro-card">
-            <p className="fun-section-kicker">Necrological service</p>
-            <h2 className="fun-necro-title" id="fun-necro-heading">
-              ₱6,000
-            </h2>
-            <ul className="fun-necro-list">
-              <li>1 Singer (4 songs)</li>
-              <li>Tribute Video</li>
-            </ul>
+            <div className="fun-necro-price-panel">
+              <p className="fun-section-kicker">Necrological service</p>
+              <h2 className="fun-necro-title" id="fun-necro-heading">
+                ₱6,000
+              </h2>
+            </div>
+            <div className="fun-necro-inclusions">
+              <p className="fun-necro-inclusions-label">Included in service</p>
+              <ul className="fun-necro-list">
+                <li>1 Singer (4 songs)</li>
+                <li>Tribute Video</li>
+              </ul>
+            </div>
           </div>
         </div>
       </section>
@@ -849,12 +842,10 @@ export default function FuneralPage() {
             <div>
               <p className="fun-section-kicker">Urn viewing services</p>
               <h2 className="fun-section-title" id="fun-urn-heading">
-                A more solemn and well-supported urn viewing setup.
+                Urn Viewing Arrangements
               </h2>
               <p className="fun-section-text">
-                These viewing elements organize the essential needs for an urn-based
-                memorial setup, from seating and lighting to security and tribute
-                areas.
+                Possible setup options can be discussed with our team and tailored to the family.
               </p>
             </div>
           </div>
@@ -864,13 +855,8 @@ export default function FuneralPage() {
               <article
                 className="fun-urn-card"
                 key={section.title}
-                style={{
-                  '--accent': section.tone,
-                  '--accent-soft': section.toneSoft,
-                  '--card-index': String(i),
-                }}
+                style={{ '--card-index': String(i) }}
               >
-                <div className="fun-urn-card-topbar" />
                 <div className="fun-urn-card-body">
                   <h3>{section.title}</h3>
                   <ul>
@@ -882,6 +868,9 @@ export default function FuneralPage() {
               </article>
             ))}
           </div>
+          <p className="fun-urn-note">
+            Arrangements depend on venue availability and family preference. Please confirm options with our team.
+          </p>
         </div>
       </section>
 

@@ -201,91 +201,26 @@ export default function Career() {
       <main className="cp">
         {/* ── HERO ── */}
         <section className="cp-screen cp-hero" id="top">
-          <div className="cp-hero-grid" aria-hidden="true" />
-          <div className="cp-hero-glow" aria-hidden="true" />
-
-          <img
-            src="/Logos/Logo.png"
-            alt=""
-            className="cp-hero-rotating-logo"
-            aria-hidden="true"
-          />
-
-          <div className="cp-hero-eyebrow-wrap">
-            <div className="cp-eyebrow">
-              <span className="cp-eyebrow-dot" aria-hidden="true" />
-              MEMPCO Careers
-            </div>
-          </div>
-
           <div className="cp-hero-shell">
             <div className="cp-hero-copy">
+              <p className="cp-hero-kicker">MEMPCO Careers</p>
               <h1 className="cp-hero-title">
-                Shape your future
-                <br />
-                <em>with purpose.</em>
+                Careers at <em>MEMPCO.</em>
               </h1>
 
               <p className="cp-hero-sub">
-                Explore career opportunities built around professionalism,
-                growth, and meaningful service to members and communities.
+                Find meaningful work supporting our members and communities.
               </p>
 
-              <div className="cp-hero-actions">
-                <button
-                  type="button"
-                  className="cp-btn cp-btn--solid"
-                  onClick={() => scrollToAnchor(showcaseAnchorRef)}
-                >
-                  View Open Positions
-                </button>
-                <button
-                  type="button"
-                  className="cp-btn cp-btn--ghost"
-                  onClick={() => scrollToAnchor(applyAnchorRef)}
-                >
-                  Why Join Us
-                </button>
-              </div>
-
             </div>
-
-            <aside className="cp-hero-panel" aria-label="Hiring overview">
-              <span className="cp-hero-panel-badge">Now accepting applicants</span>
-
-              <div className="cp-hero-panel-wordmark">
-                <span className="cp-hero-word cp-hero-word--outline">NOW</span>
-                <span className="cp-hero-word cp-hero-word--solid">HIRING</span>
-              </div>
-
-              <div className="cp-hero-role-minimal">
-                <span className="cp-hero-role-label">Featured opening</span>
-                <h2 className="cp-hero-role-title">{selectedTitle}</h2>
-                <p className="cp-hero-role-text">{selectedDescription}</p>
-
-                <div className="cp-hero-role-chips">
-                  <span className="cp-chip">{selectedType}</span>
-                  <span className="cp-chip cp-chip--soft">{selectedDepartment}</span>
-                  <span className="cp-chip cp-chip--ghost">{selectedLocation}</span>
-                </div>
-              </div>
-
-              <div className="cp-hero-process">
-                <div className="cp-hero-process-item">
-                  <span>01</span>
-                  <strong>Select role</strong>
-                </div>
-                <div className="cp-hero-process-item">
-                  <span>02</span>
-                  <strong>Review details</strong>
-                </div>
-                <div className="cp-hero-process-item">
-                  <span>03</span>
-                  <strong>Apply</strong>
-                </div>
-              </div>
-            </aside>
           </div>
+          <img
+            src="/Logos/Logo.png"
+            alt=""
+            aria-hidden="true"
+            className="cp-hero-rotating-logo"
+            fetchPriority="high"
+          />
         </section>
 
         {/* ── SHOWCASE ── */}
@@ -428,9 +363,7 @@ export default function Career() {
             <header className="cp-apply-header">
               <p className="cp-section-kicker">Why Join MEMPCO</p>
               <h2 className="cp-apply-title">
-                A workplace built for
-                <br />
-                <em>long-term growth.</em>
+                A workplace built for <em>long-term growth.</em>
               </h2>
             </header>
 

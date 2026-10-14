@@ -184,14 +184,21 @@
 
 .navbar.top .nav-link,
 .navbar.top .nav-trigger {
-  color: rgba(31, 41, 55, 0.92);
+  color: #000000;
+  text-shadow: none;
+}
+
+html[data-home-hero-nav='video'] .navbar.top .nav-link,
+html[data-home-hero-nav='video'] .navbar.top .nav-trigger {
+  color: #ffffff;
   text-shadow:
-    0 1px 14px rgba(255, 255, 255, 0.86),
-    0 1px 2px rgba(255, 255, 255, 0.62);
+    0 1px 3px rgba(0, 0, 0, 0.9),
+    0 0 10px rgba(0, 0, 0, 0.55);
 }
 
 .navbar.scrolled .nav-link,
 .navbar.scrolled .nav-trigger {
+  color: #000000;
   text-shadow: none;
 }
 
@@ -294,16 +301,25 @@
 .about-dropdown-menu {
   position: fixed;
   top: var(--navbar-height);
-  left: 0;
-  right: 0;
-  width: 100%;
+  left: 4%;
+  right: 4%;
+  width: 92%;
+  box-sizing: border-box;
   min-width: 0;
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: clamp(2rem, 5vw, 5rem);
-  padding: 2.5rem clamp(3rem, 8vw, 11rem) 3rem;
+  gap: clamp(0.75rem, 1.5vw, 1.25rem);
+  padding: 2rem clamp(1.5rem, 4vw, 4rem) 2.5rem;
   border-top: 3px solid var(--nav-accent);
-  border-radius: 0;
+  border-radius: 12px;
+}
+
+@media (min-width: 1025px) {
+  .about-mega__links a[href="/about/history"],
+  .about-mega__links a[href="/about/awards"],
+  .about-mega__links a[href="/about/member-stories"] {
+    white-space: nowrap;
+  }
 }
 
 .membership-dropdown-menu,
@@ -319,17 +335,40 @@
   gap: clamp(2rem, 5vw, 5rem);
   padding: 2.5rem clamp(3rem, 8vw, 11rem) 3rem;
   border-top: 3px solid var(--nav-accent);
-  border-radius: 0;
+  border-radius: 12px;
 }
 
 .membership-dropdown-menu,
 .whats-new-dropdown-menu {
+  left: 10%;
+  right: 10%;
+  width: 80%;
+  box-sizing: border-box;
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .contact-dropdown-menu {
-  grid-template-columns: minmax(260px, 420px);
-  justify-content: end;
+  box-sizing: border-box;
+  position: absolute;
+  top: calc(100% + 15px);
+  left: 0;
+  right: auto;
+  translate: none;
+  width: min(360px, calc(100vw - 2rem));
+  max-width: calc(100vw - 2rem);
+  height: fit-content;
+  grid-template-columns: minmax(0, 1fr);
+  justify-content: stretch;
+  align-content: start;
+  gap: 0;
+  padding: 1.15rem 1.25rem 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-top: 3px solid var(--nav-accent);
+  border-radius: 12px;
+}
+
+.navbar.scrolled .nav-item--contact > .contact-dropdown-menu {
+  top: calc(100% + 15px);
 }
 
 .navbar.scrolled .membership-dropdown-menu,
@@ -348,6 +387,9 @@
 .whats-new-mega__heading,
 .contact-mega__heading {
   display: block;
+  box-sizing: border-box;
+  min-height: 3.5rem;
+  margin: 0;
   padding: 0 0 0.8rem;
   color: #111111;
   border-bottom: 1px solid rgba(15, 23, 42, 0.09);
@@ -355,12 +397,6 @@
   font-weight: 750;
   line-height: 1.3;
   text-decoration: none;
-}
-
-.membership-mega__heading:hover,
-.whats-new-mega__heading:hover,
-.contact-mega__heading:hover {
-  color: var(--nav-accent);
 }
 
 .membership-mega__links,
@@ -395,6 +431,17 @@
     transform 0.18s ease;
 }
 
+.contact-mega__heading {
+  min-height: 0;
+  padding-bottom: 0.55rem;
+  text-align: center;
+}
+
+.contact-mega__links a {
+  padding: 0.42rem 0;
+  text-align: center;
+}
+
 .membership-mega__links a:hover,
 .whats-new-mega__links a:hover,
 .contact-mega__links a:hover {
@@ -412,6 +459,9 @@
 
 .about-mega__heading {
   display: block;
+  box-sizing: border-box;
+  min-height: 3.5rem;
+  margin: 0;
   padding: 0 0 0.8rem;
   color: #111111;
   border-bottom: 1px solid rgba(15, 23, 42, 0.09);
@@ -419,10 +469,6 @@
   font-weight: 750;
   line-height: 1.3;
   text-decoration: none;
-}
-
-.about-mega__heading:hover {
-  color: var(--nav-accent);
 }
 
 .about-mega__links {
@@ -459,9 +505,10 @@
 .services-dropdown-menu {
   position: fixed;
   top: var(--navbar-height);
-  left: 0;
-  right: 0;
-  width: 100%;
+  left: 10%;
+  right: 10%;
+  width: 80%;
+  box-sizing: border-box;
   min-width: 0;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -469,7 +516,7 @@
   padding: 2.5rem clamp(3rem, 8vw, 11rem) 3rem;
   border: 1px solid rgba(255, 255, 255, 0.5);
   border-top: 3px solid var(--nav-accent);
-  border-radius: 0;
+  border-radius: 12px;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.82), rgba(255, 255, 255, 0.64)),
     linear-gradient(105deg, rgba(185, 28, 28, 0.07), rgba(255, 255, 255, 0.02));
@@ -490,6 +537,9 @@
 
 .services-mega__heading {
   display: block;
+  box-sizing: border-box;
+  min-height: 3.5rem;
+  margin: 0;
   padding: 0 0 0.8rem;
   color: #111111;
   border-bottom: 1px solid rgba(15, 23, 42, 0.09);
@@ -497,10 +547,6 @@
   font-weight: 750;
   line-height: 1.3;
   text-decoration: none;
-}
-
-.services-mega__heading:hover {
-  color: var(--nav-accent);
 }
 
 .services-mega__links {
@@ -806,6 +852,7 @@
     visibility: visible;
     pointer-events: auto;
     transform: none;
+    translate: none;
     background: transparent;
   }
 
@@ -860,6 +907,7 @@
 
   .membership-mega__heading,
   .whats-new-mega__heading {
+    min-height: 0;
     padding: 0.55rem 0.68rem;
     border-bottom: 0;
     font-size: 0.96rem;
@@ -897,6 +945,7 @@
   }
 
   .contact-mega__heading {
+    min-height: 0;
     padding: 0.55rem 0.68rem;
     border-bottom: 0;
     font-size: 0.96rem;
@@ -931,6 +980,7 @@
   }
 
   .about-mega__heading {
+    min-height: 0;
     padding: 0.55rem 0.68rem;
     border-bottom: 0;
     font-size: 0.96rem;
@@ -965,6 +1015,7 @@
   }
 
   .services-mega__heading {
+    min-height: 0;
     padding: 0.55rem 0.68rem;
     border-bottom: 0;
     font-size: 0.96rem;

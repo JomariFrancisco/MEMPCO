@@ -2,17 +2,19 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import Link from 'next/link';
 import Navbar from '@/components/Navbar/Navbar';
+import Footer from '@/components/Footer/Footer';
 import { listPublishedMemberStories } from '@/lib/marketing/marketingPosts';
 import { MEMBER_STORIES, toMemberStory } from '@/lib/memberStories';
 import './member-experiences.css';
 
 const VISIBLE_STORIES = 3;
 
-function getVisibleStories(stories, startIndex) {
-  if (stories.length <= VISIBLE_STORIES) return stories;
+function getVisibleStories(stories, startIndex, visibleCount) {
+  if (stories.length <= visibleCount) return stories;
 
-  return Array.from({ length: VISIBLE_STORIES }, (_, index) => {
+  return Array.from({ length: visibleCount }, (_, index) => {
     return stories[(startIndex + index) % stories.length];
   });
 }
@@ -40,6 +42,17 @@ function TestimonyCard({ story }) {
 export default function MemberStoriesPage() {
   const [stories, setStories] = useState(MEMBER_STORIES);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [visibleCount, setVisibleCount] = useState(VISIBLE_STORIES);
+
+  useEffect(() => {
+    const updateVisibleCount = () => {
+      setVisibleCount(window.innerWidth <= 620 ? 1 : window.innerWidth <= 980 ? 2 : VISIBLE_STORIES);
+    };
+
+    updateVisibleCount();
+    window.addEventListener('resize', updateVisibleCount);
+    return () => window.removeEventListener('resize', updateVisibleCount);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -69,10 +82,10 @@ export default function MemberStoriesPage() {
   }, []);
 
   const visibleStories = useMemo(() => {
-    return getVisibleStories(stories, activeIndex);
-  }, [activeIndex, stories]);
+    return getVisibleStories(stories, activeIndex, visibleCount);
+  }, [activeIndex, stories, visibleCount]);
 
-  const canRotate = stories.length > VISIBLE_STORIES;
+  const canRotate = stories.length > visibleCount;
 
   const showPrevious = () => {
     if (!canRotate) return;
@@ -89,17 +102,20 @@ export default function MemberStoriesPage() {
       <Navbar />
 
       <main className="mx-page">
+        <header className="mx-page-header">
+          <div className="mx-shell">
+            <nav className="mx-breadcrumb" aria-label="Breadcrumb">
+              <Link href="/about">About</Link>
+              <span aria-hidden="true">/</span>
+              <span aria-current="page">Testimonials</span>
+            </nav>
+            <p className="mx-page-kicker">About MEMPCO</p>
+            <h1 className="mx-visually-hidden">Member testimonials</h1>
+          </div>
+        </header>
+
         <section className="mx-testimonials" aria-label="Member testimonials">
           <div className="mx-shell">
-            <div className="mx-heading">
-              <span>Member Experience</span>
-              <h1>Testimonials</h1>
-              <p>
-                Read how MEMPCO members continue to build livelihoods, support
-                their families, and move forward through cooperative service.
-              </p>
-            </div>
-
             <div className="mx-testimony-grid" aria-live="polite">
               {visibleStories.map((story) => (
                 <TestimonyCard key={`${story.name}-${story.location}`} story={story} />
@@ -119,6 +135,7 @@ export default function MemberStoriesPage() {
           </div>
         </section>
       </main>
+      <Footer />
     </>
   );
 }

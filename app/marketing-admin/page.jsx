@@ -102,6 +102,14 @@ const blankPost = {
   excerpt: '',
   bodyText: '',
   externalUrl: '',
+  organization: '',
+  awardYear: '',
+  eventDate: '',
+  eventLocation: '',
+  registrationUrl: '',
+  announcementPriority: 'standard',
+  expiresAt: '',
+  imageAlt: '',
   storyRole: '',
   storyLocation: '',
   tagsText: '',
@@ -278,14 +286,6 @@ function ActivityIndicator({ post }) {
   );
 }
 
-const getTypeLabel = (type) => {
-  if (type === 'event') return 'Event';
-  if (type === 'announcement') return 'Announcement';
-  if (type === 'award') return 'Award';
-  if (type === 'member_story') return 'Member Story';
-  return 'News';
-};
-
 const getPlacementHint = (placement) => {
   if (placement === 'featured') return 'Shows in the large Featured Story / Spotlight area. Only one post should use this.';
   if (placement === 'latest') return 'Shows in the Latest Stories card grid below the featured area.';
@@ -400,6 +400,10 @@ function StatCard({ icon: IconComponent, label, value, meta }) {
 export default function MarketingAdminPage() {
   const router = useRouter();
   const fileInputRef = useRef(null);
+  const autosaveInFlightRef = useRef(false);
+  const autosaveTimerRef = useRef(null);
+  const editRevisionRef = useRef(0);
+  const savedRevisionRef = useRef(-1);
   const [editorOpen, setEditorOpen] = useState(false);
   const [user, setUser] = useState(null);
   const [checked, setChecked] = useState(false);
@@ -416,6 +420,8 @@ export default function MarketingAdminPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [autosaveState, setAutosaveState] = useState('idle');
+  const [autosavePulse, setAutosavePulse] = useState(0);
   const isContentView = activeCategory !== 'All';
   const libraryTitle = getLibraryTitle(statusFilter, activeCategory);
 
@@ -488,18 +494,18 @@ export default function MarketingAdminPage() {
       if (cancelled) return;
 
       if (!activeUser) {
-        router.replace('/LogIn');
+        router.replace('/marketing');
         return;
       }
 
       if (isPasswordChangeRequired(activeUser)) {
-        router.replace('/LogIn?mode=force-password');
+        router.replace('/marketing?mode=force-password');
         return;
       }
 
       if (isInactivePortalUser(activeUser)) {
         await signOutPortal().catch(() => {});
-        router.replace('/LogIn');
+        router.replace('/marketing');
         return;
       }
 
@@ -530,10 +536,14 @@ export default function MarketingAdminPage() {
 
     const previousBodyOverflow = document.body.style.overflow;
     const previousHtmlOverflow = document.documentElement.style.overflow;
+    document.body.classList.add('ma-editor-open');
+    document.documentElement.classList.add('ma-editor-open');
     document.body.style.overflow = 'hidden';
     document.documentElement.style.overflow = 'hidden';
 
     return () => {
+      document.body.classList.remove('ma-editor-open');
+      document.documentElement.classList.remove('ma-editor-open');
       document.body.style.overflow = previousBodyOverflow;
       document.documentElement.style.overflow = previousHtmlOverflow;
     };
@@ -548,6 +558,8 @@ export default function MarketingAdminPage() {
   }, [totalPages]);
 
   const updatePost = (field, value) => {
+    editRevisionRef.current += 1;
+    setAutosaveState('waiting');
     setMessage({ type: '', text: '' });
     setActivePost((current) => {
       const nextPost = { ...current, [field]: value };
@@ -574,14 +586,24 @@ export default function MarketingAdminPage() {
     });
   };
 
-  const startNewPost = () => {
-    setActivePost(blankPost);
+  const startNewPost = (requestedCategory = activeCategory) => {
+    const category = EDITOR_CATEGORIES.includes(requestedCategory) ? requestedCategory : 'News';
+    editRevisionRef.current += 1;
+    savedRevisionRef.current = editRevisionRef.current;
+    setAutosaveState('idle');
+    setActivePost({ ...blankPost, category, type: CATEGORY_TO_TYPE[category] });
     setImageFileLabel('');
     setMessage({ type: '', text: '' });
+    setActiveCategory(category);
+    setStatusFilter('all');
+    setPlacementFilter('all');
     setEditorOpen(true);
   };
 
   const editPost = (post) => {
+    editRevisionRef.current += 1;
+    savedRevisionRef.current = editRevisionRef.current;
+    setAutosaveState('idle');
     setActivePost(toEditablePost(post));
     setImageFileLabel('');
     setMessage({ type: '', text: '' });
@@ -595,6 +617,8 @@ export default function MarketingAdminPage() {
 
     try {
       const imageData = await compressImageFile(file);
+      editRevisionRef.current += 1;
+      setAutosaveState('waiting');
       setActivePost((current) => ({ ...current, image: imageData }));
       setImageFileLabel(`${file.name} (${formatFileSize(file.size)})`);
       setMessage({ type: 'success', text: 'Image added to the post.' });
@@ -618,6 +642,8 @@ export default function MarketingAdminPage() {
   };
 
   const clearImage = () => {
+    editRevisionRef.current += 1;
+    setAutosaveState('waiting');
     setActivePost((current) => ({ ...current, image: '' }));
     setImageFileLabel('');
     setMessage({ type: '', text: '' });
@@ -626,14 +652,34 @@ export default function MarketingAdminPage() {
   const handleSave = async (nextStatus = activePost.status, overrides = {}) => {
     const postToSave = { ...activePost, ...overrides };
 
+    if (isUploadingImage) {
+      setMessage({ type: 'error', text: 'Wait for the image upload to finish before saving.' });
+      return;
+    }
+
     if (!postToSave.title.trim()) {
       setMessage({ type: 'error', text: 'Title is required.' });
       return;
     }
 
-    if (!postToSave.excerpt.trim()) {
+    if (nextStatus === 'published' && !postToSave.excerpt.trim()) {
       setMessage({ type: 'error', text: 'Excerpt is required.' });
       return;
+    }
+
+    if (nextStatus === 'published' && postToSave.type === 'award' && !postToSave.organization.trim()) {
+      setMessage({ type: 'error', text: 'Add the awarding organization before publishing this award.' });
+      return;
+    }
+
+    if (nextStatus === 'published' && postToSave.type === 'event' && !postToSave.eventDate) {
+      setMessage({ type: 'error', text: 'Add the event date before publishing.' });
+      return;
+    }
+
+    if (autosaveTimerRef.current) {
+      window.clearTimeout(autosaveTimerRef.current);
+      autosaveTimerRef.current = null;
     }
 
     setIsSaving(true);
@@ -666,6 +712,9 @@ export default function MarketingAdminPage() {
         return sortMarketingPosts(nextPosts);
       });
       setActivePost(toEditablePost(savedPost));
+      editRevisionRef.current += 1;
+      savedRevisionRef.current = editRevisionRef.current;
+      setAutosaveState('idle');
       setImageFileLabel('');
       setMessage({
         type: 'success',
@@ -678,6 +727,59 @@ export default function MarketingAdminPage() {
       setIsSaving(false);
     }
   };
+
+  useEffect(() => {
+    if (
+      !editorOpen ||
+      !user ||
+      activePost.status !== 'draft' ||
+      !activePost.title.trim() ||
+      isSaving ||
+      isUploadingImage ||
+      autosaveInFlightRef.current ||
+      savedRevisionRef.current === editRevisionRef.current
+    ) {
+      return undefined;
+    }
+
+    const revision = editRevisionRef.current;
+    const snapshot = { ...activePost };
+    setAutosaveState('waiting');
+    autosaveTimerRef.current = window.setTimeout(async () => {
+      if (revision !== editRevisionRef.current || autosaveInFlightRef.current) return;
+
+      autosaveInFlightRef.current = true;
+      setAutosaveState('saving');
+
+      try {
+        const savedPost = await saveMarketingPost(toSavePayload(snapshot, 'draft'), user);
+        savedRevisionRef.current = revision;
+        setPosts((current) => {
+          const exists = current.some((post) => post.id === savedPost.id);
+          return sortMarketingPosts(exists
+            ? current.map((post) => (post.id === savedPost.id ? savedPost : post))
+            : [savedPost, ...current]);
+        });
+        setActivePost((current) => current.id
+          ? current
+          : { ...current, id: savedPost.id, slug: savedPost.slug, createdBy: savedPost.createdBy });
+        if (revision === editRevisionRef.current) setAutosaveState('saved');
+      } catch {
+        if (revision === editRevisionRef.current) setAutosaveState('error');
+      } finally {
+        autosaveInFlightRef.current = false;
+        autosaveTimerRef.current = null;
+        if (revision !== editRevisionRef.current) setAutosavePulse((pulse) => pulse + 1);
+      }
+    }, 900);
+
+    return () => {
+      if (autosaveTimerRef.current) {
+        window.clearTimeout(autosaveTimerRef.current);
+        autosaveTimerRef.current = null;
+      }
+    };
+  }, [activePost, autosavePulse, editorOpen, isSaving, isUploadingImage, user]);
 
   const handleDelete = async (post) => {
     const confirmed = window.confirm(`Delete "${post.title}"?`);
@@ -699,24 +801,42 @@ export default function MarketingAdminPage() {
     }
   };
 
+  const closeEditor = () => {
+    if (isSaving || autosaveState === 'saving') return;
+
+    const hasUnsavedChanges = editRevisionRef.current !== savedRevisionRef.current;
+    if (hasUnsavedChanges && activePost.status === 'draft' && activePost.title.trim()) {
+      void handleSave('draft');
+      return;
+    }
+
+    if (hasUnsavedChanges && activePost.status !== 'draft' && !window.confirm('Discard unsaved changes?')) {
+      return;
+    }
+
+    setEditorOpen(false);
+  };
+
   const changeStatusFilter = (nextFilter) => {
     setActiveCategory('All');
     setStatusFilter(nextFilter);
   };
 
   const changeCategoryFilter = (nextCategory) => {
-    setActiveCategory((currentCategory) => (currentCategory === nextCategory ? 'All' : nextCategory));
+    setActiveCategory(nextCategory);
     setStatusFilter('all');
     setPlacementFilter('all');
   };
 
   const handleLogout = async () => {
     await signOutPortal().catch(() => {});
-    router.replace('/LogIn');
+    router.replace('/marketing');
   };
 
   const isEditingMemberStory = activePost.type === 'member_story' || activePost.category === 'Member Stories';
   const isEditingAward = activePost.type === 'award' || activePost.category === 'Awards';
+  const isEditingEvent = activePost.type === 'event' || activePost.category === 'Events';
+  const isEditingAnnouncement = activePost.type === 'announcement' || activePost.category === 'Announcement';
 
   if (!checked || !user) {
     return (
@@ -775,13 +895,14 @@ export default function MarketingAdminPage() {
 
               <div className="marketing-sidebar-group">
                 <span className="marketing-sidebar-label">Content</span>
-                <nav className="sidebar-nav marketing-sidebar-nav" aria-label="Marketing admin content filters">
+                <nav className="sidebar-nav marketing-sidebar-nav" aria-label="Marketing content">
                   {CONTENT_NAV_ITEMS.map(({ label, category, icon: IconComponent }) => (
                     <button
                       type="button"
                       className={`sidebar-nav-btn ${activeCategory === category ? 'active' : ''}`}
                       onClick={() => changeCategoryFilter(category)}
                       key={category}
+                      aria-current={activeCategory === category ? 'page' : undefined}
                     >
                       <IconComponent className="sidebar-nav-icon" aria-hidden="true" />
                       {label}
@@ -838,10 +959,16 @@ export default function MarketingAdminPage() {
                     <span className="section-kicker">Content Library</span>
                     <h3>{libraryTitle}</h3>
                   </div>
-                  <button type="button" className="quick-action-btn primary marketing-new-btn" onClick={startNewPost}>
-                    <Plus aria-hidden="true" />
-                    New Post
-                  </button>
+                  {isContentView && (
+                    <button
+                      type="button"
+                      className="quick-action-btn primary marketing-new-btn"
+                      onClick={() => startNewPost(activeCategory)}
+                    >
+                      <Plus aria-hidden="true" />
+                      New Post
+                    </button>
+                  )}
                 </div>
 
                 <div className="marketing-library-tools">
@@ -994,13 +1121,18 @@ export default function MarketingAdminPage() {
             <aside className="ma-editor-drawer">
               <div className="ma-profile-head">
                 <div>
-                  <span className="section-kicker">{activePost.id ? 'Edit Post' : 'New Post'}</span>
+                  <span className="section-kicker">{activePost.id ? 'Edit Post' : `New ${activePost.category === 'News' ? 'News Post' : activePost.category === 'Member Stories' ? 'Member Story' : activePost.category === 'Announcement' ? 'Announcement' : activePost.category.slice(0, -1) || 'Post'}`}</span>
                   <h2>{activePost.title || 'Untitled story'}</h2>
                 </div>
+                {activePost.status === 'draft' && (
+                  <span className={`ma-autosave-state ${autosaveState}`} role="status" aria-live="polite">
+                    {autosaveState === 'saving' ? 'Saving draft...' : autosaveState === 'saved' ? 'Draft saved' : autosaveState === 'error' ? 'Autosave paused' : autosaveState === 'waiting' ? 'Unsaved changes' : ''}
+                  </span>
+                )}
                 <span className={`ma-editor-status status ${toStatusClass(activePost.status)}`}>
                   {statusLabels[activePost.status] || 'Draft'}
                 </span>
-                <button type="button" className="ma-drawer-close" onClick={() => setEditorOpen(false)} aria-label="Close editor">
+                <button type="button" className="ma-drawer-close" onClick={closeEditor} disabled={isSaving || isUploadingImage || autosaveState === 'saving'} aria-label="Close editor">
                   &times;
                 </button>
               </div>
@@ -1013,29 +1145,90 @@ export default function MarketingAdminPage() {
                   <div className="ma-editor-row ma-editor-row-two">
                     <label className="ma-field">
                       <span>Title</span>
-                      <input value={activePost.title} onChange={(event) => updatePost('title', event.target.value)} placeholder="Story title" />
+                      <input value={activePost.title} onChange={(event) => updatePost('title', event.target.value)} placeholder={isEditingAward ? 'Award or recognition title' : isEditingEvent ? 'Event title' : isEditingMemberStory ? 'Member story title' : 'Post title'} />
                     </label>
 
                     <label className="ma-field">
                       <span>Category</span>
-                      <select value={activePost.category} onChange={(event) => updatePost('category', event.target.value)}>
-                        {EDITOR_CATEGORIES.map((category) => (
-                          <option value={category} key={category}>
-                            {category}
-                          </option>
-                        ))}
-                      </select>
+                      <input value={activePost.category} readOnly aria-label="Category (fixed)" />
                     </label>
                   </div>
 
+                  {isEditingAward && (
+                    <div className="ma-editor-row ma-editor-row-two ma-type-fields">
+                      <label className="ma-field">
+                        <span>Awarding Organization</span>
+                        <input value={activePost.organization} onChange={(event) => updatePost('organization', event.target.value)} placeholder="Organization or awarding body" />
+                      </label>
+                      <label className="ma-field">
+                        <span>Award Year</span>
+                        <input type="number" min="1900" max="2200" value={activePost.awardYear} onChange={(event) => updatePost('awardYear', event.target.value)} placeholder={String(new Date().getFullYear())} />
+                      </label>
+                    </div>
+                  )}
+
+                  {isEditingEvent && (
+                    <div className="ma-editor-row ma-event-fields ma-type-fields">
+                      <label className="ma-field">
+                        <span>Event Date</span>
+                        <input type="date" value={activePost.eventDate} onChange={(event) => updatePost('eventDate', event.target.value)} />
+                      </label>
+                      <label className="ma-field">
+                        <span>Venue / Location</span>
+                        <input value={activePost.eventLocation} onChange={(event) => updatePost('eventLocation', event.target.value)} placeholder="Venue or online" />
+                      </label>
+                      <label className="ma-field full">
+                        <span>Registration Link</span>
+                        <input type="url" value={activePost.registrationUrl} onChange={(event) => updatePost('registrationUrl', event.target.value)} placeholder="https://" />
+                      </label>
+                    </div>
+                  )}
+
+                  {isEditingAnnouncement && (
+                    <div className="ma-editor-row ma-editor-row-two ma-type-fields">
+                      <label className="ma-field">
+                        <span>Priority</span>
+                        <select value={activePost.announcementPriority} onChange={(event) => updatePost('announcementPriority', event.target.value)}>
+                          <option value="standard">Standard</option>
+                          <option value="important">Important</option>
+                        </select>
+                      </label>
+                      <label className="ma-field">
+                        <span>Display Until (Optional)</span>
+                        <input type="date" value={activePost.expiresAt} onChange={(event) => updatePost('expiresAt', event.target.value)} />
+                      </label>
+                    </div>
+                  )}
+
+                  {isEditingMemberStory && (
+                    <div className="ma-editor-row ma-editor-row-two ma-type-fields">
+                      <label className="ma-field">
+                        <span>Member Role</span>
+                        <input value={activePost.storyRole} onChange={(event) => updatePost('storyRole', event.target.value)} placeholder="Member, officer, community leader..." />
+                      </label>
+                      <label className="ma-field">
+                        <span>Location</span>
+                        <input value={activePost.storyLocation} onChange={(event) => updatePost('storyLocation', event.target.value)} placeholder="Branch or community" />
+                      </label>
+                      <label className="ma-field full">
+                        <span>Video Link (Optional)</span>
+                        <input type="url" value={activePost.externalUrl} onChange={(event) => updatePost('externalUrl', event.target.value)} placeholder="YouTube or video link" />
+                      </label>
+                      <label className="ma-field full">
+                        <span>Tags</span>
+                        <input value={activePost.tagsText} onChange={(event) => updatePost('tagsText', event.target.value)} placeholder="Community, livelihood, member story" />
+                      </label>
+                    </div>
+                  )}
+
                   <label className="ma-field full ma-excerpt-field">
-                    <span>Excerpt</span>
-                    <textarea value={activePost.excerpt} onChange={(event) => updatePost('excerpt', event.target.value)} placeholder="Short summary for cards and spotlight sections" rows={3} />
+                    <span>{isEditingAward ? 'Achievement Summary' : isEditingEvent ? 'Event Summary' : isEditingMemberStory ? 'Story Summary' : 'Short Summary'}</span>
+                    <textarea value={activePost.excerpt} onChange={(event) => updatePost('excerpt', event.target.value)} placeholder={isEditingAward ? 'What was recognized and why it matters' : isEditingEvent ? 'What attendees can expect' : 'Short summary shown on public cards'} rows={3} />
                   </label>
 
                   <label className="ma-field full ma-body-field">
-                    <span>Article Body</span>
-                    <textarea value={activePost.bodyText} onChange={(event) => updatePost('bodyText', event.target.value)} placeholder="Write article paragraphs. Separate paragraphs with a blank line." rows={7} />
+                    <span>{isEditingAward ? 'Recognition Details' : isEditingEvent ? 'Event Details' : isEditingMemberStory ? 'Member Story' : 'Article Body'}</span>
+                    <textarea value={activePost.bodyText} onChange={(event) => updatePost('bodyText', event.target.value)} placeholder={isEditingAward ? 'Add the award context and achievement details.' : isEditingEvent ? 'Add agenda, audience, and other useful details.' : isEditingMemberStory ? 'Tell the member’s story in a few clear paragraphs.' : 'Write article paragraphs. Separate paragraphs with a blank line.'} rows={7} />
                   </label>
                 </section>
 
@@ -1109,21 +1302,26 @@ export default function MarketingAdminPage() {
                 </aside>
 
                 <div className="ma-editor-actions">
-                  <button type="submit" className="ma-command save" disabled={isSaving}>
+                  {message.text && (
+                    <div className={`ma-editor-feedback ${message.type}`} role={message.type === 'error' ? 'alert' : 'status'}>
+                      {message.text}
+                    </div>
+                  )}
+                  <button type="submit" className="ma-command save" disabled={isSaving || isUploadingImage || autosaveState === 'saving'}>
                     <Save aria-hidden="true" />
                     {isSaving ? 'Saving...' : 'Save Draft'}
                   </button>
-                  <button type="button" className="ma-command publish" onClick={() => handleSave('published')} disabled={isSaving}>
+                  <button type="button" className="ma-command publish" onClick={() => handleSave('published')} disabled={isSaving || isUploadingImage || autosaveState === 'saving'}>
                     <Send aria-hidden="true" />
                     Publish
                   </button>
                   {activePost.id && (
                     <>
-                      <button type="button" className="ma-command archive" onClick={() => handleSave('archived')} disabled={isSaving}>
+                      <button type="button" className="ma-command archive" onClick={() => handleSave('archived')} disabled={isSaving || isUploadingImage || autosaveState === 'saving'}>
                         <Archive aria-hidden="true" />
                         Archive
                       </button>
-                      <button type="button" className="ma-command delete" onClick={() => handleDelete(activePost)}>
+                      <button type="button" className="ma-command delete" onClick={() => handleDelete(activePost)} disabled={isSaving || isUploadingImage || autosaveState === 'saving'}>
                         <Trash2 aria-hidden="true" />
                         Delete
                       </button>

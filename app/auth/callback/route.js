@@ -18,7 +18,7 @@ export async function GET(request) {
         throw error;
       }
     } catch {
-      redirectUrl.pathname = '/LogIn';
+      redirectUrl.pathname = '/helpdesk';
       redirectUrl.search = '';
       redirectUrl.searchParams.set('auth_error', 'setup');
     }
