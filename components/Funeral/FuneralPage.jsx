@@ -2,13 +2,17 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
-import rosalOnePhoto from '@/public/Funeral/packages/rosal-1.webp';
-import rosalTwoPhoto from '@/public/Funeral/packages/rosal-2.webp';
-import rosalThreePhoto from '@/public/Funeral/packages/rosal-3.webp';
-import damaDeNochePhoto from '@/public/Funeral/packages/dama-de-noche.webp';
-import clavelPhoto from '@/public/Funeral/packages/clavel.webp';
-import orquideaPhoto from '@/public/Funeral/packages/orquidea.webp';
 import './FuneralPage.css';
+
+const packagePhotos = {
+  rosalOne: '/Funeral/packages/ROSAL%201.JPG',
+  rosalTwo: '/Funeral/packages/ROSAL%202.JPG',
+  rosalThree: '/Funeral/packages/ROSAL%203.JPG',
+  damaDeNoche: '/Funeral/packages/DAMA%20DE%20NOCHE.JPG',
+  jasmin: '/Funeral/packages/JASMINE.JPG',
+  clavel: '/Funeral/packages/CLAVEL.JPG',
+  orquidea: '/Funeral/packages/ORQUIDEA.JPG',
+};
 
 const FacebookIcon = () => (
   <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -74,7 +78,7 @@ const packages = [
     tone: '#8A4B1A',
     toneSoft: 'rgba(138, 75, 26, 0.10)',
     name: 'Rosal 1 Package',
-    photo: rosalOnePhoto,
+    photo: packagePhotos.rosalOne,
     photoAlt: 'Rosal 1 memorial arrangement with a white casket, flowers, and chapel seating',
     description:
       'Plain white, wood casket, single top cover, curve cover, and with handle.',
@@ -106,7 +110,7 @@ const packages = [
     tone: '#A5602B',
     toneSoft: 'rgba(165, 96, 43, 0.10)',
     name: 'Rosal 2 Package',
-    photo: rosalTwoPhoto,
+    photo: packagePhotos.rosalTwo,
     photoAlt: 'Rosal 2 white casket with gold handles and a chapel viewing arrangement',
     description:
       'Plain white, wood casket, single top and elegant interiors, with silver or gold corners and handle.',
@@ -146,7 +150,7 @@ const packages = [
     tone: '#B87535',
     toneSoft: 'rgba(184, 117, 53, 0.11)',
     name: 'Rosal 3 Package',
-    photo: rosalThreePhoto,
+    photo: packagePhotos.rosalThree,
     photoAlt: 'Rosal 3 memorial arrangement viewed from the chapel seating area',
     description:
       'Plain white, metal casket, single top, full glass with elegant interiors, with silver or gold corners and handle.',
@@ -187,7 +191,7 @@ const packages = [
     tone: '#7C5137',
     toneSoft: 'rgba(124, 81, 55, 0.10)',
     name: 'Dama de Noche Package',
-    photo: damaDeNochePhoto,
+    photo: packagePhotos.damaDeNoche,
     photoAlt: 'Dama de Noche white casket surrounded by flowers in the chapel',
     description:
       'Plain white, metal casket, full/half glass, with elegant interiors and silver or gold corners and handle.',
@@ -226,7 +230,8 @@ const packages = [
     tone: '#9C6A44',
     toneSoft: 'rgba(156, 106, 68, 0.11)',
     name: 'Jasmin Package',
-    photoPlaceholder: true,
+    photo: packagePhotos.jasmin,
+    photoAlt: 'Jasmin funeral package arrangement with casket and floral display',
     description:
       'Plain white or brown metal casket, double top split lid cover, full glass, elegant interiors, silver or gold corners and handle.',
     priceOptions: [
@@ -265,7 +270,7 @@ const packages = [
     tone: '#B88C54',
     toneSoft: 'rgba(184, 140, 84, 0.12)',
     name: 'Clavel Package',
-    photo: clavelPhoto,
+    photo: packagePhotos.clavel,
     photoAlt: 'Clavel white and gold casket with floral arrangements and chapel lighting',
     description:
       'High quality metal casket, jango class, with color options (blue, golden, brown), double top slit lid cover, full-glass and elegant interiors, silver or gold corners and handles.',
@@ -307,7 +312,7 @@ const packages = [
     tone: '#D09B45',
     toneSoft: 'rgba(208, 155, 69, 0.13)',
     name: 'Orquidea Package',
-    photo: orquideaPhoto,
+    photo: packagePhotos.orquidea,
     photoAlt: 'Orquidea white and gold casket with a full floral memorial arrangement',
     description:
       'Imported High Quality Metal Casket, Double Top Split Lid Cover, Full Glass Elegant Interior, Silver or Gold corner and handle, with key.',
@@ -370,12 +375,26 @@ const chapelSpaces = [
   {
     title: 'Clavel Chapel',
     rate: '₱15,000',
-    features: [],
+    features: [
+      'Fully airconditioned chapel 24/7',
+      'Family room with comfort room / bathroom',
+      'Pantry',
+      'Refrigerator',
+      'Water dispenser',
+      'Tables and extra chairs',
+    ],
   },
   {
     title: 'Jasmin Chapel',
     rate: '₱12,500',
-    features: [],
+    features: [
+      'Fully airconditioned chapel 24/7',
+      'Pantry',
+      'Private comfort room',
+      'Refrigerator',
+      'Water dispenser',
+      'Tables and extra chairs',
+    ],
   },
   {
     title: 'Dama de Noche Chapel',
@@ -522,7 +541,6 @@ function FuneralPackagePhoto({ item }) {
         alt={item.photoAlt}
         fill
         sizes="(max-width: 640px) calc(100vw - 1.2rem), (max-width: 920px) calc(100vw - 3rem), (max-width: 1248px) 46vw, 570px"
-        placeholder="blur"
         className="fun-package-image"
       />
     </div>

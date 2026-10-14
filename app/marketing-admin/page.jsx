@@ -8,7 +8,6 @@ import {
   CalendarDays,
   Clock3,
   ExternalLink,
-  Eye,
   FileText,
   ImagePlus,
   LayoutDashboard,
@@ -16,7 +15,6 @@ import {
   Megaphone,
   Newspaper,
   Plus,
-  PencilLine,
   Save,
   Search,
   Send,
@@ -44,12 +42,6 @@ import {
   saveMarketingPost,
   sortMarketingPosts,
 } from '@/lib/marketing/marketingPosts';
-import {
-  createMarketingPreviewToken,
-  getMarketingPreviewUrl,
-  isMarketingPreviewReadyMessage,
-  sendMarketingPreviewPost,
-} from '@/lib/marketing/marketingPreview';
 import '../admin-dashboard/admin-dashboard.css';
 import './marketing-admin.css';
 
@@ -294,47 +286,6 @@ function ActivityIndicator({ post }) {
   );
 }
 
-const getTypeLabel = (type) => {
-  if (type === 'event') return 'Event';
-  if (type === 'announcement') return 'Announcement';
-  if (type === 'award') return 'Award';
-  if (type === 'member_story') return 'Member Story';
-  return 'News';
-};
-
-const toMarketingPreviewPost = (post, token) => {
-  const publishedAt = post.publishedAt || new Date().toISOString();
-
-  return {
-    ...post,
-    id: post.id || `preview-${token}`,
-    fullArticle: post.bodyText
-      .split(/\n{2,}/)
-      .map((paragraph) => paragraph.trim())
-      .filter(Boolean),
-    tags: post.tagsText
-      .split(/[,\n]+/)
-      .map((tag) => tag.trim())
-      .filter(Boolean),
-    date: new Intl.DateTimeFormat('en-PH', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    }).format(new Date(publishedAt)),
-    publishedAt,
-    featured: post.placement === 'featured',
-    status: 'published',
-  };
-};
-
-const formatEventDate = (value) => {
-  if (!value) return '';
-  const date = new Date(`${value}T00:00:00`);
-  return Number.isNaN(date.getTime())
-    ? value
-    : new Intl.DateTimeFormat('en-PH', { month: 'long', day: 'numeric', year: 'numeric' }).format(date);
-};
-
 const getPlacementHint = (placement) => {
   if (placement === 'featured') return 'Shows in the large Featured Story / Spotlight area. Only one post should use this.';
   if (placement === 'latest') return 'Shows in the Latest Stories card grid below the featured area.';
@@ -449,8 +400,6 @@ function StatCard({ icon: IconComponent, label, value, meta }) {
 export default function MarketingAdminPage() {
   const router = useRouter();
   const fileInputRef = useRef(null);
-  const previewFrameRef = useRef(null);
-  const previewPostRef = useRef(null);
   const autosaveInFlightRef = useRef(false);
   const autosaveTimerRef = useRef(null);
   const editRevisionRef = useRef(0);
@@ -473,26 +422,8 @@ export default function MarketingAdminPage() {
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [autosaveState, setAutosaveState] = useState('idle');
   const [autosavePulse, setAutosavePulse] = useState(0);
-  const [isPreviewMode, setIsPreviewMode] = useState(false);
-  const [previewToken, setPreviewToken] = useState('');
-  const [previewSurface, setPreviewSurface] = useState('public');
   const isContentView = activeCategory !== 'All';
   const libraryTitle = getLibraryTitle(statusFilter, activeCategory);
-  const previewPost = useMemo(
-    () => previewToken ? toMarketingPreviewPost(activePost, previewToken) : null,
-    [activePost, previewToken]
-  );
-  previewPostRef.current = previewPost;
-  const previewPath = activePost.type === 'award'
-    ? '/about/awards'
-    : previewSurface === 'home'
-      ? '/'
-      : activePost.type === 'member_story'
-        ? '/about/member-stories'
-        : '/news';
-  const previewSrc = isPreviewMode && previewToken
-    ? getMarketingPreviewUrl(previewPath, previewToken)
-    : '';
 
   const statusFilteredPosts = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -563,18 +494,18 @@ export default function MarketingAdminPage() {
       if (cancelled) return;
 
       if (!activeUser) {
-        router.replace('/LogIn');
+        router.replace('/marketing');
         return;
       }
 
       if (isPasswordChangeRequired(activeUser)) {
-        router.replace('/LogIn?mode=force-password');
+        router.replace('/marketing?mode=force-password');
         return;
       }
 
       if (isInactivePortalUser(activeUser)) {
         await signOutPortal().catch(() => {});
-        router.replace('/LogIn');
+        router.replace('/marketing');
         return;
       }
 
@@ -605,10 +536,14 @@ export default function MarketingAdminPage() {
 
     const previousBodyOverflow = document.body.style.overflow;
     const previousHtmlOverflow = document.documentElement.style.overflow;
+    document.body.classList.add('ma-editor-open');
+    document.documentElement.classList.add('ma-editor-open');
     document.body.style.overflow = 'hidden';
     document.documentElement.style.overflow = 'hidden';
 
     return () => {
+      document.body.classList.remove('ma-editor-open');
+      document.documentElement.classList.remove('ma-editor-open');
       document.body.style.overflow = previousBodyOverflow;
       document.documentElement.style.overflow = previousHtmlOverflow;
     };
@@ -621,23 +556,6 @@ export default function MarketingAdminPage() {
   useEffect(() => {
     setCurrentPage((page) => Math.min(page, totalPages));
   }, [totalPages]);
-
-  useEffect(() => {
-    if (!editorOpen || !isPreviewMode || !previewToken) return undefined;
-
-    const handlePreviewReady = (event) => {
-      if (!isMarketingPreviewReadyMessage(event, previewFrameRef.current, previewToken)) return;
-      sendMarketingPreviewPost(previewFrameRef.current, previewToken, previewPostRef.current);
-    };
-
-    window.addEventListener('message', handlePreviewReady);
-    return () => window.removeEventListener('message', handlePreviewReady);
-  }, [editorOpen, isPreviewMode, previewToken]);
-
-  useEffect(() => {
-    if (!editorOpen || !isPreviewMode || !previewToken || !previewPost) return;
-    sendMarketingPreviewPost(previewFrameRef.current, previewToken, previewPost);
-  }, [editorOpen, isPreviewMode, previewPost, previewToken]);
 
   const updatePost = (field, value) => {
     editRevisionRef.current += 1;
@@ -673,9 +591,6 @@ export default function MarketingAdminPage() {
     editRevisionRef.current += 1;
     savedRevisionRef.current = editRevisionRef.current;
     setAutosaveState('idle');
-    setIsPreviewMode(false);
-    setPreviewToken('');
-    setPreviewSurface('public');
     setActivePost({ ...blankPost, category, type: CATEGORY_TO_TYPE[category] });
     setImageFileLabel('');
     setMessage({ type: '', text: '' });
@@ -689,9 +604,6 @@ export default function MarketingAdminPage() {
     editRevisionRef.current += 1;
     savedRevisionRef.current = editRevisionRef.current;
     setAutosaveState('idle');
-    setIsPreviewMode(false);
-    setPreviewToken('');
-    setPreviewSurface('public');
     setActivePost(toEditablePost(post));
     setImageFileLabel('');
     setMessage({ type: '', text: '' });
@@ -903,19 +815,6 @@ export default function MarketingAdminPage() {
     }
 
     setEditorOpen(false);
-    setIsPreviewMode(false);
-    setPreviewToken('');
-  };
-
-  const togglePreview = () => {
-    if (isPreviewMode) {
-      setIsPreviewMode(false);
-      return;
-    }
-
-    setPreviewToken(createMarketingPreviewToken());
-    setPreviewSurface('public');
-    setIsPreviewMode(true);
   };
 
   const changeStatusFilter = (nextFilter) => {
@@ -924,14 +823,14 @@ export default function MarketingAdminPage() {
   };
 
   const changeCategoryFilter = (nextCategory) => {
-    setActiveCategory((currentCategory) => (currentCategory === nextCategory ? 'All' : nextCategory));
+    setActiveCategory(nextCategory);
     setStatusFilter('all');
     setPlacementFilter('all');
   };
 
   const handleLogout = async () => {
     await signOutPortal().catch(() => {});
-    router.replace('/LogIn');
+    router.replace('/marketing');
   };
 
   const isEditingMemberStory = activePost.type === 'member_story' || activePost.category === 'Member Stories';
@@ -998,26 +897,16 @@ export default function MarketingAdminPage() {
                 <span className="marketing-sidebar-label">Content</span>
                 <nav className="sidebar-nav marketing-sidebar-nav" aria-label="Marketing content">
                   {CONTENT_NAV_ITEMS.map(({ label, category, icon: IconComponent }) => (
-                    <div className={`marketing-content-nav-item${activeCategory === category ? ' active' : ''}`} key={category}>
-                      <button
-                        type="button"
-                        className={`sidebar-nav-btn marketing-content-nav-select ${activeCategory === category ? 'active' : ''}`}
-                        onClick={() => changeCategoryFilter(category)}
-                        aria-current={activeCategory === category ? 'page' : undefined}
-                      >
-                        <IconComponent className="sidebar-nav-icon" aria-hidden="true" />
-                        {label}
-                      </button>
-                      <button
-                        type="button"
-                        className="marketing-content-nav-create"
-                        onClick={() => startNewPost(category)}
-                        aria-label={`New ${label === 'Stories' ? 'Member Story' : label === 'News' ? 'News Post' : label === 'Events' ? 'Event' : label === 'Announcements' ? 'Announcement' : 'Award'}`}
-                        title={`New ${label === 'Stories' ? 'Member Story' : label === 'News' ? 'News Post' : label === 'Events' ? 'Event' : label === 'Announcements' ? 'Announcement' : 'Award'}`}
-                      >
-                        <Plus aria-hidden="true" />
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      className={`sidebar-nav-btn ${activeCategory === category ? 'active' : ''}`}
+                      onClick={() => changeCategoryFilter(category)}
+                      key={category}
+                      aria-current={activeCategory === category ? 'page' : undefined}
+                    >
+                      <IconComponent className="sidebar-nav-icon" aria-hidden="true" />
+                      {label}
+                    </button>
                   ))}
                 </nav>
               </div>
@@ -1070,6 +959,16 @@ export default function MarketingAdminPage() {
                     <span className="section-kicker">Content Library</span>
                     <h3>{libraryTitle}</h3>
                   </div>
+                  {isContentView && (
+                    <button
+                      type="button"
+                      className="quick-action-btn primary marketing-new-btn"
+                      onClick={() => startNewPost(activeCategory)}
+                    >
+                      <Plus aria-hidden="true" />
+                      New Post
+                    </button>
+                  )}
                 </div>
 
                 <div className="marketing-library-tools">
@@ -1233,15 +1132,6 @@ export default function MarketingAdminPage() {
                 <span className={`ma-editor-status status ${toStatusClass(activePost.status)}`}>
                   {statusLabels[activePost.status] || 'Draft'}
                 </span>
-                <button
-                  type="button"
-                  className="ma-preview-toggle"
-                  onClick={() => setIsPreviewMode((preview) => !preview)}
-                  aria-pressed={isPreviewMode}
-                >
-                  {isPreviewMode ? <PencilLine aria-hidden="true" /> : <Eye aria-hidden="true" />}
-                  {isPreviewMode ? 'Edit' : 'Preview'}
-                </button>
                 <button type="button" className="ma-drawer-close" onClick={closeEditor} disabled={isSaving || isUploadingImage || autosaveState === 'saving'} aria-label="Close editor">
                   &times;
                 </button>
@@ -1252,34 +1142,6 @@ export default function MarketingAdminPage() {
                 void handleSave('draft');
               }}>
                 <section className="ma-editor-main">
-                  {isPreviewMode ? (
-                    <article className={`ma-live-preview ma-live-preview-${activePost.type}`}>
-                      <div className="ma-live-preview-label">Public preview</div>
-                      {activePost.image ? (
-                        <img className="ma-live-preview-image" src={activePost.image} alt={activePost.imageAlt || activePost.title || 'Post image'} />
-                      ) : (
-                        <div className="ma-live-preview-image ma-live-preview-placeholder">Post image</div>
-                      )}
-                      <div className="ma-live-preview-content">
-                        <div className="ma-live-preview-meta">
-                          <span>{activePost.category}</span>
-                          {activePost.type === 'award' && (activePost.awardYear || 'Award year')}
-                          {activePost.type === 'event' && (formatEventDate(activePost.eventDate) || 'Event date')}
-                          {activePost.type !== 'event' && activePost.type !== 'award' && (activePost.date || 'New update')}
-                        </div>
-                        <h3>{activePost.title || 'Your title will appear here'}</h3>
-                        {(activePost.type === 'award' && activePost.organization) && <strong className="ma-live-preview-detail">{activePost.organization}</strong>}
-                        {(activePost.type === 'event' && activePost.eventLocation) && <strong className="ma-live-preview-detail">{activePost.eventLocation}</strong>}
-                        {(activePost.type === 'member_story' && activePost.storyRole) && <strong className="ma-live-preview-detail">{activePost.storyRole}{activePost.storyLocation ? ` · ${activePost.storyLocation}` : ''}</strong>}
-                        {activePost.type === 'announcement' && activePost.announcementPriority === 'important' && <span className="ma-live-preview-important">Important</span>}
-                        <p>{activePost.excerpt || 'Your short summary will appear here.'}</p>
-                        <div className="ma-live-preview-body">
-                          {(activePost.bodyText.split(/\n{2,}/).filter(Boolean).slice(0, 3)).map((paragraph, index) => <p key={index}>{paragraph}</p>)}
-                        </div>
-                      </div>
-                    </article>
-                  ) : (
-                    <>
                   <div className="ma-editor-row ma-editor-row-two">
                     <label className="ma-field">
                       <span>Title</span>
@@ -1288,13 +1150,7 @@ export default function MarketingAdminPage() {
 
                     <label className="ma-field">
                       <span>Category</span>
-                      <select value={activePost.category} onChange={(event) => updatePost('category', event.target.value)}>
-                        {EDITOR_CATEGORIES.map((category) => (
-                          <option value={category} key={category}>
-                            {category}
-                          </option>
-                        ))}
-                      </select>
+                      <input value={activePost.category} readOnly aria-label="Category (fixed)" />
                     </label>
                   </div>
 
@@ -1374,8 +1230,6 @@ export default function MarketingAdminPage() {
                     <span>{isEditingAward ? 'Recognition Details' : isEditingEvent ? 'Event Details' : isEditingMemberStory ? 'Member Story' : 'Article Body'}</span>
                     <textarea value={activePost.bodyText} onChange={(event) => updatePost('bodyText', event.target.value)} placeholder={isEditingAward ? 'Add the award context and achievement details.' : isEditingEvent ? 'Add agenda, audience, and other useful details.' : isEditingMemberStory ? 'Tell the member’s story in a few clear paragraphs.' : 'Write article paragraphs. Separate paragraphs with a blank line.'} rows={7} />
                   </label>
-                    </>
-                  )}
                 </section>
 
                 <aside className="ma-editor-side">
@@ -1444,10 +1298,6 @@ export default function MarketingAdminPage() {
                         <img src={activePost.image} alt="" />
                       </div>
                     )}
-                    <label className="ma-field ma-image-alt-field">
-                      <span>Image Description</span>
-                      <input value={activePost.imageAlt} onChange={(event) => updatePost('imageAlt', event.target.value)} placeholder="Describe the image for screen readers" />
-                    </label>
                   </section>
                 </aside>
 

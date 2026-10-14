@@ -1,4 +1,4 @@
-import { Building2, Mail, MapPin, Phone, ShieldCheck } from 'lucide-react'
+import { Building2, Mail, MapPin, Phone } from 'lucide-react'
 import Navbar from '@/components/Navbar/Navbar'
 import Footer from '@/components/Footer/Footer'
 import './contact-details.css'
@@ -215,6 +215,7 @@ export default function ContactDetailsPage() {
       <main className="contact-details-page">
         <section className="contact-details-hero">
           <div className="contact-details-hero-copy">
+            <p className="contact-details-kicker">MEMPCO locations and support</p>
             <h1>Contact details</h1>
             <p>
               A clean reference for MEMPCO branch addresses, phone numbers, and
@@ -230,10 +231,6 @@ export default function ContactDetailsPage() {
                 loading="eager"
               />
             </div>
-            <span className="contact-hero-panel-label">
-              <ShieldCheck size={16} strokeWidth={2.2} />
-              Central contact
-            </span>
             <h2>{featuredOffice.name}</h2>
             <ContactRow icon={MapPin} label="Main office" value={featuredOffice.address} />
             <ContactRow icon={Phone} label="Telephone" value={featuredOffice.phone} href={getPhoneHref(featuredOffice.phone)} />
@@ -250,10 +247,10 @@ export default function ContactDetailsPage() {
           ))}
         </section>
 
-        <section className="contact-directory" aria-labelledby="contact-directory-title">
+        <section className="contact-directory" aria-labelledby="branch-directory-title">
           <div className="contact-directory-head">
             <p className="contact-details-kicker">Branch Contacts</p>
-            <h2 id="contact-directory-title">Office directory</h2>
+            <h2 id="branch-directory-title">Branch directory</h2>
           </div>
 
           <div className="contact-details-grid" aria-label="MEMPCO branch contact details">

@@ -7,7 +7,8 @@ import {
   hasSupabaseConfig,
 } from './lib/supabase/config';
 
-const LOGIN_ROUTE = '/LogIn';
+const LOGIN_ROUTE = '/helpdesk';
+const SUPERADMIN_LOGIN_ROUTES = ['/superadmin'];
 const SUPABASE_PROXY_TIMEOUT_MS = 12000;
 
 const normalizePortalRole = (role = '') =>
@@ -33,6 +34,12 @@ const getPortalHomeRoute = (role) => {
   if (role === 'marketing_admin') return '/marketing-admin';
   if (role === 'hr_admin') return '/hr-admin';
   return '/employee-dashboard';
+};
+
+const getLoginRoute = (requiredRole) => {
+  if (requiredRole === 'marketing_admin') return '/marketing';
+  if (requiredRole === 'hr_admin') return '/hr';
+  return LOGIN_ROUTE;
 };
 
 const hasRequiredRole = (role, requiredRole) => {
@@ -73,7 +80,7 @@ const redirectWithCookies = (request, response, pathname) => {
 export async function proxy(request) {
   const { pathname } = request.nextUrl;
   const requiredRole = getRequiredRole(pathname);
-  const isLoginPage = pathname === LOGIN_ROUTE;
+  const isLoginPage = SUPERADMIN_LOGIN_ROUTES.includes(pathname);
 
   if (!hasSupabaseConfig() || (!requiredRole && !isLoginPage)) {
     return NextResponse.next();
@@ -113,11 +120,11 @@ export async function proxy(request) {
     const result = await withTimeout(supabase.auth.getUser());
     user = result.data.user;
   } catch {
-    return requiredRole ? redirectWithCookies(request, response, LOGIN_ROUTE) : response;
+    return requiredRole ? redirectWithCookies(request, response, getLoginRoute(requiredRole)) : response;
   }
 
   if (requiredRole && !user) {
-    return redirectWithCookies(request, response, LOGIN_ROUTE);
+    return redirectWithCookies(request, response, getLoginRoute(requiredRole));
   }
 
   if (!user) {
@@ -138,7 +145,7 @@ export async function proxy(request) {
       ? { ...result.data, role: normalizePortalRole(result.data.role) }
       : null;
   } catch {
-    return requiredRole ? redirectWithCookies(request, response, LOGIN_ROUTE) : response;
+    return requiredRole ? redirectWithCookies(request, response, getLoginRoute(requiredRole)) : response;
   }
 
   if (isLoginPage && profile?.role && request.nextUrl.searchParams.get('mode') !== 'reset') {
@@ -153,7 +160,7 @@ export async function proxy(request) {
     return redirectWithCookies(
       request,
       response,
-      profile?.role ? getPortalHomeRoute(profile.role) : LOGIN_ROUTE
+      profile?.role ? getPortalHomeRoute(profile.role) : getLoginRoute(requiredRole)
     );
   }
 
@@ -161,5 +168,5 @@ export async function proxy(request) {
 }
 
 export const config = {
-  matcher: ['/LogIn', '/employee-dashboard/:path*', '/admin-dashboard/:path*', '/marketing-admin/:path*', '/hr-admin/:path*'],
+  matcher: ['/superadmin', '/employee-dashboard/:path*', '/admin-dashboard/:path*', '/marketing-admin/:path*', '/hr-admin/:path*'],
 };

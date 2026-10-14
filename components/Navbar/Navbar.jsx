@@ -314,7 +314,7 @@ export default function Navbar() {
                     History
                   </h3>
                   <ul className="about-mega__links">
-                    <li><Link href="/about/history" onClick={handleNavigation}>Journey & Milestones</Link></li>
+                    <li><Link href="/about/history" onClick={handleNavigation}>History & Milestones</Link></li>
                   </ul>
                 </li>
                 <li className="about-mega__column">

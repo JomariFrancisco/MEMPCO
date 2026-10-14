@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { listPublishedAwardPosts } from '@/lib/marketing/marketingPosts';
+import { useMarketingPreview } from '@/lib/marketing/marketingPreview';
 
 const getAwardYear = (award) => {
   if (award.awardYear || award.year) return award.awardYear || award.year;
@@ -45,6 +46,19 @@ function AwardCard({ award }) {
 
 export default function AwardsGridClient({ fallbackAwards = [] }) {
   const [awardPosts, setAwardPosts] = useState([]);
+  const [pageSize, setPageSize] = useState(4);
+  const [page, setPage] = useState(0);
+  const previewPost = useMarketingPreview();
+
+  useEffect(() => {
+    const updatePageSize = () => {
+      setPageSize(window.innerWidth <= 640 ? 1 : window.innerWidth <= 900 ? 2 : 4);
+    };
+
+    updatePageSize();
+    window.addEventListener('resize', updatePageSize);
+    return () => window.removeEventListener('resize', updatePageSize);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -95,16 +109,53 @@ export default function AwardsGridClient({ fallbackAwards = [] }) {
     };
   }, []);
 
-  const awards = useMemo(
-    () => (awardPosts.length ? awardPosts.map(normalizeAwardPost) : fallbackAwards),
-    [awardPosts, fallbackAwards]
-  );
+  const awards = useMemo(() => {
+    const publishedAwards = awardPosts.length
+      ? awardPosts.map(normalizeAwardPost)
+      : fallbackAwards;
+
+    if (previewPost?.type !== 'award') return publishedAwards;
+
+    const previewAward = normalizeAwardPost(previewPost);
+    return [previewAward, ...publishedAwards.filter((award) => award.title !== previewAward.title)];
+  }, [awardPosts, fallbackAwards, previewPost]);
+
+  const pageCount = Math.max(1, Math.ceil(awards.length / pageSize));
+  const currentPage = Math.min(page, pageCount - 1);
+  const visibleAwards = awards.slice(currentPage * pageSize, (currentPage + 1) * pageSize);
+
+  useEffect(() => {
+    setPage((value) => Math.min(value, pageCount - 1));
+  }, [pageCount]);
 
   return (
-    <div className="ad-shell ad-awards-grid">
-      {awards.map((award) => (
-        <AwardCard award={award} key={`${award.year}-${award.title}`} />
-      ))}
+    <div className="ad-shell ad-awards-gallery">
+      {pageCount > 1 && (
+        <nav className="ad-awards-controls" aria-label="Award pages">
+          <button
+            type="button"
+            onClick={() => setPage((value) => Math.max(0, value - 1))}
+            disabled={currentPage === 0}
+            aria-label="Previous awards"
+          >
+            &lt;
+          </button>
+          <span aria-live="polite">{currentPage + 1} / {pageCount}</span>
+          <button
+            type="button"
+            onClick={() => setPage((value) => Math.min(pageCount - 1, value + 1))}
+            disabled={currentPage >= pageCount - 1}
+            aria-label="Next awards"
+          >
+            &gt;
+          </button>
+        </nav>
+      )}
+      <div className="ad-awards-grid">
+        {visibleAwards.map((award) => (
+          <AwardCard award={award} key={`${award.year}-${award.title}`} />
+        ))}
+      </div>
     </div>
   );
 }

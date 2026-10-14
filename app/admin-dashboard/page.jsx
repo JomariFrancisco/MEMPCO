@@ -83,7 +83,7 @@ import './admin-dashboard.css';
    ROUTES
 ========================= */
 
-const LOGIN_ROUTE = '/LogIn';
+const LOGIN_ROUTE = '/helpdesk';
 const HRMAX_ROUTE = 'http://120.28.214.253/hrmax/';
 const MARKETING_ADMIN_ROUTE = '/marketing-admin';
 const HR_ADMIN_ROUTE = '/hr-admin';

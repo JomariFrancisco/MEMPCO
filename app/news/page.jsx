@@ -8,6 +8,7 @@ import {
   getMarketingPostBuckets,
   listPublishedMarketingPosts,
 } from '@/lib/marketing/marketingPosts';
+import { useMarketingPreview } from '@/lib/marketing/marketingPreview';
 import './news.css';
 
 const CATEGORIES = ['All', 'News', 'Events', 'Announcement'];
@@ -113,16 +114,24 @@ export default function News() {
   const [pageReady, setPageReady] = useState(false);
   const [newsItems, setNewsItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const previewPost = useMarketingPreview();
+  const displayedNewsItems = useMemo(() => {
+    const isNewsPost = ['News', 'Events', 'Announcement'].includes(previewPost?.category);
+
+    if (!isNewsPost) return newsItems;
+
+    return [previewPost, ...newsItems.filter((item) => item.id !== previewPost.id)];
+  }, [newsItems, previewPost]);
 
   const getCategoryCount = (cat) =>
     cat === 'All'
-      ? newsItems.length
-      : newsItems.filter((item) => item.category === cat).length;
+      ? displayedNewsItems.length
+      : displayedNewsItems.filter((item) => item.category === cat).length;
 
   const filteredItems = useMemo(() => {
-    if (activeCategory === 'All') return newsItems;
-    return newsItems.filter((item) => item.category === activeCategory);
-  }, [activeCategory, newsItems]);
+    if (activeCategory === 'All') return displayedNewsItems;
+    return displayedNewsItems.filter((item) => item.category === activeCategory);
+  }, [activeCategory, displayedNewsItems]);
 
   const storyBuckets = useMemo(
     () => getMarketingPostBuckets(filteredItems),
@@ -235,7 +244,7 @@ export default function News() {
     revealItems.forEach((item) => observer.observe(item));
 
     return () => observer.disconnect();
-  }, [activeCategory, newsItems]);
+  }, [activeCategory, displayedNewsItems]);
 
   useEffect(() => {
     if (!selectedArticle) return;
@@ -308,7 +317,7 @@ export default function News() {
           </section>
         )}
 
-        {!loading && newsItems.length === 0 && (
+        {!loading && displayedNewsItems.length === 0 && (
           <section className="np-latest-section np-reveal np-reveal--visible">
             <div className="np-wrap">
               <header className="np-section-head">
@@ -386,7 +395,7 @@ export default function News() {
           </section>
         )}
 
-        {!loading && newsItems.length > 0 && (
+        {!loading && displayedNewsItems.length > 0 && (
           <section className="np-latest-section np-reveal">
             <div className="np-wrap">
               <header className="np-section-head">

@@ -731,18 +731,18 @@ export default function HrAdminPage() {
       if (cancelled) return;
 
       if (!activeUser) {
-        router.replace('/LogIn');
+        router.replace('/hr');
         return;
       }
 
       if (isPasswordChangeRequired(activeUser)) {
-        router.replace('/LogIn?mode=force-password');
+        router.replace('/hr?mode=force-password');
         return;
       }
 
       if (isInactivePortalUser(activeUser)) {
         await signOutPortal().catch(() => {});
-        router.replace('/LogIn');
+        router.replace('/hr');
         return;
       }
 
@@ -1733,7 +1733,7 @@ export default function HrAdminPage() {
 
   const handleSignOut = async () => {
     await signOutPortal().catch(() => {});
-    router.replace('/LogIn');
+    router.replace('/hr');
   };
 
   const reportCalendar = buildHrCalendarMonth(filteredApplications, activeReportCalendarMonth);

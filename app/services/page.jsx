@@ -1,11 +1,8 @@
-'use client'
-
-import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { ArrowUpRight } from 'lucide-react'
 import Navbar from '@/components/Navbar/Navbar'
 import Footer from '@/components/Footer/Footer'
 import './services.css'
-import InsurancePage from '@/components/Insurance/InsurancePage'
 
 const ALL_CARDS = [
   {
@@ -101,18 +98,6 @@ const ALL_CARDS = [
     theme: 'light',
   },
   {
-    id: 'Transportation',
-    pillar: '02',
-    pillarLabel: 'Allied Services',
-    eyebrow: 'Mobility',
-    name: 'Transportation',
-    tagline: 'Service details coming soon.',
-    desc: 'A transportation support page prepared for future service information, booking coordination, travel guidance, and member transport updates.',
-    details: ['Transportation support', 'Booking coordination', 'Guidelines and reminders', 'Full details coming soon'],
-    href: '/services/transportation',
-    theme: 'dark',
-  },
-  {
     id: 'Funeral',
     pillar: '02',
     pillarLabel: 'Allied Services',
@@ -125,6 +110,18 @@ const ALL_CARDS = [
     imageAlt: 'La Hermosa Funeraria de MEMPCO logo',
     href: '/services/funeral',
     theme: 'red',
+  },
+  {
+    id: 'Transportation',
+    pillar: '02',
+    pillarLabel: 'Allied Services',
+    eyebrow: 'Mobility',
+    name: 'Transportation',
+    tagline: 'Service details coming soon.',
+    desc: 'A transportation support page prepared for future service information, booking coordination, travel guidance, and member transport updates.',
+    details: ['Transportation support', 'Booking coordination', 'Guidelines and reminders', 'Full details coming soon'],
+    href: '/services/transportation',
+    theme: 'dark',
   },
   {
     id: 'Wellness',
@@ -175,316 +172,99 @@ const PILLARS = [
     id: '03',
     label: 'Laboratory Cooperative',
     count: 2,
-    logo: '/MLC/MLC.png',
-    logoAlt: 'MEMPCO Laboratory Cooperative logo',
   },
 ]
 
 const DEFAULT_SERVICE_IMAGE = '/Logos/Logo.png'
 
-function FanCarousel({ cards, activeIndex, onSelect }) {
-  const n = cards.length
-
-  const getCardStyle = (i) => {
-    const offset = i - activeIndex
-    const abs = Math.abs(offset)
-    const isCenter = offset === 0
-
-    const rotateZ = offset * 8
-    const transX = offset * 82
-    const transY = isCenter ? -8 : abs * 10
-    const scale = isCenter ? 1.02 : Math.max(0.88, 1 - abs * 0.05)
-    const opacity = abs > 3 ? 0 : 1
-    const zIndex = n - abs
-
-    return {
-      transform: `translateX(${transX}px) rotate(${rotateZ}deg) translateY(${transY}px) scale(${scale})`,
-      zIndex,
-      opacity,
-      transition: 'transform 0.48s cubic-bezier(0.22,1,0.36,1), opacity 0.35s ease',
-    }
-  }
-
+function ServiceCard({ card }) {
   return (
-    <div className="fan-stage">
-      <div className="fan-deck">
-        {cards.map((card, i) => {
-          const isActive = i === activeIndex
-
-          return (
-            <button
-              key={card.id}
-              className={`fan-card fan-card--${card.theme}${isActive ? ' fan-card--active' : ''}`}
-              style={getCardStyle(i)}
-              onClick={() => onSelect(i)}
-              aria-pressed={isActive}
-              aria-label={`${card.name} — ${isActive ? 'active' : 'click to view'}`}
-              type="button"
-            >
-              <div className="fc-top">
-                <span className="fc-pillar-badge">{card.pillarLabel}</span>
-                <span className="fc-eyebrow">{card.eyebrow}</span>
-              </div>
-
-              <div className="fc-main">
-                <div className="fc-title-row">
-                  <h3 className="fc-name">{card.name}</h3>
-                  <img
-                    src={card.image || DEFAULT_SERVICE_IMAGE}
-                    alt={card.imageAlt || 'MEMPCO logo'}
-                    className={`fc-service-image${card.image ? '' : ' fc-service-image--default'}`}
-                    loading="lazy"
-                  />
-                </div>
-                <p className="fc-tagline">{card.tagline}</p>
-              </div>
-
-              <p className="fc-desc">{card.desc}</p>
-
-              <ul className="fc-details">
-                {card.details.map((d) => (
-                  <li key={d}>
-                    <span className="fc-detail-dot" />
-                    {d}
-                  </li>
-                ))}
-              </ul>
-
-              <div className="fc-footer">
-                {card.href ? (
-                  <Link
-                    href={card.href}
-                    className="fc-cta"
-                    tabIndex={isActive ? 0 : -1}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    View Service
-                    <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-                      <path
-                        d="M2 6.5h9M7.5 2.5l4 4-4 4"
-                        stroke="currentColor"
-                        strokeWidth="1.4"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  </Link>
-                ) : (
-                  <span className="fc-cta-muted">Coming soon</span>
-                )}
-              </div>
-            </button>
-          )
-        })}
+    <article className={`sp-service-card sp-service-card--${card.theme}`}>
+      <div className="sp-service-card-top">
+        <span className="sp-service-type">{card.eyebrow}</span>
+        <img
+          src={card.image || DEFAULT_SERVICE_IMAGE}
+          alt=""
+          aria-hidden="true"
+          className="sp-service-image"
+          loading="lazy"
+        />
       </div>
 
-      
-    </div>
+      <h3 className="sp-service-title">{card.name}</h3>
+      <p className="sp-service-tagline">{card.tagline}</p>
+      <p className="sp-service-description">{card.desc}</p>
+
+      <ul className="sp-service-details">
+        {card.details.map((detail) => (
+          <li key={detail}>{detail}</li>
+        ))}
+      </ul>
+
+      <div className="sp-service-card-footer">
+        {card.href ? (
+          <Link href={card.href} className="sp-service-link">
+            View service
+            <ArrowUpRight size={16} aria-hidden="true" />
+          </Link>
+        ) : (
+          <span className="sp-service-coming-soon">Coming soon</span>
+        )}
+      </div>
+    </article>
   )
 }
 
 export default function Services() {
-  const [heroIn, setHeroIn] = useState(false)
-  const [activePillar, setActivePillar] = useState(0)
-  const [activeCard, setActiveCard] = useState(0)
-
-  useEffect(() => {
-    const t = setTimeout(() => setHeroIn(true), 60)
-    return () => clearTimeout(t)
-  }, [])
-
-  const handleTabClick = (i) => {
-    setActivePillar(i)
-  }
-
-  const pillarCards = ALL_CARDS.filter((c) => c.pillar === PILLARS[activePillar].id)
-  const centerIdx = Math.floor(pillarCards.length / 2)
-
-  useEffect(() => {
-    setActiveCard(centerIdx)
-  }, [activePillar, centerIdx])
-
   return (
     <>
       <Navbar />
 
       <main className="sp">
-        <section className="sp-screen sp-hero" id="top">
-          <div className="sp-hero-grid" aria-hidden="true" />
-          <div className="sp-hero-glow" aria-hidden="true" />
-
-          <div className={`sp-hero-shell${heroIn ? ' is-in' : ''}`}>
-            <div className="sp-hero-copy">
-              <p className="sp-eyebrow">MEMPCO Services</p>
-
-              <h1 className="sp-hero-title">
-                Services built for
-                <br />
-                <em>everyday member needs.</em>
-              </h1>
-
-              <p className="sp-hero-sub">
-                Explore MEMPCO’s complete service ecosystem — from savings and credit
-                to allied support and youth-centered cooperative programs — arranged
-                in a cleaner and more accessible experience.
-              </p>
-
-              <div className="sp-hero-actions">
-                <a href="#carousel" className="sp-hero-cta sp-hero-cta--solid">
-                  Explore Services
-                </a>
-              </div>
-
-              <div className="sp-hero-meta"></div>
-            </div>
-
-            <div className="sp-hero-panel">
-              {PILLARS.map((pillar) => (
-                <div key={pillar.id} className="sp-hero-panel-card">
-                  <div className="sp-hero-panel-top">
-                    <span className="sp-hero-panel-num">{pillar.id}</span>
-                    <span className="sp-hero-panel-count">{pillar.count} Services</span>
-                  </div>
-                  <h3 className="sp-hero-panel-title">{pillar.label}</h3>
-                  <p className="sp-hero-panel-text">
-                    Organized for quick browsing, better readability, and easier
-                    access to the right MEMPCO service.
-                  </p>
-                </div>
-              ))}
+        <header className="sp-page-header" id="top">
+          <div className="sp-page-header-inner">
+            <div className="sp-page-header-copy">
+              <p className="sp-page-kicker">MEMPCO Services</p>
+              <h1 className="sp-page-title">Our Services</h1>
             </div>
           </div>
-        </section>
+        </header>
 
-        <section className="sp-screen sp-carousel-screen" id="carousel">
-          <aside className="sp-tabs">
-            <p className="sp-section-kicker">Service Pillars</p>
+        <div className="sp-service-catalog" id="all-services">
+          {PILLARS.map((pillar) => {
+            const pillarCards = ALL_CARDS.filter((card) => card.pillar === pillar.id)
 
-            <nav className="sp-tab-nav" role="tablist">
-              {PILLARS.map((p, i) => (
-                <button
-                  key={p.id}
-                  role="tab"
-                  aria-selected={activePillar === i}
-                  className={`sp-tab${activePillar === i ? ' sp-tab--active' : ''}`}
-                  onClick={() => handleTabClick(i)}
-                  type="button"
-                >
-                  <span className="sp-tab-num">{p.id}</span>
-
-                  <div className="sp-tab-body">
-                    <span className="sp-tab-label">{p.label}</span>
-                    <span className="sp-tab-count">{p.count} services</span>
-                  </div>
-                </button>
-              ))}
-            </nav>
-
-            <p className="sp-tab-hint">Tap a card to bring it forward</p>
-          </aside>
-
-          <div className="sp-carousel-col">
-            <div className="sp-carousel-head">
-              <div className="sp-carousel-heading-row">
-                <p className="sp-section-kicker">{PILLARS[activePillar].label}</p>
-                {PILLARS[activePillar].logo && (
-                  <img
-                    src={PILLARS[activePillar].logo}
-                    alt={PILLARS[activePillar].logoAlt}
-                    className="sp-carousel-pillar-logo"
-                  />
-                )}
-              </div>
-              <p className="sp-carousel-sub">
-                {pillarCards.length} services · select any card to read details
-              </p>
-            </div>
-
-            <FanCarousel
-              cards={pillarCards}
-              activeIndex={activeCard}
-              onSelect={setActiveCard}
-            />
-          </div>
-        </section>
-
-        <section className="sp-screen sp-list-screen" id="all-services">
-          <div className="sp-list-inner">
-            <header className="sp-list-header">
-              <p className="sp-section-kicker">All Services</p>
-              <h2 className="sp-list-title">
-                <span className="sp-list-title-main">
-                  3 Pillars, {ALL_CARDS.length} Services
-                </span>
-              </h2>
-              <p className="sp-list-sub">
-                A complete reference of every MEMPCO service, organized by pillar
-                for quick browsing and direct access.
-              </p>
-            </header>
-
-            <div className="sp-list-columns">
-              {PILLARS.map((p) => (
-                <div key={p.id} className="sp-list-group">
-                  <div className="sp-list-group-head">
-                    <span className="sp-list-num">{p.id}</span>
-                    <span className="sp-list-group-name">{p.label}</span>
-                    {p.logo && (
-                      <img
-                        src={p.logo}
-                        alt={p.logoAlt}
-                        className="sp-list-group-logo"
-                      />
-                    )}
-                  </div>
-
-                  {ALL_CARDS.filter((c) => c.pillar === p.id).map((c) => (
-                    <div key={c.id} className="sp-list-row">
-                      <span className="sp-list-eyebrow">{c.eyebrow}</span>
-                      <span className="sp-list-service-main">
-                        <img
-                          src={c.image || DEFAULT_SERVICE_IMAGE}
-                          alt=""
-                          className={`sp-list-service-image${
-                            c.image ? '' : ' sp-list-service-image--default'
-                          }`}
-                          loading="lazy"
-                        />
-                        <span className="sp-list-service-name">{c.name}</span>
-                      </span>
-
-                      {c.href ? (
-                        <Link href={c.href} className="sp-list-arrow" aria-label={`View ${c.name}`}>
-                          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                            <path
-                              d="M2.5 7h9M7.5 3.5 11 7l-3.5 3.5"
-                              stroke="currentColor"
-                              strokeWidth="1.3"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            />
-                          </svg>
-                        </Link>
-                      ) : (
-                        <span className="sp-list-arrow sp-list-arrow--muted" aria-hidden="true">
-                          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                            <path
-                              d="M2.5 7h9M7.5 3.5 11 7l-3.5 3.5"
-                              stroke="currentColor"
-                              strokeWidth="1.3"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            />
-                          </svg>
-                        </span>
-                      )}
+            return (
+              <section
+                key={pillar.id}
+                className={`sp-pillar sp-pillar--${pillar.id}`}
+                aria-labelledby={`pillar-title-${pillar.id}`}
+              >
+                <header className="sp-pillar-header">
+                  <div className="sp-pillar-heading">
+                    <span className="sp-pillar-number">{pillar.id}</span>
+                    <div>
+                      <p className="sp-pillar-kicker">Service pillar</p>
+                      <h2 className="sp-pillar-title" id={`pillar-title-${pillar.id}`}>
+                        {pillar.label}
+                      </h2>
                     </div>
+                  </div>
+
+                  <div className="sp-pillar-meta">
+                    <span>{pillarCards.length} services</span>
+                  </div>
+                </header>
+
+                <div className="sp-service-grid">
+                  {pillarCards.map((card) => (
+                    <ServiceCard key={card.id} card={card} />
                   ))}
                 </div>
-              ))}
-            </div>
-          </div>
-        </section>
+              </section>
+            )
+          })}
+        </div>
       </main>
 
       <Footer />

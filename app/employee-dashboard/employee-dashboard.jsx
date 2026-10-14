@@ -71,7 +71,7 @@ import './employee-dashboard.css';
    ROUTES
 ========================= */
 
-const LOGIN_ROUTE = '/LogIn';
+const LOGIN_ROUTE = '/helpdesk';
 const HRMAX_ROUTE = 'http://120.28.214.253/hrmax/';
 const TRANSITION_DURATION = 560;
 

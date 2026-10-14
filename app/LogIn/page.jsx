@@ -8,6 +8,9 @@ import {
   getPortalHomeRoute,
   INACTIVE_ACCOUNT_MESSAGE,
   isInactivePortalUser,
+  isAdminRole,
+  isHrAdminRole,
+  isMarketingAdminRole,
   isPasswordChangeRequired,
   sendPasswordResetEmail,
   signInPortal,
@@ -27,6 +30,33 @@ const REMEMBERED_EMAIL_KEY = 'mempco.portal.rememberedEmail';
 const SESSION_TIMEOUT_MESSAGE = 'You were signed out after 15 minutes of inactivity.';
 const INVALID_LOGIN_MESSAGE = 'Invalid email or password. Please check your login details.';
 
+const PORTAL_CONFIG = {
+  superadmin: {
+    name: 'Super Admin',
+    kicker: 'MEMPCO Super Admin',
+    description: 'Sign in to manage all portal administration.',
+    allows: (role) => String(role || '').trim().toLowerCase().replace(/[-_\s]+/g, '') === 'superadmin',
+  },
+  helpdesk: {
+    name: 'ICT Helpdesk',
+    kicker: 'MEMPCO Helpdesk',
+    description: 'Sign in as an employee or ICT Helpdesk administrator.',
+    allows: (role) => isAdminRole(role) || role === 'employee',
+  },
+  marketing: {
+    name: 'Marketing',
+    kicker: 'MEMPCO Marketing',
+    description: 'Sign in to the Marketing publishing console.',
+    allows: isMarketingAdminRole,
+  },
+  hr: {
+    name: 'Human Resources',
+    kicker: 'MEMPCO HR',
+    description: 'Sign in to the Human Resources admin console.',
+    allows: isHrAdminRole,
+  },
+};
+
 const isInvalidLoginError = (error) =>
   String(error?.message || '').trim() === INVALID_LOGIN_MESSAGE;
 
@@ -44,7 +74,8 @@ function AuthLoadingOverlay({ label }) {
   );
 }
 
-export default function LoginPage() {
+export default function LoginPage({ portal = 'superadmin' }) {
+  const portalConfig = PORTAL_CONFIG[portal] || null;
   const [authMode, setAuthMode] = useState('signin');
   const [loginForm, setLoginForm] = useState({ email: '', password: '' });
   const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
@@ -63,6 +94,18 @@ export default function LoginPage() {
   const failedLoginAttempts =
     failedLogin.email === normalizedLoginEmail ? failedLogin.count : 0;
   const canRecoverPassword = failedLoginAttempts >= 3;
+
+  const getLoginDestination = (user) => {
+    const role = String(user?.role || '').trim().toLowerCase().replace(/[-_\s]+/g, '');
+
+    if (role === 'superadmin') {
+      if (portal === 'marketing') return '/marketing-admin';
+      if (portal === 'hr') return '/hr-admin';
+      return '/admin-dashboard';
+    }
+
+    return getPortalHomeRoute(user?.role);
+  };
 
   const redirectToRoute = (route = '/') => {
     const destination = String(route || '/').startsWith('/') ? route : '/';
@@ -88,12 +131,21 @@ export default function LoginPage() {
       getCurrentPortalUser()
         .then((user) => {
           if (user && isPasswordChangeRequired(user)) {
+            if (portalConfig && !portalConfig.allows(user.role)) {
+              void signOutPortal().catch(() => {});
+              setMessage({
+                type: 'error',
+                text: `This account does not have access to ${portalConfig.name}. Sign in through the correct team portal or contact ICT to update your account access.`,
+              });
+              return;
+            }
+
             setForcedPasswordUser(user);
             return;
           }
 
           if (user) {
-            redirectToRoute(getPortalHomeRoute(user.role));
+            redirectToRoute(getLoginDestination(user));
           }
         })
         .catch(() => {});
@@ -189,6 +241,15 @@ export default function LoginPage() {
         return;
       }
 
+      if (portalConfig && !portalConfig.allows(user.role)) {
+        await signOutPortal().catch(() => {});
+        setMessage({
+          type: 'error',
+          text: `This account does not have access to ${portalConfig.name}. Sign in through the correct team portal or contact ICT to update your account access.`,
+        });
+        return;
+      }
+
       if (isPasswordChangeRequired(user)) {
         setForcedPasswordUser(user);
         setForcedPasswordForm({ password: '', confirmPassword: '' });
@@ -200,7 +261,7 @@ export default function LoginPage() {
         return;
       }
 
-      const destination = getPortalHomeRoute(user.role);
+      const destination = getLoginDestination(user);
 
       setMessage({
         type: 'success',
@@ -272,7 +333,7 @@ export default function LoginPage() {
         text: 'Password updated. Redirecting...',
       });
 
-      redirectToRoute(getPortalHomeRoute(user?.role));
+      redirectToRoute(getLoginDestination(user));
     } catch (error) {
       setMessage({
         type: 'error',
@@ -344,7 +405,7 @@ export default function LoginPage() {
         return;
       }
 
-      const destination = getPortalHomeRoute(user?.role);
+      const destination = getLoginDestination(user);
 
       setMessage({
         type: 'success',
@@ -404,9 +465,9 @@ export default function LoginPage() {
                     className={`auth-form signin-form ${authMode === 'signin' ? 'active' : ''}`}
                   >
                     <div className="auth-form-head">
-                      <span className="auth-kicker">MEMPCO Portal</span>
-                      <h2>Sign in</h2>
-                      <p>Use your assigned account to open the staff dashboard.</p>
+                      <span className="auth-kicker">{portalConfig?.kicker || 'MEMPCO Portal'}</span>
+                      <h2>Sign in{portalConfig ? ` to ${portalConfig.name}` : ''}</h2>
+                      <p>{portalConfig?.description || 'Use your assigned account to open the staff dashboard.'}</p>
                     </div>
 
                     <div className="form-grid single">

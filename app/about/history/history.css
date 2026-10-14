@@ -1,0 +1,216 @@
+.ad-history-page {
+  --ad-history-red: #dc2626;
+  --ad-history-ink: #151515;
+  --ad-history-muted: #68686f;
+  --ad-history-border: #e7e7e9;
+  overflow: clip;
+  background: #fff;
+}
+
+.ad-history-page .ad-shell {
+  width: min(1200px, calc(100% - 3rem));
+}
+
+.ad-history-hero {
+  padding: calc(var(--navbar-height, 76px) + 1rem) 0 1.7rem;
+  border-bottom: 1px solid var(--ad-history-border);
+  background: #fff;
+}
+
+.ad-history-hero .ad-breadcrumb {
+  gap: 0.55rem;
+  margin-bottom: 1.15rem;
+  font-size: 0.88rem;
+}
+
+.ad-history-hero .ad-breadcrumb span:last-child {
+  color: var(--ad-history-ink);
+}
+
+.ad-history-hero .ad-kicker,
+.ad-history-section-label {
+  margin: 0 0 0.5rem;
+  color: var(--ad-history-red);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  line-height: 1.35;
+  text-transform: uppercase;
+}
+
+.ad-history-page .ad-title {
+  max-width: 900px;
+  color: var(--ad-history-ink);
+  font-size: 3.25rem;
+  font-weight: 760;
+  line-height: 1.08;
+  letter-spacing: 0;
+}
+
+.ad-history-overview {
+  padding: 3.25rem 0;
+  border-bottom: 1px solid var(--ad-history-border);
+}
+
+.ad-history-overview-inner {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 0.8fr);
+  align-items: center;
+  gap: clamp(2rem, 6vw, 5.5rem);
+}
+
+.ad-history-overview-copy h2,
+.ad-history-timeline-header h2 {
+  margin: 0;
+  color: var(--ad-history-ink);
+  font-size: 2.25rem;
+  font-weight: 720;
+  line-height: 1.15;
+}
+
+.ad-history-overview-copy > p:last-child {
+  max-width: 650px;
+  margin: 1rem 0 0;
+  color: var(--ad-history-muted);
+  font-size: 1.05rem;
+  line-height: 1.7;
+}
+
+.ad-history-anniversary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  margin: 0;
+}
+
+.ad-history-anniversary img {
+  display: block;
+  width: min(100%, 480px);
+  max-height: 250px;
+  object-fit: contain;
+}
+
+.ad-history-timeline-section {
+  padding: 3.25rem 0 4.5rem;
+}
+
+.ad-history-timeline-header {
+  margin-bottom: 1.25rem;
+}
+
+.ad-history-timeline {
+  position: relative;
+  max-width: 980px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.ad-history-timeline::before {
+  position: absolute;
+  top: 1.65rem;
+  bottom: 1.65rem;
+  left: 9px;
+  width: 2px;
+  background: #f3caca;
+  content: '';
+}
+
+.ad-history-entry {
+  position: relative;
+  display: grid;
+  grid-template-columns: 190px minmax(0, 1fr);
+  gap: 2rem;
+  padding: 1.45rem 0 1.55rem 2.2rem;
+  border-bottom: 1px solid var(--ad-history-border);
+}
+
+.ad-history-entry::before {
+  position: absolute;
+  top: 1.85rem;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  background: var(--ad-history-red);
+  box-shadow: 0 0 0 1px #f2b7b7;
+  content: '';
+}
+
+.ad-history-year {
+  padding-top: 0.1rem;
+  color: var(--ad-history-red);
+  font-size: 1.02rem;
+  font-weight: 750;
+  line-height: 1.45;
+}
+
+.ad-history-entry-copy h3 {
+  margin: 0;
+  color: var(--ad-history-ink);
+  font-size: 1.18rem;
+  font-weight: 680;
+  line-height: 1.35;
+}
+
+.ad-history-entry-copy p {
+  max-width: 720px;
+  margin: 0.42rem 0 0;
+  color: var(--ad-history-muted);
+  font-size: 0.98rem;
+  line-height: 1.65;
+}
+
+@media (max-width: 700px) {
+  .ad-history-page .ad-shell {
+    width: min(100% - 1.5rem, 100%);
+  }
+
+  .ad-history-hero {
+    padding-top: calc(var(--navbar-height-mobile, 64px) + 1rem);
+    padding-bottom: 1.35rem;
+  }
+
+  .ad-history-page .ad-title {
+    font-size: 2.25rem;
+  }
+
+  .ad-history-overview-copy h2,
+  .ad-history-timeline-header h2 {
+    font-size: 1.75rem;
+  }
+
+  .ad-history-overview {
+    padding: 2rem 0;
+  }
+
+  .ad-history-overview-inner {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1.5rem;
+  }
+
+  .ad-history-anniversary img {
+    max-height: 190px;
+  }
+
+  .ad-history-timeline-section {
+    padding: 2rem 0 3rem;
+  }
+
+  .ad-history-entry {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.35rem;
+    padding: 1.15rem 0 1.2rem 2rem;
+  }
+
+  .ad-history-entry::before {
+    top: 1.35rem;
+  }
+
+  .ad-history-timeline::before {
+    top: 1.2rem;
+    bottom: 1.2rem;
+  }
+}

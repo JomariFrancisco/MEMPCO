@@ -25,6 +25,12 @@ const isPortalRoute = (pathname = '') =>
     (route) => pathname === route || pathname.startsWith(`${route}/`)
   );
 
+const getLoginRoute = (pathname = '') => {
+  if (pathname.startsWith('/marketing-admin')) return '/marketing';
+  if (pathname.startsWith('/hr-admin')) return '/hr';
+  return '/helpdesk';
+};
+
 export default function PortalSessionGuard() {
   const pathname = usePathname();
 
@@ -56,7 +62,7 @@ export default function PortalSessionGuard() {
       await signOutPortal().catch(() => {});
 
       if (!cancelled) {
-        window.location.replace(`/LogIn?reason=${encodeURIComponent(reason)}`);
+        window.location.replace(`${getLoginRoute(pathname)}?reason=${encodeURIComponent(reason)}`);
       }
     };
 
