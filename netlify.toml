@@ -6,5 +6,11 @@
   NODE_VERSION = "22"
   PNPM_FLAGS = "--shamefully-hoist"
 
+[functions]
+  directory = "netlify/functions"
+
+[functions."helpdesk-sla-alerts"]
+  schedule = "@hourly"
+
 [[plugins]]
   package = "@netlify/plugin-nextjs"

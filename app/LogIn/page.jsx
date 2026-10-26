@@ -6,11 +6,15 @@ import {
   completeRequiredPasswordChange,
   getCurrentPortalUser,
   getPortalHomeRoute,
+  isAreaManagerAdminRole,
+  isBranchManagerAdminRole,
+  isCooAdminRole,
   INACTIVE_ACCOUNT_MESSAGE,
   isInactivePortalUser,
   isAdminRole,
   isHrAdminRole,
   isMarketingAdminRole,
+  isMrdssAdminRole,
   isPasswordChangeRequired,
   sendPasswordResetEmail,
   signInPortal,
@@ -54,6 +58,15 @@ const PORTAL_CONFIG = {
     kicker: 'MEMPCO HR',
     description: 'Sign in to the Human Resources admin console.',
     allows: isHrAdminRole,
+  },
+  mrdss: {
+    name: 'MRDSS Member Support',
+    kicker: 'MEMPCO MRDSS',
+    description: 'Sign in to review and follow up on member concerns.',
+    allows: (role) => isMrdssAdminRole(role)
+      || isBranchManagerAdminRole(role)
+      || isAreaManagerAdminRole(role)
+      || isCooAdminRole(role),
   },
 };
 
@@ -101,6 +114,7 @@ export default function LoginPage({ portal = 'superadmin' }) {
     if (role === 'superadmin') {
       if (portal === 'marketing') return '/marketing-admin';
       if (portal === 'hr') return '/hr-admin';
+      if (portal === 'mrdss') return '/mrdss-admin';
       return '/admin-dashboard';
     }
 

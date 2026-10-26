@@ -8,7 +8,7 @@ import {
 } from './lib/supabase/config';
 
 const LOGIN_ROUTE = '/helpdesk';
-const SUPERADMIN_LOGIN_ROUTES = ['/superadmin'];
+const PORTAL_LOGIN_ROUTES = ['/superadmin', '/mrdss-login'];
 const SUPABASE_PROXY_TIMEOUT_MS = 12000;
 
 const normalizePortalRole = (role = '') =>
@@ -21,6 +21,7 @@ const getRequiredRole = (pathname) => {
   if (pathname.startsWith('/admin-dashboard')) return 'admin';
   if (pathname.startsWith('/marketing-admin')) return 'marketing_admin';
   if (pathname.startsWith('/hr-admin')) return 'hr_admin';
+  if (pathname.startsWith('/mrdss-admin')) return 'mrdss_admin';
   if (pathname.startsWith('/employee-dashboard')) return 'employee';
   return null;
 };
@@ -28,17 +29,23 @@ const getRequiredRole = (pathname) => {
 const isAdminRole = (role) => ['admin', 'superadmin'].includes(role);
 const isMarketingAdminRole = (role) => ['marketing_admin', 'superadmin'].includes(role);
 const isHrAdminRole = (role) => ['hr_admin', 'superadmin'].includes(role);
+const isMrdssAdminRole = (role) => ['mrdss_admin', 'superadmin'].includes(role);
+const isMrdssWorkspaceRole = (role) => [
+  'mrdss_admin', 'branch_manager_admin', 'area_manager_admin', 'coo_admin', 'superadmin',
+].includes(role);
 
 const getPortalHomeRoute = (role) => {
   if (isAdminRole(role)) return '/admin-dashboard';
   if (role === 'marketing_admin') return '/marketing-admin';
   if (role === 'hr_admin') return '/hr-admin';
+  if (['mrdss_admin', 'branch_manager_admin', 'area_manager_admin', 'coo_admin'].includes(role)) return '/mrdss-admin';
   return '/employee-dashboard';
 };
 
 const getLoginRoute = (requiredRole) => {
   if (requiredRole === 'marketing_admin') return '/marketing';
   if (requiredRole === 'hr_admin') return '/hr';
+  if (requiredRole === 'mrdss_admin') return '/mrdss-login';
   return LOGIN_ROUTE;
 };
 
@@ -47,6 +54,7 @@ const hasRequiredRole = (role, requiredRole) => {
   if (requiredRole === 'admin') return isAdminRole(role);
   if (requiredRole === 'marketing_admin') return isMarketingAdminRole(role);
   if (requiredRole === 'hr_admin') return isHrAdminRole(role);
+  if (requiredRole === 'mrdss_admin') return isMrdssWorkspaceRole(role);
   return role === requiredRole;
 };
 
@@ -80,7 +88,7 @@ const redirectWithCookies = (request, response, pathname) => {
 export async function proxy(request) {
   const { pathname } = request.nextUrl;
   const requiredRole = getRequiredRole(pathname);
-  const isLoginPage = SUPERADMIN_LOGIN_ROUTES.includes(pathname);
+  const isLoginPage = PORTAL_LOGIN_ROUTES.includes(pathname);
 
   if (!hasSupabaseConfig() || (!requiredRole && !isLoginPage)) {
     return NextResponse.next();
@@ -149,10 +157,13 @@ export async function proxy(request) {
   }
 
   if (isLoginPage && profile?.role && request.nextUrl.searchParams.get('mode') !== 'reset') {
+    const loginDestination = pathname === '/mrdss-login' && profile.role === 'superadmin'
+      ? '/mrdss-admin'
+      : getPortalHomeRoute(profile.role);
     return redirectWithCookies(
       request,
       response,
-      getPortalHomeRoute(profile.role)
+      loginDestination
     );
   }
 
@@ -168,5 +179,5 @@ export async function proxy(request) {
 }
 
 export const config = {
-  matcher: ['/superadmin', '/employee-dashboard/:path*', '/admin-dashboard/:path*', '/marketing-admin/:path*', '/hr-admin/:path*'],
+  matcher: ['/superadmin', '/mrdss-login', '/mrdss-admin/:path*', '/employee-dashboard/:path*', '/admin-dashboard/:path*', '/marketing-admin/:path*', '/hr-admin/:path*'],
 };

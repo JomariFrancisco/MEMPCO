@@ -107,6 +107,10 @@
   opacity: 1;
 }
 
+.hero__video--main.is-active:not(.is-ready) {
+  opacity: 0;
+}
+
 .hero__backdrop--main {
   background-image: url('/Hero/HeroBackground1.png');
   filter: saturate(1) contrast(1) brightness(0.92);

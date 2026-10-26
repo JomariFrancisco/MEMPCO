@@ -23,15 +23,14 @@ import {
   Mail,
   Menu,
   MessageCircle,
-  MapPin,
   Paperclip,
   PenLine,
   Phone,
+  Printer,
   Send,
   ShieldCheck,
   Ticket,
   UserRound,
-  UserRoundCheck,
   Wrench,
   X,
 } from 'lucide-react';
@@ -65,7 +64,11 @@ import {
   subscribeToTicketMessages,
   updateTicket,
 } from '@/lib/tickets/portalTickets';
+import PortalProfileLayout from '@/components/PortalProfileLayout';
+import PortalThemeToggle from '@/components/PortalThemeToggle';
 import './employee-dashboard.css';
+import '@/components/PortalWorkspaceTheme.css';
+import { mergeMessages } from '@/lib/tickets/workflow.mjs';
 
 /* =========================
    ROUTES
@@ -421,36 +424,67 @@ const getTemplateLabels = (template = DEFAULT_DESCRIPTION_TEMPLATE) =>
 const normalizeTextareaValue = (value = '') => String(value || '').replace(/\r\n/g, '\n');
 
 const normalize = (value) => String(value || '').trim().toLowerCase();
+const normalizeEmployeeTicketStatus = (status = '') =>
+  normalize(status).replace(/[-_]+/g, ' ').replace(/\s+/g, ' ');
 
-const EMPLOYEE_RESOLVED_STATUS_KEYS = [
-  'resolved',
-  'passed burnout',
-  'ready for deployment',
-  'deployed',
-  'failed burnout',
-  'damaged',
-  'for repair',
-  'for replacement',
-];
+const EMPLOYEE_PENDING_STATUSES = new Set(['created', 'submitted', 'pending', 'modified']);
+const EMPLOYEE_ACTIVE_STATUSES = new Set([
+  'in progress',
+  'moved date',
+  'escalated',
+  'waiting for requester',
+  'waiting for vendor',
+  'waiting for approval',
+  'for inspection',
+  'under burnout',
+]);
+const EMPLOYEE_WAITING_STATUSES = new Set([
+  'waiting for requester',
+  'waiting for vendor',
+  'waiting for approval',
+]);
+const EMPLOYEE_NEXT_ACTION_STATUSES = new Set(['moved date', ...EMPLOYEE_WAITING_STATUSES]);
+
+const EMPLOYEE_FINAL_OUTCOME_LABELS = {
+  resolved: 'Resolved',
+  'passed burnout': 'Passed Burnout',
+  'ready for deployment': 'Ready for Deployment',
+  deployed: 'Deployed',
+  'failed burnout': 'Failed Burnout',
+  damaged: 'Damaged',
+  'for repair': 'For Repair',
+  'for replacement': 'For Replacement',
+};
 
 const getEmployeeTicketStatusLabel = (status = '') => {
-  const normalized = normalize(status).replace(/[-_]+/g, ' ').replace(/\s+/g, ' ');
+  const normalized = normalizeEmployeeTicketStatus(status);
 
   if (normalized === 'in progress') return 'In Progress';
-  if (normalized === 'under burnout' || normalized === 'for inspection') return 'In Progress';
-  if (EMPLOYEE_RESOLVED_STATUS_KEYS.includes(normalized)) return 'Resolved';
+  if (normalized === 'moved date') return 'Moved Date';
+  if (normalized === 'for inspection') return 'For Inspection';
+  if (normalized === 'under burnout') return 'Under Burnout';
+  if (EMPLOYEE_FINAL_OUTCOME_LABELS[normalized]) return EMPLOYEE_FINAL_OUTCOME_LABELS[normalized];
   if (normalized === 'cancelled' || normalized === 'canceled') return 'Cancelled';
   if (normalized === 'escalated') return 'Escalated';
+  if (normalized.startsWith('waiting for ')) return normalized.replace(/\b\w/g, (letter) => letter.toUpperCase());
 
   return 'Pending';
 };
 
-const isEmployeeResolvedTicket = (ticket = {}) => getEmployeeTicketStatusLabel(ticket.status) === 'Resolved';
-
-const isEmployeeQueueTicket = (ticket = {}) => {
-  const statusLabel = getEmployeeTicketStatusLabel(ticket.status);
-  return statusLabel === 'Pending' || statusLabel === 'In Progress';
+const getEmployeeTicketStatusTone = (label) => {
+  if (Object.values(EMPLOYEE_FINAL_OUTCOME_LABELS).includes(label) || label === 'Cancelled') return 'done';
+  if (label === 'Escalated') return 'escalated';
+  if (['In Progress', 'For Inspection', 'Under Burnout'].includes(label)) return 'active';
+  return 'queued';
 };
+
+const isEmployeePendingTicket = (ticket = {}) => EMPLOYEE_PENDING_STATUSES.has(normalizeEmployeeTicketStatus(ticket.status));
+
+const isEmployeeActiveTicket = (ticket = {}) => EMPLOYEE_ACTIVE_STATUSES.has(normalizeEmployeeTicketStatus(ticket.status));
+
+const isEmployeeResolvedTicket = (ticket = {}) => normalizeEmployeeTicketStatus(ticket.status) === 'resolved';
+
+const isEmployeeQueueTicket = (ticket = {}) => isEmployeePendingTicket(ticket) || isEmployeeActiveTicket(ticket);
 
 const getEmployeeQueueLabel = (ticket = {}) => {
   const queuePosition = Number(ticket.queuePosition);
@@ -471,8 +505,14 @@ const getEmployeeQueueLabel = (ticket = {}) => {
 const getEmployeeClosedTicketMessage = (ticket = {}) => {
   const normalized = normalize(ticket.status).replace(/[-_]+/g, ' ').replace(/\s+/g, ' ');
 
-  if (normalized === 'passed burnout') return 'This Burnout ticket has already passed and was completed by ICT.';
-  if (EMPLOYEE_RESOLVED_STATUS_KEYS.includes(normalized)) return 'This ticket has already been resolved by ICT.';
+  if (normalized === 'passed burnout') return 'This Burnout unit passed testing and is ready for deployment.';
+  if (normalized === 'ready for deployment') return 'This unit passed Burnout testing and is awaiting deployment.';
+  if (normalized === 'deployed') return 'This unit was deployed after completing Burnout testing.';
+  if (normalized === 'failed burnout') return 'This unit did not pass Burnout testing.';
+  if (normalized === 'damaged') return 'ICT marked this unit as damaged.';
+  if (normalized === 'for repair') return 'ICT marked this unit for repair.';
+  if (normalized === 'for replacement') return 'ICT marked this unit for replacement.';
+  if (normalized === 'resolved') return 'This ticket has been resolved by ICT.';
   if (normalized === 'cancelled' || normalized === 'canceled') return 'This ticket has been cancelled.';
 
   return '';
@@ -1057,17 +1097,15 @@ function useBodyScrollLock(active) {
 const canEmployeeEditTicket = (ticket = {}) => {
   if (ticket.employeeEditLocked) return false;
 
-  const status = normalize(ticket.status);
-  const editableStatuses = ['created', 'pending'];
+  const status = normalizeEmployeeTicketStatus(ticket.status);
   const hasTechnician = Boolean(String(ticket.technician || '').trim()) && ticket.technician !== 'Unassigned';
   const hasStarted = Boolean(ticket.workStartedAt);
   const hasAction = Boolean(
     String(ticket.actionTaken || '').trim() ||
-      String(ticket.adminRemarks || '').trim() ||
       String(ticket.resolution || '').trim()
   );
 
-  return editableStatuses.includes(status) && !hasTechnician && !hasStarted && !hasAction;
+  return EMPLOYEE_PENDING_STATUSES.has(status) && !hasTechnician && !hasStarted && !hasAction;
 };
 
 const compactDateFormatter = new Intl.DateTimeFormat('en-US', {
@@ -1104,6 +1142,169 @@ const formatCompactDuration = (startValue, endValue) => {
   if (hours > 0) return `${hours}h ${minutes}m ${seconds}s`;
   if (minutes > 0) return `${minutes}m ${seconds}s`;
   return `${seconds}s`;
+};
+
+const escapeTicketPrintHtml = (value) => String(value ?? '')
+  .replaceAll('&', '&amp;')
+  .replaceAll('<', '&lt;')
+  .replaceAll('>', '&gt;')
+  .replaceAll('"', '&quot;')
+  .replaceAll("'", '&#39;');
+
+const printEmployeeTicket = (ticket = {}, user = {}) => {
+  if (typeof window === 'undefined') return;
+
+  const printWindow = window.open('', '_blank', 'width=960,height=720');
+  if (!printWindow) {
+    window.alert('Please allow pop-ups to print this ticket.');
+    return;
+  }
+
+  const formatPrintDateTime = (value) => {
+    if (!value) return '';
+    const parsed = toDate(value);
+    return parsed ? compactDateFormatter.format(parsed) : String(value);
+  };
+  const startedAt = ticket.workStartedAt || ticket.work_started_at || '';
+  const endedAt = ticket.workEndedAt || ticket.work_ended_at || '';
+  const normalizedStatus = normalizeEmployeeTicketStatus(ticket.status);
+  const branchDepartment = [ticket.branch, ticket.department]
+    .map((value) => String(value || '').trim())
+    .filter(Boolean)
+    .join(' / ');
+  const fields = [
+    ['Ticket Code', getTicketDisplayCode(ticket)],
+    ['Status', getEmployeeTicketStatusLabel(ticket.status)],
+    ['SLA', ticket.sla],
+    ['Requester', ticket.requester || ticket.ownerEmail || user.fullName || user.name || user.email],
+    ['Employee ID', ticket.employeeId || user.employeeId],
+    ['Branch / Department', branchDepartment],
+    ['Support Category', ticket.supportCategory],
+    ['Concern Type', ticket.concernType],
+    ['Submitted', formatPrintDateTime(ticket.createdAt || ticket.submittedAt || ticket.date)],
+    ['Response Due', formatPrintDateTime(ticket.responseDueAt || ticket.response_due_at)],
+    ['Resolution Due', formatPrintDateTime(ticket.resolutionDueAt || ticket.resolution_due_at)],
+    ['Next Action', formatPrintDateTime(ticket.nextActionAt || ticket.next_action_at)],
+    ['First ICT Response', formatPrintDateTime(ticket.firstResponseAt || ticket.first_response_at)],
+    ['Moved Date', formatPrintDateTime(ticket.movedDateAt || ticket.movedDate || ticket.movedAt)],
+    ['Resolved Date', formatPrintDateTime(ticket.workEndedAt || ticket.work_ended_at || ticket.resolvedAt || ticket.resolved_at)],
+    ['Assigned ICT Staff', ticket.technician || ticket.assignedTo || 'Unassigned'],
+    ['Escalation Partner', normalizedStatus === 'escalated' ? ticket.escalationPartner : ''],
+    ['Device / System', ticket.deviceName || ticket.deviceType],
+    ['Contact', ticket.contactNumber],
+    ['Work Started', formatPrintDateTime(startedAt)],
+    ['Work Ended', formatPrintDateTime(endedAt)],
+    ['Work Duration', startedAt ? getEmployeePrintDuration(startedAt, endedAt) : ''],
+  ].filter(([, value]) => value != null && String(value).trim() !== '');
+  const notes = [
+    ['Description of Problem', ticket.description],
+    ['Action Taken', ticket.actionTaken],
+    ['Resolution Notes', ticket.resolution],
+    ['Recommendation', ticket.recommendation],
+    ['Waiting Reason', EMPLOYEE_WAITING_STATUSES.has(normalizedStatus) ? ticket.actionReason : ''],
+  ].filter(([, value]) => String(value || '').trim());
+  const printedAt = compactDateFormatter.format(new Date());
+  const body = `
+    <main class="print-page">
+      <header class="coop-letterhead">
+        <div class="coop-logo-wrap"><img src="/Logos/Logo.png" alt="MEMPCO logo" /></div>
+        <div class="coop-copy">
+          <h1>Micro-Entrepreneurs Multi-Purpose Cooperative</h1>
+          <p>3D3E HC Mktng. Bldg., Veterans Avenue, Zamboanga City, Philippines 7000</p>
+          <p>CDA Registration No. 9520-09004207 &nbsp;&nbsp; TIN 005-848-165 NV</p>
+          <div class="coop-contact">
+            <span>(062) 991-7772</span>
+            <span>www.mempco.coop</span>
+            <span>itsupport@mempco.coop</span>
+            <span>mempco.ph</span>
+          </div>
+        </div>
+      </header>
+      <section class="doc-head">
+        <h2>Helpdesk Ticket Report</h2>
+        <div class="meta">Printed ${escapeTicketPrintHtml(printedAt)}</div>
+      </section>
+      <section class="grid">
+        ${fields.map(([label, value]) => `
+          <div class="field">
+            <span>${escapeTicketPrintHtml(label)}</span>
+            <strong>${escapeTicketPrintHtml(value)}</strong>
+          </div>
+        `).join('')}
+      </section>
+      ${notes.length ? `
+        <section class="ticket-notes-grid">
+          ${notes.map(([label, value]) => `
+            <article>
+              <h3>${escapeTicketPrintHtml(label)}</h3>
+              <div class="note">${escapeTicketPrintHtml(value)}</div>
+            </article>
+          `).join('')}
+        </section>
+      ` : ''}
+    </main>
+  `;
+
+  printWindow.document.write(`
+    <!doctype html>
+    <html>
+      <head>
+        <title>Ticket ${escapeTicketPrintHtml(getTicketDisplayCode(ticket))}</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <style>
+          @page { size: letter landscape; margin: 0.28in; }
+          * { box-sizing: border-box; }
+          html, body { width: 100%; margin: 0; padding: 0; color: #111827; font-family: Arial, Helvetica, sans-serif; background: #fff; }
+          body { display: flex; justify-content: center; align-items: flex-start; }
+          .print-page { width: min(10.44in, calc(100vw - 24px)); max-width: 100%; margin: 0 auto; }
+          .coop-letterhead { display: grid; grid-template-columns: 96px minmax(0, 1fr) 96px; align-items: center; gap: 12px; padding-bottom: 7px; margin-bottom: 8px; border-bottom: 3px solid #111827; box-shadow: inset 0 -1px 0 #dc2626; }
+          .coop-logo-wrap { width: 96px; text-align: center; }
+          .coop-logo-wrap img { display: block; width: 82px; height: 82px; object-fit: contain; margin: 0 auto; }
+          .coop-copy { grid-column: 2; text-align: center; }
+          .coop-copy h1 { margin: 0; color: #dc2626; font-size: 20px; line-height: 1.05; font-weight: 900; text-transform: uppercase; letter-spacing: 0.04em; }
+          .coop-copy p { margin: 1px 0; color: #000; font-size: 13px; line-height: 1.2; }
+          .coop-contact { display: flex; flex-wrap: wrap; justify-content: center; gap: 16px; margin-top: 3px; color: #000; font-size: 11.5px; font-weight: 700; }
+          .doc-head { display: flex; justify-content: space-between; gap: 18px; align-items: end; margin: 6px 0 8px; }
+          .doc-head h2 { margin: 0; color: #111827; font-size: 17px; line-height: 1.05; text-transform: uppercase; }
+          .meta { color: #64748b; font-size: 10px; font-weight: 800; text-align: right; }
+          .grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+          .field { min-width: 0; padding: 7px 8px; border: 1px solid #e5e7eb; border-radius: 7px; background: #f8fafc; }
+          .field span { display: block; color: #64748b; font-size: 8.5px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.08em; }
+          .field strong { display: block; margin-top: 3px; font-size: 10.5px; line-height: 1.25; white-space: pre-wrap; overflow-wrap: anywhere; }
+          .ticket-notes-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: minmax(74px, auto); gap: 8px; margin-top: 8px; }
+          .ticket-notes-grid article { min-width: 0; display: flex; flex-direction: column; break-inside: avoid; page-break-inside: avoid; }
+          .ticket-notes-grid h3 { margin: 0 0 5px; color: #374151; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; }
+          .note { flex: 1 1 auto; min-height: 52px; padding: 8px 9px; border: 1px solid #d9dee7; border-radius: 6px; background: #fff; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.4; font-size: 10.5px; }
+          @media screen and (max-width: 760px) {
+            .print-page { width: calc(100vw - 24px); }
+            .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .ticket-notes-grid { grid-template-columns: 1fr; grid-auto-rows: auto; }
+          }
+          @media print {
+            .print-page { width: 10.44in; max-width: 100%; margin: 0 auto; }
+            .grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+            .ticket-notes-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: minmax(74px, auto); }
+          }
+        </style>
+      </head>
+      <body>${body}</body>
+    </html>
+  `);
+  printWindow.document.close();
+  printWindow.focus();
+  printWindow.setTimeout(() => printWindow.print(), 500);
+};
+
+const getEmployeePrintDuration = (startedAt, endedAt) => {
+  const start = toDate(startedAt);
+  if (!start) return '';
+  const end = toDate(endedAt) || new Date();
+  const totalMinutes = Math.max(0, Math.floor((end.getTime() - start.getTime()) / 60000));
+  const days = Math.floor(totalMinutes / 1440);
+  const hours = Math.floor((totalMinutes % 1440) / 60);
+  const minutes = totalMinutes % 60;
+  const duration = days ? `${days}d ${hours}h` : hours ? `${hours}h ${minutes}m` : `${minutes}m`;
+  return endedAt ? duration : `${duration} (ongoing)`;
 };
 
 const getCompactTicketRequester = (ticket = {}, user = {}) =>
@@ -1545,22 +1746,50 @@ function EmployeeTicketDetailModal({
   onSend,
 }) {
   const canEditTicket = canEmployeeEditTicket(ticket);
+  const normalizedStatus = normalizeEmployeeTicketStatus(ticket.status);
+  const isWaitingWorkflow = EMPLOYEE_WAITING_STATUSES.has(normalizedStatus);
+  const hasNextAction = EMPLOYEE_NEXT_ACTION_STATUSES.has(normalizedStatus);
+  const isEscalated = normalizedStatus === 'escalated';
+  const isNoScrollWorkflow = isWaitingWorkflow || isEscalated || normalizedStatus === 'moved date';
   const employeeStatusLabel = getEmployeeTicketStatusLabel(ticket.status);
+  const employeeStatusTone = getEmployeeTicketStatusTone(employeeStatusLabel);
   const closedTicketMessage = getEmployeeClosedTicketMessage(ticket);
   const lockReason =
     closedTicketMessage ||
     ticket.employeeLockReason ||
     ticket.employeeEditLockReason ||
     'Locked because ICT is already handling this ticket.';
-  const hasAttachments = Boolean(ticket.saarAttachment?.name || ticket.photoAttachments?.length > 0);
+  const previewPhotos = Array.isArray(ticket.photoAttachments)
+    ? ticket.photoAttachments.filter((photo) => photo?.dataUrl || photo?.url || photo?.publicUrl)
+    : [];
+  const [previewPhotoIndex, setPreviewPhotoIndex] = useState(null);
   const isChatOpen = shouldShowConversation && !isChatMinimized;
   const requesterName = ticket.requester || user?.fullName || user?.name || user?.email || 'Employee';
-  const submittedLabel = ticket.createdAt || ticket.date || 'Submitted';
+  const submittedLabel = formatCompactDateTime(ticket.createdAt || ticket.submittedAt || ticket.date || 'Submitted');
   const assignedStaff = ticket.technician || ticket.assignedTo || 'Unassigned';
   const saarLabel =
     ticket.saarAttachment?.name ||
     (ticket.saarRequired ? 'Required, no file found' : 'Not required');
-  const queueLabel = getEmployeeQueueLabel(ticket);
+
+  useEffect(() => {
+    if (previewPhotoIndex === null) return undefined;
+
+    const handlePreviewKeyDown = (event) => {
+      if (event.key === 'Escape') setPreviewPhotoIndex(null);
+      if (event.key === 'ArrowLeft' && previewPhotos.length > 1) {
+        setPreviewPhotoIndex((current) => (current - 1 + previewPhotos.length) % previewPhotos.length);
+      }
+      if (event.key === 'ArrowRight' && previewPhotos.length > 1) {
+        setPreviewPhotoIndex((current) => (current + 1) % previewPhotos.length);
+      }
+    };
+
+    window.addEventListener('keydown', handlePreviewKeyDown);
+    return () => window.removeEventListener('keydown', handlePreviewKeyDown);
+  }, [previewPhotoIndex, previewPhotos.length]);
+
+  const activePreviewPhoto = previewPhotoIndex === null ? null : previewPhotos[previewPhotoIndex];
+  const activePreviewSource = activePreviewPhoto?.dataUrl || activePreviewPhoto?.url || activePreviewPhoto?.publicUrl;
 
   return (
     <div
@@ -1577,14 +1806,14 @@ function EmployeeTicketDetailModal({
       <article
         className={[
           'modal-box glass employee-admin-modal-box employee-ticket-modal ticket-action-modal is-support-modal',
-          hasAttachments ? 'has-attachments' : '',
-        ].filter(Boolean).join(' ')}
+          isNoScrollWorkflow ? 'is-no-scroll-workflow' : '',
+        ].join(' ')}
       >
-        {/* Admin-identical modal header */}
+        {/* Admin-matched ticket identity and SLA header */}
         <div className="admin-modal-head ticket-action-head employee-admin-ticket-head">
           <div className="ticket-action-head-main">
             <div className="ticket-action-identity-group">
-              <span className="ticket-id employee-admin-ticket-id">
+              <span className="ticket-id employee-admin-ticket-id" title={getTicketDisplayCode(ticket)}>
                 {getTicketDisplayCode(ticket)}
               </span>
 
@@ -1595,11 +1824,17 @@ function EmployeeTicketDetailModal({
             </div>
 
             <div className="ticket-action-header-status employee-ticket-action-header-status" aria-label="Ticket status">
-              <div className={`employee-admin-status-badge ${slugify(employeeStatusLabel)}`}>
+              <div className={`ticket-handling-indicator primary-only ${employeeStatusTone} employee-admin-status-badge`}>
                 <strong>{employeeStatusLabel}</strong>
               </div>
             </div>
           </div>
+
+          <p className="employee-ticket-sla-deadline-note">
+            Response due {formatCompactDateTime(ticket.responseDueAt || ticket.response_due_at || 'not set')}
+            {' | '}Resolution due {formatCompactDateTime(ticket.resolutionDueAt || ticket.resolution_due_at || 'not set')}
+            {' | '}Calendar hours; continues while waiting
+          </p>
 
           <button
             type="button"
@@ -1644,6 +1879,21 @@ function EmployeeTicketDetailModal({
             <p>{ticket.deviceName || 'Not specified'}</p>
           </div>
 
+          {ticket.brand && <div className="ticket-meta-cell">
+            <span>Brand &amp; Model</span>
+            <p>{ticket.brand}</p>
+          </div>}
+
+          {ticket.serialNumber && <div className="ticket-meta-cell">
+            <span>Serial Number</span>
+            <p>{ticket.serialNumber}</p>
+          </div>}
+
+          {ticket.custodian && <div className="ticket-meta-cell">
+            <span>Custodian</span>
+            <p>{ticket.custodian}</p>
+          </div>}
+
           <div className="ticket-meta-cell">
             <span>Contact</span>
             <p>{ticket.contactNumber || 'Not specified'}</p>
@@ -1651,130 +1901,156 @@ function EmployeeTicketDetailModal({
 
           <div className="ticket-meta-cell">
             <span>SAAR</span>
-            <p>{saarLabel}</p>
+            <p>
+              {(ticket.saarAttachment?.dataUrl || ticket.saarAttachment?.url || ticket.saarAttachment?.publicUrl) ? (
+                <a
+                  href={ticket.saarAttachment.dataUrl || ticket.saarAttachment.url || ticket.saarAttachment.publicUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {saarLabel}
+                </a>
+              ) : saarLabel}
+            </p>
           </div>
         </div>
 
-        {/* Same description + right-side status control layout as Admin */}
-        <div className="ticket-action-details-row employee-admin-details-row">
-          <div className="admin-description-box ticket-action-description">
-            <span>Description of Problem</span>
-            <p>{ticket.description || 'No description provided.'}</p>
+        {/* Ticket context and status-specific follow-up match the Admin layout. */}
+        <div className={`ticket-action-details-row employee-admin-details-row${isNoScrollWorkflow ? ' is-expanded-workflow' : ''}`}>
+          <div className={`employee-ticket-description-column${isWaitingWorkflow ? ' is-waiting-workflow' : ''}`}>
+            <div className="admin-description-box ticket-action-description">
+              <div className="employee-ticket-description-heading">
+                <span>Description of Problem</span>
+                {previewPhotos.length > 0 && (
+                  <button
+                    type="button"
+                    className="employee-ticket-image-trigger"
+                    onClick={() => setPreviewPhotoIndex(0)}
+                    aria-label={`Preview ${previewPhotos.length} attached image${previewPhotos.length === 1 ? '' : 's'}`}
+                    title="Preview attached image"
+                  >
+                    <img
+                      src={previewPhotos[0].dataUrl || previewPhotos[0].url || previewPhotos[0].publicUrl}
+                      alt=""
+                    />
+                    <span>{previewPhotos.length} image{previewPhotos.length === 1 ? '' : 's'}</span>
+                  </button>
+                )}
+              </div>
+              <p>{ticket.description || 'No description provided.'}</p>
+            </div>
+
+            {isWaitingWorkflow && <div className="employee-ticket-followup-note">
+              <span>Waiting Reason</span>
+              <p>{ticket.actionReason || 'No waiting reason recorded.'}</p>
+            </div>}
           </div>
 
-          <div className="ticket-action-control-stack employee-ticket-update-stack employee-admin-control-stack">
+          <div className={`ticket-action-control-stack employee-ticket-update-stack employee-admin-control-stack${isNoScrollWorkflow ? ' is-expanded-workflow' : ''}`}>
             <div className="ticket-form-group">
               <label>Status</label>
-              <div className="ticket-field ticket-input employee-admin-readonly-field">
-                {employeeStatusLabel}
-              </div>
+              <select
+                className="ticket-field ticket-select employee-admin-readonly-select"
+                defaultValue={employeeStatusLabel}
+                disabled
+                aria-label="Status"
+              >
+                <option value={employeeStatusLabel}>{employeeStatusLabel}</option>
+              </select>
             </div>
 
             <div className="ticket-form-group">
               <label>SLA</label>
-              <div className="ticket-field ticket-input employee-admin-readonly-field">
-                {ticket.sla || 'Low'}
-              </div>
+              <select
+                className="ticket-field ticket-select employee-admin-readonly-select"
+                defaultValue={ticket.sla || 'Low'}
+                disabled
+                aria-label="SLA"
+              >
+                <option value={ticket.sla || 'Low'}>{ticket.sla || 'Low'}</option>
+              </select>
             </div>
 
             <div className="ticket-form-group">
               <label>Assigned ICT Staff</label>
-              <div className="ticket-field ticket-input employee-admin-readonly-field">
-                {assignedStaff}
-              </div>
+              <select
+                className="ticket-field ticket-select employee-admin-readonly-select"
+                defaultValue={assignedStaff}
+                disabled
+                aria-label="Assigned ICT Staff"
+              >
+                <option value={assignedStaff}>{assignedStaff}</option>
+              </select>
             </div>
 
-            {queueLabel && (
-              <div className="ticket-form-group">
-                <label>Queue Status</label>
-                <div
-                  className="ticket-field ticket-input employee-admin-readonly-field"
-                  title="Priority-based ICT review position. Urgent tickets may move ahead."
-                >
-                  {queueLabel}
-                </div>
+            {isEscalated && <div className="ticket-form-group">
+              <label>Escalation Partner</label>
+              <div className="employee-admin-readonly-field">{ticket.escalationPartner || 'Not recorded'}</div>
+            </div>}
+
+            {hasNextAction && <div className="ticket-form-group">
+              <label>Next Action</label>
+              <div className="employee-admin-readonly-field">
+                {formatCompactDateTime(ticket.nextActionAt || ticket.next_action_at || 'Not scheduled')}
               </div>
-            )}
+            </div>}
+
           </div>
         </div>
 
-        {/* Read-only Employee view, but using the exact Admin notes-field presentation */}
+        {/* Read-only fields retain the Admin modal's textarea geometry. */}
         <div className="ticket-action-notes-grid employee-admin-notes-grid">
           <div className="ticket-form-group">
             <label>Action Taken</label>
-            <div className="ticket-field ticket-textarea admin-small-textarea employee-admin-readonly-textarea">
-              {ticket.actionTaken || 'No action recorded yet.'}
-            </div>
+            <textarea
+              className="ticket-field ticket-textarea admin-small-textarea employee-admin-readonly-textarea"
+              value={ticket.actionTaken || ''}
+              placeholder="No action recorded yet."
+              readOnly
+              aria-label="Action Taken"
+            />
           </div>
 
           <div className="ticket-form-group">
-            <label>Admin Remarks</label>
-            <div className="ticket-field ticket-textarea admin-small-textarea employee-admin-readonly-textarea">
-              {ticket.adminRemarks || 'No remarks yet.'}
-            </div>
+            <label>First ICT Response</label>
+            <textarea
+              className="ticket-field ticket-textarea admin-small-textarea employee-admin-readonly-textarea"
+              value={ticket.firstResponseAt ? formatCompactDateTime(ticket.firstResponseAt) : ''}
+              placeholder="No first response recorded yet."
+              readOnly
+              aria-label="First ICT Response"
+            />
           </div>
 
           <div className="ticket-form-group">
             <label>Resolution Notes</label>
-            <div className="ticket-field ticket-textarea admin-small-textarea employee-admin-readonly-textarea">
-              {ticket.resolution || 'No resolution yet.'}
-            </div>
+            <textarea
+              className="ticket-field ticket-textarea admin-small-textarea employee-admin-readonly-textarea"
+              value={ticket.resolution || ''}
+              placeholder="No resolution recorded yet."
+              readOnly
+              aria-label="Resolution Notes"
+            />
           </div>
 
           <div className="ticket-form-group">
             <label>Recommendation</label>
-            <div className="ticket-field ticket-textarea admin-small-textarea employee-admin-readonly-textarea">
-              {ticket.recommendation || 'No recommendation recorded yet.'}
-            </div>
+            <textarea
+              className="ticket-field ticket-textarea admin-small-textarea employee-admin-readonly-textarea"
+              value={ticket.recommendation || ''}
+              placeholder="No recommendation recorded."
+              readOnly
+              aria-label="Recommendation"
+            />
           </div>
-        </div>
-
-        {/* Existing Employee attachments remain available; only their presentation is synchronized. */}
-        {(ticket.saarAttachment?.name || ticket.photoAttachments?.length > 0) && (
-          <div className="ticket-action-attachments-row employee-admin-attachments-row">
-            {ticket.saarAttachment?.name && (
-              <div className="admin-attachment-box">
-                <div>
-                  <strong>SAAR PDF Attachment</strong>
-                  <p>{ticket.saarAttachment.name} - {ticket.saarAttachment.sizeLabel || 'PDF file'}</p>
-                </div>
-                {ticket.saarAttachment.dataUrl && (
-                  <a href={ticket.saarAttachment.dataUrl} target="_blank" rel="noopener noreferrer">
-                    Open PDF
-                  </a>
-                )}
-              </div>
-            )}
-
-            {ticket.photoAttachments?.length > 0 && (
-              <div className="admin-attachment-box admin-photo-attachment-box">
-                <div>
-                  <strong>Photo / Screenshot Attachments</strong>
-                  <p>
-                    {ticket.photoAttachments.length} photo
-                    {ticket.photoAttachments.length === 1 ? '' : 's'} attached for ICT review
-                  </p>
-                </div>
-                <PhotoAttachmentGallery photos={ticket.photoAttachments} emptyText="" />
-              </div>
-            )}
-          </div>
-        )}
 
         </div>
 
-        {/* Same Admin footer geometry; Employee-only actions are preserved. */}
+        </div>
+
+        {/* Admin footer layout with Employee-appropriate actions. */}
         <div className="modal-footer employee-admin-modal-footer">
-          {canEditTicket ? (
-            <button
-              type="button"
-              className="modal-btn employee-admin-footer-btn"
-              onClick={onEdit}
-            >
-              <MonoIcon icon={PenLine} />
-              Edit Ticket
-            </button>
-          ) : (
+          {!canEditTicket && (
             <span
               className="ticket-locked-pill modal-locked-pill employee-admin-lock-pill"
               title={lockReason}
@@ -1782,8 +2058,53 @@ function EmployeeTicketDetailModal({
               {lockReason}
             </span>
           )}
+          <div className="ticket-action-footer-tools employee-admin-footer-tools">
+            <button
+              type="button"
+              className="modal-btn print employee-admin-footer-btn"
+              onClick={() => printEmployeeTicket(ticket, user)}
+              aria-label={`Print ticket ${getTicketDisplayCode(ticket)}`}
+            >
+              <MonoIcon icon={Printer} />
+              Print Ticket
+            </button>
+            {canEditTicket && (
+              <button
+                type="button"
+                className="modal-btn confirm employee-admin-footer-btn"
+                onClick={onEdit}
+              >
+                <MonoIcon icon={PenLine} />
+                Edit Ticket
+              </button>
+            )}
+          </div>
         </div>
       </article>
+
+      {activePreviewPhoto && activePreviewSource && (
+        <div
+          className="employee-ticket-photo-viewer"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Attached image preview"
+          onClick={() => setPreviewPhotoIndex(null)}
+        >
+          <button
+            type="button"
+            className="employee-ticket-photo-viewer-close"
+            onClick={() => setPreviewPhotoIndex(null)}
+            aria-label="Close image preview"
+          >
+            <X aria-hidden="true" />
+          </button>
+          <img
+            src={activePreviewSource}
+            alt={activePreviewPhoto.name || 'Attached ticket image'}
+            onClick={(event) => event.stopPropagation()}
+          />
+        </div>
+      )}
 
       {/* Existing Employee conversation behavior is unchanged. */}
       {isChatOpen && (
@@ -1827,7 +2148,7 @@ function EmployeeTicketDetailModal({
 
 function DashboardView({ user, tickets, openTickets, onGoTo }) {
   const resolvedCount = tickets.filter(isEmployeeResolvedTicket).length;
-  const pendingCount = tickets.filter((ticket) => ['Created', 'Pending'].includes(ticket.status)).length;
+  const pendingCount = tickets.filter(isEmployeePendingTicket).length;
   const urgentCount = tickets.filter(
     (ticket) => ['High', 'Critical'].includes(ticket.sla) && isUnresolved(ticket.status)
   ).length;
@@ -1847,16 +2168,10 @@ function DashboardView({ user, tickets, openTickets, onGoTo }) {
     <div className="dashboard-view">
       <section className="panel-card glass hero-panel employee-hero-panel admin-hero-panel">
         <div className="hero-copy">
-          <span className="section-kicker">Employee IT Support</span>
-          <h2>Your helpdesk workspace for faster ICT assistance.</h2>
-          <p>
-            Submit complete service requests, attach required documents, monitor ticket progress,
-            and review ICT actions in one employee support center.
-          </p>
+          <span className="section-kicker">Employee Dashboard</span>
+          <h2>Helpdesk overview</h2>
+          <p>Submit ICT requests, track their progress, and review updates from your support team.</p>
         </div>
-
-        <img className="employee-hero-logo admin-hero-logo" src="/Logos/Logo.png" alt="MEMPCO logo" />
-
       </section>
 
       <section className="stats-grid" aria-label="Key statistics">
@@ -2061,28 +2376,30 @@ function ProfileView({ user, tickets = [], onGoTo, onUserUpdate }) {
   const [photoMessage, setPhotoMessage] = useState('');
   const [isPhotoMenuOpen, setIsPhotoMenuOpen] = useState(false);
   const [isSavingPhoto, setIsSavingPhoto] = useState(false);
-  const employeeStatus = user.status || 'Active';
   const assignedOffice = user.branch || user.office || 'Not assigned';
   const designation = user.designation || 'Job title not provided';
-  const pendingTickets = tickets.filter((ticket) => getEmployeeTicketStatusLabel(ticket.status) === 'Pending').length;
-  const inProgressTickets = tickets.filter((ticket) => getEmployeeTicketStatusLabel(ticket.status) === 'In Progress').length;
+  const pendingTickets = tickets.filter(isEmployeePendingTicket).length;
+  const inProgressTickets = tickets.filter(isEmployeeActiveTicket).length;
   const resolvedTickets = tickets.filter(isEmployeeResolvedTicket).length;
   const cancelledTickets = tickets.filter((ticket) => getEmployeeTicketStatusLabel(ticket.status) === 'Cancelled').length;
   const latestTickets = Array.isArray(tickets) ? tickets.slice(0, 3) : [];
   const profileRows = [
-    { label: 'Employee ID', value: user.employeeId || 'Not provided', icon: IdCard },
     { label: 'Job Title', value: designation, icon: BriefcaseBusiness },
+    { label: 'Employee ID', value: user.employeeId || 'Not provided', icon: IdCard },
     { label: 'Department', value: user.department || 'Not assigned', icon: Building2 },
-    { label: 'Assigned Office', value: assignedOffice, icon: MapPin },
+    { label: 'Branch / Office', value: assignedOffice, icon: Building2 },
     { label: 'Email Address', value: user.email || 'Not provided', icon: Mail },
     { label: 'Phone Number', value: user.phone || 'Not provided', icon: Phone },
   ];
-  const ticketSummaryRows = [
-    { label: 'Submitted', value: tickets.length, tone: 'submitted' },
-    { label: 'Pending', value: pendingTickets, tone: 'pending' },
-    { label: 'In Progress', value: inProgressTickets, tone: 'progress' },
-    { label: 'Resolved', value: resolvedTickets, tone: 'resolved' },
-    { label: 'Cancelled', value: cancelledTickets, tone: 'cancelled' },
+  const profileStats = [
+    { label: 'Submitted Tickets', value: tickets.length, meta: 'requests filed' },
+    {
+      label: 'Open Tickets',
+      value: pendingTickets + inProgressTickets,
+      meta: `${pendingTickets} pending, ${inProgressTickets} in progress`,
+    },
+    { label: 'Resolved Tickets', value: resolvedTickets, meta: 'completed requests' },
+    { label: 'Cancelled Tickets', value: cancelledTickets, meta: 'closed without resolution' },
   ];
 
   useEffect(() => {
@@ -2131,172 +2448,109 @@ function ProfileView({ user, tickets = [], onGoTo, onUserUpdate }) {
     }
   };
 
-  return (
-    <div className="profile-view">
-      <section className="panel-card glass profile-banner premium-profile-banner">
-        <div className="profile-banner-main premium-profile-main">
-          <div className="profile-photo-control" ref={profilePhotoMenuRef}>
-            <div className="profile-photo-frame">
+  const photoControl = (
+    <div className="profile-photo-control" ref={profilePhotoMenuRef}>
+      <div className="profile-photo-frame">
+        <button
+          type="button"
+          className="avatar large premium-profile-avatar profile-photo-button portal-profile-avatar-button"
+          onClick={() => setIsPhotoMenuOpen((current) => !current)}
+          disabled={isSavingPhoto}
+          aria-haspopup="menu"
+          aria-expanded={isPhotoMenuOpen}
+          aria-label="Open profile photo options"
+        >
+          {user.profilePhoto ? (
+            <img src={user.profilePhoto} alt={`${user.name} profile`} className="profile-photo-image" />
+          ) : (
+            <span>{user.initials}</span>
+          )}
+        </button>
+        <button
+          type="button"
+          className="profile-photo-camera-button portal-profile-camera-button"
+          onClick={() => setIsPhotoMenuOpen((current) => !current)}
+          disabled={isSavingPhoto}
+          aria-haspopup="menu"
+          aria-expanded={isPhotoMenuOpen}
+          aria-label="Profile photo options"
+        >
+          <MonoIcon icon={Camera} />
+        </button>
+        {isPhotoMenuOpen && (
+          <div className="profile-photo-menu" role="menu">
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setIsPhotoMenuOpen(false);
+                profilePhotoInputRef.current?.click();
+              }}
+            >
+              <MonoIcon icon={ImageIcon} />
+              {user.profilePhoto ? 'Upload new photo' : 'Upload photo'}
+            </button>
+            {user.profilePhoto && (
               <button
                 type="button"
-                className="avatar large premium-profile-avatar profile-photo-button"
-                onClick={() => setIsPhotoMenuOpen((current) => !current)}
-                disabled={isSavingPhoto}
-                aria-haspopup="menu"
-                aria-expanded={isPhotoMenuOpen}
-                aria-label="Open profile photo options"
+                role="menuitem"
+                className="danger"
+                onClick={() => saveProfilePhoto('')}
               >
-                {user.profilePhoto ? (
-                  <img src={user.profilePhoto} alt={`${user.name} profile`} className="profile-photo-image" />
-                ) : (
-                  <span>{user.initials}</span>
-                )}
+                <MonoIcon icon={X} />
+                Remove photo
               </button>
-              <button
-                type="button"
-                className="profile-photo-camera-button"
-                onClick={() => setIsPhotoMenuOpen((current) => !current)}
-                disabled={isSavingPhoto}
-                aria-haspopup="menu"
-                aria-expanded={isPhotoMenuOpen}
-                aria-label="Profile photo options"
-              >
-                <MonoIcon icon={Camera} />
-              </button>
-              {isPhotoMenuOpen && (
-                <div className="profile-photo-menu" role="menu">
-                  <button
-                    type="button"
-                    role="menuitem"
-                    onClick={() => {
-                      setIsPhotoMenuOpen(false);
-                      profilePhotoInputRef.current?.click();
-                    }}
-                  >
-                    <MonoIcon icon={ImageIcon} />
-                    {user.profilePhoto ? 'Upload new photo' : 'Upload photo'}
-                  </button>
-                  {user.profilePhoto && (
-                    <button
-                      type="button"
-                      role="menuitem"
-                      className="danger"
-                      onClick={() => saveProfilePhoto('')}
-                    >
-                      <MonoIcon icon={X} />
-                      Remove photo
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
-            <input
-              ref={profilePhotoInputRef}
-              type="file"
-              className="profile-photo-input"
-              accept="image/*"
-              onChange={handleProfilePhotoChange}
-            />
-            {(isSavingPhoto || photoMessage) && (
-              <p className="profile-photo-message">{isSavingPhoto ? 'Saving photo...' : photoMessage}</p>
             )}
           </div>
-          <div className="profile-banner-copy premium-profile-copy">
-            <span className="section-kicker">My Profile</span>
-            <h2>{user.name}</h2>
-            <div className="profile-identity-line" aria-label="Employee identity summary">
-              <span><MonoIcon icon={BriefcaseBusiness} />{designation}</span>
-              <span><MonoIcon icon={Building2} />{user.department || 'Department not assigned'}</span>
-              <span><MonoIcon icon={MapPin} />{assignedOffice}</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="profile-banner-pills premium-profile-pills">
-          <span className="profile-pill"><MonoIcon icon={IdCard} />{user.employeeId || 'No employee ID'}</span>
-          <span className="profile-pill active"><MonoIcon icon={UserRoundCheck} />{employeeStatus}</span>
-        </div>
-      </section>
-
-      <div className="profile-columns premium-profile-columns">
-        <section className="panel-card glass profile-detail-panel">
-          <div className="section-head">
-            <div>
-              <span className="section-kicker">Employee Record</span>
-              <h3>Personal &amp; Work Details</h3>
-            </div>
-          </div>
-
-          <div className="profile-detail-grid">
-            {profileRows.map((row) => (
-              <article key={row.label} className="profile-detail-card">
-                <span className="profile-detail-icon"><MonoIcon icon={row.icon} /></span>
-                <div>
-                  <span>{row.label}</span>
-                  <p>{row.value}</p>
-                </div>
-              </article>
-            ))}
-          </div>
-
-          <section className="profile-section-block">
-            <div className="section-head compact">
-              <div>
-                <span className="section-kicker">Helpdesk Summary</span>
-                <h3>My Ticket Activity</h3>
-              </div>
-              <button type="button" className="profile-text-action" onClick={() => onGoTo('helpdesk', 'tickets')}>
-                Review tickets
-              </button>
-            </div>
-
-            <div className="profile-ticket-summary-grid">
-              {ticketSummaryRows.map((row) => (
-                <article key={row.label} className={`profile-ticket-summary-card is-${row.tone}`}>
-                  <span>{row.label}</span>
-                  <strong>{row.value}</strong>
-                </article>
-              ))}
-            </div>
-          </section>
-
-          <section className="profile-section-block">
-            <div className="section-head compact">
-              <div>
-                <span className="section-kicker">Recent Activity</span>
-                <h3>Latest Ticket Updates</h3>
-              </div>
-            </div>
-
-            <div className="profile-activity-list">
-              {latestTickets.length ? latestTickets.map((ticket) => (
-                <button
-                  key={ticket.id}
-                  type="button"
-                  className="profile-activity-item"
-                  onClick={() => onGoTo('helpdesk', 'tickets')}
-                >
-                  <span className={`profile-activity-status is-${slugify(getEmployeeTicketStatusLabel(ticket.status))}`}>
-                    {getEmployeeTicketStatusLabel(ticket.status)}
-                  </span>
-                  <div>
-                    <strong>{ticket.concernType || ticket.supportCategory || 'Helpdesk ticket'}</strong>
-                    <p>{ticket.branch || 'No branch'} - {ticket.department || 'No department'}</p>
-                  </div>
-                  <small>{ticket.lastUpdated || ticket.createdAt || ticket.date || 'No date'}</small>
-                </button>
-              )) : (
-                <div className="profile-empty-activity">
-                  <strong>No ticket activity yet</strong>
-                  <p>Your submitted tickets and ICT updates will appear here.</p>
-                </div>
-              )}
-            </div>
-          </section>
-        </section>
-
+        )}
       </div>
+      <input
+        ref={profilePhotoInputRef}
+        type="file"
+        className="profile-photo-input"
+        accept="image/*"
+        onChange={handleProfilePhotoChange}
+      />
+      {(isSavingPhoto || photoMessage) && (
+        <p className="profile-photo-message">{isSavingPhoto ? 'Saving photo...' : photoMessage}</p>
+      )}
     </div>
+  );
+
+  return (
+    <PortalProfileLayout
+      photoControl={photoControl}
+      name={user.name}
+      subtitle={`${designation} - ${user.department || 'Department not assigned'}`}
+      meta={[
+        { label: 'Employee ID', value: user.employeeId || 'Not provided' },
+        { label: 'Office', value: assignedOffice },
+      ]}
+      stats={profileStats}
+      facts={profileRows}
+      scopeEyebrow="Employee Access"
+      scopeTitle="Helpdesk & Account Access"
+      scopeItems={[
+        'Submit ICT support requests and review submitted tickets',
+        'Track ticket status and updates from ICT staff',
+        'Edit eligible tickets before ICT begins handling them',
+        'Print ticket details for personal records',
+      ]}
+      activityEyebrow="Recent Activity"
+      activityTitle="Latest Ticket Updates"
+      activityActionLabel="Review Tickets"
+      onActivityAction={() => onGoTo('helpdesk', 'tickets')}
+      activity={latestTickets.map((ticket) => ({
+        id: ticket.id,
+        status: getEmployeeTicketStatusLabel(ticket.status),
+        title: ticket.concernType || ticket.supportCategory || 'Helpdesk ticket',
+        description: `${ticket.branch || 'No branch'} - ${ticket.department || 'No department'}`,
+        date: ticket.lastUpdated || ticket.createdAt || ticket.date || 'No date',
+        onClick: () => onGoTo('helpdesk', 'tickets'),
+      }))}
+      emptyActivityTitle="No ticket activity yet"
+      emptyActivityText="Your submitted tickets and ICT updates will appear here."
+    />
   );
 }
 
@@ -2440,14 +2694,15 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
         const messages = await getTicketMessages(viewTicket.id);
 
         if (!cancelled) {
-          ticketMessageIdsRef.current = new Set(messages.map((m) => m.id));
-          setTicketMessages(messages);
-          setUnreadConversationCount(0);
+          setTicketMessages((current) => {
+            const merged = mergeMessages(current,messages);
+            ticketMessageIdsRef.current = new Set(merged.map((message) => message.id));
+            return merged;
+          });
           setMessageError('');
         }
       } catch (error) {
         if (!cancelled) {
-          setTicketMessages([]);
           setMessageError(error.message || 'Unable to load the ticket conversation.');
         }
       }
@@ -2458,17 +2713,18 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
     const unsubscribeMessages = subscribeToTicketMessages(viewTicket.id, (newMessage) => {
       const alreadyExists = ticketMessageIdsRef.current.has(newMessage.id);
 
-      if (!alreadyExists) {
-        ticketMessageIdsRef.current.add(newMessage.id);
-        setTicketMessages((current) => [...current, newMessage]);
-      }
+      setTicketMessages((current) => {
+        const merged = mergeMessages(current,[newMessage]);
+        ticketMessageIdsRef.current = new Set(merged.map((message) => message.id));
+        return merged;
+      });
 
       const isIncoming = newMessage.senderId !== currentUserIdRef.current;
 
       if (!alreadyExists && isIncoming && isChatMinimizedRef.current) {
         setUnreadConversationCount((c) => c + 1);
       }
-    });
+    },status=>{if(status==='SUBSCRIBED') void loadMessages();});
 
     const unsubscribeTicket = subscribeToTicket(viewTicket.id, (updatedTicket) => {
       if (!cancelled) {
@@ -2530,7 +2786,9 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
       }
 
       if (['supportCategory', 'concernType'].includes(field)) {
-        next.description = getIssueDescriptionTemplate(next);
+        next.description = isGeneratedDescriptionOnly(prev.description)
+          ? getIssueDescriptionTemplate(next)
+          : ensureDescriptionTemplate(prev.description,next);
       } else if (field === 'deviceName') {
         const nextTemplate = getIssueDescriptionTemplate(next);
         const baseDescription = isGeneratedDescriptionOnly(prev.description)
@@ -3968,6 +4226,7 @@ export default function EmployeeDashboardPage() {
             </div>
 
             <div className="portal-topbar-actions">
+              <PortalThemeToggle />
               <div className="profile-chip">
                 <span className="profile-chip-avatar">
                   {user.profilePhoto ? (

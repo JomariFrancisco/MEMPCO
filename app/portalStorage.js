@@ -54,6 +54,9 @@ export const TICKET_STATUSES = [
   'In Progress',
   'Escalated',
   'Moved Date',
+  'Waiting for Requester',
+  'Waiting for Vendor',
+  'Waiting for Approval',
   'Resolved',
   'Cancelled',
 ];

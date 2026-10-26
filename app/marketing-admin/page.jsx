@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useConfirmDialog } from '@/components/ConfirmationDialog';
 import {
   Archive,
   BriefcaseBusiness,
@@ -42,8 +43,12 @@ import {
   saveMarketingPost,
   sortMarketingPosts,
 } from '@/lib/marketing/marketingPosts';
+import PortalThemeToggle from '@/components/PortalThemeToggle';
+import PortalProfilePhotoControl from '@/components/PortalProfilePhotoControl';
 import '../admin-dashboard/admin-dashboard.css';
 import './marketing-admin.css';
+import '@/components/PortalWorkspaceTheme.css';
+import '@/components/PortalAdminConsoleTheme.css';
 
 const EDITOR_CATEGORIES = ['News', 'Events', 'Announcement', 'Awards', 'Member Stories'];
 const ADMIN_DASHBOARD_ROUTE = '/admin-dashboard';
@@ -399,6 +404,7 @@ function StatCard({ icon: IconComponent, label, value, meta }) {
 
 export default function MarketingAdminPage() {
   const router = useRouter();
+  const confirmDialog = useConfirmDialog();
   const fileInputRef = useRef(null);
   const autosaveInFlightRef = useRef(false);
   const autosaveTimerRef = useRef(null);
@@ -526,10 +532,10 @@ export default function MarketingAdminPage() {
   }, [router]);
 
   useEffect(() => {
-    if (checked && user) {
+    if (checked && user?.id) {
       void loadPosts();
     }
-  }, [checked, user]);
+  }, [checked, user?.id]);
 
   useEffect(() => {
     if (!editorOpen) return undefined;
@@ -782,7 +788,13 @@ export default function MarketingAdminPage() {
   }, [activePost, autosavePulse, editorOpen, isSaving, isUploadingImage, user]);
 
   const handleDelete = async (post) => {
-    const confirmed = window.confirm(`Delete "${post.title}"?`);
+    const confirmed = await confirmDialog({
+      title: 'Delete post?',
+      message: `Delete "${post.title}"?`,
+      confirmLabel: 'Delete post',
+      variant: 'danger',
+      warning: 'This action cannot be undone.',
+    });
 
     if (!confirmed) return;
 
@@ -801,7 +813,7 @@ export default function MarketingAdminPage() {
     }
   };
 
-  const closeEditor = () => {
+  const closeEditor = async () => {
     if (isSaving || autosaveState === 'saving') return;
 
     const hasUnsavedChanges = editRevisionRef.current !== savedRevisionRef.current;
@@ -810,8 +822,14 @@ export default function MarketingAdminPage() {
       return;
     }
 
-    if (hasUnsavedChanges && activePost.status !== 'draft' && !window.confirm('Discard unsaved changes?')) {
-      return;
+    if (hasUnsavedChanges && activePost.status !== 'draft') {
+      const confirmed = await confirmDialog({
+        title: 'Discard unsaved changes?',
+        message: 'Your changes to this published post will be lost.',
+        confirmLabel: 'Discard changes',
+        variant: 'danger',
+      });
+      if (!confirmed) return;
     }
 
     setEditorOpen(false);
@@ -857,11 +875,17 @@ export default function MarketingAdminPage() {
             </div>
 
             <div className="portal-topbar-actions">
+              <PortalThemeToggle />
               <div className="profile-chip">
-                <span className="profile-chip-avatar">{user.initials || user.name?.slice(0, 2) || 'MA'}</span>
+                <PortalProfilePhotoControl
+                  user={user}
+                  fallback="MA"
+                  onUserUpdated={setUser}
+                  onStatus={(text, type) => setMessage({ type, text })}
+                />
                 <div className="profile-chip-copy">
                   <strong>{user.name}</strong>
-                  <span>Marketing</span>
+                  <span>{user.role === 'superadmin' ? user.designation : 'Marketing'}</span>
                 </div>
               </div>
             </div>

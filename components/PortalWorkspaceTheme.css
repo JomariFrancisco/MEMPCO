@@ -1,0 +1,2156 @@
+.portal-main {
+  --page-bg: #f3f5f7;
+  --surface: #fff;
+  --surface-soft: #fff;
+  --surface-card: #fff;
+  --border: #e1e6ee;
+  --border-sub: #e1e6ee;
+  --text: #172033;
+  --text-soft: #344256;
+  --muted: #64748b;
+  --softer: #7b8798;
+  --shadow-card: 0 1px 3px rgba(15, 23, 42, 0.035);
+  --shadow-soft: 0 1px 2px rgba(15, 23, 42, 0.035);
+  --grad-panel: #fff;
+  background: #f3f5f7;
+}
+
+.portal-main::before {
+  background-image: none;
+}
+
+.portal-app-main {
+  padding: 16px 20px 28px;
+  background: #f3f5f7;
+}
+
+.portal-app-main .portal-shell {
+  gap: 14px;
+}
+
+.portal-app-main .portal-topbar.glass {
+  min-height: 76px;
+  padding: 14px 18px;
+  border: 1px solid #e1e6ee;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.035);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.portal-topbar-copy h1 {
+  color: #172033;
+  font-size: 1.35rem;
+  font-weight: 750;
+  line-height: 1.2;
+  letter-spacing: 0;
+}
+
+.portal-topbar-copy p {
+  color: #718096;
+  font-size: 0.84rem;
+  line-height: 1.4;
+}
+
+.portal-eyebrow,
+.section-kicker,
+.sidebar-eyebrow {
+  color: #a33a3a;
+  font-size: 0.69rem;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: 0;
+}
+
+.portal-app-main .profile-chip {
+  border: 1px solid #e5e9ef;
+  border-radius: 7px;
+  background: #fff;
+  box-shadow: none;
+}
+
+.portal-app-main .portal-layout {
+  gap: 14px;
+}
+
+.portal-app-main .portal-sidebar {
+  top: 16px;
+  padding: 14px 10px;
+  border: 1px solid #e1e6ee;
+  border-radius: 10px;
+  background: #fff;
+  color: #344256;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.035);
+}
+
+.portal-app-main .sidebar-brand,
+.portal-app-main .sidebar-logout {
+  border-color: #e8ebf0;
+}
+
+.portal-app-main .sidebar-title {
+  color: #172033;
+  font-size: 0.9rem;
+  letter-spacing: 0;
+}
+
+.portal-app-main .sidebar-eyebrow {
+  color: #8994a4;
+}
+
+.portal-app-main .sidebar-nav {
+  gap: 3px;
+}
+
+.portal-app-main .sidebar-nav-btn {
+  min-height: 40px;
+  padding: 8px 10px;
+  border-left: 2px solid transparent;
+  border-radius: 6px;
+  color: #526074;
+  font-size: 0.86rem;
+  font-weight: 650;
+  letter-spacing: 0;
+}
+
+.portal-app-main .sidebar-nav-btn:hover {
+  transform: none;
+  background: #f5f7fa;
+  color: #172033;
+}
+
+.portal-app-main .sidebar-nav-btn.active {
+  border-left-color: #c62828;
+  background: #fff2f2;
+  color: #a91f1f;
+  box-shadow: none;
+}
+
+.portal-app-main .sidebar-nav-btn.active .sidebar-nav-icon,
+.portal-app-main .sidebar-nav-btn:hover .sidebar-nav-icon {
+  color: #b42323;
+}
+
+.portal-app-main .sidebar-logout .sidebar-nav-btn {
+  color: #9f2525;
+}
+
+.portal-app-main .portal-view,
+.portal-app-main .dashboard-view,
+.portal-app-main .helpdesk-view,
+.portal-app-main .profile-view {
+  gap: 14px;
+}
+
+.portal-app-main .panel-card.glass {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid #e1e6ee;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.035);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.portal-app-main .hero-panel {
+  align-items: flex-start;
+  padding: 18px 20px;
+  background: #fff;
+}
+
+.portal-app-main .hero-copy {
+  max-width: 760px;
+}
+
+.portal-app-main .hero-copy h2 {
+  margin: 4px 0 5px;
+  color: #172033;
+  font-size: 1.42rem;
+  font-weight: 750;
+  line-height: 1.25;
+  letter-spacing: 0;
+}
+
+.portal-app-main .hero-copy p {
+  color: #64748b;
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.portal-app-main .employee-hero-logo,
+.portal-app-main .admin-hero-logo {
+  display: none;
+}
+
+.portal-app-main .section-head {
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.portal-app-main .section-head h3 {
+  margin-top: 3px;
+  color: #172033;
+  font-size: 1.08rem;
+  font-weight: 750;
+  line-height: 1.25;
+  letter-spacing: 0;
+}
+
+.portal-app-main .stats-grid {
+  gap: 12px;
+}
+
+.portal-app-main .stat-card.glass {
+  min-height: 112px;
+  justify-content: space-between;
+  padding: 13px 14px;
+  border: 1px solid #e1e6ee;
+  border-radius: 9px;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.035);
+  transition: border-color 0.16s ease, box-shadow 0.16s ease;
+}
+
+.portal-app-main .stat-card.glass:hover {
+  transform: none;
+  border-color: #d5dbe5;
+  box-shadow: 0 3px 9px rgba(15, 23, 42, 0.05);
+}
+
+.portal-app-main .stat-label {
+  color: #526074;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.portal-app-main .stat-icon {
+  color: #ae3030;
+}
+
+.portal-app-main .stat-value {
+  color: #172033;
+  font-size: 1.6rem;
+  font-weight: 750;
+  line-height: 1.12;
+  letter-spacing: 0;
+}
+
+.portal-app-main .stat-meta {
+  color: #778397;
+  font-size: 0.75rem;
+  line-height: 1.3;
+}
+
+.portal-app-main .quick-action-btn {
+  min-height: 36px;
+  padding: 7px 11px;
+  border: 1px solid #e0e5ec;
+  border-radius: 6px;
+  background: #fff;
+  color: #344256;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  box-shadow: none;
+  transition: background 0.16s ease, border-color 0.16s ease, color 0.16s ease;
+}
+
+.portal-app-main .quick-action-btn:hover {
+  transform: none;
+  border-color: #cbd3df;
+  background: #f8fafc;
+  box-shadow: none;
+}
+
+.portal-app-main .quick-action-btn.primary {
+  border-color: #bd2525;
+  background: #c62828;
+  color: #fff;
+  box-shadow: none;
+}
+
+.portal-app-main .quick-action-btn.primary:hover {
+  border-color: #a91f1f;
+  background: #b42323;
+  box-shadow: none;
+}
+
+.portal-app-main .ticket-field {
+  border: 1px solid #d9e0e8;
+  border-radius: 7px;
+  background: #fff;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  letter-spacing: 0;
+}
+
+.portal-app-main .ticket-field:focus {
+  border-color: #bf4545;
+  box-shadow: 0 0 0 3px rgba(190, 52, 52, 0.1);
+  transform: none;
+}
+
+.portal-app-main .admin-table-wrap {
+  border: 1px solid #e1e6ee;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.portal-app-main .admin-ticket-table {
+  border-spacing: 0;
+}
+
+.portal-app-main .admin-ticket-table th {
+  padding: 10px 9px;
+  background: #f7f8fa;
+  color: #778397;
+  font-size: 0.68rem;
+  letter-spacing: 0;
+}
+
+.portal-app-main .admin-ticket-table td,
+.portal-app-main .admin-ticket-table td:first-child,
+.portal-app-main .admin-ticket-table td:last-child {
+  padding: 10px 9px;
+  border: 0;
+  border-bottom: 1px solid #edf0f4;
+  border-radius: 0;
+  background: #fff;
+  color: #344256;
+  font-size: 0.82rem;
+}
+
+.portal-app-main .admin-ticket-table tbody tr:hover td {
+  background: #fafbfc;
+}
+
+.portal-app-main .burger {
+  border: 1px solid #e1e6ee;
+  border-radius: 7px;
+  background: #fff;
+  box-shadow: none;
+}
+
+@media (max-width: 768px) {
+  .portal-app-main {
+    padding: 12px 12px 22px;
+  }
+
+  .portal-app-main .portal-topbar.glass {
+    padding: 13px;
+  }
+
+  .portal-app-main .panel-card.glass {
+    padding: 13px;
+  }
+
+  .portal-app-main .hero-panel {
+    padding: 15px;
+  }
+}
+
+@media (max-width: 560px) {
+  .portal-app-main .portal-topbar-copy h1 {
+    font-size: 1.2rem;
+  }
+
+  .portal-app-main .stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .portal-app-main .stat-card.glass {
+    min-height: 104px;
+  }
+}
+
+.portal-app-main .portal-theme-toggle {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: #344256;
+  transition: color 0.16s ease;
+}
+
+.portal-app-main .portal-theme-toggle:hover {
+  color: #111820;
+}
+
+.portal-app-main .portal-theme-toggle:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
+}
+
+.portal-app-main .portal-theme-toggle svg {
+  width: 17px;
+  height: 17px;
+  stroke-width: 1.9;
+}
+
+body[data-portal-theme='dark'] {
+  color-scheme: dark;
+  background: #111820;
+  color: #e8edf4;
+}
+
+body[data-portal-theme='dark'] .portal-main {
+  --page-bg: #111820;
+  --surface: #1b2531;
+  --surface-soft: #1d2835;
+  --surface-card: #1d2835;
+  --border: #303c4a;
+  --border-sub: #303c4a;
+  --text: #e8edf4;
+  --text-soft: #c6d0dc;
+  --muted: #a2afbe;
+  --softer: #8997a8;
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.18);
+  --shadow-soft: 0 1px 2px rgba(0, 0, 0, 0.16);
+  --grad-panel: #1b2531;
+  background: #111820;
+  color: #e8edf4;
+}
+
+body[data-portal-theme='dark'] .portal-app-main {
+  background: #111820;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .portal-topbar.glass,
+body[data-portal-theme='dark'] .portal-app-main .portal-sidebar,
+body[data-portal-theme='dark'] .portal-app-main .panel-card.glass,
+body[data-portal-theme='dark'] .portal-app-main .stat-card.glass {
+  border-color: #303c4a;
+  background: #1b2531;
+  color: #e8edf4;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+}
+
+body[data-portal-theme='dark'] .portal-app-main .portal-topbar-copy h1,
+body[data-portal-theme='dark'] .portal-app-main .hero-copy h2,
+body[data-portal-theme='dark'] .portal-app-main .section-head h3,
+body[data-portal-theme='dark'] .portal-app-main .sidebar-title,
+body[data-portal-theme='dark'] .portal-app-main .stat-label,
+body[data-portal-theme='dark'] .portal-app-main .stat-value {
+  color: #e8edf4;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .portal-topbar-copy p,
+body[data-portal-theme='dark'] .portal-app-main .hero-copy p,
+body[data-portal-theme='dark'] .portal-app-main .stat-meta {
+  color: #a2afbe;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .portal-eyebrow,
+body[data-portal-theme='dark'] .portal-app-main .section-kicker {
+  color: #ef8d8d;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .sidebar-eyebrow {
+  color: #8997a8;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .profile-chip,
+body[data-portal-theme='dark'] .portal-app-main .burger {
+  border-color: #354252;
+  background: #202b39;
+  color: #e8edf4;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .sidebar-nav-btn:hover {
+  border-color: #49576a;
+  background: #283545;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .portal-theme-toggle {
+  color: #e8edf4;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .portal-theme-toggle:hover {
+  color: #fff;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .sidebar-brand,
+body[data-portal-theme='dark'] .portal-app-main .sidebar-logout {
+  border-color: #303c4a;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .sidebar-nav-btn {
+  color: #b8c3d0;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .sidebar-nav-btn.active {
+  border-left-color: #ef7777;
+  background: #3b272c;
+  color: #ffb0b0;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .sidebar-nav-btn.active .sidebar-nav-icon,
+body[data-portal-theme='dark'] .portal-app-main .sidebar-nav-btn:hover .sidebar-nav-icon {
+  color: #ff9696;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .sidebar-logout .sidebar-nav-btn {
+  color: #ff9a9a;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .stat-icon {
+  color: #f28b8b;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .stat-card.glass:hover {
+  border-color: #465365;
+  background: #202b39;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .quick-action-btn {
+  border-color: #3a4655;
+  background: #202b39;
+  color: #d4dce6;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .quick-action-btn:hover {
+  border-color: #536174;
+  background: #283545;
+  color: #f3f6fa;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .quick-action-btn.primary {
+  border-color: #a92525;
+  background: #b92727;
+  color: #fff;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .ticket-field {
+  border-color: #3a4655;
+  background-color: #141c26;
+  color: #e8edf4;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .ticket-field::placeholder {
+  color: #8492a4;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .ticket-field:disabled,
+body[data-portal-theme='dark'] .portal-app-main .ticket-field[readonly] {
+  border-color: #303c4a;
+  background-color: #202a36;
+  color: #aeb9c7;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .admin-table-wrap {
+  border-color: #303c4a;
+  background: #1b2531;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .admin-ticket-table th {
+  background: #202b39;
+  color: #aab6c5;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .admin-ticket-table td,
+body[data-portal-theme='dark'] .portal-app-main .admin-ticket-table td:first-child,
+body[data-portal-theme='dark'] .portal-app-main .admin-ticket-table td:last-child {
+  border-bottom-color: #303c4a;
+  background: #1b2531;
+  color: #c8d1dc;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .admin-ticket-table tbody tr:hover td {
+  background: #202b39;
+}
+
+body[data-portal-theme='dark'] .portal-app-main :is(
+  .support-guide-card,
+  .dashboard-guide-example-card,
+  .dashboard-info-band,
+  .latest-activity-card,
+  .submission-guide-item,
+  .dashboard-ticket-meta-cell,
+  .ticket-card,
+  .latest-ticket-card,
+  .support-flow-card,
+  .support-insight-card,
+  .announcement-item,
+  .guide-item,
+  .snapshot-cell,
+  .admin-branch-card,
+  .admin-watch-card,
+  .ticket-queue-summary-row
+) {
+  border-color: #354252;
+  background-color: #202b39;
+  color: #d4dce6;
+  box-shadow: none;
+}
+
+body[data-portal-theme='dark'] .portal-app-main :is(
+  .ticket-card,
+  .latest-ticket-card,
+  .support-flow-card,
+  .support-insight-card,
+  .announcement-item,
+  .guide-item,
+  .admin-branch-card,
+  .admin-watch-card
+):hover {
+  border-color: #49576a;
+  background-color: #253140;
+  box-shadow: none;
+}
+
+body[data-portal-theme='dark'] .portal-app-main :is(
+  .support-guide-card h4,
+  .dashboard-guide-example-card p,
+  .submission-guide-item p,
+  .dashboard-ticket-meta-cell p,
+  .latest-activity-card h4,
+  .ticket-card strong,
+  .latest-ticket-card strong,
+  .announcement-item h4,
+  .guide-item h4
+) {
+  color: #e3e9f0;
+}
+
+body[data-portal-theme='dark'] .portal-app-main :is(
+  .ticket-card p,
+  .latest-ticket-card p,
+  .support-flow-card p,
+  .support-insight-card p,
+  .announcement-item p,
+  .guide-item p,
+  .dashboard-guide-intro,
+  .empty-state p
+) {
+  color: #a9b5c3;
+}
+
+body[data-portal-theme='dark'] .portal-app-main :is(.status, .priority, .sla-badge) {
+  border-color: #485567;
+  background-color: #293544;
+  color: #d1dae5;
+}
+
+body[data-portal-theme='dark'] .portal-app-main :is(.status.resolved, .status.active, .priority.low) {
+  border-color: #315848;
+  background-color: #1e382f;
+  color: #9bdbbd;
+}
+
+body[data-portal-theme='dark'] .portal-app-main :is(.status.in-progress, .status.being-handled, .priority.medium) {
+  border-color: #3a5275;
+  background-color: #202f45;
+  color: #aec9f4;
+}
+
+body[data-portal-theme='dark'] .portal-app-main :is(.status.pending, .priority.high) {
+  border-color: #655532;
+  background-color: #3c3320;
+  color: #eed28a;
+}
+
+body[data-portal-theme='dark'] .portal-app-main :is(.status.cancelled, .status.rejected, .priority.critical) {
+  border-color: #694044;
+  background-color: #41272d;
+  color: #f3a3a5;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .portal-profile-header,
+body[data-portal-theme='dark'] .portal-app-main .portal-profile-stat,
+body[data-portal-theme='dark'] .portal-app-main .portal-profile-panel {
+  border-color: #303c4a;
+  background: #1b2531;
+  color: #e8edf4;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+}
+
+body[data-portal-theme='dark'] .portal-app-main .portal-profile-heading h2,
+body[data-portal-theme='dark'] .portal-app-main .portal-profile-panel-heading h3,
+body[data-portal-theme='dark'] .portal-app-main .portal-profile-stat > strong,
+body[data-portal-theme='dark'] .portal-app-main .portal-profile-fact strong,
+body[data-portal-theme='dark'] .portal-app-main .portal-profile-activity-copy strong,
+body[data-portal-theme='dark'] .portal-app-main .portal-profile-empty strong {
+  color: #e8edf4;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .portal-profile-heading > p,
+body[data-portal-theme='dark'] .portal-app-main .portal-profile-stat > p,
+body[data-portal-theme='dark'] .portal-app-main .portal-profile-fact small,
+body[data-portal-theme='dark'] .portal-app-main .portal-profile-activity-copy small,
+body[data-portal-theme='dark'] .portal-app-main .portal-profile-activity-date,
+body[data-portal-theme='dark'] .portal-app-main .portal-profile-empty p {
+  color: #a2afbe;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .portal-profile-meta > span,
+body[data-portal-theme='dark'] .portal-app-main .portal-profile-fact,
+body[data-portal-theme='dark'] .portal-app-main .portal-profile-scope-list > div,
+body[data-portal-theme='dark'] .portal-app-main .portal-profile-activity,
+body[data-portal-theme='dark'] .portal-app-main .portal-profile-empty {
+  border-color: #354252;
+  background: #202b39;
+  color: #c6d0dc;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .portal-profile-meta small {
+  color: #a2afbe;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .portal-profile-meta strong,
+body[data-portal-theme='dark'] .portal-app-main .portal-profile-scope-list > div span {
+  color: #d4dce6;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .portal-profile-eyebrow {
+  color: #ef8d8d;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .portal-profile-fact-icon {
+  background: #3b292e;
+  color: #ff9b9b;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .portal-profile-scope-list svg {
+  color: #ff9b9b;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .portal-profile-action {
+  border-color: #704047;
+  background: #3b292e;
+  color: #ffaaaa;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .portal-profile-activity:hover {
+  border-color: #526074;
+  background: #263342;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .portal-profile-activity-status {
+  border-color: #485567;
+  background: #293544;
+  color: #d1dae5;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .portal-profile-activity-status.is-resolved {
+  border-color: #315848;
+  background: #1e382f;
+  color: #9bdbbd;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .portal-profile-activity-status.is-in-progress {
+  border-color: #3a5275;
+  background: #202f45;
+  color: #aec9f4;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .portal-profile-activity-status.is-pending {
+  border-color: #655532;
+  background: #3c3320;
+  color: #eed28a;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .portal-profile-activity-status.is-cancelled {
+  border-color: #485567;
+  background: #293544;
+  color: #c6d0dc;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .profile-photo-menu {
+  border-color: #354252;
+  background: #202b39;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.34);
+}
+
+body[data-portal-theme='dark'] .portal-app-main .profile-photo-menu::before {
+  border-color: #354252;
+  background: #202b39;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .profile-photo-menu button {
+  color: #e1e7ef;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .profile-photo-menu button:hover {
+  background: #2b3746;
+}
+
+body[data-portal-theme='dark'] :is(.ticket-action-modal, .employee-ticket-modal, .admin-ticket-modal, .modal-box.glass) {
+  border-color: #354252 !important;
+  background: #1b2531 !important;
+  color: #e8edf4 !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4) !important;
+}
+
+body[data-portal-theme='dark'] :is(.ticket-action-modal, .employee-ticket-modal, .admin-ticket-modal, .modal-box.glass) :is(
+  .admin-modal-head,
+  .modal-footer,
+  .ticket-action-notes-grid,
+  .ticket-action-control-stack,
+  .ticket-action-details-row,
+  .ticket-meta-cell,
+  .admin-description-box,
+  .ticket-form-group
+) {
+  border-color: #354252 !important;
+  background-color: #202b39 !important;
+  color: #e1e7ef !important;
+}
+
+body[data-portal-theme='dark'] :is(.ticket-action-modal, .employee-ticket-modal, .admin-ticket-modal, .modal-box.glass) :is(
+  h1, h2, h3, h4, label, strong, p, span
+) {
+  color: inherit;
+}
+
+body[data-portal-theme='dark'] :is(.ticket-action-modal, .employee-ticket-modal, .admin-ticket-modal, .modal-box.glass) :is(input, select, textarea, .ticket-field) {
+  border-color: #3a4655 !important;
+  background-color: #141c26 !important;
+  color: #e8edf4 !important;
+}
+
+body[data-portal-theme='dark'] :is(.ticket-action-modal, .employee-ticket-modal, .admin-ticket-modal, .modal-box.glass) :is(input, select, textarea)::placeholder {
+  color: #8997a8 !important;
+}
+
+body[data-portal-theme='dark'] .portal-main :is(button, a):focus-visible {
+  outline-color: #f08c8c;
+}
+
+/* Keep branch monitor containers on one surface and elevation tier per theme. */
+body[data-portal-theme='light'] .portal-app-main .branch-monitor-panel,
+body[data-portal-theme='light'] .portal-app-main .branch-overview-card,
+body[data-portal-theme='light'] .portal-app-main .branch-monitor-ticket-card,
+body[data-portal-theme='light'] .portal-app-main .branch-health-card,
+body[data-portal-theme='light'] .portal-app-main .branch-summary-chip-card {
+  border-color: #e1e6ee;
+  background: #fff;
+  color: #172033;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.045);
+}
+
+body[data-portal-theme='light'] .portal-app-main .branch-monitor-panel {
+  background: #fff;
+}
+
+body[data-portal-theme='light'] .portal-app-main .branch-overview-card--primary {
+  border-color: #f0cccc;
+  background: #fff;
+}
+
+body[data-portal-theme='light'] .portal-app-main .branch-monitor-ticket-card .admin-ticket-summary-grid > div,
+body[data-portal-theme='light'] .portal-app-main .branch-monitor-ticket-card .admin-ticket-card-description,
+body[data-portal-theme='light'] .portal-app-main .branch-monitor-ticket-card .ticket-work-timer,
+body[data-portal-theme='light'] .portal-app-main .branch-monitor-ticket-card .ticket-handling-indicator {
+  border-color: #e1e6ee;
+  background: #fff;
+  color: #344256;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.045);
+}
+
+body[data-portal-theme='light'] .portal-app-main .branch-monitor-ticket-card .admin-ticket-card-description {
+  background: #fff;
+}
+
+body[data-portal-theme='light'] .portal-app-main .branch-monitor-ticket-card .ticket-work-timer.running {
+  background: #fff;
+}
+
+body[data-portal-theme='light'] .portal-app-main .branch-monitor-ticket-card .admin-ticket-title h4,
+body[data-portal-theme='light'] .portal-app-main .branch-monitor-ticket-card .admin-ticket-summary-grid strong,
+body[data-portal-theme='light'] .portal-app-main .branch-monitor-ticket-card .ticket-handling-copy strong,
+body[data-portal-theme='light'] .portal-app-main .branch-monitor-ticket-card .ticket-work-timer strong,
+body[data-portal-theme='light'] .portal-app-main .branch-health-main strong,
+body[data-portal-theme='light'] .portal-app-main .branch-summary-card-head strong,
+body[data-portal-theme='light'] .portal-app-main .branch-health-metrics b {
+  color: #172033;
+}
+
+body[data-portal-theme='light'] .portal-app-main .branch-monitor-ticket-card .admin-ticket-title p,
+body[data-portal-theme='light'] .portal-app-main .branch-monitor-ticket-card .admin-ticket-summary-grid p,
+body[data-portal-theme='light'] .portal-app-main .branch-monitor-ticket-card .admin-ticket-summary-grid span,
+body[data-portal-theme='light'] .portal-app-main .branch-monitor-ticket-card .admin-ticket-card-description,
+body[data-portal-theme='light'] .portal-app-main .branch-monitor-ticket-card .ticket-handling-copy p,
+body[data-portal-theme='light'] .portal-app-main .branch-monitor-ticket-card .ticket-handling-meta,
+body[data-portal-theme='light'] .portal-app-main .branch-monitor-ticket-card .ticket-work-timer span,
+body[data-portal-theme='light'] .portal-app-main .branch-health-main p,
+body[data-portal-theme='light'] .portal-app-main .branch-health-metrics em,
+body[data-portal-theme='light'] .portal-app-main .branch-summary-chip-card > p {
+  color: #526074;
+}
+
+body[data-portal-theme='light'] .portal-app-main .branch-monitor-ticket-card .ticket-work-timer.running strong {
+  color: #c62828;
+}
+
+body[data-portal-theme='light'] .portal-app-main .branch-monitor-page-control {
+  color: #344256;
+}
+
+body[data-portal-theme='light'] .portal-app-main .branch-monitor-page-control button {
+  border-color: #d9e0e8;
+  background: #f8fafc;
+  color: #344256;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .branch-monitor-panel,
+body[data-portal-theme='dark'] .portal-app-main .branch-overview-card,
+body[data-portal-theme='dark'] .portal-app-main .branch-monitor-ticket-card,
+body[data-portal-theme='dark'] .portal-app-main .branch-health-card,
+body[data-portal-theme='dark'] .portal-app-main .branch-summary-chip-card {
+  border-color: #354252;
+  background: #1b2531;
+  color: #e8edf4;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+}
+
+body[data-portal-theme='dark'] .portal-app-main .branch-overview-card--primary {
+  border-color: #604047;
+  background: #1b2531;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .branch-monitor-ticket-card.is-urgent,
+body[data-portal-theme='dark'] .portal-app-main .branch-health-card.is-urgent {
+  border-color: #704047;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .branch-health-card.is-active {
+  border-color: #66552f;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .branch-health-card.is-clear {
+  border-color: #315848;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .branch-monitor-ticket-card .admin-ticket-summary-grid > div,
+body[data-portal-theme='dark'] .portal-app-main .branch-monitor-ticket-card .admin-ticket-card-description,
+body[data-portal-theme='dark'] .portal-app-main .branch-monitor-ticket-card .ticket-work-timer {
+  border-color: #354252;
+  background: #1b2531;
+  color: #d4dce6;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+}
+
+body[data-portal-theme='dark'] .portal-app-main .branch-monitor-ticket-card .ticket-work-timer.running {
+  border-color: #704047;
+  background: #1b2531;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .branch-monitor-ticket-card .ticket-work-timer.running strong {
+  color: #ff8a8a;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .branch-monitor-ticket-card .admin-ticket-title h4,
+body[data-portal-theme='dark'] .portal-app-main .branch-monitor-ticket-card .admin-ticket-summary-grid strong,
+body[data-portal-theme='dark'] .portal-app-main .branch-monitor-ticket-card .ticket-handling-copy strong,
+body[data-portal-theme='dark'] .portal-app-main .branch-monitor-ticket-card .ticket-work-timer strong,
+body[data-portal-theme='dark'] .portal-app-main .branch-overview-card strong,
+body[data-portal-theme='dark'] .portal-app-main .branch-health-main strong,
+body[data-portal-theme='dark'] .portal-app-main .branch-summary-card-head strong,
+body[data-portal-theme='dark'] .portal-app-main .branch-health-metrics b {
+  color: #e8edf4;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .branch-monitor-ticket-card .admin-ticket-title p,
+body[data-portal-theme='dark'] .portal-app-main .branch-monitor-ticket-card .admin-ticket-summary-grid p,
+body[data-portal-theme='dark'] .portal-app-main .branch-monitor-ticket-card .admin-ticket-summary-grid span,
+body[data-portal-theme='dark'] .portal-app-main .branch-monitor-ticket-card .admin-ticket-card-description,
+body[data-portal-theme='dark'] .portal-app-main .branch-monitor-ticket-card .ticket-handling-copy p,
+body[data-portal-theme='dark'] .portal-app-main .branch-monitor-ticket-card .ticket-work-timer span,
+body[data-portal-theme='dark'] .portal-app-main .branch-overview-card span:not(.branch-overview-icon),
+body[data-portal-theme='dark'] .portal-app-main .branch-overview-card p,
+body[data-portal-theme='dark'] .portal-app-main .branch-health-main p,
+body[data-portal-theme='dark'] .portal-app-main .branch-health-metrics em,
+body[data-portal-theme='dark'] .portal-app-main .branch-summary-chip-card > p,
+body[data-portal-theme='dark'] .portal-app-main .branch-summary-range {
+  color: #a9b5c3;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .branch-health-card.is-urgent .branch-health-state {
+  color: #f3a3a5;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .branch-health-card.is-active .branch-health-state {
+  color: #eed28a;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .branch-health-card.is-clear .branch-health-state {
+  color: #9bdbbd;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .branch-monitor-ticket-card .ticket-handling-indicator {
+  border-color: #3a4655;
+  background: #1b2531;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+}
+
+body[data-portal-theme='dark'] .portal-app-main .branch-monitor-ticket-card .ticket-handling-indicator.live {
+  border-color: #285a56;
+  background: #1b2531;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .branch-monitor-ticket-card .ticket-handling-indicator.active {
+  border-color: #3a5275;
+  background: #1b2531;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .branch-monitor-ticket-card .ticket-handling-indicator.queued {
+  border-color: #66552f;
+  background: #1b2531;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .branch-monitor-ticket-card .ticket-handling-indicator.escalated {
+  border-color: #574176;
+  background: #1b2531;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .branch-monitor-ticket-card .ticket-handling-indicator.done {
+  border-color: #315848;
+  background: #1b2531;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .branch-monitor-ticket-card .ticket-handling-icon,
+body[data-portal-theme='dark'] .portal-app-main .branch-monitor-ticket-card .ticket-handling-meta {
+  border-color: #3a4655;
+  background: #1b2531;
+  color: #d4dce6;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .branch-monitor-ticket-card .ticket-handling-icon {
+  color: #e1e7ef;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .branch-overview-icon {
+  border-color: #604047;
+  background: #3b292e;
+  color: #ff9b9b;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .branch-health-metrics {
+  border-color: #354252;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .branch-health-foot span,
+body[data-portal-theme='dark'] .portal-app-main .branch-summary-card-head span {
+  border-color: #3a4655;
+  background: #293544;
+  color: #d4dce6;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .branch-summary-chip-card.is-urgent .branch-summary-card-head span {
+  border-color: #704047;
+  background: #41272d;
+  color: #f3a3a5;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .branch-summary-chip-card.is-active .branch-summary-card-head span {
+  border-color: #66552f;
+  background: #3c3320;
+  color: #eed28a;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .branch-summary-chip-card.is-clear .branch-summary-card-head span {
+  border-color: #315848;
+  background: #1e382f;
+  color: #9bdbbd;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .branch-monitor-page-control {
+  color: #d4dce6;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .branch-monitor-page-control button {
+  border-color: #3a4655;
+  background: #202b39;
+  color: #d4dce6;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .branch-monitor-page-control button:hover:not(:disabled) {
+  border-color: #704047;
+  background: #3b292e;
+  color: #ffaaaa;
+}
+
+/* Period report: evenly sized date tiles with paging kept outside the grid. */
+.portal-app-main .report-period-card {
+  padding: 16px;
+}
+
+.portal-app-main .report-period-head {
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.portal-app-main .report-period-head h3 {
+  margin: 4px 0 0;
+  color: #172033;
+  font-size: 1.08rem;
+  font-weight: 750;
+  line-height: 1.25;
+  letter-spacing: 0;
+}
+
+.portal-app-main .report-period-actions {
+  flex-wrap: nowrap;
+  gap: 8px;
+}
+
+.portal-app-main .report-period-actions .report-print-btn {
+  min-height: 40px;
+  padding: 8px 12px;
+  border-radius: 8px;
+}
+
+.portal-app-main .report-period-tabs {
+  flex: 0 0 auto;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 8px;
+  background: #f1f4f8;
+  border-color: #e1e6ee;
+}
+
+.portal-app-main .report-period-tabs button {
+  min-width: 66px;
+  min-height: 34px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  color: #64748b;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.portal-app-main .report-period-tabs button.active {
+  background: #fff;
+  color: #c62828;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.1);
+}
+
+.portal-app-main .report-period-strip {
+  display: block;
+}
+
+.portal-app-main .report-period-card .admin-breakdown-list {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-auto-rows: minmax(56px, auto);
+  gap: 8px;
+}
+
+.portal-app-main .report-period-card .admin-breakdown-item {
+  width: 100%;
+  min-width: 0;
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  padding: 10px 13px;
+  border: 1px solid #e1e6ee;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #172033;
+  box-shadow: none;
+  text-align: left;
+  transition: border-color 0.16s ease, background 0.16s ease, color 0.16s ease;
+}
+
+.portal-app-main .report-period-card .admin-breakdown-copy {
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0;
+}
+
+.portal-app-main .report-period-card .admin-breakdown-copy strong {
+  min-width: 0;
+  color: #172033;
+  font-size: 0.96rem;
+  font-weight: 700;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.portal-app-main .report-period-card .admin-breakdown-copy span {
+  flex: 0 0 auto;
+  color: #64748b;
+  font-size: 0.84rem;
+  font-weight: 650;
+}
+
+.portal-app-main .report-period-card .admin-breakdown-list.selectable .admin-breakdown-item:hover {
+  transform: none;
+  border-color: #f0b4b4;
+  background: #fff;
+  box-shadow: none;
+}
+
+.portal-app-main .report-period-card .admin-breakdown-list.selectable .admin-breakdown-item.selected {
+  border-color: #ef7777;
+  background: #fff3f3;
+  box-shadow: inset 0 0 0 1px rgba(198, 40, 40, 0.04);
+}
+
+.portal-app-main .report-period-card .admin-breakdown-list.selectable .admin-breakdown-item.selected .admin-breakdown-copy strong,
+.portal-app-main .report-period-card .admin-breakdown-list.selectable .admin-breakdown-item.selected .admin-breakdown-copy span {
+  color: #c62828;
+}
+
+.portal-app-main .report-period-card .admin-breakdown-item:focus-visible {
+  outline: 3px solid rgba(198, 40, 40, 0.18);
+  outline-offset: 2px;
+}
+
+.portal-app-main .report-period-pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 12px;
+  color: #64748b;
+  font-size: 0.82rem;
+  font-weight: 650;
+}
+
+.portal-app-main .report-period-pager button {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #d9e0e8;
+  border-radius: 8px;
+  background: #fff;
+  color: #344256;
+  transition: border-color 0.16s ease, background 0.16s ease, color 0.16s ease;
+}
+
+.portal-app-main .report-period-pager button:hover:not(:disabled) {
+  border-color: #ef9999;
+  background: #fff5f5;
+  color: #b42323;
+}
+
+.portal-app-main .report-period-pager button:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
+}
+
+.portal-app-main .report-period-pager svg {
+  width: 17px;
+  height: 17px;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .report-period-head h3 {
+  color: #e8edf4;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .report-period-tabs {
+  border-color: #354252;
+  background: #202b39;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .report-period-tabs button {
+  color: #a9b5c3;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .report-period-tabs button.active {
+  background: #303b49;
+  color: #ffaaaa;
+  box-shadow: none;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .report-period-card .admin-breakdown-item {
+  border-color: #354252;
+  background: #202b39;
+  color: #e8edf4;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .report-period-card .admin-breakdown-copy strong {
+  color: #e8edf4;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .report-period-card .admin-breakdown-copy span,
+body[data-portal-theme='dark'] .portal-app-main .report-period-pager {
+  color: #a9b5c3;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .report-period-card .admin-breakdown-list.selectable .admin-breakdown-item:hover {
+  border-color: #526074;
+  background: #263342;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .report-period-card .admin-breakdown-list.selectable .admin-breakdown-item.selected {
+  border-color: #704047;
+  background: #3b292e;
+  box-shadow: inset 0 0 0 1px rgba(255, 170, 170, 0.06);
+}
+
+body[data-portal-theme='dark'] .portal-app-main .report-period-card .admin-breakdown-list.selectable .admin-breakdown-item.selected .admin-breakdown-copy strong,
+body[data-portal-theme='dark'] .portal-app-main .report-period-card .admin-breakdown-list.selectable .admin-breakdown-item.selected .admin-breakdown-copy span {
+  color: #ffaaaa;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .report-period-pager button {
+  border-color: #354252;
+  background: #202b39;
+  color: #d4dce6;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .report-period-pager button:hover:not(:disabled) {
+  border-color: #704047;
+  background: #3b292e;
+  color: #ffaaaa;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .report-period-actions .report-print-btn {
+  border-color: #704047;
+  background: #3b292e;
+  color: #ffaaaa;
+}
+
+@media (max-width: 1080px) {
+  .portal-app-main .report-period-card .admin-breakdown-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .portal-app-main .report-period-head {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .portal-app-main .report-period-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+@media (max-width: 560px) {
+  .portal-app-main .report-period-card .admin-breakdown-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .portal-app-main .report-period-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .portal-app-main .report-period-actions .report-print-btn,
+  .portal-app-main .report-period-tabs {
+    width: 100%;
+  }
+
+  .portal-app-main .report-period-tabs {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .portal-app-main .report-period-tabs button {
+    min-width: 0;
+  }
+
+  .portal-app-main .report-period-card .admin-breakdown-item {
+    min-height: 52px;
+    padding: 9px 11px;
+  }
+}
+
+/* Branch monitor ticket cards follow the compact reference layout. */
+.portal-app-main .branch-monitor-view .branch-monitor-ticket-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+  gap: 14px;
+}
+
+.portal-app-main .branch-monitor-view .branch-monitor-ticket-card {
+  min-height: 694px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid #e1e6ee;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.055);
+  transition: border-color 0.16s ease, box-shadow 0.16s ease;
+}
+
+.portal-app-main .branch-monitor-view .branch-monitor-ticket-card.is-urgent {
+  border-color: #fecaca;
+}
+
+.portal-app-main .branch-monitor-view .branch-monitor-ticket-card:hover {
+  transform: none;
+  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.07);
+}
+
+.portal-app-main .branch-monitor-view .branch-monitor-ticket-card .admin-ticket-card-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+}
+
+.portal-app-main .branch-monitor-view .branch-monitor-ticket-card .admin-ticket-title {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.portal-app-main .branch-monitor-view .branch-monitor-ticket-card .ticket-id {
+  min-height: 30px;
+  padding: 6px 10px;
+  font-size: 0.8rem;
+  letter-spacing: 0.02em;
+}
+
+.portal-app-main .branch-monitor-view .branch-monitor-ticket-card .admin-ticket-title h4 {
+  margin: 2px 0 0;
+  color: #172033;
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.portal-app-main .branch-monitor-view .branch-monitor-ticket-card .admin-ticket-title p {
+  color: #64748b;
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.portal-app-main .branch-monitor-view .branch-monitor-ticket-card .ticket-badges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  gap: 8px;
+}
+
+.portal-app-main .branch-monitor-view .branch-monitor-ticket-card .ticket-badges .status,
+.portal-app-main .branch-monitor-view .branch-monitor-ticket-card .ticket-badges .priority {
+  min-height: 32px;
+  padding: 5px 10px;
+  font-size: 0.78rem;
+  line-height: 1.1;
+}
+
+.portal-app-main .branch-monitor-view .branch-monitor-ticket-card .ticket-handling-indicator {
+  min-height: 84px;
+  padding: 10px;
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+.portal-app-main .branch-monitor-view .branch-monitor-ticket-card .ticket-handling-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+}
+
+.portal-app-main .branch-monitor-view .branch-monitor-ticket-card .ticket-handling-copy strong {
+  color: #172033;
+  font-size: 0.92rem;
+  line-height: 1.2;
+}
+
+.portal-app-main .branch-monitor-view .branch-monitor-ticket-card .ticket-handling-copy p {
+  color: #526074;
+  font-size: 0.76rem;
+  line-height: 1.25;
+}
+
+.portal-app-main .branch-monitor-view .branch-monitor-ticket-card .ticket-handling-meta {
+  width: fit-content;
+  max-width: 100%;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.portal-app-main .branch-monitor-view .branch-monitor-ticket-card .admin-ticket-summary-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.portal-app-main .branch-monitor-view .branch-monitor-ticket-card .admin-ticket-summary-grid > div {
+  min-height: 96px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 11px;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.portal-app-main .branch-monitor-view .branch-monitor-ticket-card .admin-ticket-summary-grid span {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  margin: 0 0 4px;
+  color: #7b8798;
+  font-size: 0.68rem;
+  line-height: 1.1;
+}
+
+.portal-app-main .branch-monitor-view .branch-monitor-ticket-card .admin-ticket-summary-grid span .admin-mono-icon {
+  width: 14px;
+  height: 14px;
+  flex-basis: 14px;
+}
+
+.portal-app-main .branch-monitor-view .branch-monitor-ticket-card .admin-ticket-summary-grid strong {
+  color: #344256;
+  font-size: 0.96rem;
+  line-height: 1.2;
+}
+
+.portal-app-main .branch-monitor-view .branch-monitor-ticket-card .admin-ticket-summary-grid p {
+  color: #64748b;
+  font-size: 0.76rem;
+  line-height: 1.25;
+}
+
+.portal-app-main .branch-monitor-view .branch-monitor-ticket-card .admin-ticket-card-description {
+  flex: 1 1 218px;
+  min-height: 218px;
+  max-height: none;
+  padding: 12px;
+  border-radius: 8px;
+  background: #fff;
+  color: #475569;
+  font-size: 0.96rem;
+  line-height: 1.5;
+}
+
+.portal-app-main .branch-monitor-view .branch-monitor-ticket-card .ticket-work-timer {
+  min-height: 92px;
+  gap: 3px;
+  padding: 10px 11px;
+  border-color: #fecaca;
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at top right, rgba(220, 38, 38, 0.075), transparent 48%),
+    #fff;
+}
+
+.portal-app-main .branch-monitor-view .branch-monitor-ticket-card .ticket-work-timer span {
+  color: #7b8798;
+  font-size: 0.72rem;
+}
+
+.portal-app-main .branch-monitor-view .branch-monitor-ticket-card .ticket-work-timer strong {
+  color: #c62828;
+  font-size: 1rem;
+}
+
+.portal-app-main .branch-monitor-view .branch-monitor-ticket-card .ticket-work-timer p {
+  color: #64748b;
+  font-size: 0.76rem;
+  line-height: 1.25;
+}
+
+body[data-portal-theme='light'] .portal-app-main .branch-monitor-view .branch-monitor-ticket-card .admin-ticket-summary-grid > div {
+  border-color: #e1e6ee;
+  background: #f8fafc;
+}
+
+body[data-portal-theme='light'] .portal-app-main .branch-monitor-view .branch-monitor-ticket-card .ticket-handling-indicator {
+  border-color: #d8c9ff;
+  background: linear-gradient(90deg, #f0ebff, #fff 72%);
+}
+
+body[data-portal-theme='light'] .portal-app-main .branch-monitor-view .branch-monitor-ticket-card .ticket-handling-indicator::before {
+  background: #6d28d9;
+}
+
+body[data-portal-theme='light'] .portal-app-main .branch-monitor-view .branch-monitor-ticket-card .ticket-handling-icon,
+body[data-portal-theme='light'] .portal-app-main .branch-monitor-view .branch-monitor-ticket-card .ticket-handling-meta {
+  border-color: #e5e7eb;
+  background: #f8fafc;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .branch-monitor-view .branch-monitor-ticket-card {
+  border-color: #354252;
+  background: #1b2531;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+}
+
+body[data-portal-theme='dark'] .portal-app-main .branch-monitor-view .branch-monitor-ticket-card.is-urgent {
+  border-color: #704047;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .branch-monitor-view .branch-monitor-ticket-card .admin-ticket-title h4,
+body[data-portal-theme='dark'] .portal-app-main .branch-monitor-view .branch-monitor-ticket-card .ticket-handling-copy strong {
+  color: #e8edf4;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .branch-monitor-view .branch-monitor-ticket-card .admin-ticket-title p,
+body[data-portal-theme='dark'] .portal-app-main .branch-monitor-view .branch-monitor-ticket-card .ticket-handling-copy p,
+body[data-portal-theme='dark'] .portal-app-main .branch-monitor-view .branch-monitor-ticket-card .admin-ticket-summary-grid p,
+body[data-portal-theme='dark'] .portal-app-main .branch-monitor-view .branch-monitor-ticket-card .admin-ticket-card-description,
+body[data-portal-theme='dark'] .portal-app-main .branch-monitor-view .branch-monitor-ticket-card .ticket-work-timer p {
+  color: #b8c3d0;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .branch-monitor-view .branch-monitor-ticket-card .admin-ticket-summary-grid > div {
+  border-color: #354252;
+  background: #202b39;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .branch-monitor-view .branch-monitor-ticket-card .admin-ticket-summary-grid span,
+body[data-portal-theme='dark'] .portal-app-main .branch-monitor-view .branch-monitor-ticket-card .ticket-work-timer span {
+  color: #a2afbe;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .branch-monitor-view .branch-monitor-ticket-card .admin-ticket-summary-grid strong {
+  color: #e1e7ef;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .branch-monitor-view .branch-monitor-ticket-card .admin-ticket-card-description {
+  border-color: #354252;
+  background: #1b2531;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .branch-monitor-view .branch-monitor-ticket-card .ticket-handling-indicator,
+body[data-portal-theme='dark'] .portal-app-main .branch-monitor-view .branch-monitor-ticket-card .ticket-handling-indicator.live,
+body[data-portal-theme='dark'] .portal-app-main .branch-monitor-view .branch-monitor-ticket-card .ticket-handling-indicator.active,
+body[data-portal-theme='dark'] .portal-app-main .branch-monitor-view .branch-monitor-ticket-card .ticket-handling-indicator.queued,
+body[data-portal-theme='dark'] .portal-app-main .branch-monitor-view .branch-monitor-ticket-card .ticket-handling-indicator.escalated,
+body[data-portal-theme='dark'] .portal-app-main .branch-monitor-view .branch-monitor-ticket-card .ticket-handling-indicator.done {
+  border-color: #604d8a;
+  background: linear-gradient(90deg, #302744, #1b2531 76%);
+}
+
+body[data-portal-theme='dark'] .portal-app-main .branch-monitor-view .branch-monitor-ticket-card .ticket-handling-indicator::before {
+  background: #a78bfa;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .branch-monitor-view .branch-monitor-ticket-card .ticket-handling-copy p {
+  color: #c6bddc;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .branch-monitor-view .branch-monitor-ticket-card .ticket-handling-icon,
+body[data-portal-theme='dark'] .portal-app-main .branch-monitor-view .branch-monitor-ticket-card .ticket-handling-meta {
+  border-color: #4b4263;
+  background: #282438;
+  color: #e1d8f5;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .branch-monitor-view .branch-monitor-ticket-card .ticket-work-timer {
+  border-color: #704047;
+  background:
+    radial-gradient(circle at top right, rgba(220, 38, 38, 0.13), transparent 48%),
+    #1b2531;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .branch-monitor-view .branch-monitor-ticket-card .ticket-work-timer strong {
+  color: #ff8a8a;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .branch-monitor-view .branch-monitor-ticket-card .ticket-badges .status.escalated,
+body[data-portal-theme='dark'] .portal-app-main .branch-monitor-view .branch-monitor-ticket-card .ticket-badges .priority.critical {
+  border-color: #704047;
+  background: #41272d;
+  color: #f3a3a5;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .branch-monitor-view .branch-monitor-ticket-card .ticket-badges .priority.low,
+body[data-portal-theme='dark'] .portal-app-main .branch-monitor-view .branch-monitor-ticket-card .ticket-badges .status.resolved {
+  border-color: #315848;
+  background: #1e382f;
+  color: #9bdbbd;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .branch-monitor-view .branch-monitor-ticket-card .ticket-badges .status.in-progress,
+body[data-portal-theme='dark'] .portal-app-main .branch-monitor-view .branch-monitor-ticket-card .ticket-badges .priority.medium {
+  border-color: #66552f;
+  background: #3c3320;
+  color: #eed28a;
+}
+
+@media (max-width: 900px) {
+  .portal-app-main .branch-monitor-view .branch-monitor-ticket-card {
+    min-height: 0;
+  }
+
+  .portal-app-main .branch-monitor-view .branch-monitor-ticket-card .admin-ticket-card-description {
+    min-height: 160px;
+  }
+}
+
+@media (max-width: 820px) {
+  .portal-app-main .branch-monitor-view .branch-monitor-ticket-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 520px) {
+  .portal-app-main .branch-monitor-view .branch-monitor-ticket-card {
+    gap: 10px;
+    padding: 11px;
+  }
+
+  .portal-app-main .branch-monitor-view .branch-monitor-ticket-card .admin-ticket-summary-grid {
+    gap: 7px;
+  }
+
+  .portal-app-main .branch-monitor-view .branch-monitor-ticket-card .admin-ticket-summary-grid > div {
+    min-height: 88px;
+    padding: 9px;
+  }
+
+  .portal-app-main .branch-monitor-view .branch-monitor-ticket-card .admin-ticket-summary-grid strong {
+    font-size: 0.88rem;
+  }
+}
+
+/* Keep nested workspace surfaces dark across both portals. */
+body[data-portal-theme='dark'] .portal-app-main :is(
+  .portal-topbar.glass,
+  .portal-sidebar,
+  .panel-card.glass,
+  .stat-card.glass,
+  .employee-admin-ticket-card,
+  .admin-ticket-card,
+  .branch-monitor-panel,
+  .branch-overview-card,
+  .branch-health-card,
+  .branch-summary-chip-card,
+  .admin-workload-card,
+  .dashboard-watch-summary-ticket,
+  .burnout-report-panel,
+  .burnout-table-block,
+  .attachment-preview-panel,
+  .dashboard-support-main,
+  .dashboard-side-panel,
+  .user-profile-summary,
+  .report-calendar-card,
+  .report-calendar-insights,
+  .support-insight-card,
+  .auto-impact-card,
+  .attached-photo-card,
+  .ticket-card,
+  .latest-ticket-card,
+  .support-guide-card,
+  .dashboard-guide-example-card,
+  .dashboard-info-band,
+  .latest-activity-card,
+  .submission-guide-item,
+  .dashboard-ticket-meta-cell,
+  .support-flow-card,
+  .announcement-item,
+  .guide-item,
+  .snapshot-cell,
+  .admin-branch-card,
+  .admin-watch-card,
+  .ticket-queue-summary-row
+) {
+  border-color: #354252 !important;
+  background: #1b2531 !important;
+  color: #e8edf4 !important;
+  box-shadow: none !important;
+}
+
+body[data-portal-theme='dark'] .portal-app-main :is(
+  .employee-admin-ticket-summary-grid > div,
+  .admin-ticket-summary-grid > div,
+  .empty-state,
+  .employee-admin-ticket-description,
+  .admin-ticket-card-description,
+  .employee-admin-ticket-work-timer,
+  .employee-admin-handling-indicator,
+  .ticket-handling-indicator,
+  .ticket-handling-icon,
+  .ticket-work-timer,
+  .ticket-handling-meta,
+  .ticket-meta-cell,
+  .dashboard-watch-summary-ticket,
+  .admin-workload-stats,
+  .admin-breakdown-item,
+  .burnout-compact-row,
+  .report-period-card .admin-breakdown-item,
+  .report-insight-item,
+  .report-selected-ticket,
+  .report-calendar-day,
+  .auto-impact-card em
+) {
+  border-color: #354252 !important;
+  background: #202b39 !important;
+  color: #e8edf4 !important;
+  box-shadow: none !important;
+}
+
+body[data-portal-theme='dark'] .portal-app-main :is(
+  .employee-admin-ticket-title h4,
+  .employee-admin-ticket-summary-grid strong,
+  .employee-admin-handling-copy strong,
+  .employee-admin-ticket-work-timer strong,
+  .admin-ticket-card .admin-ticket-title h4,
+  .admin-ticket-card .admin-ticket-summary-grid strong,
+  .admin-ticket-card .ticket-handling-copy strong,
+  .admin-ticket-card .ticket-work-timer strong,
+  .branch-monitor-ticket-card .admin-ticket-title h4,
+  .branch-monitor-ticket-card .admin-ticket-summary-grid strong,
+  .branch-monitor-ticket-card .ticket-handling-copy strong,
+  .branch-monitor-ticket-card .ticket-work-timer strong,
+  .report-calendar-insights h3,
+  .portal-topbar-copy h1,
+  .hero-copy h2,
+  .section-head h3,
+  .empty-state h4,
+  h1,
+  h2,
+  h3,
+  h4,
+  strong,
+  .report-period-card .admin-breakdown-copy strong,
+  .admin-breakdown-copy strong,
+  .report-metric strong,
+  .burnout-compact-row strong,
+  .auto-impact-card strong
+) {
+  color: #edf2f7 !important;
+}
+
+body[data-portal-theme='dark'] .portal-app-main :is(
+  .employee-admin-ticket-title p,
+  .employee-admin-ticket-summary-grid span,
+  .employee-admin-ticket-summary-grid p,
+  .employee-admin-handling-copy p,
+  .employee-admin-handling-meta,
+  .employee-admin-ticket-description,
+  .employee-admin-ticket-work-timer span,
+  .employee-admin-ticket-work-timer p,
+  .admin-ticket-card .admin-ticket-title p,
+  .admin-ticket-card .admin-ticket-summary-grid span,
+  .admin-ticket-card .admin-ticket-summary-grid p,
+  .admin-ticket-card .admin-ticket-card-description,
+  .admin-ticket-card .ticket-handling-copy p,
+  .admin-ticket-card .ticket-work-timer span,
+  .admin-ticket-card .ticket-work-timer p,
+  .branch-monitor-ticket-card .admin-ticket-title p,
+  .branch-monitor-ticket-card .admin-ticket-summary-grid span,
+  .branch-monitor-ticket-card .admin-ticket-summary-grid p,
+  .branch-monitor-ticket-card .admin-ticket-card-description,
+  .branch-monitor-ticket-card .ticket-handling-copy p,
+  .branch-monitor-ticket-card .ticket-work-timer span,
+  .branch-monitor-ticket-card .ticket-work-timer p,
+  .report-period-card .admin-breakdown-copy span,
+  .report-calendar-day span,
+  .report-calendar-day strong,
+  .report-calendar-weekday,
+  .report-insight-item span,
+  .report-insight-item em,
+  .report-selected-day-head span,
+  .report-selected-ticket span,
+  .report-selected-ticket em,
+  .report-selected-ticket-pager span,
+  .report-calendar-insights p,
+  .support-insight-card p,
+  .auto-impact-card span,
+  .auto-impact-card p,
+  .ticket-form-group label,
+  .ticket-form-hint,
+  .empty-state p,
+  .ticket-handling-icon,
+  .ticket-handling-meta,
+  .dashboard-watch-summary-ticket,
+  .dashboard-watch-summary-copy,
+  .dashboard-watch-summary-position,
+  .admin-workload-person,
+  .admin-workload-stats,
+  .ticket-meta-cell,
+  .report-calendar-weekday
+) {
+  color: #bdc8d5 !important;
+}
+
+body[data-portal-theme='dark'] .portal-app-main :is(
+  .report-calendar-nav button,
+  .report-period-pager button,
+  .branch-monitor-page-control button,
+  .pagination-arrow,
+  .ticket-pagination button,
+  .segmented-tabs button,
+  .burnout-row-icon-btn,
+  .burnout-month-trigger,
+  .quick-action-btn:not(.primary),
+  .admin-modal-close,
+  .modal-btn:not(.primary),
+  .ticket-action-btn:not(.primary)
+) {
+  border-color: #3a4655 !important;
+  background: #202b39 !important;
+  color: #e8edf4 !important;
+  box-shadow: none !important;
+}
+
+body[data-portal-theme='dark'] .portal-app-main :is(.segmented-tabs, .ticket-pagination) {
+  border-color: #354252 !important;
+  background: #1b2531 !important;
+  color: #d4dce6 !important;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .segmented-tabs button.active {
+  border-color: #704047 !important;
+  background: #3b292e !important;
+  color: #ffaaaa !important;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .ticket-handling-meta {
+  border-color: #3a4655 !important;
+  background: #283545 !important;
+  color: #d4dce6 !important;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .quick-action-btn.filter-clear-btn:hover {
+  border-color: #526074 !important;
+  background: #293747 !important;
+  color: #f1f5f9 !important;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .report-calendar-day.selected {
+  border-color: #704047 !important;
+  background: #3b292e !important;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .report-calendar-head h3,
+body[data-portal-theme='dark'] .portal-app-main .report-insight-item strong,
+body[data-portal-theme='dark'] .portal-app-main .report-selected-day-head strong,
+body[data-portal-theme='dark'] .portal-app-main .report-selected-ticket strong {
+  color: #edf2f7 !important;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .report-calendar-day strong {
+  border: 1px solid #704047 !important;
+  background: #3b292e !important;
+  color: #ffaaaa !important;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .report-calendar-nav button {
+  border-color: #354252 !important;
+  background: #202b39 !important;
+  color: #d4dce6 !important;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .report-period-card .admin-breakdown-list.selectable .admin-breakdown-item.selected {
+  border-color: #704047 !important;
+  background: #3b292e !important;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .report-period-card .admin-breakdown-list.selectable .admin-breakdown-item.selected :is(strong, span) {
+  color: #ffaaaa !important;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .employee-admin-ticket-work-timer strong,
+body[data-portal-theme='dark'] .portal-app-main .admin-ticket-card .ticket-work-timer strong,
+body[data-portal-theme='dark'] .portal-app-main .branch-monitor-ticket-card .ticket-work-timer strong {
+  color: #ff8a8a !important;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .employee-admin-handling-indicator.done {
+  border-color: #315848 !important;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .employee-admin-handling-indicator.active {
+  border-color: #3a5275 !important;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .employee-admin-handling-indicator.queued {
+  border-color: #655532 !important;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .employee-admin-handling-indicator.escalated {
+  border-color: #574176 !important;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .employee-admin-handling-icon {
+  border-color: #3a4655 !important;
+  background: #283545 !important;
+  color: #e8edf4 !important;
+}
+
+/* Keep search icons centered on their input, not on the label above it. */
+.portal-app-main .ticket-form-group.search-field-group > .field-leading-icon {
+  position: absolute !important;
+  top: auto !important;
+  bottom: 14px !important;
+  left: 0.95rem !important;
+  width: 18px !important;
+  height: 18px !important;
+  min-width: 18px !important;
+  min-height: 18px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+.portal-app-main .ticket-form-group.search-field-group > .field-leading-icon :is(svg, .admin-mono-icon) {
+  width: 18px !important;
+  height: 18px !important;
+  flex: 0 0 18px !important;
+}
+
+.portal-app-main .search-field-group .ticket-input {
+  padding-left: 2.65rem !important;
+}
+
+/* Force readable identity text in both portal headers and shared profiles. */
+body[data-portal-theme='dark'] .portal-app-main .portal-shell .portal-topbar-copy h1,
+body[data-portal-theme='dark'] .portal-app-main .portal-shell .portal-profile-heading h2,
+body[data-portal-theme='dark'] .portal-app-main .portal-shell .profile-banner-copy h2,
+body[data-portal-theme='dark'] .portal-app-main .portal-shell .admin-profile-title,
+body[data-portal-theme='dark'] .portal-app-main .portal-shell .portal-profile-meta strong {
+  color: #f1f5f9 !important;
+  -webkit-text-fill-color: #f1f5f9 !important;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .portal-shell .portal-profile-heading > p,
+body[data-portal-theme='dark'] .portal-app-main .portal-shell .profile-banner-copy > p,
+body[data-portal-theme='dark'] .portal-app-main .portal-shell .portal-profile-meta small {
+  color: #c1ccd9 !important;
+  -webkit-text-fill-color: #c1ccd9 !important;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .portal-shell .report-toolbar {
+  border-color: #354252 !important;
+  background: #1b2531 !important;
+  color: #e8edf4 !important;
+  box-shadow: none !important;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .portal-shell .report-toolbar-copy h2 {
+  color: #f1f5f9 !important;
+  -webkit-text-fill-color: #f1f5f9 !important;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .portal-shell .report-toolbar-copy p {
+  color: #bdc8d5 !important;
+  -webkit-text-fill-color: #bdc8d5 !important;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .portal-shell .report-metric {
+  border-color: #354252 !important;
+  background: #202b39 !important;
+  color: #e8edf4 !important;
+  box-shadow: none !important;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .portal-shell .report-metric span,
+body[data-portal-theme='dark'] .portal-app-main .portal-shell .report-metric em {
+  color: #b8c4d2 !important;
+  -webkit-text-fill-color: #b8c4d2 !important;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .portal-shell .report-metric strong {
+  color: #f1f5f9 !important;
+  -webkit-text-fill-color: #f1f5f9 !important;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .portal-shell .hero-copy h2 {
+  color: #f1f5f9 !important;
+  -webkit-text-fill-color: #f1f5f9 !important;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .portal-shell .hero-copy p {
+  color: #bdc8d5 !important;
+  -webkit-text-fill-color: #bdc8d5 !important;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .portal-shell .hero-meta .meta-pill {
+  border-color: #354252 !important;
+  background: #202b39 !important;
+  color: #e8edf4 !important;
+  box-shadow: none !important;
+  -webkit-text-fill-color: #e8edf4 !important;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .portal-shell .admin-users-toolbar .admin-user-search .search-field-group .ticket-input {
+  border-color: #3a4655 !important;
+  background: #141c26 !important;
+  background-image: none !important;
+  color: #e8edf4 !important;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.22) !important;
+  -webkit-text-fill-color: #e8edf4 !important;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .portal-shell .admin-users-toolbar .admin-user-search .search-field-group .ticket-input::placeholder {
+  color: #9eacbd !important;
+  -webkit-text-fill-color: #9eacbd !important;
+  opacity: 1;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .portal-shell .admin-users-toolbar .admin-user-search .search-field-group .field-leading-icon {
+  color: #b8c4d2 !important;
+}
+
+body[data-portal-theme='dark'] main.portal-main.portal-app-main .portal-layout .portal-view .admin-hero-panel .hero-copy > h2 {
+  color: #f1f5f9 !important;
+  -webkit-text-fill-color: #f1f5f9 !important;
+}
+
+body[data-portal-theme='dark'] main.portal-main.portal-app-main .portal-layout .portal-view .admin-hero-panel .hero-copy > p {
+  color: #bdc8d5 !important;
+  -webkit-text-fill-color: #bdc8d5 !important;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .dashboard-support-main .dashboard-sla-mini-grid .dashboard-sla-pill {
+  border-color: #354252 !important;
+  background: #202b39 !important;
+  color: #bdc8d5 !important;
+  box-shadow: none !important;
+  -webkit-text-fill-color: #bdc8d5 !important;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .dashboard-support-main .dashboard-sla-mini-grid .dashboard-sla-pill strong {
+  color: #f1f5f9 !important;
+  -webkit-text-fill-color: #f1f5f9 !important;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .dashboard-support-main .dashboard-sla-mini-grid .dashboard-sla-pill.low strong {
+  color: #86efac !important;
+  -webkit-text-fill-color: #86efac !important;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .dashboard-support-main .dashboard-sla-mini-grid .dashboard-sla-pill.medium strong {
+  color: #fcd34d !important;
+  -webkit-text-fill-color: #fcd34d !important;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .dashboard-support-main .dashboard-sla-mini-grid .dashboard-sla-pill.high strong {
+  color: #fdba74 !important;
+  -webkit-text-fill-color: #fdba74 !important;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .dashboard-support-main .dashboard-sla-mini-grid .dashboard-sla-pill.critical strong {
+  color: #fda4af !important;
+  -webkit-text-fill-color: #fda4af !important;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .latest-ticket-card .dashboard-latest-description {
+  border-color: #354252 !important;
+  background: #202b39 !important;
+  color: #d4dce6 !important;
+  box-shadow: none !important;
+  -webkit-text-fill-color: #d4dce6 !important;
+}

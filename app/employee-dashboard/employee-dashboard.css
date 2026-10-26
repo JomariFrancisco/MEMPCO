@@ -9583,7 +9583,6 @@ button {
   align-items: center !important;
   justify-content: center !important;
   overflow: hidden !important;
-  overflow-x: hidden !important;
   padding: var(--employee-ticket-block-gap) var(--employee-ticket-inline-gap) !important;
 }
 
@@ -9610,24 +9609,20 @@ button {
   min-width: 0 !important;
 }
 
-/* Keep all normal ticket-detail sections inside the viewport like Admin. */
+/* Keep the content area bounded; short viewports use the compact rules below. */
 .employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-admin-scroll-content {
-  flex: 0 1 auto !important;
+  flex: 1 1 auto !important;
   width: 100% !important;
   min-height: 0 !important;
   max-height: none !important;
   display: flex !important;
   flex-direction: column !important;
   overflow-x: hidden !important;
-  overflow-y: hidden !important;
-  overscroll-behavior: contain !important;
-  scrollbar-gutter: auto !important;
-}
-
-/* Attachments are the only case allowed to extend the modal content vertically. */
-.employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal.has-attachments .employee-admin-scroll-content {
   overflow-y: auto !important;
+  overscroll-behavior: contain !important;
   scrollbar-gutter: stable !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
 }
 
 /* ---------- Header: same compact Admin composition ---------- */
@@ -9717,12 +9712,11 @@ button {
   margin: 0 !important;
   color: #172033 !important;
   font-size: clamp(1rem, 1.15vw, 1.15rem) !important;
-  font-weight: 900 !important;
+  font-weight: 600 !important;
   line-height: 1.14 !important;
-  letter-spacing: -0.025em !important;
-  white-space: nowrap !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
+  letter-spacing: 0 !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
 }
 
 .employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .ticket-action-title-copy p {
@@ -9743,8 +9737,25 @@ button {
 }
 
 .employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-admin-status-badge {
-  min-width: 122px !important;
-  min-height: 48px !important;
+  min-width: 178px !important;
+  min-height: 52px !important;
+  padding: 0.62rem 0.9rem 0.62rem 1.1rem !important;
+  border: 1px solid #cbd8ef !important;
+  border-radius: 8px !important;
+  background: linear-gradient(90deg, #eef4ff, #fff 72%) !important;
+  color: #172033 !important;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06) !important;
+}
+
+.employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-admin-status-badge::before {
+  width: 4px !important;
+  background: #245bf3 !important;
+}
+
+.employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-admin-status-badge strong {
+  font-size: 1rem !important;
+  font-weight: 850 !important;
+  line-height: 1.15 !important;
 }
 
 .employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .admin-modal-close {
@@ -9818,24 +9829,67 @@ button {
   border-radius: 8px !important;
   border: 1px solid #dbe4ef !important;
   background: rgba(248, 250, 252, 0.96) !important;
-  overflow: hidden !important;
+  overflow: visible !important;
 }
 
-.employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-admin-details-row .ticket-action-description > span {
-  margin-bottom: 0.2rem !important;
+.employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-ticket-description-heading {
+  min-width: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 0.6rem !important;
+  margin: 0 0 0.2rem !important;
+}
+
+.employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-ticket-description-heading > span {
+  margin: 0 !important;
   font-size: 0.72rem !important;
 }
 
+.employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-ticket-image-trigger {
+  min-width: 0 !important;
+  max-width: 190px !important;
+  min-height: 38px !important;
+  padding: 0.18rem 0.48rem 0.18rem 0.2rem !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.42rem !important;
+  border: 1px solid #dbe4ef !important;
+  border-radius: 7px !important;
+  background: #fff !important;
+  color: #334155 !important;
+  font: inherit !important;
+  font-size: 0.74rem !important;
+  font-weight: 700 !important;
+  line-height: 1.1 !important;
+  cursor: pointer !important;
+}
+
+.employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-ticket-image-trigger img {
+  width: 32px !important;
+  height: 32px !important;
+  flex: 0 0 32px !important;
+  display: block !important;
+  border-radius: 4px !important;
+  object-fit: cover !important;
+}
+
+.employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-ticket-image-trigger span {
+  min-width: 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
 .employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-admin-details-row .ticket-action-description p {
-  max-height: 108px !important;
+  max-height: none !important;
   margin: 0 !important;
   color: #334155 !important;
   font-size: 0.9rem !important;
   font-weight: 500 !important;
   line-height: 1.35 !important;
   white-space: pre-wrap !important;
-  overflow-y: auto !important;
-  overflow-x: hidden !important;
+  overflow: visible !important;
   overflow-wrap: anywhere !important;
 }
 
@@ -9884,6 +9938,22 @@ button {
   text-overflow: ellipsis !important;
 }
 
+.employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-admin-readonly-select {
+  width: 100% !important;
+  height: 38px !important;
+  min-height: 38px !important;
+  padding: 0 2.5rem 0 0.75rem !important;
+  border: 1px solid #dbe1e8 !important;
+  border-radius: 12px !important;
+  background-color: #fff !important;
+  color: #172033 !important;
+  font-size: 0.9rem !important;
+  opacity: 1 !important;
+  -webkit-text-fill-color: #172033 !important;
+  cursor: default !important;
+  box-shadow: none !important;
+}
+
 /* ---------- Action/remarks/resolution/recommendation: same compact 2x2 Admin grid ---------- */
 .employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-admin-scroll-content > .employee-admin-notes-grid {
   flex: 0 0 auto !important;
@@ -9912,18 +9982,18 @@ button {
 
 .employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-admin-readonly-textarea {
   width: 100% !important;
-  height: 76px !important;
-  min-height: 76px !important;
-  max-height: 76px !important;
+  height: 104px !important;
+  min-height: 104px !important;
+  max-height: 104px !important;
   padding: 0.46rem 0.56rem !important;
   display: block !important;
   border-radius: 8px !important;
-  border: 1px solid #dbe4ef !important;
+  border: 1px solid #d9dee7 !important;
   background: #fff !important;
-  color: #64748b !important;
-  font-size: 0.82rem !important;
+  color: #172033 !important;
+  font-size: 0.9rem !important;
   font-weight: 500 !important;
-  line-height: 1.3 !important;
+  line-height: 1.35 !important;
   box-shadow: none !important;
   white-space: pre-wrap !important;
   overflow-y: auto !important;
@@ -9946,7 +10016,7 @@ button {
   flex: 0 0 auto !important;
   flex-direction: row !important;
   align-items: center !important;
-  justify-content: flex-end !important;
+  justify-content: space-between !important;
   gap: 0.68rem !important;
   min-height: 52px !important;
   margin: 0 !important;
@@ -9956,13 +10026,37 @@ button {
   background: rgba(248, 250, 252, 0.98) !important;
 }
 
+.employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-admin-footer-tools {
+  display: flex !important;
+  flex: 0 0 auto !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 0.5rem !important;
+  margin-left: auto !important;
+}
+
 .employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-admin-footer-btn {
   min-width: 132px !important;
-  min-height: 34px !important;
-  height: 34px !important;
-  padding: 0 0.72rem !important;
+  min-height: 42px !important;
+  height: 42px !important;
+  padding: 0 1rem !important;
   border-radius: 8px !important;
-  font-size: 0.82rem !important;
+  font-size: 0.88rem !important;
+  white-space: nowrap !important;
+}
+
+.employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-admin-footer-btn.print {
+  border: 1px solid #f5b8b8 !important;
+  background: #fff5f5 !important;
+  color: #dc2626 !important;
+  box-shadow: none !important;
+}
+
+.employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-admin-footer-btn.confirm {
+  min-width: 148px !important;
+  border: 1px solid #dc2626 !important;
+  background: linear-gradient(180deg, #ef3030, #d71920) !important;
+  color: #fff !important;
 }
 
 .employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-admin-lock-pill {
@@ -9981,7 +10075,9 @@ button {
   }
 
   .employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal:not(.has-attachments) .employee-admin-scroll-content {
-    overflow-y: hidden !important;
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
   }
 }
 
@@ -10017,7 +10113,8 @@ button {
   .employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal.has-attachments {
     width: calc(100vw - 1rem) !important;
     max-width: calc(100vw - 1rem) !important;
-    max-height: calc(100dvh - 1rem) !important;
+    max-height: none !important;
+    overflow: visible !important;
   }
 
   .employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-admin-ticket-head {
@@ -10026,8 +10123,9 @@ button {
   }
 
   .employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-admin-scroll-content {
-    overflow-y: auto !important;
-    scrollbar-gutter: stable !important;
+    flex: 0 0 auto !important;
+    overflow: visible !important;
+    scrollbar-gutter: auto !important;
   }
 
   .employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-admin-scroll-content > .employee-admin-info-grid {
@@ -10041,9 +10139,9 @@ button {
   }
 
   .employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-admin-readonly-textarea {
-    height: 88px !important;
-    min-height: 88px !important;
-    max-height: 88px !important;
+    height: 104px !important;
+    min-height: 104px !important;
+    max-height: none !important;
   }
 }
 
@@ -10061,6 +10159,111 @@ button {
   .employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-admin-lock-pill {
     width: 100% !important;
     max-width: none !important;
+  }
+
+  .employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-admin-footer-tools {
+    width: 100% !important;
+    flex-direction: column !important;
+    margin-left: 0 !important;
+  }
+}
+
+@media (min-width: 761px) and (max-height: 1000px) {
+  .employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal,
+  .employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal.has-attachments {
+    max-height: calc(100dvh - 1rem) !important;
+  }
+
+  .employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-admin-ticket-head {
+    min-height: 62px !important;
+    padding-top: 0.48rem !important;
+    padding-bottom: 0.48rem !important;
+  }
+
+  .employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-admin-status-badge {
+    min-height: 42px !important;
+    padding-top: 0.4rem !important;
+    padding-bottom: 0.4rem !important;
+  }
+
+  .employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-admin-scroll-content > .employee-admin-info-grid {
+    gap: 0.28rem !important;
+    margin-top: 0.12rem !important;
+    margin-bottom: 0.24rem !important;
+  }
+
+  .employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-admin-info-grid .ticket-meta-cell {
+    min-height: 40px !important;
+    padding: 0.24rem 0.42rem !important;
+  }
+
+  .employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-admin-info-grid .ticket-meta-cell span {
+    font-size: 0.64rem !important;
+  }
+
+  .employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-admin-info-grid .ticket-meta-cell p {
+    font-size: 0.82rem !important;
+  }
+
+  .employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-admin-scroll-content > .employee-admin-details-row {
+    min-height: 0 !important;
+    margin-bottom: 0.28rem !important;
+  }
+
+  .employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-admin-details-row .ticket-action-description,
+  .employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-admin-control-stack {
+    min-height: 0 !important;
+  }
+
+  .employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-admin-details-row .ticket-action-description {
+    padding: 0.42rem 0.52rem !important;
+  }
+
+  .employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-admin-details-row .ticket-action-description p {
+    font-size: 0.82rem !important;
+    line-height: 1.28 !important;
+  }
+
+  .employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-admin-control-stack {
+    gap: 0.2rem !important;
+    padding: 0.34rem !important;
+  }
+
+  .employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-admin-control-stack .ticket-form-group {
+    gap: 0.1rem !important;
+  }
+
+  .employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-admin-control-stack label,
+  .employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-admin-notes-grid label {
+    font-size: 0.68rem !important;
+  }
+
+  .employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-admin-readonly-select {
+    height: 32px !important;
+    min-height: 32px !important;
+    font-size: 0.8rem !important;
+  }
+
+  .employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-admin-scroll-content > .employee-admin-notes-grid {
+    gap: 0.3rem !important;
+    padding: 0.4rem !important;
+    margin-bottom: 0.36rem !important;
+  }
+
+  .employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-admin-readonly-textarea {
+    height: 88px !important;
+    min-height: 88px !important;
+    max-height: 88px !important;
+  }
+
+  .employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-admin-modal-footer {
+    min-height: 46px !important;
+    padding: 0.38rem 0.75rem !important;
+  }
+
+  .employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-admin-footer-btn {
+    min-height: 36px !important;
+    height: 36px !important;
   }
 }
 
@@ -10158,11 +10361,13 @@ button {
   color: #fff !important;
   font-size: 0.864rem !important;
   font-weight: 900 !important;
-  line-height: 1 !important;
+  line-height: 1.2 !important;
   letter-spacing: 0.06em !important;
-  white-space: nowrap !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+  word-break: normal !important;
+  flex-wrap: wrap !important;
+  text-align: left !important;
   box-shadow:
     0 12px 24px rgba(220, 38, 38, 0.18),
     inset 0 1px 0 rgba(255, 255, 255, 0.22) !important;
@@ -10624,13 +10829,520 @@ button {
   }
 }
 
-/* Keep the minimized chat launcher clear of the employee ticket modal on desktop. */
+/* Keep the employee modal centered when the minimized chat is visible. */
 @media (min-width: 1280px) {
   .employee-ticket-action-overlay:not(.chat-open) .employee-ticket-modal.ticket-action-modal.is-support-modal {
-    transform: translateX(-2rem) !important;
+    transform: none !important;
+  }
+}
+
+@media (min-width: 761px) and (max-height: 699px) {
+  .employee-ticket-action-overlay,
+  .employee-ticket-action-overlay.chat-open {
+    align-items: flex-start !important;
+    overflow-y: auto !important;
+    padding-block: 0.5rem !important;
   }
 
-  .employee-ticket-action-overlay:not(.chat-open) .ticket-chat-launcher {
-    right: max(0.5rem, env(safe-area-inset-right)) !important;
+  .employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal,
+  .employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal.has-attachments {
+    max-height: none !important;
+    overflow: visible !important;
   }
+
+  .employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-admin-scroll-content {
+    flex: 0 0 auto !important;
+    overflow: visible !important;
+    scrollbar-gutter: auto !important;
+  }
+}
+
+/* Match the Admin chat launcher's size and edge placement. */
+.employee-ticket-action-overlay .ticket-chat-launcher {
+  position: fixed !important;
+  right: clamp(0.85rem, 2vw, 1.5rem) !important;
+  bottom: clamp(0.85rem, 2vw, 1.5rem) !important;
+  z-index: 10120 !important;
+  width: 58px !important;
+  height: 58px !important;
+  min-width: 58px !important;
+  min-height: 58px !important;
+  transform: translateX(38%) !important;
+}
+
+.employee-ticket-action-overlay .ticket-chat-launcher:hover {
+  transform: translate(38%, -1px) !important;
+}
+
+/* Match the Admin ticket modal's header, status indicator, and action sizing. */
+.employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-admin-ticket-id {
+  box-sizing: border-box !important;
+  min-height: 30px !important;
+  padding: 0.28rem 0.64rem !important;
+  font-size: 0.88rem !important;
+  letter-spacing: 0.06em !important;
+}
+
+.employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-admin-ticket-id::before {
+  position: static !important;
+  inset: auto !important;
+  width: 6px !important;
+  height: 6px !important;
+  flex: 0 0 6px !important;
+  margin: 0 0.42rem 0 0 !important;
+  transform: none !important;
+}
+
+.employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .ticket-action-title-copy h3 {
+  font-size: 1rem !important;
+  font-weight: 700 !important;
+  line-height: 1.14 !important;
+  letter-spacing: 0 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .ticket-action-title-copy p {
+  font-size: 0.88rem !important;
+  font-weight: 400 !important;
+  line-height: 1.12 !important;
+}
+
+.employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .admin-modal-close {
+  width: 30px !important;
+  height: 30px !important;
+  min-height: 30px !important;
+  padding: 0 !important;
+}
+
+.employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-admin-info-grid {
+  width: calc(100% - 2rem) !important;
+}
+
+.employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-admin-info-grid .ticket-meta-cell span {
+  font-size: 0.66rem !important;
+  line-height: 1.05 !important;
+}
+
+.employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-admin-info-grid .ticket-meta-cell p {
+  font-size: 0.82rem !important;
+  line-height: 1.12 !important;
+}
+
+.employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-admin-status-badge.ticket-handling-indicator.primary-only {
+  position: relative !important;
+  box-sizing: border-box !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: max-content !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  height: auto !important;
+  min-height: 42px !important;
+  padding: 0.5rem 0.9rem 0.5rem 1.08rem !important;
+  gap: 0 !important;
+  border-radius: 8px !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 4px 12px rgba(15, 23, 42, 0.06) !important;
+  white-space: nowrap !important;
+}
+
+.employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-admin-status-badge.ticket-handling-indicator.primary-only::before {
+  content: '' !important;
+  position: absolute !important;
+  inset: 1px auto 1px 1px !important;
+  width: 3px !important;
+  border-radius: 7px 0 0 7px !important;
+  background: linear-gradient(180deg, #2563eb, #1d4ed8) !important;
+}
+
+.employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-admin-status-badge.ticket-handling-indicator.primary-only.active {
+  border-color: rgba(37, 99, 235, 0.22) !important;
+  background: linear-gradient(90deg, rgba(37, 99, 235, 0.1), rgba(255, 255, 255, 0.96) 42%), #fff !important;
+}
+
+.employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-admin-status-badge.ticket-handling-indicator.primary-only.queued {
+  border-color: rgba(245, 158, 11, 0.28) !important;
+  background: linear-gradient(90deg, rgba(245, 158, 11, 0.12), rgba(255, 255, 255, 0.96) 42%), #fff !important;
+}
+
+.employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-admin-status-badge.ticket-handling-indicator.primary-only.queued::before {
+  background: linear-gradient(180deg, #f59e0b, #b45309) !important;
+}
+
+.employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-admin-status-badge.ticket-handling-indicator.primary-only.escalated {
+  border-color: rgba(124, 58, 237, 0.25) !important;
+  background: linear-gradient(90deg, rgba(124, 58, 237, 0.1), rgba(255, 255, 255, 0.96) 42%), #fff !important;
+}
+
+.employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-admin-status-badge.ticket-handling-indicator.primary-only.escalated::before {
+  background: linear-gradient(180deg, #7c3aed, #5b21b6) !important;
+}
+
+.employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-admin-status-badge.ticket-handling-indicator.primary-only.done {
+  border-color: rgba(22, 163, 74, 0.22) !important;
+  background: linear-gradient(90deg, rgba(22, 163, 74, 0.09), rgba(255, 255, 255, 0.96) 42%), #fff !important;
+}
+
+.employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-admin-status-badge.ticket-handling-indicator.primary-only.done::before {
+  background: linear-gradient(180deg, #16a34a, #15803d) !important;
+}
+
+.employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-admin-status-badge.ticket-handling-indicator.primary-only > strong {
+  display: inline-flex !important;
+  align-items: center !important;
+  color: #172033 !important;
+  font-size: 0.9rem !important;
+  font-weight: 850 !important;
+  line-height: 1.15 !important;
+}
+
+.employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-admin-readonly-select {
+  height: 34px !important;
+  min-height: 34px !important;
+  border-radius: 15px !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  font-size: 0.84rem !important;
+}
+
+.employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-admin-control-stack label,
+.employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-admin-notes-grid label {
+  font-size: 0.72rem !important;
+  line-height: 1.05 !important;
+}
+
+.employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-admin-footer-btn {
+  box-sizing: border-box !important;
+  min-width: 132px !important;
+  height: 34px !important;
+  min-height: 34px !important;
+  padding: 0 0.72rem !important;
+  font-size: 0.82rem !important;
+}
+
+.employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-admin-footer-btn.confirm {
+  min-width: 148px !important;
+}
+
+.employee-ticket-photo-viewer {
+  position: fixed;
+  inset: 0;
+  z-index: 12000;
+  display: grid;
+  place-items: center;
+  padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right))
+    max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
+  background: rgba(15, 23, 42, 0.94);
+}
+
+.employee-ticket-photo-viewer > img {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.employee-ticket-photo-viewer-close {
+  position: fixed;
+  top: max(1rem, env(safe-area-inset-top));
+  right: max(1rem, env(safe-area-inset-right));
+  z-index: 1;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.68);
+  color: #fff;
+  cursor: pointer;
+}
+
+.employee-ticket-photo-viewer-close:hover {
+  background: rgba(15, 23, 42, 0.9);
+}
+
+.employee-ticket-photo-viewer-close:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
+}
+
+.employee-ticket-photo-viewer-close svg {
+  width: 24px;
+  height: 24px;
+}
+
+/* Employee ticket tracking follows the Admin modal's compact information hierarchy. */
+.employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-ticket-sla-deadline-note {
+  width: 100% !important;
+  margin: 0 !important;
+  color: #64748b !important;
+  font-size: 0.72rem !important;
+  line-height: 1.2 !important;
+  overflow-wrap: anywhere !important;
+}
+
+.employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-admin-control-stack {
+  grid-auto-rows: max-content !important;
+  align-content: start !important;
+  gap: 0.38rem !important;
+  padding: 0.58rem 0.62rem 0.72rem !important;
+  box-sizing: border-box !important;
+}
+
+.employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-admin-control-stack .ticket-form-group {
+  min-width: 0 !important;
+  gap: 0.16rem !important;
+}
+
+.employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-admin-control-stack label {
+  color: #334155 !important;
+  font-size: 0.74rem !important;
+  line-height: 1.15 !important;
+}
+
+.employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-admin-readonly-select {
+  box-sizing: border-box !important;
+  width: 100% !important;
+  height: 40px !important;
+  min-height: 40px !important;
+  max-height: 40px !important;
+  padding: 0 2.25rem 0 0.72rem !important;
+  border-radius: 8px !important;
+  appearance: none !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%236b7280' viewBox='0 0 20 20'%3E%3Cpath d='M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.937a.75.75 0 111.08 1.04l-4.24 4.5a.75.75 0 01-1.08 0l-4.24-4.5a.75.75 0 01.02-1.06z'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 0.72rem center !important;
+  background-size: 15px !important;
+  background-color: #fff !important;
+  color: #172033 !important;
+  font-size: 0.86rem !important;
+  line-height: 1.2 !important;
+  opacity: 1 !important;
+  -webkit-text-fill-color: #172033 !important;
+}
+
+.employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-admin-readonly-field {
+  box-sizing: border-box !important;
+  width: 100% !important;
+  height: 40px !important;
+  min-height: 40px !important;
+  padding: 0 0.72rem !important;
+  border-radius: 8px !important;
+  border: 1px solid #dbe1e8 !important;
+  background: #fff !important;
+  color: #172033 !important;
+  font-size: 0.86rem !important;
+  line-height: 1.2 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.employee-ticket-action-overlay .employee-ticket-description-column {
+  display: flex !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  flex-direction: column !important;
+  gap: 0.42rem !important;
+}
+
+.employee-ticket-action-overlay .employee-ticket-description-column.is-waiting-workflow .ticket-action-description {
+  flex: 1 1 auto !important;
+  min-height: 96px !important;
+}
+
+.employee-ticket-action-overlay .employee-ticket-followup-note {
+  min-width: 0 !important;
+  padding: 0.5rem 0.62rem !important;
+  border: 1px solid #dbe4ef !important;
+  border-radius: 8px !important;
+  background: #fff !important;
+}
+
+.employee-ticket-action-overlay .employee-ticket-followup-note > span {
+  display: block !important;
+  margin-bottom: 0.2rem !important;
+  color: #334155 !important;
+  font-size: 0.74rem !important;
+  font-weight: 800 !important;
+  line-height: 1.15 !important;
+}
+
+.employee-ticket-action-overlay .employee-ticket-followup-note > p {
+  max-height: 56px !important;
+  overflow-y: auto !important;
+  margin: 0 !important;
+  color: #334155 !important;
+  font-size: 0.84rem !important;
+  line-height: 1.25 !important;
+  white-space: pre-wrap !important;
+  overflow-wrap: anywhere !important;
+}
+
+.employee-ticket-action-overlay .employee-admin-info-grid .ticket-meta-cell {
+  min-width: 0 !important;
+}
+
+.employee-ticket-action-overlay .employee-admin-info-grid .ticket-meta-cell p {
+  overflow-wrap: anywhere !important;
+}
+
+@media (min-width: 1051px) and (min-height: 700px) {
+  .employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal {
+    height: calc(100dvh - 1rem) !important;
+    max-height: calc(100dvh - 1rem) !important;
+  }
+
+  .employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-admin-scroll-content {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    scrollbar-gutter: stable !important;
+  }
+
+  .employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal.is-no-scroll-workflow .employee-admin-scroll-content {
+    overflow: hidden !important;
+    scrollbar-gutter: auto !important;
+  }
+
+  .employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal.is-no-scroll-workflow .employee-admin-scroll-content > .employee-admin-notes-grid {
+    flex: 1 1 0 !important;
+    min-height: 0 !important;
+    grid-template-rows: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal.is-no-scroll-workflow .employee-admin-notes-grid .ticket-form-group {
+    display: flex !important;
+    min-height: 0 !important;
+    flex-direction: column !important;
+  }
+
+  .employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal.is-no-scroll-workflow .employee-admin-readonly-textarea {
+    flex: 1 1 auto !important;
+    min-height: 44px !important;
+    height: auto !important;
+    max-height: none !important;
+  }
+}
+
+.employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal.is-no-scroll-workflow .employee-admin-info-grid .ticket-meta-cell {
+  overflow: hidden !important;
+}
+
+.employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal.is-no-scroll-workflow .employee-admin-info-grid .ticket-meta-cell p {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal.is-no-scroll-workflow .employee-admin-details-row {
+  flex: 0 0 auto !important;
+  min-height: 0 !important;
+  grid-auto-rows: max-content !important;
+}
+
+.employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal.is-no-scroll-workflow .employee-admin-control-stack {
+  min-height: 0 !important;
+  height: auto !important;
+  overflow: visible !important;
+}
+
+@media (max-width: 1050px) {
+  .employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal.is-no-scroll-workflow .employee-admin-scroll-content > .employee-admin-info-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-admin-control-stack {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+/* The Employee modal uses the Admin modal's neutral ticket reference treatment. */
+.employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .ticket-action-identity-group > .employee-admin-ticket-id {
+  position: static !important;
+  display: inline-block !important;
+  flex: 0 1 auto !important;
+  width: fit-content !important;
+  max-width: min(42vw, 420px) !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: #607087 !important;
+  font-size: 0.72rem !important;
+  font-weight: 740 !important;
+  line-height: 1.25 !important;
+  letter-spacing: 0 !important;
+  text-align: left !important;
+  white-space: normal !important;
+  overflow: visible !important;
+  overflow-wrap: anywhere !important;
+  text-overflow: clip !important;
+  box-shadow: none !important;
+}
+
+.employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .ticket-action-identity-group > .employee-admin-ticket-id::before {
+  display: none !important;
+  content: none !important;
+}
+
+@media (max-width: 520px) {
+  .employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-admin-control-stack {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
+
+@media (max-height: 760px) {
+  .employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-admin-readonly-select,
+  .employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-admin-readonly-field {
+    height: 36px !important;
+    min-height: 36px !important;
+    max-height: 36px !important;
+  }
+}
+
+/* Employee helpdesk cards use the MRDSS reference and compact tag treatment. */
+.employee-admin-ticket-title .ticket-id {
+  display: inline-block !important;
+  width: fit-content !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: #607087 !important;
+  font-size: 0.72rem !important;
+  font-weight: 740 !important;
+  line-height: 1.25 !important;
+  letter-spacing: 0 !important;
+  text-align: left !important;
+  white-space: normal !important;
+  overflow: visible !important;
+  overflow-wrap: anywhere !important;
+  text-overflow: clip !important;
+  box-shadow: none !important;
+}
+
+.employee-admin-ticket-title .ticket-id::before {
+  display: none !important;
+  content: none !important;
+}
+
+.employee-admin-inline-badges .status,
+.employee-admin-inline-badges .priority {
+  min-height: 21px !important;
+  padding: 0.15rem 0.38rem !important;
+  border-radius: 3px !important;
+  font-size: 0.65rem !important;
+  font-weight: 700 !important;
+  line-height: 1.2 !important;
+  white-space: nowrap !important;
 }

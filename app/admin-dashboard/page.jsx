@@ -7,6 +7,7 @@ import {
   Building2,
   CalendarDays,
   Camera,
+  Check,
   ChevronLeft,
   ChevronRight,
   Clock3,
@@ -24,6 +25,7 @@ import {
   Phone,
   Plus,
   Printer,
+  RotateCcw,
   Search,
   Send,
   ShieldCheck,
@@ -42,7 +44,6 @@ import {
   ESCALATION_PARTNERS,
   SLA_LEVELS,
   SUPPORT_CATEGORIES,
-  TECHNICIANS,
   TICKET_STATUSES,
   isUnresolved,
   slugify,
@@ -77,7 +78,14 @@ import {
   subscribeToTickets,
   updateTicket,
 } from '@/lib/tickets/portalTickets';
+import PortalProfileLayout from '@/components/PortalProfileLayout';
+import PortalProfilePhotoControl from '@/components/PortalProfilePhotoControl';
+import PortalThemeToggle from '@/components/PortalThemeToggle';
+import { useConfirmDialog } from '@/components/ConfirmationDialog';
 import './admin-dashboard.css';
+import { mergeMessages, monthlyTicketSnapshots, queueRank, availableStatuses, isClosed, isHelpdeskQueueEligible } from '@/lib/tickets/workflow.mjs';
+import HelpdeskInbox from '@/components/HelpdeskInbox';
+import '@/components/PortalWorkspaceTheme.css';
 
 /* =========================
    ROUTES
@@ -175,7 +183,6 @@ const getAdminConcernOptionsForSelection = (category = '', deviceName = '') =>
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 const BURNOUT_STANDARD_MIN_DAYS = 3;
 const BURNOUT_TARGET_DAYS = 5;
-const BURNOUT_STANDARD_MESSAGE = 'Did not meet the standard procedure date';
 const BURNOUT_ACTIVE_STATUS_KEYS = ['submitted', 'for inspection', 'under burnout'];
 const BURNOUT_MONITORING_STATUS_KEYS = ['under burnout'];
 const BURNOUT_CLOSED_STATUS_KEYS = [
@@ -359,14 +366,47 @@ function useBodyScrollLock(active) {
 }
 
 function TemporaryPasswordPanel({ password, accountName, onDismiss }) {
+  const [copyStatus, setCopyStatus] = useState('idle');
+  const copyStatusTimer = useRef(null);
+
+  useEffect(() => () => window.clearTimeout(copyStatusTimer.current), []);
+
   if (!password) return null;
 
   const copyPassword = async () => {
+    let copied = false;
+
     try {
-      await navigator.clipboard.writeText(password);
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(password);
+        copied = true;
+      }
     } catch {
-      window.prompt('Copy the temporary password:', password);
+      copied = false;
     }
+
+    if (!copied) {
+      const textArea = document.createElement('textarea');
+      textArea.value = password;
+      textArea.setAttribute('readonly', '');
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-9999px';
+      textArea.style.opacity = '0';
+      document.body.appendChild(textArea);
+      textArea.select();
+
+      try {
+        copied = document.execCommand('copy');
+      } catch {
+        copied = false;
+      } finally {
+        textArea.remove();
+      }
+    }
+
+    setCopyStatus(copied ? 'copied' : 'error');
+    window.clearTimeout(copyStatusTimer.current);
+    copyStatusTimer.current = window.setTimeout(() => setCopyStatus('idle'), 1800);
   };
 
   return (
@@ -377,12 +417,17 @@ function TemporaryPasswordPanel({ password, accountName, onDismiss }) {
         <code>{password}</code>
       </div>
       <div className="temporary-password-actions">
-        <button type="button" className="modal-btn cancel" onClick={copyPassword}>
-          <MonoIcon icon={Clipboard} />
-          Copy
+        <button
+          type="button"
+          className={`modal-btn cancel temporary-password-copy${copyStatus === 'copied' ? ' is-copied' : ''}${copyStatus === 'error' ? ' is-error' : ''}`}
+          onClick={copyPassword}
+          aria-live="polite"
+        >
+          <MonoIcon icon={copyStatus === 'copied' ? Check : Clipboard} />
+          {copyStatus === 'copied' ? 'Copied' : copyStatus === 'error' ? 'Copy failed' : 'Copy'}
         </button>
         {onDismiss && (
-          <button type="button" className="modal-btn confirm" onClick={onDismiss}>
+          <button type="button" className="modal-btn confirm temporary-password-done" onClick={onDismiss}>
             Done
           </button>
         )}
@@ -396,6 +441,7 @@ const emptyCreateUserForm = {
   employeeId: '',
   department: '',
   branch: '',
+  areaId: '',
   designation: '',
   email: '',
   phone: '',
@@ -416,6 +462,7 @@ const toUserEditForm = (user) => ({
   employeeId: user.employeeId || '',
   department: user.department || '',
   branch: user.branch || user.office || '',
+  areaId: user.areaId || '',
   designation: user.designation || '',
   email: user.email || '',
   phone: user.phone || '',
@@ -607,8 +654,17 @@ const ROLE_LABELS = {
   admin: 'ICT Admin',
   marketing_admin: 'Marketing Admin',
   hr_admin: 'HR Admin',
+  mrdss_admin: 'MRDSS Admin',
+  branch_manager_admin: 'Branch Admin',
+  area_manager_admin: 'Area Manager',
+  coo_admin: 'COO',
   superadmin: 'Super Admin',
 };
+
+const AREA_OPTIONS = [
+  { id: 'area-1', label: 'Area 1' },
+  { id: 'area-2', label: 'Area 2' },
+];
 
 const formatRoleLabel = (role = '') => ROLE_LABELS[role] || role || 'Employee';
 
@@ -631,7 +687,7 @@ const normalizeComparable = (value = '') =>
 
 const isPrivilegedPortalRole = (role = '') => {
   const normalizedRole = normalizePortalRole(role);
-  return normalizedRole === 'admin' || normalizedRole === 'superadmin';
+  return ['admin', 'mrdssadmin', 'branchmanageradmin', 'areamanageradmin', 'cooadmin', 'superadmin'].includes(normalizedRole);
 };
 
 const isTicketStatus = (ticket, status) =>
@@ -767,7 +823,7 @@ const getTicketFinalReportStatus = (ticket = {}) => {
 };
 
 const buildReportStatusSummary = (tickets = []) => {
-  const submittedCount = tickets.length;
+  const submittedCount = tickets.filter(ticket=>ticket.periodSubmitted !== false).length;
   const finalStatusRows = tickets.map((ticket) => ({
     reportStatus: getTicketFinalReportStatus(ticket),
   }));
@@ -781,6 +837,7 @@ const buildReportStatusSummary = (tickets = []) => {
 
 const getSubmittedTime = (ticket = {}) => {
   const candidates = [
+    ticket.createdAtRaw,
     ticket.createdAt,
     ticket.created_at,
     ticket.submittedAt,
@@ -819,6 +876,8 @@ const getTicketSequenceNumber = (ticket = {}) => {
  */
 const sortRecentTickets = (items = []) =>
   [...items].sort((a, b) => {
+    const recent = getSubmittedTime(b) - getSubmittedTime(a);
+    if (recent) return recent;
     const aSequence = getTicketSequenceNumber(a);
     const bSequence = getTicketSequenceNumber(b);
     const hasASequence = Number.isSafeInteger(aSequence) && aSequence >= 0;
@@ -843,11 +902,7 @@ const sortRecentTickets = (items = []) =>
   });
 
 const getTicketQueueSlaRank = (ticket = {}) => {
-  const sla = String(ticket.sla || '').trim().toLowerCase();
-
-  if (sla === 'critical') return 0;
-  if (sla === 'high') return 1;
-  return 2;
+  return queueRank(ticket);
 };
 
 // Later edits do not affect FIFO; ticket sequence breaks submission-time ties.
@@ -883,7 +938,7 @@ const compareTicketSubmissionOrder = (a, b) => {
   );
 };
 
-// Critical and High SLA tickets are escalated first; Low and Medium stay FIFO.
+// Priority orders Critical, High, Medium, Low; tickets within each level stay FIFO.
 const sortTicketQueueFirstComeFirstServed = (items = []) =>
   [...items].sort((a, b) =>
     getTicketQueueSlaRank(a) - getTicketQueueSlaRank(b) || compareTicketSubmissionOrder(a, b)
@@ -1069,7 +1124,7 @@ const getStatusHistoryTechnician = (ticket, entry = {}, history = []) => {
   return entryTechnician || entryUpdater || ticketTechnician || firstHandler || 'Unassigned';
 };
 
-const createTicketReportEvent = (ticket, { timestamp, label, type, status, technician }) => {
+const createTicketReportEvent = (ticket, { timestamp, label, type, status, technician, technicianId }) => {
   if (!timestamp) return null;
 
   const reportDate = new Date(timestamp);
@@ -1088,6 +1143,7 @@ const createTicketReportEvent = (ticket, { timestamp, label, type, status, techn
     reportDateLabel: formatReportTimestamp(timestamp),
     reportStatus,
     technician: technician || getReportTechnicianName(ticket?.technician) || 'Unassigned',
+    technicianId: technicianId || ticket?.technicianId || ticket?.technician_id || '',
   };
 };
 
@@ -1115,6 +1171,7 @@ const getTicketStatusHistoryEvents = (ticket) => {
         type,
         status: status || entry?.label || 'Status Update',
         technician: getStatusHistoryTechnician(ticket, entry, history),
+        technicianId: entry?.technicianId || entry?.snapshot?.technicianId || ticket?.technicianId || '',
       });
     })
     .filter(Boolean);
@@ -1308,7 +1365,7 @@ const openPrintDocument = (title, body) => {
             align-items: flex-start;
           }
           .print-page {
-            width: 10.44in;
+            width: min(10.44in, calc(100vw - 24px));
             max-width: 100%;
             min-height: 7.94in;
             margin: 0 auto;
@@ -1392,7 +1449,9 @@ const openPrintDocument = (title, body) => {
           .field strong, .row strong { display: block; margin-top: 3px; font-size: 10.5px; line-height: 1.25; white-space: pre-wrap; }
           .section-title { margin: 8px 0 5px; font-size: 10px; color: #374151; text-transform: uppercase; letter-spacing: 0.08em; }
           .text-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
-          .note { min-height: 45px; padding: 7px 8px; border: 1px solid #e5e7eb; border-radius: 7px; white-space: pre-wrap; line-height: 1.35; font-size: 10.5px; overflow: visible; break-inside: auto; page-break-inside: auto; }
+          .ticket-notes-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: minmax(74px, auto); gap: 8px; }
+          .ticket-notes-grid > section { min-width: 0; display: flex; flex-direction: column; break-inside: avoid; page-break-inside: avoid; }
+          .note { flex: 1 1 auto; min-height: 52px; padding: 8px 9px; border: 1px solid #d9dee7; border-radius: 6px; background: #fff; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.4; font-size: 10.5px; overflow: visible; break-inside: auto; page-break-inside: auto; }
           .report-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-top: 8px; }
           .report-list.single { grid-template-columns: 1fr; margin-top: 0; }
           .report-list.period-volume-list { grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 0; }
@@ -1441,6 +1500,12 @@ const openPrintDocument = (title, body) => {
           .period-detail-table th:nth-child(14), .period-detail-table td:nth-child(14) { width: 7%; }
           .period-detail-table th:nth-child(14) { white-space: nowrap; overflow-wrap: normal; }
           .print-note { margin-top: 7px; color: #64748b; font-size: 9.5px; font-weight: 700; }
+          @media screen and (max-width: 760px) {
+            .print-page { width: calc(100vw - 24px); }
+            .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .ticket-notes-grid { grid-template-columns: 1fr; grid-auto-rows: auto; }
+            .note { min-height: 54px; }
+          }
           @media print {
             body {
               padding: 0;
@@ -1454,6 +1519,8 @@ const openPrintDocument = (title, body) => {
               margin-left: auto;
               margin-right: auto;
             }
+            .grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+            .ticket-notes-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: minmax(74px, auto); }
             .detail-table thead { display: table-header-group; }
             .detail-table tfoot { display: table-footer-group; }
           }
@@ -1469,11 +1536,42 @@ const openPrintDocument = (title, body) => {
   }, 500);
 };
 
+const formatPrintDateTime = (value, fallback = 'Not recorded') => {
+  if (value === 0 || value == null || value === '') return fallback;
+
+  const parsed = typeof value === 'number' ? new Date(value) : parsePortalTimestamp(value);
+
+  if (!parsed || Number.isNaN(parsed.getTime())) return value ? String(value) : fallback;
+
+  return new Intl.DateTimeFormat('en-PH', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(parsed);
+};
+
+const formatPrintWorkDuration = (startedAt, endedAt, previousSeconds = 0) => {
+  const start = getTimeValue(startedAt);
+  if (!start) return 'Not started';
+
+  const end = getTimeValue(endedAt) || Date.now();
+  const isOngoing = !getTimeValue(endedAt);
+
+  const totalMinutes = Math.max(0, Math.floor((end - start + previousSeconds*1000) / 60000));
+  const days = Math.floor(totalMinutes / 1440);
+  const hours = Math.floor((totalMinutes % 1440) / 60);
+  const minutes = totalMinutes % 60;
+
+  const duration = days ? `${days}d ${hours}h` : hours ? `${hours}h ${minutes}m` : `${minutes}m`;
+  return isOngoing ? `${duration} (ongoing)` : duration;
+};
+
 const printResolvedTicket = (ticket) => {
   const burnoutReport = isBurnoutTicket(ticket) ? normalizeBurnoutReport(ticket) : null;
-  const startedAt = getTicketWorkStartedAt(ticket);
-  const endedAt = getTicketWorkEndedAt(ticket);
-  const workTimerLabel = startedAt ? formatElapsedTime(startedAt, endedAt, Date.now()) : 'Not started';
+  const startedAt = ticket.workStartedAt || ticket.work_started_at || '';
+  const endedAt = ticket.workEndedAt || ticket.work_ended_at || '';
   const printTableRows = (rows, columns) =>
     (rows || []).map((row) => `
       <tr>
@@ -1551,35 +1649,42 @@ const printResolvedTicket = (ticket) => {
       </section>
     `
     : '';
+  const branchDepartment = [ticket.branch, ticket.department]
+    .map((value) => String(value || '').trim())
+    .filter(Boolean)
+    .join(' / ');
   const fieldRows = [
     ['Ticket Code', getTicketDisplayCode(ticket)],
-    ['Record ID', ticket.id],
     ['Status', ticket.status],
     ['SLA', ticket.sla],
-    ['Requester', ticket.requester || ticket.ownerEmail || 'Employee'],
-    ['Employee ID', ticket.employeeId || 'Not provided'],
-    ['Branch / Department', `${ticket.branch || 'Not provided'} / ${ticket.department || 'Not provided'}`],
-    ['Support Category', ticket.supportCategory || 'Unspecified'],
-    ['Concern Type', ticket.concernType || 'Unspecified'],
-    ['Submitted', ticket.createdAt || ticket.date || 'Not provided'],
-    ['Moved Date', getTicketMovedDateLabel(ticket)],
-    ['Resolved Date', getTicketResolvedDateLabel(ticket)],
-    ['Resolved / Updated', ticket.adminUpdatedAt || ticket.lastUpdated || 'Not provided'],
+    ['Requester', ticket.requester || ticket.ownerEmail],
+    ['Employee ID', ticket.employeeId],
+    ['Branch / Department', branchDepartment],
+    ['Support Category', ticket.supportCategory],
+    ['Concern Type', ticket.concernType],
+    ['Submitted', (ticket.createdAt || ticket.date) ? formatPrintDateTime(ticket.createdAt || ticket.date) : ''],
+    ['Moved Date', getTicketMovedDateTime(ticket) ? formatPrintDateTime(getTicketMovedDateTime(ticket)) : ''],
+    ['Resolved Date', getTicketResolvedTime(ticket) ? formatPrintDateTime(getTicketResolvedTime(ticket)) : ''],
     ['Assigned ICT Staff', ticket.technician || 'Unassigned'],
-    ['Device / System', ticket.deviceName || 'Not provided'],
-    ['Contact', ticket.contactNumber || 'Not provided'],
-    ['Impact', ticket.impact || 'Not provided'],
-    ['SAAR', ticket.saarAttachment?.name || (ticket.saarRequired ? 'Required, no file found' : 'Not required')],
-    ['Work Timer', workTimerLabel],
-    ['Work Started', startedAt || 'Not started'],
-    ['Work Ended', endedAt || 'Not completed'],
-  ];
+    ['Device / System', ticket.deviceName || ticket.deviceType],
+    ['Contact', ticket.contactNumber],
+    ['Work Started', startedAt ? formatPrintDateTime(startedAt) : ''],
+    ['Work Ended', endedAt ? formatPrintDateTime(endedAt) : ''],
+    ['Work Duration', startedAt ? formatPrintWorkDuration(startedAt, endedAt, ticket.handlingSeconds) : ''],
+  ].filter(([, value]) => value != null && String(value).trim() !== '');
+  const noteSections = [
+    ['Description of Problem', getVisibleTicketDescription(ticket.description)],
+    ['Action Taken', ticket.actionTaken],
+    ['Resolution Notes', ticket.resolution],
+    ['Admin Remarks', ticket.adminRemarks],
+    ['Recommendation', ticket.recommendation],
+  ].filter(([, value]) => String(value || '').trim());
   const body = `
     <main class="print-page">
       ${getPrintLetterhead()}
       <section class="doc-head">
         <h2>Helpdesk Ticket Report</h2>
-        <div class="meta">Ticket ${escapePrintHtml(getTicketDisplayCode(ticket))}<br />Printed ${escapePrintHtml(new Date().toLocaleString())}</div>
+        <div class="meta">Printed ${escapePrintHtml(formatPrintDateTime(new Date().toISOString()))}</div>
       </section>
       <section class="grid">
         ${fieldRows.map(([label, value]) => `
@@ -1589,28 +1694,16 @@ const printResolvedTicket = (ticket) => {
           </div>
         `).join('')}
       </section>
-      <div class="text-grid">
-        <section>
-          <h3 class="section-title">Description of Problem</h3>
-          <div class="note">${escapePrintHtml(getVisibleTicketDescription(ticket.description) || 'No description provided.')}</div>
-        </section>
-        <section>
-          <h3 class="section-title">Action Taken</h3>
-          <div class="note">${escapePrintHtml(ticket.actionTaken || 'No action recorded.')}</div>
-        </section>
-        <section>
-          <h3 class="section-title">Resolution Notes</h3>
-          <div class="note">${escapePrintHtml(ticket.resolution || 'No resolution notes recorded.')}</div>
-        </section>
-        <section>
-          <h3 class="section-title">Admin Remarks</h3>
-          <div class="note">${escapePrintHtml(ticket.adminRemarks || 'No remarks recorded.')}</div>
-        </section>
-        <section>
-          <h3 class="section-title">Recommendation</h3>
-          <div class="note">${escapePrintHtml(ticket.recommendation || 'No recommendation recorded.')}</div>
-        </section>
-      </div>
+      ${noteSections.length ? `
+        <div class="ticket-notes-grid">
+          ${noteSections.map(([label, value]) => `
+            <section>
+              <h3 class="section-title">${escapePrintHtml(label)}</h3>
+              <div class="note">${escapePrintHtml(value)}</div>
+            </section>
+          `).join('')}
+        </div>
+      ` : ''}
       ${burnoutSection}
     </main>
   `;
@@ -1801,12 +1894,32 @@ const formatPrintCount = (count, singular, plural = `${singular}s`) => {
   return `${value} ${value === 1 ? singular : plural}`;
 };
 
+const buildTechnicianAssignmentItems = (tickets = [], users = []) => {
+  const profileNames = new Map(users.map((user) => [user.id, user.name]).filter(([id, name]) => id && name));
+  const groups = new Map();
+
+  tickets.forEach((ticket) => {
+    const technicianId = ticket.technicianId || ticket.technician_id || '';
+    const technicianName = getReportTechnicianName(ticket.technician) || 'Unassigned';
+    const key = technicianId ? `profile:${technicianId}` : `legacy:${technicianName.toLowerCase()}`;
+    const group = groups.get(key) || {
+      name: technicianId ? profileNames.get(technicianId) || technicianName : technicianName,
+      count: 0,
+    };
+    group.count += 1;
+    groups.set(key, group);
+  });
+
+  return [...groups.values()].sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+};
+
 const printReportSummary = ({
   mode,
   title,
   items,
   total,
   tickets = [],
+  users = [],
   selectedPeriodKey = '',
   selectedPeriodName = '',
 }) => {
@@ -1830,12 +1943,7 @@ const printReportSummary = ({
       <strong>${escapePrintHtml(formatPrintCount(item.count, unit, plural))}</strong>
     </div>
   `;
-  const technicianItems = TECHNICIANS
-    .map((name) => ({
-      name,
-      count: uniqueTickets.filter((ticket) => (ticket.technician || 'Unassigned') === name).length,
-    }))
-    .filter((item) => item.count > 0);
+  const technicianItems = buildTechnicianAssignmentItems(uniqueTickets, users);
   const statusItems = buildReportStatusSummary(uniqueTickets).slice(0, 6);
   const categoryItems = breakdown(uniqueTickets, 'supportCategory', SUPPORT_CATEGORIES).slice(0, 6);
   const branchItems = breakdown(uniqueTickets, 'branch', BRANCHES).slice(0, 6);
@@ -1937,7 +2045,7 @@ const getMonthlyReportData = (tickets, monthDate) => {
   const month = target.getMonth();
   const monthTitle = formatReportDate(new Date(year, month, 1), { month: 'long', year: 'numeric' });
   const monthlyEvents = getReportEventRowsForMonth(tickets, monthDate);
-  const monthlyTickets = getUniqueTicketsFromPeriodEvents(monthlyEvents);
+  const monthlyTickets = monthlyTicketSnapshots(tickets,monthDate);
 
   return { monthTitle, monthlyTickets, monthlyEvents };
 };
@@ -1971,15 +2079,10 @@ const buildMonthlyTicketSummaryRows = (tickets, columns) =>
       `).join('')
     : `<tr><td colspan="${columns.length}">No tickets found for this month.</td></tr>`;
 
-const printMonthlyConsolidatedReport = (tickets, monthDate) => {
+const printMonthlyConsolidatedReport = (tickets, monthDate, users = []) => {
   const { monthTitle, monthlyTickets } = getMonthlyReportData(tickets, monthDate);
   const monthlySummary = buildSummary(monthlyTickets);
-  const technicianItems = TECHNICIANS
-    .map((name) => ({
-      name,
-      count: monthlyTickets.filter((ticket) => (ticket.technician || 'Unassigned') === name).length,
-    }))
-    .filter((item) => item.count > 0);
+  const technicianItems = buildTechnicianAssignmentItems(monthlyTickets, users);
   const statusItems = buildReportStatusSummary(monthlyTickets).slice(0, 6);
   const categoryItems = breakdown(monthlyTickets, 'supportCategory', SUPPORT_CATEGORIES).slice(0, 6);
   const branchItems = breakdown(monthlyTickets, 'branch', BRANCHES).slice(0, 6);
@@ -2558,14 +2661,7 @@ const isBurnoutTicket = (ticket = {}) =>
   String(ticket.concernType || '').trim().toLowerCase().includes('burnout');
 
 const getBurnoutStartTime = (ticket = {}) => {
-  const workStartedTime = parseTicketTime(ticket.workStartedAt || ticket.work_started_at);
-
-  if (workStartedTime) return workStartedTime;
-
-  const reportStartDate = ticket.burnoutReport?.startDate;
-  const reportStartTime = reportStartDate ? parseTicketTime(`${reportStartDate}T00:00:00`) : 0;
-
-  return reportStartTime;
+  return parseTicketTime(ticket.burnoutStartedAt || ticket.burnout_started_at);
 };
 
 const getBurnoutElapsedDays = (ticket = {}, endValue = Date.now()) => {
@@ -2593,13 +2689,30 @@ const isBurnoutBelowStandardProcedure = (ticket = {}, endValue = Date.now()) =>
   getBurnoutElapsedDays(ticket, endValue) < BURNOUT_STANDARD_MIN_DAYS;
 
 const normalizeBurnoutRows = (rows, defaults, mapDefault) => {
-  const sourceRows = Array.isArray(rows) && rows.length ? rows : defaults.map(mapDefault);
+  const sourceRows = Array.isArray(rows) ? rows : [];
+  const requiredIds = new Set(defaults.map(([id]) => id));
+  const consumedIndexes = new Set();
+  const requiredRows = defaults.map((definition, index) => {
+    const requiredId = definition[0];
+    let savedIndex = sourceRows.findIndex((row) => row?.id === requiredId);
+    if (savedIndex < 0 && sourceRows[index] && !sourceRows[index].id) savedIndex = index;
+    const savedRow = savedIndex >= 0 ? sourceRows[savedIndex] : null;
+    if (savedIndex >= 0) consumedIndexes.add(savedIndex);
 
-  return sourceRows.map((row, index) => ({
-    ...mapDefault(defaults[index] || []),
-    ...row,
-    id: row?.id || defaults[index]?.[0] || createBurnoutRowId('burnout'),
-  }));
+    return {
+      ...mapDefault(definition),
+      ...savedRow,
+      id: requiredId,
+    };
+  });
+  const extraRows = sourceRows
+    .filter((row, index) => !consumedIndexes.has(index) && !requiredIds.has(row?.id))
+    .map((row) => ({
+      ...row,
+      id: row?.id || createBurnoutRowId('burnout-extra'),
+    }));
+
+  return [...requiredRows, ...extraRows];
 };
 
 const buildDefaultBurnoutReport = (ticket = {}, currentUser = {}) => {
@@ -2616,27 +2729,27 @@ const buildDefaultBurnoutReport = (ticket = {}, currentUser = {}) => {
       id,
       category,
       description,
-      status: 'Pass',
-      remarks,
+      status: 'Not Tested',
+      remarks: '',
     })),
     softwareChecklist: BURNOUT_SOFTWARE_ITEMS.map(([id, software, description, remarks]) => ({
       id,
       software,
       description,
-      installed: true,
-      remarks,
+      installed: false,
+      remarks: '',
     })),
     monitoring: BURNOUT_MONITORING_ITEMS.map(([id, item, result, remarks]) => ({
       id,
       item,
-      result,
-      remarks,
+      result: 'Not Recorded',
+      remarks: '',
     })),
     finalEvaluation: BURNOUT_EVALUATION_ITEMS.map(([id, item, status, remarks]) => ({
       id,
       item,
-      status,
-      remarks,
+      status: 'Not Recorded',
+      remarks: '',
     })),
   };
 };
@@ -2662,8 +2775,8 @@ const normalizeBurnoutReport = (ticket = {}, currentUser = {}) => {
         id,
         category,
         description,
-        status: 'Pass',
-        remarks,
+        status: 'Not Tested',
+        remarks: '',
       })
     ),
     softwareChecklist: normalizeBurnoutRows(
@@ -2673,8 +2786,8 @@ const normalizeBurnoutReport = (ticket = {}, currentUser = {}) => {
         id,
         software,
         description,
-        installed: true,
-        remarks,
+        installed: false,
+        remarks: '',
       })
     ),
     monitoring: normalizeBurnoutRows(
@@ -2880,12 +2993,12 @@ const getTimeValue = (value) => {
   return Number.isNaN(parsed) ? 0 : parsed;
 };
 
-const formatElapsedTime = (startedAt, endedAt, now = Date.now()) => {
+const formatElapsedTime = (startedAt, endedAt, now = Date.now(), previousSeconds = 0) => {
   const start = getTimeValue(startedAt);
   if (!start) return 'Not started';
 
   const end = getTimeValue(endedAt) || now;
-  const totalSeconds = Math.max(0, Math.floor((end - start) / 1000));
+  const totalSeconds = Math.max(0, Math.floor((end - start) / 1000) + previousSeconds);
   const days = Math.floor(totalSeconds / 86400);
   const hours = Math.floor((totalSeconds % 86400) / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
@@ -3155,6 +3268,7 @@ function AdminProfileView({
   const [isSavingPhoto, setIsSavingPhoto] = useState(false);
   const photoInputRef = useRef(null);
   const adminName = admin?.name || 'Admin User';
+  const isSystemAccount = normalizePortalRole(admin?.role) === 'superadmin';
   const assignedOffice = admin?.branch || admin?.office || 'Not assigned';
   const department = admin?.department || 'Not assigned';
   const designation = admin?.designation || formatRoleLabel(admin?.role);
@@ -3165,12 +3279,14 @@ function AdminProfileView({
     const history = Array.isArray(ticket.statusHistory) ? ticket.statusHistory : [];
 
     return (
-      normalizeComparable(ticket.technician) === staffName ||
+      (ticket.technicianId && ticket.technicianId === admin?.id) ||
+      (!ticket.technicianId && normalizeComparable(ticket.technician) === staffName) ||
       history.some((entry) => (
+        entry.technicianId === admin?.id ||
         normalizeComparable(entry.updatedBy) === staffId ||
         normalizeComparable(entry.updatedByName) === staffName ||
         normalizeComparable(entry.handledByName) === staffName ||
-        normalizeComparable(entry.technician) === staffName
+        (!entry.technicianId && normalizeComparable(entry.technician) === staffName)
       ))
     );
   }));
@@ -3179,14 +3295,19 @@ function AdminProfileView({
   const resolvedHandledTickets = handledTickets.filter(isTicketResolved).length;
   const recentHandledTickets = handledTickets.slice(0, 3);
 
-  const profileFacts = [
-    { label: 'Job Title', value: designation || 'Not provided', icon: BriefcaseBusiness, fullWidth: true },
-    { label: 'Employee ID', value: admin?.employeeId || 'Not provided', icon: UserRound },
-    { label: 'Department', value: department, icon: Building2 },
-    { label: 'Branch / Office', value: assignedOffice, icon: Building2 },
-    { label: 'Email Address', value: admin?.email || 'Not provided', icon: Mail },
-    { label: 'Phone Number', value: admin?.phone || 'Not provided', icon: Phone },
-  ];
+  const profileFacts = isSystemAccount
+    ? [
+        { label: 'Job Title', value: 'ICT Super Admin', icon: BriefcaseBusiness },
+        { label: 'Account Type', value: 'Shared system account', icon: ShieldCheck },
+      ]
+    : [
+        { label: 'Job Title', value: designation || 'Not provided', icon: BriefcaseBusiness, fullWidth: true },
+        { label: 'Employee ID', value: admin?.employeeId || 'Not provided', icon: UserRound },
+        { label: 'Department', value: department, icon: Building2 },
+        { label: 'Branch / Office', value: assignedOffice, icon: Building2 },
+        { label: 'Email Address', value: admin?.email || 'Not provided', icon: Mail },
+        { label: 'Phone Number', value: admin?.phone || 'Not provided', icon: Phone },
+      ];
 
   const profileStats = [
     {
@@ -3226,133 +3347,67 @@ function AdminProfileView({
     }
   };
 
+  const photoControl = (
+    <>
+      <button
+        type="button"
+        className="admin-profile-photo portal-profile-avatar-button"
+        onClick={() => photoInputRef.current?.click()}
+        disabled={isSavingPhoto}
+        aria-label={admin?.profilePhoto ? 'Change profile photo' : 'Upload profile photo'}
+        aria-busy={isSavingPhoto}
+        title={admin?.profilePhoto ? 'Change profile photo' : 'Upload profile photo'}
+      >
+        {admin?.profilePhoto ? (
+          <img src={admin.profilePhoto} alt={`${adminName} profile`} />
+        ) : (
+          <span>{admin?.initials || getInitials(adminName)}</span>
+        )}
+        <i><MonoIcon icon={Camera} /></i>
+      </button>
+      <input
+        ref={photoInputRef}
+        type="file"
+        className="admin-profile-photo-input"
+        accept={PHOTO_ACCEPT}
+        onChange={handlePhotoChange}
+      />
+    </>
+  );
+
   return (
-    <div className="admin-profile-view">
-      <section className="panel-card glass admin-profile-hero">
-        <div className="admin-profile-identity">
-          <button
-            type="button"
-            className="admin-profile-photo"
-            onClick={() => photoInputRef.current?.click()}
-            disabled={isSavingPhoto}
-            aria-label={admin?.profilePhoto ? 'Change profile photo' : 'Upload profile photo'}
-            aria-busy={isSavingPhoto}
-            title={admin?.profilePhoto ? 'Change profile photo' : 'Upload profile photo'}
-          >
-            {admin?.profilePhoto ? (
-              <img src={admin.profilePhoto} alt={`${adminName} profile`} />
-            ) : (
-              <span>{admin?.initials || getInitials(adminName)}</span>
-            )}
-            <i><MonoIcon icon={Camera} /></i>
-          </button>
-          <input
-            ref={photoInputRef}
-            type="file"
-            className="admin-profile-photo-input"
-            accept={PHOTO_ACCEPT}
-            onChange={handlePhotoChange}
-          />
-
-          <div className="admin-profile-title">
-            <span className="section-kicker">Admin Profile</span>
-            <h2>{adminName}</h2>
-            <p>{designation} - {department}</p>
-            <div className="admin-profile-pills">
-              <span>{formatRoleLabel(admin?.role)}</span>
-              <span>{assignedOffice}</span>
-              <span>{admin?.status || 'Active'}</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="admin-profile-stats">
-        {profileStats.map((item) => (
-          <article key={item.label} className="admin-profile-stat glass">
-            <span>{item.label}</span>
-            <strong>{item.value}</strong>
-            <p>{item.meta}</p>
-          </article>
-        ))}
-      </section>
-
-      <div className="admin-profile-grid">
-        <section className="panel-card glass admin-profile-panel">
-          <div className="section-head">
-            <div>
-              <span className="section-kicker">Account Record</span>
-              <h3>Identity &amp; Work Details</h3>
-            </div>
-          </div>
-
-          <div className="admin-profile-facts">
-            {profileFacts.map((item) => (
-              <article key={item.label} className={`admin-profile-fact${item.fullWidth ? ' full-width' : ''}`}>
-                <span><MonoIcon icon={item.icon} /></span>
-                <div>
-                  <small>{item.label}</small>
-                  <strong>{item.value}</strong>
-                </div>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        <section className="panel-card glass admin-profile-panel">
-          <div className="section-head">
-            <div>
-              <span className="section-kicker">Admin Scope</span>
-              <h3>Permissions &amp; Accountability</h3>
-            </div>
-          </div>
-
-          <div className="admin-permission-list">
-            {permissionItems.map((item) => (
-              <span key={item}>
-                <MonoIcon icon={ShieldCheck} />
-                {item}
-              </span>
-            ))}
-          </div>
-        </section>
-      </div>
-
-      <section className="panel-card glass admin-profile-panel">
-        <div className="section-head">
-          <div>
-            <span className="section-kicker">Recent Activity</span>
-            <h3>Latest Handled Tickets</h3>
-          </div>
-          <button type="button" className="modal-btn cancel" onClick={() => onGoTo('tickets')}>
-            View Tickets
-          </button>
-        </div>
-
-        <div className="admin-profile-activity-list">
-          {recentHandledTickets.length ? recentHandledTickets.map((ticket) => (
-            <button
-              key={ticket.id}
-              type="button"
-              className="admin-profile-activity"
-              onClick={() => onGoTo('tickets')}
-            >
-              <span className={`status ${slugify(ticket.status)}`}>{ticket.status}</span>
-              <div>
-                <strong>{ticket.ticketCode || ticket.id}</strong>
-                <p>{ticket.concernType || ticket.supportCategory || 'ICT ticket'} - {ticket.branch || 'No branch'}</p>
-              </div>
-              <small>{ticket.lastUpdated || ticket.adminUpdatedAt || ticket.createdAt || ticket.date || 'No date'}</small>
-            </button>
-          )) : (
-            <div className="empty-state compact">
-              <h4>No handled tickets yet</h4>
-              <p>Tickets assigned to or updated by this admin will appear here.</p>
-            </div>
-          )}
-        </div>
-      </section>
-    </div>
+    <PortalProfileLayout
+      photoControl={photoControl}
+      name={adminName}
+      subtitle={isSystemAccount ? 'ICT Super Admin' : `${designation} - ${department}`}
+      meta={isSystemAccount
+        ? [{ label: 'Role', value: formatRoleLabel(admin?.role) }]
+        : [
+            { label: 'Role', value: formatRoleLabel(admin?.role) },
+            { label: 'Office', value: assignedOffice },
+          ]}
+      stats={profileStats}
+      facts={profileFacts}
+      scopeEyebrow={isSystemAccount ? 'System Account' : 'Admin Scope'}
+      scopeTitle={isSystemAccount ? 'Access & Audit Trail' : 'Permissions & Accountability'}
+      scopeItems={isSystemAccount
+        ? [...permissionItems, 'Activity is recorded under the shared Super Admin account.']
+        : permissionItems}
+      activityEyebrow="Recent Activity"
+      activityTitle="Latest Handled Tickets"
+      activityActionLabel="View Tickets"
+      onActivityAction={() => onGoTo('tickets')}
+      activity={recentHandledTickets.map((ticket) => ({
+        id: ticket.id,
+        status: ticket.status || 'Open',
+        title: ticket.ticketCode || ticket.id,
+        description: `${ticket.concernType || ticket.supportCategory || 'ICT ticket'} - ${ticket.branch || 'No branch'}`,
+        date: ticket.lastUpdated || ticket.adminUpdatedAt || ticket.createdAt || ticket.date || 'No date',
+        onClick: () => onGoTo('tickets'),
+      }))}
+      emptyActivityTitle="No handled tickets yet"
+      emptyActivityText="Tickets assigned to or updated by this admin will appear here."
+    />
   );
 }
 
@@ -3488,7 +3543,51 @@ function PhotoAttachmentGallery({ photos = [], emptyText = 'No photo attachments
   );
 }
 
-function BurnoutReportEditor({ ticket, report, onChange, readOnly }) {
+function BurnoutReportEditor({
+  ticket,
+  report,
+  onChange,
+  readOnly,
+  draft,
+  updateDraft,
+  statusOptions,
+  visibleTechnicianId,
+  technicianProfiles,
+  canEditOutcomeFields,
+  lockedOutcomePlaceholder,
+  onNoteBlur,
+  canReopen,
+  formError,
+  onPreviewAttachment,
+}) {
+  const [activeStep, setActiveStep] = useState(0);
+  const [showOptionalDetails, setShowOptionalDetails] = useState(false);
+  const [pendingSoftwareRowId, setPendingSoftwareRowId] = useState('');
+  const workspaceRef = useRef(null);
+  const steps = [
+    { id: 'request', label: 'Request' },
+    { id: 'handling', label: 'Handling' },
+    { id: 'unit', label: 'Unit & dates' },
+    { id: 'testingChecklist', label: 'Hardware' },
+    { id: 'softwareChecklist', label: 'Software' },
+    { id: 'monitoring', label: 'Monitoring' },
+    { id: 'finalEvaluation', label: 'Final review' },
+  ];
+
+  useEffect(() => {
+    const scrollContainer = workspaceRef.current?.closest('.ticket-action-scroll-content');
+    if (scrollContainer) scrollContainer.scrollTop = 0;
+  }, [activeStep, showOptionalDetails]);
+
+  useEffect(() => {
+    if (!pendingSoftwareRowId) return;
+    const row = document.getElementById(`burnout-software-row-${pendingSoftwareRowId}`);
+    if (!row) return;
+    row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    row.querySelector('input')?.focus({ preventScroll: true });
+    setPendingSoftwareRowId('');
+  }, [pendingSoftwareRowId, report.softwareChecklist]);
+
   const updateReportField = (field, value) => {
     const nextReport = { ...report, [field]: value };
 
@@ -3509,19 +3608,22 @@ function BurnoutReportEditor({ ticket, report, onChange, readOnly }) {
   };
 
   const addSoftwareRow = () => {
+    const rowId = createBurnoutRowId('software');
+    const nextRows = [
+      ...(report.softwareChecklist || []),
+      {
+        id: rowId,
+        software: '',
+        description: '',
+        installed: false,
+        remarks: '',
+      },
+    ];
     onChange({
       ...report,
-      softwareChecklist: [
-        ...(report.softwareChecklist || []),
-        {
-          id: createBurnoutRowId('software'),
-          software: '',
-          description: '',
-          installed: false,
-          remarks: '',
-        },
-      ],
+      softwareChecklist: nextRows,
     });
+    setPendingSoftwareRowId(rowId);
   };
 
   const removeSoftwareRow = (rowId) => {
@@ -3531,246 +3633,530 @@ function BurnoutReportEditor({ ticket, report, onChange, readOnly }) {
     });
   };
 
-  return (
-    <section className="burnout-report-panel">
-      <div className="burnout-report-head">
-        <div>
-          <span className="section-kicker">Burnout Process</span>
-          <h4>Burnout Checklist and 3-5 Day Monitoring</h4>
-        </div>
-        <span className="helpdesk-badge">Admin editable</span>
-      </div>
+  const requiredSoftwareIds = new Set(BURNOUT_SOFTWARE_ITEMS.map(([id]) => id));
+  const completion = {
+    testingChecklist: (report.testingChecklist || []).filter((item) =>
+      item.status === 'Pass' || (item.status === 'N/A' && String(item.remarks || '').trim().length >= 8)
+    ).length,
+    softwareChecklist: BURNOUT_SOFTWARE_ITEMS.filter(([id]) =>
+      (report.softwareChecklist || []).some((item) => item.id === id && item.installed === true)
+    ).length,
+    monitoring: (report.monitoring || []).filter((item) =>
+      String(item.result || '').trim() && String(item.result || '').trim().toLowerCase() !== 'not recorded' &&
+      String(item.remarks || '').trim().length >= 8
+    ).length,
+    finalEvaluation: (report.finalEvaluation || []).filter((item) =>
+      String(item.status || '').trim() && String(item.status || '').trim().toLowerCase() !== 'not recorded' &&
+      String(item.remarks || '').trim().length >= 8
+    ).length,
+  };
 
-      <div className="burnout-basic-grid">
-        <div className="ticket-meta-cell">
-          <span>Branch</span>
-          <p>{ticket.branch || 'Not provided'}</p>
-        </div>
-        <div className="ticket-meta-cell">
-          <span>Department</span>
-          <p>{ticket.department || 'Not provided'}</p>
-        </div>
-        <div className="ticket-meta-cell">
-          <span>Brand & Model</span>
-          <p>{ticket.brand || 'Not provided'}</p>
-        </div>
-        <div className="ticket-meta-cell">
-          <span>Serial Number</span>
-          <p>{ticket.serialNumber || 'Not provided'}</p>
-        </div>
-        <div className="ticket-meta-cell">
-          <span>Model / Device</span>
-          <p>{ticket.deviceName || ticket.deviceType || 'Not provided'}</p>
-        </div>
-        <div className="ticket-meta-cell">
-          <span>User / Custodian</span>
-          <p>{ticket.custodian || ticket.requester || 'Not provided'}</p>
-        </div>
-        <div className="ticket-meta-cell">
-          <span>Request Date</span>
-          <p>{report.requestedDate || ticket.createdAt || 'Not provided'}</p>
-        </div>
-        <div className="ticket-form-group">
-          <label>Performed By</label>
-          <input
-            className="ticket-field ticket-input"
-            value={report.performedBy || ''}
-            onChange={(e) => updateReportField('performedBy', e.target.value)}
-            readOnly={readOnly}
-            placeholder="ICT staff name"
-          />
-        </div>
-        <div className="ticket-form-group">
-          <label>Start Date</label>
-          <input
-            className="ticket-field ticket-input"
-            type="date"
-            value={report.startDate || ''}
-            onChange={(e) => updateReportField('startDate', e.target.value)}
-            readOnly={readOnly}
-          />
-        </div>
-        <div className="ticket-form-group">
-          <label>End Date</label>
-          <input
-            className="ticket-field ticket-input"
-            type="date"
-            value={report.endDate || ''}
-            onChange={(e) => updateReportField('endDate', e.target.value)}
-            readOnly={readOnly}
-          />
-        </div>
-      </div>
+  const getStepRows = (stepId) => {
+    if (stepId === 'testingChecklist' || stepId === 'softwareChecklist' || stepId === 'monitoring') {
+      return report[stepId] || [];
+    }
+    if (stepId === 'finalEvaluation') return report.finalEvaluation || [];
+    return [];
+  };
 
-      <div className="burnout-table-block">
-        <h5>Testing Checklist</h5>
-        <div className="burnout-table-scroll">
-          <table className="burnout-check-table">
-            <thead>
-              <tr>
-                <th>Test Category</th>
-                <th>Test Description</th>
-                <th>Status</th>
-                <th>Remarks</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(report.testingChecklist || []).map((item) => (
-                <tr key={item.id}>
-                  <td>{item.category}</td>
-                  <td>{item.description}</td>
-                  <td>
-                    <select
-                      className="ticket-field ticket-select"
-                      value={item.status || 'Pass'}
-                      onChange={(e) => updateReportList('testingChecklist', item.id, { status: e.target.value })}
-                      disabled={readOnly}
-                    >
-                      <option value="Pass">Pass</option>
-                      <option value="Fail">Fail</option>
-                      <option value="N/A">N/A</option>
-                    </select>
-                  </td>
-                  <td>
-                    <input
-                      className="ticket-field ticket-input"
-                      value={item.remarks || ''}
-                      onChange={(e) => updateReportList('testingChecklist', item.id, { remarks: e.target.value })}
-                      readOnly={readOnly}
-                    />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+  const getStepProgress = (stepId) => {
+    const total = stepId === 'softwareChecklist'
+      ? BURNOUT_SOFTWARE_ITEMS.length
+      : getStepRows(stepId).length;
+    if (stepId === 'testingChecklist' || stepId === 'softwareChecklist' || stepId === 'monitoring' || stepId === 'finalEvaluation') {
+      return `${completion[stepId]}/${total}`;
+    }
+    return null;
+  };
 
-      <div className="burnout-table-block">
-        <div className="burnout-table-title-row">
-          <h5>Software Installation Checklist</h5>
-          {!readOnly && (
-            <button type="button" className="modal-btn print compact" onClick={addSoftwareRow}>
-              <MonoIcon icon={Plus} />
-              Add Software
-            </button>
+  const activeStepId = showOptionalDetails ? 'notes' : steps[activeStep]?.id || 'request';
+  const activeRows = getStepRows(activeStepId);
+  const goPrevious = () => {
+    if (showOptionalDetails) {
+      setShowOptionalDetails(false);
+      return;
+    }
+    setActiveStep((current) => Math.max(0, current - 1));
+  };
+  const goNext = () => {
+    if (showOptionalDetails) return;
+    if (activeStep === steps.length - 1) {
+      setShowOptionalDetails(true);
+      return;
+    }
+    setActiveStep((current) => Math.min(steps.length - 1, current + 1));
+  };
+
+  const updateList = (listKey, rowId, updates) => updateReportList(listKey, rowId, updates);
+  const resizeSoftwareDescription = (element) => {
+    if (!element) return;
+    element.style.setProperty('height', 'auto', 'important');
+    element.style.setProperty('height', `${element.scrollHeight}px`, 'important');
+  };
+  const meta = [
+    ['Ticket code', getTicketDisplayCode(ticket)],
+    ['Requester', ticket.requester || ticket.ownerEmail || 'Employee'],
+    ['Employee ID', ticket.employeeId || 'Not provided'],
+    ['Branch', ticket.branch || 'Not provided'],
+    ['Department', ticket.department || 'Not provided'],
+    ['Device / system', ticket.deviceName || ticket.deviceType || 'Not provided'],
+    ['Contact', ticket.contactNumber || 'Not provided'],
+    ['SAAR', ticket.saarAttachment?.name || (ticket.saarRequired ? 'Required, no file found' : 'Not required')],
+  ];
+
+  if (ticket?.id) {
+    const hardwareRows = report.testingChecklist || [];
+    const softwareRows = report.softwareChecklist || [];
+    const monitoringRows = report.monitoring || [];
+    const evaluationRows = report.finalEvaluation || [];
+    const testingDays = report.startDate && report.endDate
+      ? Math.max(0, Math.round((new Date(`${report.endDate}T00:00:00`) - new Date(`${report.startDate}T00:00:00`)) / 86400000))
+      : 0;
+
+    return (
+      <section className="burnout-report-panel burnout-dashboard">
+        {formError && <div className="form-error burnout-dashboard-error" role="alert">{formError}</div>}
+
+        <section className="burnout-dashboard-section burnout-ticket-information" aria-labelledby="burnout-ticket-information-title">
+          <header className="burnout-dashboard-heading">
+            <div><FileText aria-hidden="true" /><h4 id="burnout-ticket-information-title">Ticket Information</h4></div>
+            <span>Request overview</span>
+          </header>
+          <div className="burnout-request-grid">
+            {meta.map(([label, value]) => (
+              <div className="burnout-request-cell" key={label}><span>{label}</span><strong title={value}>{value}</strong></div>
+            ))}
+          </div>
+          {(ticket.saarAttachment?.dataUrl || ticket.photoAttachments?.length > 0) && (
+            <div className="burnout-request-attachments">
+              {ticket.saarAttachment?.dataUrl && (
+                <a href={ticket.saarAttachment.dataUrl} target="_blank" rel="noopener noreferrer">
+                  <FileText aria-hidden="true" /> SAAR: {ticket.saarAttachment.name}
+                </a>
+              )}
+              {ticket.photoAttachments?.length > 0 && (
+                <PhotoAttachmentGallery photos={ticket.photoAttachments} emptyText="" onPreview={onPreviewAttachment} />
+              )}
+            </div>
           )}
-        </div>
-        <div className="burnout-table-scroll">
-          <table className="burnout-check-table software-table">
-            <thead>
-              <tr>
-                <th>Software</th>
-                <th>Description</th>
-                <th>Installed</th>
-                <th>Remarks</th>
-                {!readOnly && <th>Action</th>}
-              </tr>
-            </thead>
-            <tbody>
-              {(report.softwareChecklist || []).map((item) => (
-                <tr key={item.id}>
-                  <td>
-                    <input
-                      className="ticket-field ticket-input"
-                      value={item.software || ''}
-                      onChange={(e) => updateReportList('softwareChecklist', item.id, { software: e.target.value })}
-                      readOnly={readOnly}
-                      placeholder="Software name"
-                    />
-                  </td>
-                  <td>
-                    <textarea
-                      className="ticket-field ticket-textarea"
-                      value={item.description || ''}
-                      onChange={(e) => updateReportList('softwareChecklist', item.id, { description: e.target.value })}
-                      readOnly={readOnly}
-                      placeholder="Description"
-                    />
-                  </td>
-                  <td>
-                    <label className="burnout-check-toggle">
-                      <input
-                        type="checkbox"
-                        checked={Boolean(item.installed)}
-                        onChange={(e) => updateReportList('softwareChecklist', item.id, { installed: e.target.checked })}
-                        disabled={readOnly}
-                      />
-                      <span>{item.installed ? 'Yes' : 'No'}</span>
-                    </label>
-                  </td>
-                  <td>
-                    <input
-                      className="ticket-field ticket-input"
-                      value={item.remarks || ''}
-                      onChange={(e) => updateReportList('softwareChecklist', item.id, { remarks: e.target.value })}
-                      readOnly={readOnly}
-                      placeholder="Remarks"
-                    />
-                  </td>
-                  {!readOnly && (
-                    <td>
-                      <button
-                        type="button"
-                        className="burnout-row-icon-btn"
-                        onClick={() => removeSoftwareRow(item.id)}
-                        aria-label={`Remove ${item.software || 'software row'}`}
-                        title="Remove software"
-                      >
-                        <MonoIcon icon={Trash2} />
-                      </button>
-                    </td>
-                  )}
-                </tr>
+        </section>
+
+        <section className="burnout-dashboard-section burnout-test-details" aria-labelledby="burnout-test-details-title">
+          <header className="burnout-dashboard-heading">
+            <div><CalendarDays aria-hidden="true" /><h4 id="burnout-test-details-title">Burnout Test Details</h4></div>
+            <label className="burnout-status-control"><span>Status</span>
+              <select className="ticket-field ticket-select" value={draft.status} onChange={(event) => updateDraft('status', event.target.value)} required disabled={readOnly} aria-label="Ticket status">
+                {statusOptions.map((status) => <option key={status} value={status}>{status}</option>)}
+              </select>
+            </label>
+          </header>
+          <div className="burnout-test-grid">
+            <label className="burnout-test-cell"><span>Start date</span><input className="ticket-field ticket-input" type="date" value={report.startDate || ''} onChange={(event) => updateReportField('startDate', event.target.value)} readOnly={readOnly} /></label>
+            <label className="burnout-test-cell"><span>End date</span><input className="ticket-field ticket-input" type="date" value={report.endDate || ''} onChange={(event) => updateReportField('endDate', event.target.value)} readOnly={readOnly} /></label>
+            <div className="burnout-test-cell"><span>Testing duration</span><strong>{testingDays ? `${testingDays} ${testingDays === 1 ? 'day' : 'days'}` : 'Set test dates'}</strong></div>
+            <label className="burnout-test-cell"><span>Technician</span><input className="ticket-field ticket-input" value={report.performedBy || ''} onChange={(event) => updateReportField('performedBy', event.target.value)} readOnly={readOnly} placeholder="ICT staff name" /></label>
+            <label className="burnout-test-cell"><span>Assigned to</span>
+              <select className="ticket-field ticket-select" value={visibleTechnicianId} onChange={(event) => updateDraft('technicianId', event.target.value)} required disabled={readOnly} aria-label="Assigned ICT staff">
+                <option value="__unassigned__">Unassigned</option>
+                {visibleTechnicianId === '__legacy__' && <option value="__legacy__" disabled>Legacy assignment: {draft.technician}</option>}
+                {technicianProfiles.map((profile) => <option key={profile.id} value={profile.id}>{profile.name}</option>)}
+              </select>
+            </label>
+            <label className="burnout-test-cell"><span>SLA</span>
+              <select className="ticket-field ticket-select" value={draft.sla || 'Low'} onChange={(event) => updateDraft('sla', event.target.value)} required disabled={readOnly} aria-label="Ticket SLA">
+                {SLA_LEVELS.map((sla) => <option key={sla} value={sla}>{sla}</option>)}
+              </select>
+            </label>
+            <div className="burnout-test-cell"><span>Brand &amp; model</span><strong>{ticket.brand || ticket.deviceName || 'Not provided'}</strong></div>
+            <div className="burnout-test-cell"><span>Serial number</span><strong>{ticket.serialNumber || 'Not provided'}</strong></div>
+            <div className="burnout-test-cell"><span>User / custodian</span><strong>{ticket.custodian || ticket.requester || 'Not provided'}</strong></div>
+            <div className="burnout-test-cell"><span>Request date</span><strong>{report.requestedDate || ticket.createdAt || 'Not provided'}</strong></div>
+          </div>
+          <p className="burnout-period-note"><CalendarDays aria-hidden="true" /><span>Testing must run for at least 3 full days before the unit can pass final review.</span></p>
+        </section>
+
+        <div className="burnout-checklist-dashboard">
+          <section className="burnout-dashboard-section burnout-checklist-card burnout-hardware-card" aria-labelledby="burnout-hardware-title">
+            <header className="burnout-dashboard-heading burnout-checklist-heading">
+              <div><Monitor aria-hidden="true" /><h4 id="burnout-hardware-title">Hardware Checklist</h4></div>
+              <span>{completion.testingChecklist}/{hardwareRows.length}</span>
+            </header>
+            <p className="burnout-checklist-guidance">Each check must pass, or be marked N/A with a reason.</p>
+            <div className="burnout-dashboard-list burnout-hardware-list">
+              {hardwareRows.map((item) => (
+                <article className="burnout-dashboard-row burnout-hardware-row" key={item.id}>
+                  <div className="burnout-row-copy"><strong>{item.category}</strong><span>{item.description}</span></div>
+                  <select aria-label={`${item.category} status`} className="ticket-field ticket-select" value={item.status || 'Not Tested'} onChange={(event) => updateList('testingChecklist', item.id, { status: event.target.value })} disabled={readOnly}>
+                    <option value="Not Tested">Not Tested</option><option value="Pass">Pass</option><option value="Fail">Fail</option><option value="N/A">N/A</option>
+                  </select>
+                  <input aria-label={`${item.category} remarks`} className="ticket-field ticket-input burnout-row-remarks" value={item.remarks || ''} onChange={(event) => updateList('testingChecklist', item.id, { remarks: event.target.value })} readOnly={readOnly} placeholder={item.status === 'N/A' ? 'N/A reason' : 'Remarks'} />
+                </article>
               ))}
-            </tbody>
-          </table>
+            </div>
+          </section>
+
+          <section className="burnout-dashboard-section burnout-checklist-card burnout-software-card" aria-labelledby="burnout-software-title">
+            <header className="burnout-dashboard-heading burnout-checklist-heading">
+              <div><Wrench aria-hidden="true" /><h4 id="burnout-software-title">Software Checklist</h4></div>
+              <div className="burnout-checklist-heading-actions"><span>{completion.softwareChecklist}/{BURNOUT_SOFTWARE_ITEMS.length} required</span>
+                {!readOnly && <button type="button" className="modal-btn print compact" onClick={addSoftwareRow} aria-label="Add software"><MonoIcon icon={Plus} /><span>Add software</span></button>}
+              </div>
+            </header>
+            <p className="burnout-checklist-guidance">All required software must be marked installed.</p>
+            <div className="burnout-dashboard-list burnout-software-list">
+              {softwareRows.map((item) => {
+                const required = requiredSoftwareIds.has(item.id);
+                return (
+                  <article className="burnout-dashboard-row burnout-software-row" id={`burnout-software-row-${item.id}`} key={item.id}>
+                    <div className="burnout-software-main burnout-row-copy">
+                      <input aria-label="Software name" className="ticket-field ticket-input" value={item.software || ''} onChange={(event) => updateList('softwareChecklist', item.id, { software: event.target.value })} readOnly={readOnly} placeholder="Software name" />
+                      <textarea ref={resizeSoftwareDescription} onInput={(event) => resizeSoftwareDescription(event.currentTarget)} aria-label={`${item.software || 'Software'} description`} className="ticket-field ticket-textarea" rows={1} value={item.description || ''} onChange={(event) => updateList('softwareChecklist', item.id, { description: event.target.value })} readOnly={readOnly} placeholder="Description" />
+                    </div>
+                    <div className="burnout-row-actions">
+                      <label className="burnout-installed-toggle"><input type="checkbox" checked={Boolean(item.installed)} onChange={(event) => updateList('softwareChecklist', item.id, { installed: event.target.checked })} disabled={readOnly} /><span>{item.installed ? 'Installed' : 'Not installed'}</span></label>
+                      {!readOnly && !required && <button type="button" className="burnout-row-icon-btn" onClick={() => removeSoftwareRow(item.id)} aria-label={`Remove ${item.software || 'software row'}`} title="Remove software"><MonoIcon icon={Trash2} /></button>}
+                    </div>
+                    <input aria-label={`${item.software || 'Software'} remarks`} className="ticket-field ticket-input burnout-row-remarks" value={item.remarks || ''} onChange={(event) => updateList('softwareChecklist', item.id, { remarks: event.target.value })} readOnly={readOnly} placeholder="Remarks" />
+                  </article>
+                );
+              })}
+            </div>
+          </section>
+
+          <section className="burnout-dashboard-section burnout-checklist-card burnout-monitoring-card" aria-labelledby="burnout-monitoring-title">
+            <header className="burnout-dashboard-heading burnout-checklist-heading">
+              <div><Clock3 aria-hidden="true" /><h4 id="burnout-monitoring-title">Monitoring Summary</h4></div>
+              <span>{completion.monitoring}/{monitoringRows.length}</span>
+            </header>
+            <p className="burnout-checklist-guidance">Record a result and meaningful remarks for every observation.</p>
+            <div className="burnout-dashboard-list burnout-monitoring-list">
+              {monitoringRows.map((item) => (
+                <article className="burnout-dashboard-row burnout-monitoring-row" key={item.id}>
+                  <div className="burnout-row-copy"><strong>{item.item}</strong></div>
+                  <input aria-label={`${item.item} result`} className="ticket-field ticket-input burnout-row-status" value={item.result || ''} onChange={(event) => updateList('monitoring', item.id, { result: event.target.value })} readOnly={readOnly} placeholder="Result" />
+                  <input aria-label={`${item.item} remarks`} className="ticket-field ticket-input burnout-row-remarks" value={item.remarks || ''} onChange={(event) => updateList('monitoring', item.id, { remarks: event.target.value })} readOnly={readOnly} placeholder="Observation / remarks" />
+                </article>
+              ))}
+            </div>
+          </section>
+        </div>
+
+        <section className="burnout-dashboard-section burnout-final-review" aria-labelledby="burnout-final-review-title">
+          <header className="burnout-dashboard-heading burnout-checklist-heading">
+            <div><Check aria-hidden="true" /><h4 id="burnout-final-review-title">Final Review</h4></div>
+            <span>{completion.finalEvaluation}/{evaluationRows.length} complete</span>
+          </header>
+          <div className="burnout-evaluation-list">
+            {evaluationRows.map((item) => (
+              <article className="burnout-evaluation-row" key={item.id}>
+                <strong>{item.item}</strong>
+                <input aria-label={`${item.item} status`} className="ticket-field ticket-input" value={item.status || ''} onChange={(event) => updateList('finalEvaluation', item.id, { status: event.target.value })} readOnly={readOnly} placeholder="Evaluation result" />
+                <textarea aria-label={`${item.item} remarks`} className="ticket-field ticket-textarea" value={item.remarks || ''} onChange={(event) => updateList('finalEvaluation', item.id, { remarks: event.target.value })} readOnly={readOnly} placeholder="Findings and remarks" />
+              </article>
+            ))}
+          </div>
+          <div className={`burnout-completion-summary${completion.testingChecklist === hardwareRows.length && completion.softwareChecklist === BURNOUT_SOFTWARE_ITEMS.length && completion.monitoring === monitoringRows.length && completion.finalEvaluation === evaluationRows.length ? ' complete' : ''}`}>
+            <Check aria-hidden="true" />
+            <span>Hardware {completion.testingChecklist}/{hardwareRows.length} · Software {completion.softwareChecklist}/{BURNOUT_SOFTWARE_ITEMS.length} · Monitoring {completion.monitoring}/{monitoringRows.length} · Evaluation {completion.finalEvaluation}/{evaluationRows.length}</span>
+          </div>
+        </section>
+
+        {canReopen && (
+          <section className="burnout-dashboard-section burnout-reopen-section" aria-labelledby="burnout-reopen-title">
+            <header className="burnout-dashboard-heading"><div><RotateCcw aria-hidden="true" /><h4 id="burnout-reopen-title">Reopen Reason</h4></div><span>Required to reopen</span></header>
+            <textarea className="ticket-field ticket-textarea" value={draft.reopenReason} onChange={(event) => updateDraft('reopenReason', event.target.value)} minLength={8} placeholder="Explain why this completed ticket needs to be reopened." aria-label="Reopen reason" />
+          </section>
+        )}
+
+        <details className="burnout-optional-details">
+          <summary><span><FileText aria-hidden="true" />Additional details</span><span className="burnout-optional-badge">Optional</span></summary>
+          <div className="burnout-handling-notes">
+            <div className="ticket-form-group"><label>Action Taken</label>
+              <textarea className="ticket-field ticket-textarea" value={draft.actionTaken} onChange={(event) => updateDraft('actionTaken', event.target.value)} onBlur={onNoteBlur} placeholder={canEditOutcomeFields ? 'Record the work completed...' : lockedOutcomePlaceholder} readOnly={!canEditOutcomeFields} />
+            </div>
+            <div className="ticket-form-group"><label>Internal ICT Notes</label>
+              <textarea className="ticket-field ticket-textarea" value={draft.adminRemarks} onChange={(event) => updateDraft('adminRemarks', event.target.value)} onBlur={onNoteBlur} placeholder={canEditOutcomeFields ? 'Internal remarks or follow-up notes...' : lockedOutcomePlaceholder} readOnly={!canEditOutcomeFields} />
+            </div>
+            <div className="ticket-form-group"><label>Burnout Notes</label>
+              <textarea className="ticket-field ticket-textarea" value={draft.resolution} onChange={(event) => updateDraft('resolution', event.target.value)} onBlur={onNoteBlur} placeholder={canEditOutcomeFields ? 'Unit condition, pass/fail, repair, or turnover notes...' : lockedOutcomePlaceholder} readOnly={!canEditOutcomeFields} />
+            </div>
+            <div className="ticket-form-group"><label>Recommendation</label>
+              <textarea className="ticket-field ticket-textarea" value={draft.recommendation} onChange={(event) => updateDraft('recommendation', event.target.value)} onBlur={onNoteBlur} placeholder={canEditOutcomeFields ? 'Prevention or follow-up recommendation...' : lockedOutcomePlaceholder} readOnly={!canEditOutcomeFields} />
+            </div>
+          </div>
+        </details>
+      </section>
+    );
+  }
+
+  return (
+    <section className="burnout-report-panel burnout-wizard">
+      <div className="burnout-wizard-topline">
+        <div>
+          <span className="section-kicker">ICT Burnout Process</span>
+          <h4>Unit preparation and 3-5 day monitoring</h4>
+        </div>
+        <span className={`burnout-wizard-step-count${showOptionalDetails ? ' is-optional' : ''}`}>
+          {showOptionalDetails ? 'Optional details' : `Step ${activeStep + 1} of ${steps.length}`}
+        </span>
+      </div>
+
+      <div className="burnout-workspace" ref={workspaceRef}>
+        <nav className="burnout-wizard-steps" aria-label="Burnout checklist sections">
+          {steps.map((step, index) => {
+            const progress = getStepProgress(step.id);
+            const [complete, total] = progress?.split('/').map(Number) || [];
+            const isComplete = Boolean(progress) && complete === total;
+            return (
+              <button
+                key={step.id}
+                type="button"
+                className={`${index === activeStep ? 'active' : ''}${isComplete ? ' complete' : ''}`.trim()}
+                aria-current={index === activeStep ? 'step' : undefined}
+                aria-label={`Step ${index + 1}: ${step.label}${progress ? `, ${progress} complete` : ''}`}
+                title={step.label}
+                onClick={() => {
+                  setShowOptionalDetails(false);
+                  setActiveStep(index);
+                }}
+              >
+                <span className="burnout-step-number">
+                  {isComplete ? <Check aria-hidden="true" /> : index + 1}
+                </span>
+                <span className="burnout-step-label">{step.label}</span>
+                {progress && <small>{progress}</small>}
+              </button>
+            );
+          })}
+          <div className="burnout-optional-navigation">
+            <span>Optional</span>
+            <button
+              type="button"
+              className={showOptionalDetails ? 'active' : ''}
+              aria-current={showOptionalDetails ? 'location' : undefined}
+              onClick={() => setShowOptionalDetails(true)}
+            >
+              <span className="burnout-optional-icon"><FileText aria-hidden="true" /></span>
+              <span className="burnout-step-label">Additional details</span>
+            </button>
+          </div>
+        </nav>
+
+        <div className="burnout-workspace-main">
+          {formError && <div className="form-error burnout-wizard-error" role="alert">{formError}</div>}
+
+          <div className="burnout-step-stage" key={activeStepId}>
+        {activeStepId === 'request' && (
+          <div className="burnout-step-content">
+            <div className="burnout-section-heading">
+              <div><span>01</span><h5>Request overview</h5></div>
+              <p>Submitted {ticket.createdAt || ticket.date || 'date unavailable'}</p>
+            </div>
+            <div className="burnout-request-grid">
+              {meta.map(([label, value]) => (
+                <div className="burnout-request-cell" key={label}><span>{label}</span><strong>{value}</strong></div>
+              ))}
+            </div>
+            {(ticket.saarAttachment?.dataUrl || ticket.photoAttachments?.length > 0) && (
+              <div className="burnout-request-attachments">
+                {ticket.saarAttachment?.dataUrl && (
+                  <a href={ticket.saarAttachment.dataUrl} target="_blank" rel="noopener noreferrer">
+                    <FileText aria-hidden="true" /> SAAR: {ticket.saarAttachment.name}
+                  </a>
+                )}
+                {ticket.photoAttachments?.length > 0 && (
+                  <PhotoAttachmentGallery photos={ticket.photoAttachments} emptyText="" onPreview={onPreviewAttachment} />
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeStepId === 'handling' && (
+          <div className="burnout-step-content">
+            <div className="burnout-section-heading">
+              <div><span>02</span><h5>Ticket handling</h5></div>
+              <p>Update assignment and service status</p>
+            </div>
+            <div className="burnout-handling-controls">
+              <div className="ticket-form-group"><label>Status</label>
+                <select className="ticket-field ticket-select" value={draft.status} onChange={(event) => updateDraft('status', event.target.value)} required disabled={readOnly}>
+                  {statusOptions.map((status) => <option key={status} value={status}>{status}</option>)}
+                </select>
+              </div>
+              <div className="ticket-form-group"><label>SLA</label>
+                <select className="ticket-field ticket-select" value={draft.sla || 'Low'} onChange={(event) => updateDraft('sla', event.target.value)} required disabled={readOnly}>
+                  {SLA_LEVELS.map((sla) => <option key={sla} value={sla}>{sla}</option>)}
+                </select>
+              </div>
+              <div className="ticket-form-group"><label>Assigned ICT Staff</label>
+                <select className="ticket-field ticket-select" value={visibleTechnicianId} onChange={(event) => updateDraft('technicianId', event.target.value)} required disabled={readOnly}>
+                  <option value="__unassigned__">Unassigned</option>
+                  {visibleTechnicianId === '__legacy__' && <option value="__legacy__" disabled>Legacy assignment: {draft.technician}</option>}
+                  {technicianProfiles.map((profile) => <option key={profile.id} value={profile.id}>{profile.name}</option>)}
+                </select>
+              </div>
+          </div>
+          </div>
+        )}
+
+        {activeStepId === 'notes' && (
+          <div className="burnout-step-content">
+            <div className="burnout-section-heading">
+              <div><h5>Additional details</h5><span className="burnout-optional-badge">Optional</span></div>
+              <p>Optional notes to supplement the Burnout record</p>
+            </div>
+            <div className="burnout-handling-notes">
+              <div className="ticket-form-group"><label>Action Taken</label>
+                <textarea className="ticket-field ticket-textarea" value={draft.actionTaken} onChange={(event) => updateDraft('actionTaken', event.target.value)} onBlur={onNoteBlur} placeholder={canEditOutcomeFields ? 'Record the work completed...' : lockedOutcomePlaceholder} readOnly={!canEditOutcomeFields} />
+              </div>
+              <div className="ticket-form-group"><label>Internal ICT Notes</label>
+                <textarea className="ticket-field ticket-textarea" value={draft.adminRemarks} onChange={(event) => updateDraft('adminRemarks', event.target.value)} onBlur={onNoteBlur} placeholder={canEditOutcomeFields ? 'Internal remarks or follow-up notes...' : lockedOutcomePlaceholder} readOnly={!canEditOutcomeFields} />
+              </div>
+              <div className="ticket-form-group"><label>Burnout Notes</label>
+                <textarea className="ticket-field ticket-textarea" value={draft.resolution} onChange={(event) => updateDraft('resolution', event.target.value)} onBlur={onNoteBlur} placeholder={canEditOutcomeFields ? 'Unit condition, pass/fail, repair, or turnover notes...' : lockedOutcomePlaceholder} readOnly={!canEditOutcomeFields} />
+              </div>
+              <div className="ticket-form-group"><label>Recommendation</label>
+                <textarea className="ticket-field ticket-textarea" value={draft.recommendation} onChange={(event) => updateDraft('recommendation', event.target.value)} onBlur={onNoteBlur} placeholder={canEditOutcomeFields ? 'Prevention or follow-up recommendation...' : lockedOutcomePlaceholder} readOnly={!canEditOutcomeFields} />
+              </div>
+              {canReopen && <div className="ticket-form-group burnout-reopen-reason"><label>Reopen Reason (required to reopen)</label>
+                <textarea className="ticket-field ticket-textarea" value={draft.reopenReason} onChange={(event) => updateDraft('reopenReason', event.target.value)} minLength={8} />
+              </div>}
+            </div>
+          </div>
+        )}
+
+        {activeStepId === 'unit' && (
+          <div className="burnout-step-content">
+            <div className="burnout-section-heading">
+              <div><span>03</span><h5>Unit and test period</h5></div>
+              <p>Testing must run for at least 3 full days before passing</p>
+            </div>
+            <div className="burnout-unit-summary">
+              <div><span>Brand & model</span><strong>{ticket.brand || ticket.deviceName || 'Not provided'}</strong></div>
+              <div><span>Serial number</span><strong>{ticket.serialNumber || 'Not provided'}</strong></div>
+              <div><span>User / custodian</span><strong>{ticket.custodian || ticket.requester || 'Not provided'}</strong></div>
+              <div><span>Request date</span><strong>{report.requestedDate || ticket.createdAt || 'Not provided'}</strong></div>
+            </div>
+            <div className="burnout-unit-fields">
+              <div className="ticket-form-group"><label>Performed By</label><input className="ticket-field ticket-input" value={report.performedBy || ''} onChange={(event) => updateReportField('performedBy', event.target.value)} readOnly={readOnly} placeholder="ICT staff name" /></div>
+              <div className="ticket-form-group"><label>Start Date</label><input className="ticket-field ticket-input" type="date" value={report.startDate || ''} onChange={(event) => updateReportField('startDate', event.target.value)} readOnly={readOnly} /></div>
+              <div className="ticket-form-group"><label>End Date</label><input className="ticket-field ticket-input" type="date" value={report.endDate || ''} onChange={(event) => updateReportField('endDate', event.target.value)} readOnly={readOnly} /></div>
+            </div>
+            <div className="burnout-period-note"><CalendarDays aria-hidden="true" /><span>Record daily observations in Monitoring throughout the 3-5 day Burnout period.</span></div>
+          </div>
+        )}
+
+        {activeStepId === 'testingChecklist' && (
+          <div className="burnout-step-content">
+            <div className="burnout-section-heading">
+              <div><span>04</span><h5>Hardware testing</h5></div>
+              <p>{completion.testingChecklist} of {activeRows.length} checks complete</p>
+            </div>
+            <div className="burnout-page-caption">All {activeRows.length} checks<span>Every test must pass, or be marked N/A with a reason.</span></div>
+            <div className="burnout-check-list">
+              {activeRows.map((item) => (
+                <article className="burnout-check-row" key={item.id}>
+                  <div className="burnout-check-copy"><strong>{item.category}</strong><span>{item.description}</span></div>
+                  <select aria-label={`${item.category} status`} className="ticket-field ticket-select" value={item.status || 'Not Tested'} onChange={(event) => updateList('testingChecklist', item.id, { status: event.target.value })} disabled={readOnly}>
+                    <option value="Not Tested">Not Tested</option><option value="Pass">Pass</option><option value="Fail">Fail</option><option value="N/A">N/A</option>
+                  </select>
+                  <input aria-label={`${item.category} remarks`} className="ticket-field ticket-input" value={item.remarks || ''} onChange={(event) => updateList('testingChecklist', item.id, { remarks: event.target.value })} readOnly={readOnly} placeholder={item.status === 'N/A' ? 'Reason required for N/A' : 'Test remarks'} />
+                </article>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {activeStepId === 'softwareChecklist' && (
+          <div className="burnout-step-content">
+            <div className="burnout-section-heading">
+              <div><span>05</span><h5>Software installation</h5></div>
+              <div className="burnout-heading-actions"><p>{completion.softwareChecklist} of {BURNOUT_SOFTWARE_ITEMS.length} required installed</p>
+                {!readOnly && <button type="button" className="modal-btn print compact" onClick={addSoftwareRow}><MonoIcon icon={Plus} />Add software</button>}
+              </div>
+            </div>
+            <div className="burnout-page-caption">All {activeRows.length} items<span>All required software must be marked installed.</span></div>
+            <div className="burnout-software-list">
+              {activeRows.map((item) => {
+                const required = requiredSoftwareIds.has(item.id);
+                return (
+                  <article className="burnout-software-row" id={`burnout-software-row-${item.id}`} key={item.id}>
+                    <div className="burnout-software-main">
+                      <input aria-label="Software name" className="ticket-field ticket-input" value={item.software || ''} onChange={(event) => updateList('softwareChecklist', item.id, { software: event.target.value })} readOnly={readOnly} placeholder="Software name" />
+                      <textarea ref={resizeSoftwareDescription} onInput={(event) => resizeSoftwareDescription(event.currentTarget)} aria-label="Software description" className="ticket-field ticket-textarea" rows={2} value={item.description || ''} onChange={(event) => updateList('softwareChecklist', item.id, { description: event.target.value })} readOnly={readOnly} placeholder="Description" />
+                    </div>
+                    <label className="burnout-installed-toggle"><input type="checkbox" checked={Boolean(item.installed)} onChange={(event) => updateList('softwareChecklist', item.id, { installed: event.target.checked })} disabled={readOnly} /><span>{item.installed ? 'Installed' : 'Not installed'}</span></label>
+                    <input aria-label={`${item.software || 'Software'} remarks`} className="ticket-field ticket-input" value={item.remarks || ''} onChange={(event) => updateList('softwareChecklist', item.id, { remarks: event.target.value })} readOnly={readOnly} placeholder="Remarks" />
+                    {!readOnly && !required && <button type="button" className="burnout-row-icon-btn" onClick={() => removeSoftwareRow(item.id)} aria-label={`Remove ${item.software || 'software row'}`} title="Remove software"><MonoIcon icon={Trash2} /></button>}
+                  </article>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {activeStepId === 'monitoring' && (
+          <div className="burnout-step-content">
+            <div className="burnout-section-heading">
+              <div><span>06</span><h5>Burnout monitoring</h5></div>
+              <p>{completion.monitoring} of {activeRows.length} observations complete</p>
+            </div>
+            <div className="burnout-page-caption">All {activeRows.length} observations<span>Record a result and meaningful remarks for each item.</span></div>
+            <div className="burnout-monitoring-list">
+              {activeRows.map((item) => (
+                <article className="burnout-monitoring-row" key={item.id}>
+                  <strong>{item.item}</strong>
+                  <input aria-label={`${item.item} result`} className="ticket-field ticket-input" value={item.result || ''} onChange={(event) => updateList('monitoring', item.id, { result: event.target.value })} readOnly={readOnly} placeholder="Result" />
+                  <input aria-label={`${item.item} remarks`} className="ticket-field ticket-input" value={item.remarks || ''} onChange={(event) => updateList('monitoring', item.id, { remarks: event.target.value })} readOnly={readOnly} placeholder="Observation / remarks" />
+                </article>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {activeStepId === 'finalEvaluation' && (
+          <div className="burnout-step-content">
+            <div className="burnout-section-heading">
+              <div><span>07</span><h5>Final evaluation</h5></div>
+              <p>{completion.finalEvaluation} of {activeRows.length} evaluations complete</p>
+            </div>
+            <div className="burnout-evaluation-list">
+              {activeRows.map((item) => (
+                <article className="burnout-evaluation-row" key={item.id}>
+                  <strong>{item.item}</strong>
+                  <input aria-label={`${item.item} status`} className="ticket-field ticket-input" value={item.status || ''} onChange={(event) => updateList('finalEvaluation', item.id, { status: event.target.value })} readOnly={readOnly} placeholder="Evaluation status" />
+                  <textarea aria-label={`${item.item} remarks`} className="ticket-field ticket-textarea" value={item.remarks || ''} onChange={(event) => updateList('finalEvaluation', item.id, { remarks: event.target.value })} readOnly={readOnly} placeholder="Explain the evaluation" />
+                </article>
+              ))}
+            </div>
+            <div className={`burnout-completion-summary${completion.testingChecklist === (report.testingChecklist || []).length && completion.softwareChecklist === BURNOUT_SOFTWARE_ITEMS.length && completion.monitoring === (report.monitoring || []).length && completion.finalEvaluation === (report.finalEvaluation || []).length ? ' complete' : ''}`}>
+              <Check aria-hidden="true" />
+              <span>Hardware {completion.testingChecklist}/{(report.testingChecklist || []).length} · Software {completion.softwareChecklist}/{BURNOUT_SOFTWARE_ITEMS.length} · Monitoring {completion.monitoring}/{(report.monitoring || []).length} · Evaluation {completion.finalEvaluation}/{(report.finalEvaluation || []).length}</span>
+            </div>
+          </div>
+        )}
+          </div>
+
+          <div className={`burnout-wizard-navigation${showOptionalDetails ? ' optional-active' : ''}`}>
+            {showOptionalDetails ? (
+              <button type="button" className="modal-btn print compact" onClick={() => setShowOptionalDetails(false)}>
+                <MonoIcon icon={ChevronLeft} />Back to final review
+              </button>
+            ) : (
+              <>
+                <button type="button" className="modal-btn print compact" onClick={goPrevious} disabled={activeStep === 0}>
+                  <MonoIcon icon={ChevronLeft} />Previous
+                </button>
+                <button type="button" className="modal-btn print compact" onClick={goNext}>
+                  {activeStep === steps.length - 1 ? 'Additional details' : 'Next'}<MonoIcon icon={ChevronRight} />
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
-      <div className="burnout-compact-grid">
-        <div className="burnout-table-block">
-          <h5>Burnout Monitoring (3-5 Days)</h5>
-          {(report.monitoring || []).map((item) => (
-            <div className="burnout-compact-row" key={item.id}>
-              <strong>{item.item}</strong>
-              <input
-                className="ticket-field ticket-input"
-                value={item.result || ''}
-                onChange={(e) => updateReportList('monitoring', item.id, { result: e.target.value })}
-                readOnly={readOnly}
-              />
-              <input
-                className="ticket-field ticket-input"
-                value={item.remarks || ''}
-                onChange={(e) => updateReportList('monitoring', item.id, { remarks: e.target.value })}
-                readOnly={readOnly}
-              />
-            </div>
-          ))}
-        </div>
-
-        <div className="burnout-table-block burnout-final-evaluation">
-          <h5>Final Evaluation</h5>
-          {(report.finalEvaluation || []).map((item) => (
-            <div className="burnout-compact-row" key={item.id}>
-              <strong>{item.item}</strong>
-              <input
-                className="ticket-field ticket-input"
-                value={item.status || ''}
-                onChange={(e) => updateReportList('finalEvaluation', item.id, { status: e.target.value })}
-                readOnly={readOnly}
-              />
-              <input
-                className="ticket-field ticket-input"
-                value={item.remarks || ''}
-                onChange={(e) => updateReportList('finalEvaluation', item.id, { remarks: e.target.value })}
-                readOnly={readOnly}
-              />
-            </div>
-          ))}
-        </div>
-      </div>
     </section>
   );
 }
@@ -3950,7 +4336,7 @@ function TicketWorkTimer({ ticket, now, compact = false, showLabel = true }) {
         <MonoIcon icon={Clock3} />
         {showLabel && timerLabel}
       </span>
-      <strong>{formatElapsedTime(startedAt, endedAt, now)}</strong>
+      <strong>{formatElapsedTime(startedAt, endedAt, now, ticket.handlingSeconds)}</strong>
       {!compact && (
         <p>
           Started {startedAtLabel}
@@ -4265,21 +4651,28 @@ function BreakdownList({ title, kicker, items, className = '' }) {
   );
 }
 
-function AdminWorkloadPanel({ tickets }) {
+function AdminWorkloadPanel({ tickets, users = [] }) {
   const workloadItems = useMemo(() => {
-    const names = [...TECHNICIANS, 'Unassigned'];
+    const activeIctUsers = users.filter((user) => isAdminRole(user.role) && !isInactivePortalUser(user));
+    const usersById = new Map(activeIctUsers.map((user) => [user.id, user]));
+    const usersByName = new Map(activeIctUsers.map((user) => [normalizeComparable(user.name), user]));
+    const groups = new Map();
 
-    return names
-      .map((name) => {
-        const assignedTickets = tickets.filter((ticket) => {
-          const technician = ticket.technician || 'Unassigned';
+    activeIctUsers.forEach((user) => {
+      groups.set(`profile:${user.id}`, { name: user.name, tickets: [] });
+    });
 
-          if (name === 'Unassigned') {
-            return !hasAssignedTechnician(ticket);
-          }
+    tickets.forEach((ticket) => {
+      const name = getReportTechnicianName(ticket.technician);
+      const profile = usersById.get(ticket.technicianId) || usersByName.get(normalizeComparable(name));
+      const key = profile?.id ? `profile:${profile.id}` : name ? `legacy:${normalizeComparable(name)}` : 'unassigned';
+      const group = groups.get(key) || { name: profile?.name || name || 'Unassigned', tickets: [] };
+      group.tickets.push(ticket);
+      groups.set(key, group);
+    });
 
-          return technician === name;
-        });
+    return [...groups.values()]
+      .map(({ name, tickets: assignedTickets }) => {
         const active = assignedTickets.filter((ticket) => isUnresolved(ticket.status)).length;
         const urgent = assignedTickets.filter(isSlaWatchTicket).length;
         const resolved = assignedTickets.filter(isTicketResolved).length;
@@ -4292,14 +4685,13 @@ function AdminWorkloadPanel({ tickets }) {
           resolved,
         };
       })
-      .filter((item) => item.total > 0 || item.name !== 'Unassigned')
       .sort((a, b) =>
         b.active - a.active ||
         b.urgent - a.urgent ||
         b.total - a.total ||
         a.name.localeCompare(b.name)
       );
-  }, [tickets]);
+  }, [tickets, users]);
   const maxActive = Math.max(1, ...workloadItems.map((item) => item.active));
 
   return (
@@ -4565,26 +4957,12 @@ function ReportCalendar({
    DASHBOARD VIEW
 ========================= */
 
-function DashboardView({ tickets, summary, categorySummary, onGoTo, onOpenTicket, now }) {
+function DashboardView({ tickets, summary, categorySummary, onGoTo, onOpenTicket, onRefresh, now }) {
   const [queuePage, setQueuePage] = useState(1);
   const [urgentWatchIndex, setUrgentWatchIndex] = useState(0);
   const [movedDateWatchIndex, setMovedDateWatchIndex] = useState(0);
   const waitingTickets = useMemo(() => {
-    const eligibleTickets = tickets.filter((ticket) => {
-      const lockExpiresAt = new Date(ticket.lockExpiresAt || '').getTime();
-      const hasActiveLock = Boolean(
-        ticket.lockedBy &&
-        !Number.isNaN(lockExpiresAt) &&
-        lockExpiresAt > now
-      );
-
-      return (
-        isUnresolved(ticket.status) &&
-        !isMovedDateTicket(ticket) &&
-        !hasActiveLock &&
-        !isTicketBeingHandled(ticket)
-      );
-    });
+    const eligibleTickets = tickets.filter((ticket) => isHelpdeskQueueEligible(ticket, now));
 
     // Critical, then High SLA tickets are escalated; remaining tickets stay FIFO.
     return sortTicketQueueFirstComeFirstServed(eligibleTickets);
@@ -4627,7 +5005,9 @@ function DashboardView({ tickets, summary, categorySummary, onGoTo, onOpenTicket
     <div className="dashboard-view">
       <section className="panel-card glass hero-panel admin-hero-panel">
         <div className="hero-copy">
-          <span className="section-kicker">IT Helpdesk Admin Console</span>
+          <span className="section-kicker">Admin Dashboard</span>
+          <h2>Helpdesk overview</h2>
+          <p>Review incoming requests, monitor priority work, and keep ICT support moving.</p>
         </div>
       </section>
 
@@ -4646,6 +5026,10 @@ function DashboardView({ tickets, summary, categorySummary, onGoTo, onOpenTicket
                 <span className="section-kicker">Ticket Queue</span>
                 <h3>Employee Concerns</h3>
               </div>
+              <button type="button" className="quick-action-btn" onClick={onRefresh}>
+                <MonoIcon icon={RotateCcw} />
+                Refresh
+              </button>
             </div>
 
             <TicketTable
@@ -4654,7 +5038,7 @@ function DashboardView({ tickets, summary, categorySummary, onGoTo, onOpenTicket
               queueSummary
               renderPagination={false}
               emptyTitle="No new tickets waiting"
-              emptyDescription="Newly submitted tickets will appear here before ICT starts catering them."
+              emptyDescription="New unassigned tickets appear here; Burnout requests also appear in Burnout Reports for continued tracking."
               now={now}
               pagination={{
                 tickets: pagedWaitingTickets,
@@ -5326,7 +5710,7 @@ function BranchesView({ branchSummary, tickets, onOpenTicket, now }) {
                     value={getVisibleTicketDescription(ticket.description) || 'No description provided.'}
                   />
 
-                  <TicketWorkTimer ticket={ticket} now={now} compact />
+                  <TicketWorkTimer ticket={ticket} now={now} />
                 </article>
               ))}
             </div>
@@ -5490,7 +5874,16 @@ function ReportsView({ tickets, summary, categorySummary, statusSummary, branchS
     safeSelectedPeriodPage * REPORT_PERIOD_PAGE_SIZE
   );
   const hasPeriodPages = selectedPeriodTotalPages > 1;
+  const periodRangeStart = selectedPeriodItems.length
+    ? (safeSelectedPeriodPage - 1) * REPORT_PERIOD_PAGE_SIZE + 1
+    : 0;
+  const periodRangeEnd = Math.min(safeSelectedPeriodPage * REPORT_PERIOD_PAGE_SIZE, selectedPeriodItems.length);
   const activeCalendarMonth = calendarMonth || getTicketCalendarMonth(tickets);
+  const activeCalendarMonthKey = new Date(
+    activeCalendarMonth.getFullYear(),
+    activeCalendarMonth.getMonth(),
+    1
+  ).toISOString();
   const selectedDateTickets = selectedCalendarDate
     ? getMonthlyTicketAnchorEvents(tickets, activeCalendarMonth)
         .filter((event) => event.key === selectedCalendarDate)
@@ -5573,7 +5966,7 @@ function ReportsView({ tickets, summary, categorySummary, statusSummary, branchS
   };
   const handlePrintPeriod = () => {
     if (selectedPeriod.key === 'month') {
-      printMonthlyConsolidatedReport(tickets, activeCalendarMonth);
+      printMonthlyConsolidatedReport(tickets, activeCalendarMonth, users);
       return;
     }
 
@@ -5588,6 +5981,7 @@ function ReportsView({ tickets, summary, categorySummary, statusSummary, branchS
       items: [{ name: selectedPrintOption.name, count: selectedPrintOption.count }],
       total: selectedPrintOption.ticketCount,
       tickets,
+      users,
       selectedPeriodKey: selectedPrintOption.key,
       selectedPeriodName: selectedPrintOption.name,
     });
@@ -5597,7 +5991,20 @@ function ReportsView({ tickets, summary, categorySummary, statusSummary, branchS
   };
 
   const handleSelectReportPeriod = (item) => {
-    if (!item?.key || selectedPeriod.key === 'month') return;
+    if (!item?.key) return;
+
+    if (selectedPeriod.key === 'month') {
+      const selectedMonth = monthPrintOptions.find((option) => option.key === item.key);
+
+      if (!selectedMonth) return;
+
+      const nextMonth = new Date(selectedMonth.timestamp);
+      nextMonth.setDate(1);
+      nextMonth.setHours(0, 0, 0, 0);
+      setCalendarMonth(nextMonth);
+      setSelectedCalendarDate('');
+      return;
+    }
 
     if (selectedPeriod.key === 'week') {
       setSelectedPrintWeekKey(item.key);
@@ -5666,38 +6073,40 @@ function ReportsView({ tickets, summary, categorySummary, statusSummary, branchS
           </div>
         </div>
 
-        <div className={`report-period-strip${hasPeriodPages ? ' has-pages' : ''}`}>
-          {hasPeriodPages && (
+        <div className="report-period-strip">
+
+          <BreakdownItems
+            items={selectedBreakdownItems}
+            selectable
+            selectedKey={selectedPeriod.key === 'month' ? activeCalendarMonthKey : selectedPrintKey}
+            onSelect={handleSelectReportPeriod}
+          />
+
+        </div>
+
+        {hasPeriodPages && (
+          <nav className="report-period-pager" aria-label={`${selectedPeriod.label} report pages`}>
             <button
               type="button"
-              className="report-period-arrow"
               onClick={() => changeReportPeriodPage(-1)}
               disabled={safeSelectedPeriodPage === 1}
               aria-label={`Previous ${selectedPeriod.label.toLowerCase()} reports`}
             >
               <ChevronLeft aria-hidden="true" />
             </button>
-          )}
-
-          <BreakdownItems
-            items={selectedBreakdownItems}
-            selectable={selectedPeriod.key !== 'month'}
-            selectedKey={selectedPrintKey}
-            onSelect={handleSelectReportPeriod}
-          />
-
-          {hasPeriodPages && (
+            <span aria-live="polite">
+              {periodRangeStart}-{periodRangeEnd} of {selectedPeriodItems.length}
+            </span>
             <button
               type="button"
-              className="report-period-arrow"
               onClick={() => changeReportPeriodPage(1)}
               disabled={safeSelectedPeriodPage === selectedPeriodTotalPages}
               aria-label={`Next ${selectedPeriod.label.toLowerCase()} reports`}
             >
               <ChevronRight aria-hidden="true" />
             </button>
-          )}
-        </div>
+          </nav>
+        )}
       </section>
 
       <ReportCalendar
@@ -5711,7 +6120,7 @@ function ReportsView({ tickets, summary, categorySummary, statusSummary, branchS
       />
 
       <div className="admin-report-grid compact">
-        <AdminWorkloadPanel tickets={tickets} />
+        <AdminWorkloadPanel tickets={tickets} users={users} />
         <BreakdownList title="Status" kicker="Report" items={statusActivitySummary} />
         <BreakdownList title="SLA" kicker="Report" items={slaSummary} />
         <BreakdownList title="Support Category" kicker="Report" items={categorySummary.slice(0, 6)} />
@@ -5727,6 +6136,7 @@ function ReportsView({ tickets, summary, categorySummary, statusSummary, branchS
 ========================= */
 
 function UsersView({ users, canEditUsers, canDeleteUsers, canEditRoles, currentUserId, onUsersChanged }) {
+  const confirmDialog = useConfirmDialog();
   const USERS_PAGE_SIZE = 5;
   const [editingUser, setEditingUser] = useState(null);
   const [editForm, setEditForm] = useState(null);
@@ -5806,7 +6216,11 @@ function UsersView({ users, canEditUsers, canDeleteUsers, canEditRoles, currentU
   };
 
   const updateEditForm = (field, value) => {
-    setEditForm((prev) => ({ ...prev, [field]: value }));
+    setEditForm((prev) => ({
+      ...prev,
+      [field]: value,
+      ...(field === 'role' && value !== 'area_manager_admin' ? { areaId: '' } : {}),
+    }));
   };
 
   const closeEdit = () => {
@@ -5878,9 +6292,12 @@ function UsersView({ users, canEditUsers, canDeleteUsers, canEditRoles, currentU
       let confirmPrivilegedRoleChange = false;
 
       if (privilegedRoleChange) {
-        confirmPrivilegedRoleChange = window.confirm(
-          `Confirm privileged role change for ${editingUser.name || editingUser.email} from ${formatRoleLabel(editingUser.role)} to ${formatRoleLabel(editForm.role)}?`
-        );
+        confirmPrivilegedRoleChange = await confirmDialog({
+          title: 'Confirm privileged role change?',
+          message: `${editingUser.name || editingUser.email} will change from ${formatRoleLabel(editingUser.role)} to ${formatRoleLabel(editForm.role)}.`,
+          confirmLabel: 'Confirm role change',
+          variant: 'danger',
+        });
 
         if (!confirmPrivilegedRoleChange) {
           setIsSubmitting(false);
@@ -5923,9 +6340,13 @@ function UsersView({ users, canEditUsers, canDeleteUsers, canEditRoles, currentU
       return;
     }
 
-    const confirmed = window.confirm(
-      `Delete the portal account for ${user.name || user.email}?`
-    );
+    const confirmed = await confirmDialog({
+      title: 'Delete portal account?',
+      message: `The account for ${user.name || user.email} will be permanently removed.`,
+      confirmLabel: 'Delete account',
+      variant: 'danger',
+      warning: 'This action cannot be undone.',
+    });
 
     if (!confirmed) return;
 
@@ -6281,6 +6702,22 @@ function UsersView({ users, canEditUsers, canDeleteUsers, canEditRoles, currentU
                 </select>
               </div>
 
+              {editForm.role === 'area_manager_admin' && (
+                <div className="ticket-form-group">
+                  <label htmlFor="edit-area">Area Manager Jurisdiction</label>
+                  <select
+                    id="edit-area"
+                    className="ticket-field ticket-select"
+                    required
+                    value={editForm.areaId}
+                    onChange={(e) => updateEditForm('areaId', e.target.value)}
+                  >
+                    <option value="" disabled>Select area</option>
+                    {AREA_OPTIONS.map((area) => <option key={area.id} value={area.id}>{area.label}</option>)}
+                  </select>
+                </div>
+              )}
+
               <div className="ticket-form-group password-refresh-field">
                 <span className="field-label-row">Password Access</span>
                 <div className="password-refresh-card">
@@ -6397,7 +6834,11 @@ function CreateUserView({ users = [], onCreated }) {
     : null;
 
   const updateForm = (field, value) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
+    setForm((prev) => ({
+      ...prev,
+      [field]: value,
+      ...(field === 'role' && value !== 'area_manager_admin' ? { areaId: '' } : {}),
+    }));
   };
 
   const handleSubmit = async (e) => {
@@ -6602,6 +7043,21 @@ function CreateUserView({ users = [], onCreated }) {
                 ))}
               </select>
             </div>
+          {form.role === 'area_manager_admin' && (
+            <div className="ticket-form-group">
+              <label htmlFor="create-area">Area Manager Jurisdiction</label>
+              <select
+                id="create-area"
+                className="ticket-field ticket-select"
+                required
+                value={form.areaId}
+                onChange={(e) => updateForm('areaId', e.target.value)}
+              >
+                <option value="" disabled>Select area</option>
+                {AREA_OPTIONS.map((area) => <option key={area.id} value={area.id}>{area.label}</option>)}
+              </select>
+            </div>
+          )}
           </div>
 
           <div className="admin-form-actions">
@@ -6918,19 +7374,19 @@ function CreateIctTicketView({ admin, users = [], onCreated }) {
    TICKET ACTION MODAL
 ========================= */
 
-function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, canDelete, now, onTicketRealtimeUpdate }) {
+function TicketActionModal({ ticket, currentUser, users = [], onClose, onSave, onDelete, onReopen, canDelete, now, onTicketRealtimeUpdate }) {
   useBodyScrollLock(true);
 
   const hasWorkStarted = Boolean(getTicketWorkStartedAt(ticket));
   const isBurnout = isBurnoutTicket(ticket);
-  const isResolvedLocked = isBurnout ? isBurnoutClosedStatus(ticket.status) : isTicketResolved(ticket);
+  const isResolvedLocked = isClosed(ticket.status);
+  const canReopen = normalizePortalRole(currentUser?.role) === 'superadmin' && isResolvedLocked;
   const isStartMode = !isBurnout && !hasWorkStarted && !isResolvedLocked && !isMovedDateTicket(ticket);
   const burnoutWorkflowStatus = isBurnout ? getBurnoutWorkflowStatus(ticket.status) : '';
-  const statusOptions = isBurnout
-    ? Array.from(new Set([burnoutWorkflowStatus, ...BURNOUT_TICKET_STATUSES].filter(Boolean)))
-    : isStartMode
-    ? ['In Progress']
-    : TICKET_STATUSES.filter((status) => status !== 'Created');
+  const statusOptions = isStartMode ? ['In Progress'] : availableStatuses(ticket);
+  const savedVersionRef = useRef(ticket.version);
+  const submittingRef = useRef(false);
+  const [isSubmitting,setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
   const [ticketMessages, setTicketMessages] = useState([]);
   const [messageDraft, setMessageDraft] = useState('');
@@ -6945,18 +7401,29 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
   const ticketMessageIdsRef = useRef(new Set());
 
   const currentStaffName = currentUser?.name || 'Unassigned';
+  const technicianProfiles = users.filter((user) => isAdminRole(user.role) && !isInactivePortalUser(user));
+  if (isAdminRole(currentUser?.role) && !isInactivePortalUser(currentUser) && !technicianProfiles.some((user) => user.id === currentUser.id)) {
+    technicianProfiles.push(currentUser);
+  }
+  const initialTechnicianProfile = technicianProfiles.find((user) => user.id === ticket.technicianId)
+    || (!hasAssignedTechnician(ticket) ? technicianProfiles.find((user) => user.id === currentUser?.id) : null);
   const assignedStaff = ticket.technician && ticket.technician !== 'Unassigned'
     ? ticket.technician
-    : currentStaffName;
+    : initialTechnicianProfile?.name || currentStaffName;
   const [draft, setDraft] = useState({
-    status: isBurnout ? burnoutWorkflowStatus : isStartMode ? 'In Progress' : ticket.status || 'Pending',
+    status: isBurnout && ['Created','Submitted'].includes(ticket.status) ? 'For Inspection' : isStartMode ? 'In Progress' : ticket.status || 'Pending',
     sla: ticket.sla || 'Low',
     technician: assignedStaff,
+    technicianId: ticket.technicianId || initialTechnicianProfile?.id || '',
     actionTaken: ticket.actionTaken || '',
     adminRemarks: ticket.adminRemarks || '',
     resolution: ticket.resolution || '',
     recommendation: ticket.recommendation || '',
     burnoutReport: isBurnout ? normalizeBurnoutReport(ticket, currentUser) : null,
+    nextActionAt: ticket.nextActionAt ? new Date(new Date(ticket.nextActionAt).getTime()-new Date(ticket.nextActionAt).getTimezoneOffset()*60000).toISOString().slice(0,16) : '',
+    escalationPartner: ticket.escalationPartner || '',
+    actionReason: ticket.actionReason || '',
+    reopenReason: '',
   });
   const [autosaveState, setAutosaveState] = useState({ status: 'idle', message: '' });
   const autosaveTimeoutRef = useRef(null);
@@ -6970,14 +7437,15 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
   );
   const latestDraftRef = useRef(draft);
   const autosaveInFlightRef = useRef(null);
-  const isEscalationStatus = normalizeTicketStatus(draft.status) === 'escalated';
-  const staffOptions = Array.from(
-    new Set([currentStaffName, assignedStaff, ...TECHNICIANS].filter((name) => name && name !== 'Unassigned'))
-  );
-  const technicianOptions = Array.from(
-    new Set(isEscalationStatus ? [...staffOptions, ...ESCALATION_PARTNERS] : staffOptions)
-  );
-  const visibleTechnician = technicianOptions.includes(draft.technician) ? draft.technician : 'Unassigned';
+  const normalizedDraftStatus = normalizeTicketStatus(draft.status);
+  const isEscalationStatus = normalizedDraftStatus === 'escalated';
+  const isWaitingStatus = ['waiting for requester', 'waiting for vendor', 'waiting for approval'].includes(normalizedDraftStatus);
+  const isNoScrollWorkflowStatus = ['escalated', 'moved date'].includes(normalizedDraftStatus) || isWaitingStatus;
+  const draftTechnicianIsAssigned = hasAssignedTechnician({ technician: draft.technician });
+  const technicianProfileIsAvailable = technicianProfiles.some((user) => user.id === draft.technicianId);
+  const visibleTechnicianId = technicianProfileIsAvailable
+    ? draft.technicianId
+    : draftTechnicianIsAssigned ? '__legacy__' : '__unassigned__';
   const canEditOutcomeFields = !isResolvedLocked;
   const lockedOutcomePlaceholder = isBurnout
     ? 'Available while the Burnout record is still active.'
@@ -7002,6 +7470,18 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
     currentUserIdRef.current = currentUser?.id || '';
   }, [currentUser?.id]);
 
+  useEffect(()=>{
+    let cancelled=false;
+    const renew=async()=>{
+      try {
+        const renewed=await claimTicketLock(ticket.id,currentUser);
+        if (!cancelled && renewed?.lockedBy!==currentUser.id) setFormError('This ticket is now locked by another administrator.');
+      } catch(error) {if (!cancelled) setFormError(error.message);}
+    };
+    const id=window.setInterval(renew,60000);
+    return()=>{cancelled=true;window.clearInterval(id);};
+  },[ticket.id,currentUser?.id]);
+
   useEffect(() => {
     if (!ticket?.id) return undefined;
 
@@ -7013,9 +7493,8 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
         const messages = await getTicketMessages(ticket.id);
 
         if (!cancelled) {
-          ticketMessageIdsRef.current = new Set(messages.map((message) => message.id));
-          setTicketMessages(messages);
-          setUnreadConversationCount(0);
+          messages.forEach(message=>ticketMessageIdsRef.current.add(message.id));
+          setTicketMessages(current=>mergeMessages(current,messages));
           setMessageError('');
         }
       } catch (error) {
@@ -7033,7 +7512,7 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
 
       if (!messageAlreadyExists) {
         ticketMessageIdsRef.current.add(newMessage.id);
-        setTicketMessages((current) => [...current, newMessage]);
+        setTicketMessages((current) => mergeMessages(current,[newMessage]));
       }
 
       const isIncomingMessage = newMessage.senderId !== currentUserIdRef.current;
@@ -7041,7 +7520,7 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
       if (!messageAlreadyExists && isIncomingMessage && isChatMinimizedRef.current) {
         setUnreadConversationCount((current) => current + 1);
       }
-    });
+    },status=>{if(status==='SUBSCRIBED') void loadMessages();});
 
     const unsubscribeTicket = subscribeToTicket(ticket.id, (updatedTicket) => {
       if (!cancelled) {
@@ -7100,6 +7579,7 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
       });
 
       ticketMessageIdsRef.current.add(sentMessage.id);
+      if (Number.isSafeInteger(sentMessage.ticketVersion)) savedVersionRef.current=sentMessage.ticketVersion;
       setTicketMessages((current) => {
         const exists = current.some((message) => message.id === sentMessage.id);
         return exists ? current : [...current, sentMessage];
@@ -7116,24 +7596,13 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
   const updateDraft = (field, value) => {
     setFormError('');
     setDraft((prev) => {
-      if (isBurnout && field === 'status') {
+      if (field === 'technicianId') {
+        const profile = value === '__unassigned__' ? null : technicianProfiles.find((user) => user.id === value);
         return {
           ...prev,
-          status: value,
-          technician: value === 'Submitted' ? prev.technician : (prev.technician || currentStaffName),
+          technicianId: profile?.id || '',
+          technician: profile?.name || 'Unassigned',
         };
-      }
-
-      if (field === 'status' && value === 'In Progress') {
-        return {
-          ...prev,
-          status: value,
-          technician: ESCALATION_PARTNERS.includes(prev.technician) ? currentStaffName : prev.technician,
-        };
-      }
-
-      if (field === 'status' && value !== 'Escalated' && ESCALATION_PARTNERS.includes(prev.technician)) {
-        return { ...prev, status: value, technician: currentStaffName };
       }
 
       return { ...prev, [field]: value };
@@ -7153,7 +7622,7 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
   }), []);
 
   const performNotesAutosave = useCallback(async ({ force = false } = {}) => {
-    if (!ticket?.id || isResolvedLocked) return null;
+    if (!ticket?.id || isResolvedLocked || submittingRef.current) return null;
 
     if (autosaveInFlightRef.current) {
       try {
@@ -7183,6 +7652,7 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
         requestedByRole: currentUser?.role || 'admin',
         updateScope: 'admin-autosave',
         autoSave: true,
+        expectedVersion: savedVersionRef.current,
       }
     );
 
@@ -7190,6 +7660,7 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
 
     try {
       const updatedTicket = await savePromise;
+      savedVersionRef.current = updatedTicket.version;
       lastAutosavedNotesRef.current = signature;
       setAutosaveState({ status: 'saved', message: 'Saved' });
 
@@ -7297,8 +7768,9 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
     ...getAutosaveNotes(draft),
   });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    if (submittingRef.current) return;
 
     if (autosaveTimeoutRef.current) {
       window.clearTimeout(autosaveTimeoutRef.current);
@@ -7317,19 +7789,7 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
       return;
     }
 
-    const outcomeLocked = draftStatus === 'in progress';
-    const sanitizedDraft = outcomeLocked
-      ? {
-          ...draft,
-          technician: ESCALATION_PARTNERS.includes(draft.technician) ? currentStaffName : draft.technician,
-        }
-      : {
-          ...draft,
-          technician:
-            draft.status === 'Escalated' || !ESCALATION_PARTNERS.includes(draft.technician)
-              ? draft.technician
-              : 'Unassigned',
-        };
+    const sanitizedDraft = { ...draft, technicianId: draft.technicianId || null };
 
     const timestamp = new Date().toLocaleString();
     const existingMovedDateValue = hasTimeInDateLabel(ticket.dateLabel) ? ticket.dateLabel : '';
@@ -7343,18 +7803,25 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
       dateLabel: movedDateValue,
     };
 
-    onSave(ticket.id, {
+    submittingRef.current=true;
+    setIsSubmitting(true);
+    try {
+    if (autosaveInFlightRef.current) await autosaveInFlightRef.current;
+    await onSave(ticket.id, {
       ...sanitizedDraft,
       technician: sanitizedDraft.technician || currentStaffName,
       adminUpdatedAt: timestamp,
       lastUpdated: timestamp,
       dateLabel: movedDateValue,
+      nextActionAt: draft.nextActionAt ? new Date(draft.nextActionAt).toISOString() : null,
       employeeEditLocked: isEmployeeLockedTicket(nextTicketSnapshot),
       employeeEditLockedAt: timestamp,
       employeeEditLockedBy: currentUser?.id || null,
       employeeEditLockedByName: currentStaffName,
       employeeEditLockReason: getEmployeeTicketLockReason(nextTicketSnapshot),
-    });
+    },{expectedVersion:savedVersionRef.current});
+    } catch(error) {setFormError(error.message || 'Unable to save ticket.');}
+    finally {submittingRef.current=false;setIsSubmitting(false);}
   };
 
   return (
@@ -7362,17 +7829,19 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
       className={[
         'modal-overlay',
         'ticket-action-overlay',
+        isBurnout ? 'burnout-modal-open' : '',
         isChatOpen ? 'chat-open' : '',
         shouldShowConversation && isChatMinimized ? 'chat-minimized' : '',
       ].filter(Boolean).join(' ')}
       role="dialog"
       aria-modal="true"
-      aria-label="Ticket action modal"
+      aria-label={isBurnout ? 'Burnout ticket editor' : 'Ticket action modal'}
     >
       <form
         className={[
           'modal-box glass admin-modal-box ticket-action-modal',
           isBurnout ? 'is-burnout-modal' : 'is-support-modal',
+          isNoScrollWorkflowStatus ? 'is-no-scroll-workflow' : '',
           isResolvedLocked ? 'resolved-locked' : '',
         ].filter(Boolean).join(' ')}
         onSubmit={handleSubmit}
@@ -7382,7 +7851,7 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
             <div className="ticket-action-identity-group">
               <span className="ticket-id" title={getTicketDisplayCode(ticket)}>{getTicketDisplayCode(ticket)}</span>
               <div className="ticket-action-title-copy">
-                <h3 title={ticket.concernType}>{ticket.concernType}</h3>
+                <h3 title={isBurnout ? 'Helpdesk Burnout Checklist' : ticket.concernType}>{isBurnout ? 'Helpdesk Burnout Checklist' : ticket.concernType}</h3>
                 <p title={`${ticket.branch} - ${ticket.department}`}>{ticket.branch} - {ticket.department}</p>
               </div>
             </div>
@@ -7402,12 +7871,38 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
             </div>
           </div>
 
+          <p className="ticket-sla-deadline-note">
+            {isBurnout
+              ? `Submitted ${ticket.createdAt || ticket.date || 'date unavailable'} - 3-5 day unit testing cycle`
+              : `Response due ${ticket.responseDueAt ? new Date(ticket.responseDueAt).toLocaleString() : 'not set'} | Resolution due ${ticket.resolutionDueAt ? new Date(ticket.resolutionDueAt).toLocaleString() : 'not set'} | Calendar hours; continues while waiting`}
+          </p>
+
           <button type="button" className="admin-modal-close" onClick={handleRequestClose} aria-label="Close modal">
-            &times;
+            <X aria-hidden="true" />
           </button>
         </div>
 
         <div className="ticket-action-scroll-content">
+        {isBurnout ? (
+          <BurnoutReportEditor
+            ticket={ticket}
+            report={draft.burnoutReport}
+            onChange={updateBurnoutReport}
+            readOnly={isResolvedLocked}
+            draft={draft}
+            updateDraft={updateDraft}
+            statusOptions={statusOptions}
+            visibleTechnicianId={visibleTechnicianId}
+            technicianProfiles={technicianProfiles}
+            canEditOutcomeFields={canEditOutcomeFields}
+            lockedOutcomePlaceholder={lockedOutcomePlaceholder}
+            onNoteBlur={handleNoteBlur}
+            canReopen={canReopen}
+            formError={formError}
+            onPreviewAttachment={setSelectedAttachment}
+          />
+        ) : (
+          <>
         <div className="admin-modal-grid ticket-action-info-grid">
           <div className="ticket-meta-cell">
             <span>Ticket Code</span>
@@ -7462,13 +7957,19 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
         </div>
 
 
-        <div className="ticket-action-details-row">
-          <div className="admin-description-box ticket-action-description">
-            <span>Description of Problem</span>
-            <PreservedText value={getVisibleTicketDescription(ticket.description) || 'No description provided.'} />
+        <div className={`ticket-action-details-row${isNoScrollWorkflowStatus ? ' is-expanded-workflow' : ''}`}>
+          <div className={`ticket-action-description-column${isWaitingStatus ? ' is-waiting-workflow' : ''}`}>
+            <div className="admin-description-box ticket-action-description">
+              <span>Description of Problem</span>
+              <PreservedText value={getVisibleTicketDescription(ticket.description) || 'No description provided.'} />
+            </div>
+            {isWaitingStatus && <div className="ticket-form-group ticket-waiting-reason">
+              <label>Waiting Reason</label>
+              <textarea className="ticket-field ticket-textarea" value={draft.actionReason} onChange={event=>updateDraft('actionReason',event.target.value)} minLength={8} required disabled={isResolvedLocked}/>
+            </div>}
           </div>
 
-          <div className="ticket-action-control-stack">
+          <div className={`ticket-action-control-stack${isNoScrollWorkflowStatus ? ' is-expanded-workflow' : ''}`}>
           <div className="ticket-form-group">
             <label>Status</label>
             <select
@@ -7501,21 +8002,34 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
           </div>
 
           <div className="ticket-form-group">
-            <label>{isEscalationStatus ? 'Assigned ICT Staff / Escalation Partner' : 'Assigned ICT Staff'}</label>
+            <label>Assigned ICT Staff</label>
             <select
               className="ticket-field ticket-select"
-              value={visibleTechnician}
-              onChange={(e) => updateDraft('technician', e.target.value)}
+              value={visibleTechnicianId}
+              onChange={(e) => updateDraft('technicianId', e.target.value)}
               required
               disabled={isResolvedLocked}
             >
-              <option value="Unassigned">Unassigned</option>
-              {technicianOptions.map((tech) => (
-                <option key={tech} value={tech}>{tech}</option>
+              <option value="__unassigned__">Unassigned</option>
+              {visibleTechnicianId === '__legacy__' && (
+                <option value="__legacy__" disabled>Legacy assignment: {draft.technician}</option>
+              )}
+              {technicianProfiles.map((profile) => (
+                <option key={profile.id} value={profile.id}>{profile.name}</option>
               ))}
             </select>
           </div>
-
+          {isEscalationStatus && <div className="ticket-form-group">
+            <label>Escalation Partner</label>
+            <select className="ticket-field ticket-select" value={draft.escalationPartner} onChange={event=>updateDraft('escalationPartner',event.target.value)} required disabled={isResolvedLocked}>
+              <option value="">Select partner</option>
+              {ESCALATION_PARTNERS.map(partner=><option key={partner} value={partner}>{partner}</option>)}
+            </select>
+          </div>}
+          {['moved date','waiting for requester','waiting for vendor','waiting for approval'].includes(normalizedDraftStatus) && <div className="ticket-form-group">
+            <label>Next Action</label>
+            <input className="ticket-field ticket-input" type="datetime-local" value={draft.nextActionAt} onChange={event=>updateDraft('nextActionAt',event.target.value)} required disabled={isResolvedLocked}/>
+          </div>}
           </div>
         </div>
 
@@ -7533,7 +8047,7 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
           </div>
 
           <div className="ticket-form-group">
-            <label>Admin Remarks</label>
+            <label>Internal ICT Notes</label>
             <textarea
               className="ticket-field ticket-textarea admin-small-textarea"
               value={draft.adminRemarks}
@@ -7599,16 +8113,13 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
           </div>
         )}
 
-        {isBurnout && (
-          <BurnoutReportEditor
-            ticket={ticket}
-            report={draft.burnoutReport}
-            onChange={updateBurnoutReport}
-            readOnly={isResolvedLocked}
-          />
-        )}
-
+        {canReopen && <div className="ticket-form-group">
+          <label>Reopen Reason</label>
+          <textarea className="ticket-field ticket-textarea" value={draft.reopenReason} onChange={event=>updateDraft('reopenReason',event.target.value)} minLength={8}/>
+        </div>}
         {formError && <div className="form-error">{formError}</div>}
+          </>
+        )}
         </div>
 
         <div className="modal-footer">
@@ -7620,6 +8131,13 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
           )}
 
           <div className="ticket-action-footer-tools">
+            {canReopen && (
+              <button type="button" className="modal-btn confirm" disabled={draft.reopenReason.trim().length<8} onClick={() => onReopen({...ticket,reopenReason:draft.reopenReason,version:savedVersionRef.current})}>
+                <MonoIcon icon={RotateCcw} />
+                Reopen Ticket
+              </button>
+            )}
+
             {!isResolvedLocked && autosaveState.message && (
               <span className={`ticket-autosave-status ${autosaveState.status}`}>
                 {autosaveState.message}
@@ -7632,7 +8150,7 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
             </button>
 
             {!isResolvedLocked && (
-              <button type="submit" className="modal-btn confirm">
+              <button type="submit" className="modal-btn confirm" disabled={isSubmitting}>
                 <MonoIcon icon={ShieldCheck} />
                 {isBurnout ? 'Save Burnout Update' : isStartMode ? 'Start Ticket' : 'Save Ticket Update'}
               </button>
@@ -7713,6 +8231,7 @@ function TicketActionModal({ ticket, currentUser, onClose, onSave, onDelete, can
 
 export default function AdminDashboardPage() {
   const router = useRouter();
+  const confirmDialog = useConfirmDialog();
 
   const [activeSection, setActiveSection] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -7720,8 +8239,10 @@ export default function AdminDashboardPage() {
   const [tickets, setTickets] = useState([]);
   const [users, setUsers] = useState([]);
   const [selectedTicket, setSelectedTicket] = useState(null);
-  const burnoutThreeDayNotifiedRef = useRef(new Set());
-  const burnoutFiveDayNotifiedRef = useRef(new Set());
+  const handleTicketRealtimeUpdate=useCallback((updatedTicket)=>{
+    setTickets(current=>current.map(ticket=>ticket.id===updatedTicket.id && (updatedTicket.version || 0)>=(ticket.version || 0) ? updatedTicket : ticket));
+    setSelectedTicket(current=>current?.id===updatedTicket.id && (updatedTicket.version || 0)>=(current.version || 0) ? {...current,...updatedTicket} : current);
+  },[]);
   const [authChecked, setAuthChecked] = useState(false);
   const [isInactiveBlocked, setIsInactiveBlocked] = useState(false);
   const [, setLastSynced] = useState('');
@@ -7729,7 +8250,6 @@ export default function AdminDashboardPage() {
   const [transitionLabel, setTransitionLabel] = useState(adminTransitionLabels.dashboard);
   const [timerNow, setTimerNow] = useState(Date.now());
   const [ticketLockNotice, setTicketLockNotice] = useState(null);
-  const [, setNotifications] = useState([]);
   const [filters, setFilters] = useState({
     search: '',
     status: 'All',
@@ -7886,25 +8406,8 @@ Current role: ${activeUser.role || 'No role found'}`
     const unsubscribe = subscribeToTickets(({ eventType, ticket }) => {
       if (!ticket?.id) return;
 
-      if (eventType === 'INSERT') {
-        const notification = {
-          id: `${ticket.id}-${Date.now()}`,
-          ticketId: ticket.id,
-          title: 'New employee ticket submitted',
-          body: `${ticket.requester || ticket.ownerEmail || 'Employee'} submitted ${ticket.concernType || ticket.supportCategory || 'a helpdesk request'}.`,
-          createdAt: new Date().toLocaleString(),
-          read: false,
-        };
-
-        setNotifications((current) => [notification, ...current].slice(0, 12));
-      }
-
       setTickets((currentTickets) => {
         if (eventType === 'DELETE') {
-          setNotifications((currentNotifications) =>
-            currentNotifications.filter((notification) => notification.ticketId !== ticket.id)
-          );
-
           setSelectedTicket((currentSelectedTicket) =>
             currentSelectedTicket?.id === ticket.id ? null : currentSelectedTicket
           );
@@ -7933,47 +8436,6 @@ Current role: ${activeUser.role || 'No role found'}`
 
     return () => window.clearTimeout(timer);
   }, [isPageTransitioning, transitionLabel]);
-
-  useEffect(() => {
-    if (!authChecked || !admin || !tickets.length) return;
-
-    const threeDayNotifications = tickets
-      .filter((ticket) => hasBurnoutReachedThreeDayMark(ticket, timerNow))
-      .filter((ticket) => !hasBurnoutReachedFiveDayMark(ticket, timerNow))
-      .filter((ticket) => !burnoutThreeDayNotifiedRef.current.has(ticket.id))
-      .map((ticket) => {
-        burnoutThreeDayNotifiedRef.current.add(ticket.id);
-
-        return {
-          id: `burnout-three-day-${ticket.id}-${Date.now()}`,
-          ticketId: ticket.id,
-          title: 'Burnout reached 3-day mark',
-          body: `${getTicketDisplayCode(ticket)} has reached the minimum 3-day Burnout procedure window.`,
-          createdAt: new Date().toLocaleString(),
-          read: false,
-        };
-      });
-    const fiveDayNotifications = tickets
-      .filter((ticket) => hasBurnoutReachedFiveDayMark(ticket, timerNow))
-      .filter((ticket) => !burnoutFiveDayNotifiedRef.current.has(ticket.id))
-      .map((ticket) => {
-        burnoutFiveDayNotifiedRef.current.add(ticket.id);
-
-        return {
-          id: `burnout-five-day-${ticket.id}-${Date.now()}`,
-          ticketId: ticket.id,
-          title: 'Burnout reached 5-day mark',
-          body: `${getTicketDisplayCode(ticket)} has reached the 5-day Burnout target without a pass status.`,
-          createdAt: new Date().toLocaleString(),
-          read: false,
-        };
-      });
-    const dueNotifications = [...fiveDayNotifications, ...threeDayNotifications];
-
-    if (dueNotifications.length) {
-      setNotifications((current) => [...dueNotifications, ...current].slice(0, 12));
-    }
-  }, [authChecked, admin, tickets, timerNow]);
 
   useEffect(() => {
     const hasRunningWorkTimer = tickets.some((ticket) => {
@@ -8104,12 +8566,12 @@ Current role: ${activeUser.role || 'No role found'}`
     }
   };
 
-  const handleSaveTicket = async (ticketId, updates) => {
+  const handleSaveTicket = async (ticketId, updates, options = {}) => {
     const currentTicket = tickets.find((ticket) => ticket.id === ticketId);
     const isCurrentBurnout = isBurnoutTicket(currentTicket);
     const isCurrentFinalBurnout = isCurrentBurnout && isBurnoutClosedStatus(currentTicket?.status);
 
-    if (isTicketResolved(currentTicket) || isCurrentFinalBurnout) {
+    if (isClosed(currentTicket?.status) || isCurrentFinalBurnout) {
       window.alert(
         isCurrentFinalBurnout
           ? `Burnout ticket ${ticketId} already has a final unit status and cannot be changed.`
@@ -8131,8 +8593,13 @@ Current role: ${activeUser.role || 'No role found'}`
     const currentStatus = normalizeTicketStatus(currentTicket?.status);
     const isBurnoutPassStatus = nextStatus === 'passed burnout';
 
-    if (!nextUpdates.technician || nextUpdates.technician === 'Unassigned') {
-      nextUpdates.technician = currentStaffName;
+    if (!Object.prototype.hasOwnProperty.call(updates, 'technicianId')) {
+      if (!nextUpdates.technician || nextUpdates.technician === 'Unassigned') {
+        nextUpdates.technician = currentStaffName;
+        nextUpdates.technicianId = admin?.id || null;
+      } else {
+        nextUpdates.technicianId = currentTicket?.technicianId || null;
+      }
     }
 
     if (updates.status && nextStatus && nextStatus !== currentStatus) {
@@ -8140,6 +8607,7 @@ Current role: ${activeUser.role || 'No role found'}`
         ...(Array.isArray(currentTicket?.statusHistory) ? currentTicket.statusHistory : []),
         buildStatusHistoryEntry(updates.status, timestamp, admin, {
           technician: nextUpdates.technician,
+          technicianId: nextUpdates.technicianId,
         }),
       ];
     }
@@ -8204,11 +8672,6 @@ Current role: ${activeUser.role || 'No role found'}`
       ...(currentTicket || {}),
       ...nextUpdates,
     };
-    const shouldSendBurnoutStandardMessage =
-      isCurrentBurnout &&
-      isBurnoutPassStatus &&
-      Boolean(currentTicket?.workStartedAt || nextUpdates.workStartedAt) &&
-      isBurnoutBelowStandardProcedure(nextTicketSnapshot, timestamp);
     const shouldLockEmployeeEdit = isEmployeeLockedTicket(nextTicketSnapshot);
 
     nextUpdates.employeeEditLocked = shouldLockEmployeeEdit;
@@ -8226,38 +8689,81 @@ Current role: ${activeUser.role || 'No role found'}`
     }
 
     try {
-      if (shouldSendBurnoutStandardMessage) {
-        try {
-          const existingMessages = await getTicketMessages(ticketId).catch(() => []);
-          const alreadySent = existingMessages.some(
-            (message) => String(message.message || '').trim() === BURNOUT_STANDARD_MESSAGE
-          );
-
-          if (!alreadySent) {
-            await createTicketMessage(ticketId, {
-              sender: admin,
-              message: BURNOUT_STANDARD_MESSAGE,
-              attachments: [],
-            });
-          }
-        } catch (messageError) {
-          console.warn('[Burnout Standard Message Error]', messageError);
-        }
-      }
-
       await updateTicket(ticketId, {
         ...nextUpdates,
         lockedBy: null,
         lockedByName: null,
         lockedAt: null,
         lockExpiresAt: null,
-      });
+      },options);
+      await releaseTicketLock(ticketId,admin.id);
 
       setTimerNow(Date.now());
       await loadData();
       setSelectedTicket(null);
     } catch (error) {
-      window.alert(error.message || 'Unable to save ticket update.');
+      throw error;
+    }
+  };
+
+  const handleReopenTicket = async (ticket) => {
+    if (!isSuperAdmin || !ticket?.id) {
+      window.alert('Only the super admin can reopen closed tickets.');
+      return;
+    }
+
+    const isBurnout = isBurnoutTicket(ticket);
+    if (!isClosed(ticket.status)) return;
+
+    const nextStatus = isBurnout ? 'Under Burnout' : 'In Progress';
+    const confirmed = await confirmDialog({
+      title: 'Reopen closed ticket?',
+      message: `Ticket ${getTicketDisplayCode(ticket)} will return to active ICT handling. Its existing notes and status history will be retained.`,
+      confirmLabel: 'Reopen ticket',
+    });
+    if (!confirmed) return;
+
+    const timestamp = new Date().toISOString();
+    const assignedProfileIsActive = users.some((user) => user.id === ticket.technicianId && isAdminRole(user.role) && !isInactivePortalUser(user));
+    const technicianId = assignedProfileIsActive ? ticket.technicianId : admin?.id || '';
+    const technician = assignedProfileIsActive ? ticket.technician : admin?.name || 'Super Admin';
+    const nextTicketSnapshot = { ...ticket, status: nextStatus, technician, technicianId };
+    const reopenEntry = {
+      ...buildStatusHistoryEntry(nextStatus, timestamp, admin, { technician, technicianId }),
+      type: 'reopened',
+      label: `Reopened to ${nextStatus}`,
+    };
+
+    try {
+      await updateTicket(ticket.id, {
+        status: nextStatus,
+        reopenReason: ticket.reopenReason,
+        technician,
+        technicianId,
+        workStartedAt: ticket.workStartedAt || timestamp,
+        workEndedAt: '',
+        adminUpdatedAt: timestamp,
+        lastUpdated: timestamp,
+        statusHistory: [...(Array.isArray(ticket.statusHistory) ? ticket.statusHistory : []), reopenEntry],
+        employeeEditLocked: isEmployeeLockedTicket(nextTicketSnapshot),
+        employeeEditLockedAt: timestamp,
+        employeeEditLockedBy: admin?.id || null,
+        employeeEditLockedByName: admin?.name || 'Super Admin',
+        employeeEditLockReason: getEmployeeTicketLockReason(nextTicketSnapshot),
+        lockedBy: null,
+        lockedByName: null,
+        lockedAt: null,
+        lockExpiresAt: null,
+      }, {
+        requestedByRole: admin?.role || 'superadmin',
+        updateScope: 'admin-reopen',
+        expectedVersion: ticket.version,
+      });
+      setTimerNow(Date.now());
+      await loadData();
+      setSelectedTicket(null);
+    } catch (error) {
+      window.alert(error.message || 'Unable to reopen ticket.');
     }
   };
 
@@ -8269,9 +8775,13 @@ Current role: ${activeUser.role || 'No role found'}`
       return;
     }
 
-    const confirmed = window.confirm(
-      `SUPER ADMIN DELETE: Delete ticket ${getTicketDisplayCode(ticket)}? This can be resolved, moved, in progress, or any status. This action cannot be undone.`
-    );
+    const confirmed = await confirmDialog({
+      title: 'Delete support ticket?',
+      message: `Ticket ${getTicketDisplayCode(ticket)} will be permanently removed regardless of its current status.`,
+      confirmLabel: 'Delete ticket',
+      variant: 'danger',
+      warning: 'This action cannot be undone.',
+    });
 
     if (!confirmed) return;
 
@@ -8283,9 +8793,6 @@ Current role: ${activeUser.role || 'No role found'}`
         bypassStatusLock: true,
       });
       setSelectedTicket(null);
-      setNotifications((currentNotifications) =>
-        currentNotifications.filter((notification) => notification.ticketId !== ticket.id)
-      );
       setTickets((currentTickets) => currentTickets.filter((item) => item.id !== ticket.id));
       await loadData({
         includeUsers: activeSection === 'profile' || activeSection === 'users' || activeSection === 'create-user' || activeSection === 'create-ict-ticket',
@@ -8321,19 +8828,26 @@ Current role: ${activeUser.role || 'No role found'}`
             </div>
 
             <div className="portal-topbar-actions">
-              <button type="button" className="profile-chip admin-profile-chip-button" onClick={() => goTo('profile')}>
-                <span className="profile-chip-avatar">
-                  {admin.profilePhoto ? (
-                    <img src={admin.profilePhoto} alt="" aria-hidden="true" />
-                  ) : (
-                    admin.initials
-                  )}
-                </span>
-                <div className="profile-chip-copy">
+              <HelpdeskInbox userId={admin.id} tickets={tickets} onTicket={ticketId=>{const ticket=tickets.find(row=>row.id===ticketId);if(ticket) void handleOpenTicket(ticket);}} />
+              <PortalThemeToggle />
+              <div className="profile-chip">
+                <PortalProfilePhotoControl
+                  user={admin}
+                  fallback="AD"
+                  onUserUpdated={setAdmin}
+                  onStatus={(text, type) => {
+                    if (type === 'error') window.alert(text);
+                  }}
+                />
+                <button
+                  type="button"
+                  className="profile-chip-copy admin-profile-chip-copy-button"
+                  onClick={() => goTo('profile')}
+                >
                   <strong>{admin.name}</strong>
-                  <span>{admin.department}</span>
-                </div>
-              </button>
+                  <span>{admin.designation || admin.department}</span>
+                </button>
+              </div>
             </div>
           </header>
 
@@ -8379,6 +8893,7 @@ Current role: ${activeUser.role || 'No role found'}`
                   categorySummary={categorySummary}
                   onGoTo={goTo}
                   onOpenTicket={handleOpenTicket}
+                  onRefresh={() => loadData()}
                   now={timerNow}
                 />
               )}
@@ -8470,22 +8985,14 @@ Current role: ${activeUser.role || 'No role found'}`
           key={selectedTicket.id}
           ticket={selectedTicket}
           currentUser={admin}
+          users={users}
           onClose={handleCloseTicket}
           onSave={handleSaveTicket}
           onDelete={handleDeleteTicket}
+          onReopen={handleReopenTicket}
           canDelete={canDeleteTickets}
           now={timerNow}
-          onTicketRealtimeUpdate={(updatedTicket) => {
-            setTimerNow(Date.now());
-
-            setTickets((current) =>
-              current.map((ticket) => (ticket.id === updatedTicket.id ? updatedTicket : ticket))
-            );
-
-            setSelectedTicket((current) =>
-              current?.id === updatedTicket.id ? { ...current, ...updatedTicket } : current
-            );
-          }}
+          onTicketRealtimeUpdate={handleTicketRealtimeUpdate}
         />
       )}
 

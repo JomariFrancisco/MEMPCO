@@ -4,12 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { checkRateLimit, rateLimitResponse } from '@/lib/server/rateLimit';
 
 const RESUME_BUCKET = 'job-resumes';
-const RESUME_ALLOWED_TYPES = new Set([
-  'application/pdf',
-  'application/msword',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-]);
-const RESUME_MAX_SIZE = 10 * 1024 * 1024;
+const APPLICATION_FILE_MAX_SIZE = 10 * 1024 * 1024;
 const JOB_APPLICATION_COLUMNS = `
   id,
   job_id,
@@ -44,40 +39,64 @@ const sanitizeFileName = (value = '') =>
     .replace(/^-+|-+$/g, '') || 'resume';
 
 const getString = (formData, key) => String(formData.get(key) || '').trim();
+const isPdfFile = async (file) =>
+  file.name?.toLowerCase().endsWith('.pdf') && (await file.slice(0, 5).text()) === '%PDF-';
+
+const uploadApplicationFile = async (supabase, file, jobTitle, kind) => {
+  const jobSlug = slugify(jobTitle || 'general-application');
+  const randomId = randomUUID();
+  const folder = kind === 'cover-letter' ? 'cover-letters' : 'resumes';
+  const filePath = `${folder}/${jobSlug}/${Date.now()}-${randomId}-${sanitizeFileName(file.name)}`;
+
+  const { error } = await supabase.storage.from(RESUME_BUCKET).upload(filePath, file, {
+    cacheControl: '3600',
+    contentType: 'application/pdf',
+    upsert: false,
+  });
+
+  if (error) {
+    throw new Error(error.message || `Unable to upload ${kind === 'cover-letter' ? 'cover letter' : 'resume'}.`);
+  }
+
+  const { data } = supabase.storage.from(RESUME_BUCKET).getPublicUrl(filePath);
+
+  return { url: data?.publicUrl || '', path: filePath };
+};
 
 const uploadResumeFile = async (supabase, file, jobTitle) => {
   if (!file || typeof file === 'string' || !file.size) {
     throw new Error('Attach your resume file before submitting.');
   }
 
-  if (!RESUME_ALLOWED_TYPES.has(file.type)) {
-    throw new Error('Attach a PDF, DOC, or DOCX resume file.');
+  if (!(await isPdfFile(file))) {
+    throw new Error('Attach your resume as a valid PDF file.');
   }
 
-  if (file.size > RESUME_MAX_SIZE) {
+  if (file.size > APPLICATION_FILE_MAX_SIZE) {
     throw new Error('Resume file must be 10 MB or smaller.');
   }
 
-  const jobSlug = slugify(jobTitle || 'general-application');
-  const randomId = randomUUID();
-  const filePath = `${jobSlug}/${Date.now()}-${randomId}-${sanitizeFileName(file.name)}`;
+  return uploadApplicationFile(supabase, file, jobTitle, 'resume');
+};
 
-  const { error } = await supabase.storage.from(RESUME_BUCKET).upload(filePath, file, {
-    cacheControl: '3600',
-    contentType: file.type,
-    upsert: false,
-  });
+const uploadCoverLetterFile = async (supabase, file, jobTitle) => {
+  if (!file || typeof file === 'string' || !file.size) return null;
 
-  if (error) {
-    throw new Error(error.message || 'Unable to upload resume. Please try again.');
+  if (!(await isPdfFile(file))) {
+    throw new Error('Attach your cover letter as a valid PDF file.');
   }
 
-  const { data } = supabase.storage.from(RESUME_BUCKET).getPublicUrl(filePath);
+  if (file.size > APPLICATION_FILE_MAX_SIZE) {
+    throw new Error('Cover letter must be 10 MB or smaller.');
+  }
 
-  return data?.publicUrl || '';
+  return uploadApplicationFile(supabase, file, jobTitle, 'cover-letter');
 };
 
 export async function POST(request) {
+  let supabase;
+  const uploadedPaths = [];
+
   try {
     const rateLimit = checkRateLimit(request, {
       key: 'jobs:applications:create',
@@ -88,24 +107,29 @@ export async function POST(request) {
     if (!rateLimit.allowed) return rateLimitResponse(rateLimit);
 
     const formData = await request.formData();
-    const supabase = await createClient();
+    supabase = await createClient();
     const jobTitle = getString(formData, 'jobTitle') || 'General Application';
     const applicantName = getString(formData, 'applicantName');
     const email = getString(formData, 'email');
     const resumeFile = formData.get('resumeFile');
+    const coverLetterFile = formData.get('coverLetterFile');
 
     if (!applicantName) throw new Error('Applicant name is required.');
     if (!email) throw new Error('Email address is required.');
 
-    const resumeUrl = await uploadResumeFile(supabase, resumeFile, jobTitle);
+    const resume = await uploadResumeFile(supabase, resumeFile, jobTitle);
+    uploadedPaths.push(resume.path);
+    const coverLetter = await uploadCoverLetterFile(supabase, coverLetterFile, jobTitle);
+    if (coverLetter?.path) uploadedPaths.push(coverLetter.path);
+
     const payload = {
       job_id: getString(formData, 'jobId') || null,
       job_title: jobTitle,
       applicant_name: applicantName,
       email,
       phone: getString(formData, 'phone'),
-      resume_url: resumeUrl,
-      cover_letter: getString(formData, 'coverLetter'),
+      resume_url: resume.url,
+      cover_letter: coverLetter?.url || '',
       status: 'new',
       hr_notes: '',
       status_history: [
@@ -128,8 +152,13 @@ export async function POST(request) {
       throw new Error(error.message || 'Unable to submit application.');
     }
 
+    uploadedPaths.length = 0;
     return NextResponse.json({ application: data }, { status: 201 });
   } catch (error) {
+    if (supabase && uploadedPaths.length) {
+      await supabase.storage.from(RESUME_BUCKET).remove(uploadedPaths).catch(() => {});
+    }
+
     return NextResponse.json(
       { error: error.message || 'Unable to submit application.' },
       { status: 400 }

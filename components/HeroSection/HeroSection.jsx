@@ -5,8 +5,8 @@ import './HeroSection.css';
 
 /* Constants */
 
-const VIDEO_INTRO_VISIBLE_MS = 7000;
 const FEATURE_SLIDE_VISIBLE_MS = 9000;
+const HERO_VIDEO_START_SECONDS = 0;
 
 const SECOND_HERO = {
   backgroundSrc: '/Funeral/FuneralBG.png',
@@ -129,6 +129,7 @@ export default function HeroSection() {
   const videoRef = useRef(null);
 
   const [activeSlide, setActiveSlide] = useState(0);
+  const [heroVideoReady, setHeroVideoReady] = useState(false);
 
   /* Keep the transparent navbar readable as the hero leaves its video slide. */
   useEffect(() => {
@@ -152,11 +153,7 @@ export default function HeroSection() {
       timers.push(timer);
     };
 
-    if (activeSlide === 0) {
-      addTimer(() => {
-        setActiveSlide((current) => (current + 1) % SLIDE_CLASS_NAMES.length);
-      }, VIDEO_INTRO_VISIBLE_MS);
-    } else {
+    if (activeSlide !== 0) {
       addTimer(() => {
         setActiveSlide((current) => (current + 1) % SLIDE_CLASS_NAMES.length);
       }, FEATURE_SLIDE_VISIBLE_MS);
@@ -167,13 +164,41 @@ export default function HeroSection() {
     };
   }, [activeSlide]);
 
-  /* Restart video intro whenever it becomes active */
+  /* Reveal the video only after its configured starting point is ready. */
   useEffect(() => {
     const video = videoRef.current;
     if (!video || activeSlide !== 0) return;
 
-    video.currentTime = 0;
-    video.play().catch(() => {});
+    let seekHandler;
+
+    const startVideo = () => {
+      setHeroVideoReady(false);
+
+      const playFromStart = () => {
+        setHeroVideoReady(true);
+        video.play().catch(() => {});
+      };
+
+      if (Math.abs(video.currentTime - HERO_VIDEO_START_SECONDS) < 0.05) {
+        playFromStart();
+        return;
+      }
+
+      seekHandler = playFromStart;
+      video.addEventListener('seeked', seekHandler, { once: true });
+      video.currentTime = HERO_VIDEO_START_SECONDS;
+    };
+
+    if (video.readyState >= HTMLMediaElement.HAVE_METADATA) {
+      startVideo();
+    } else {
+      video.addEventListener('loadedmetadata', startVideo, { once: true });
+    }
+
+    return () => {
+      video.removeEventListener('loadedmetadata', startVideo);
+      if (seekHandler) video.removeEventListener('seeked', seekHandler);
+    };
   }, [activeSlide]);
 
   /* Particles */
@@ -286,12 +311,13 @@ export default function HeroSection() {
       <div className="hero__bg" aria-hidden="true">
         <video
           ref={videoRef}
-          className={`hero__video hero__video--main ${activeSlide === 0 ? 'is-active' : ''}`}
-          src="/Videos/Hero Section 1.mp4"
-          autoPlay
+          className={`hero__video hero__video--main ${activeSlide === 0 ? 'is-active' : ''} ${heroVideoReady ? 'is-ready' : ''}`}
+          src="/Videos/102%20MEMPCO%20WEBSITE%20.mp4"
           muted
           playsInline
           preload="metadata"
+          onEnded={() => setActiveSlide((current) => (current === 0 ? 1 : current))}
+          onError={() => setActiveSlide((current) => (current === 0 ? 1 : current))}
         />
         <div className={`hero__backdrop hero__backdrop--main ${activeSlide === 0 ? 'is-active' : ''}`} />
         <div className={`hero__backdrop hero__backdrop--memorial ${activeSlide === 1 ? 'is-active' : ''}`} />
