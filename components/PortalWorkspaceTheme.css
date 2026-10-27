@@ -70,6 +70,22 @@
   box-shadow: none;
 }
 
+.portal-app-main .profile-chip-avatar {
+  border: 0;
+  outline: 0;
+  box-shadow: none;
+}
+
+.portal-app-main .profile-chip-avatar img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  outline: 0;
+  border-radius: inherit;
+  object-fit: cover;
+}
+
 .portal-app-main .portal-layout {
   gap: 14px;
 }
@@ -337,6 +353,245 @@ body[data-portal-theme='dark'] .portal-app-main .burnout-request-view .auth-subm
 body[data-portal-theme='dark'] .portal-app-main .burnout-request-view .auth-submit-btn:focus-visible {
   outline-color: #f08c8c;
 }
+
+.portal-app-main .ticket-form-wrap > .auth-submit-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: auto;
+  min-width: 200px;
+  max-width: 100%;
+  align-self: flex-start;
+  min-height: 44px;
+  height: auto;
+  margin: 0;
+  padding: 10px 18px;
+  border: 1px solid #bd2525;
+  border-radius: 6px;
+  background: #c62828;
+  color: #fff;
+  -webkit-text-fill-color: #fff;
+  font-size: 0.875rem;
+  font-weight: 700;
+  line-height: 1.4;
+  letter-spacing: 0;
+  white-space: nowrap;
+  box-shadow: none;
+  cursor: pointer;
+  transition: background 0.16s ease, border-color 0.16s ease;
+}
+
+.portal-app-main .ticket-form-wrap > .auth-submit-btn:hover:not(:disabled) {
+  border-color: #a91f1f;
+  background: #b42323;
+  transform: none;
+  box-shadow: none;
+  filter: none;
+}
+
+.portal-app-main .ticket-form-wrap > .auth-submit-btn:focus-visible {
+  outline: 2px solid #b42323;
+  outline-offset: 3px;
+}
+
+.portal-app-main .ticket-form-wrap > .auth-submit-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.68;
+  transform: none;
+  box-shadow: none;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .ticket-form-wrap > .auth-submit-btn {
+  border-color: #a92525;
+  background: #b92727;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .ticket-form-wrap > .auth-submit-btn:hover:not(:disabled) {
+  border-color: #bd4545;
+  background: #a92323;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .ticket-form-wrap > .auth-submit-btn:focus-visible {
+  outline-color: #f08c8c;
+}
+
+.portal-app-main .ticket-submit-confirmation {
+  width: min(560px, calc(100vw - 2rem));
+  padding: 22px;
+  border: 1px solid #e1e6ee;
+  border-radius: 8px;
+  background: #fff;
+  color: #172033;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.16);
+}
+
+.portal-app-main .ticket-submit-confirmation h3 {
+  margin: 0;
+  color: #172033;
+  font-size: 1.125rem;
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: 0;
+}
+
+.portal-app-main .ticket-submit-confirmation .modal-divider {
+  margin: 12px 0;
+  background: #e1e6ee;
+}
+
+.portal-app-main .ticket-submit-confirmation > p {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.portal-app-main .ticket-submit-confirmation .modal-ticket-summary {
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.portal-app-main .ticket-submit-confirmation .modal-ticket-summary span:not(.priority) {
+  min-height: 28px;
+  padding: 5px 9px;
+  border: 1px solid #e1e6ee;
+  border-radius: 6px;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.35;
+  white-space: normal;
+}
+
+.portal-app-main .ticket-submit-confirmation .modal-footer {
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-color: #e1e6ee;
+}
+
+.portal-app-main .ticket-submit-confirmation .modal-btn {
+  min-width: 112px;
+  min-height: 40px;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.35;
+  box-shadow: none;
+  transform: none;
+  transition: background 0.16s ease, border-color 0.16s ease;
+}
+
+.portal-app-main .ticket-submit-confirmation .modal-btn.cancel {
+  border: 1px solid #d9e0e8;
+  background: #fff;
+  color: #475569;
+}
+
+.portal-app-main .ticket-submit-confirmation .modal-btn.cancel:hover:not(:disabled) {
+  border-color: #cbd3df;
+  background: #f8fafc;
+  transform: none;
+}
+
+.portal-app-main .ticket-submit-confirmation .modal-btn.confirm {
+  gap: 7px;
+  border: 1px solid #bd2525;
+  background: #c62828;
+  color: #fff;
+}
+
+.portal-app-main .ticket-submit-confirmation .modal-btn.confirm:hover:not(:disabled) {
+  border-color: #a91f1f;
+  background: #b42323;
+  transform: none;
+  box-shadow: none;
+}
+
+.portal-app-main .ticket-submit-confirmation .modal-btn:focus-visible {
+  outline: 2px solid #b42323;
+  outline-offset: 3px;
+}
+
+.portal-app-main .ticket-submit-confirmation .modal-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.68;
+  transform: none;
+  box-shadow: none;
+}
+
+@media (max-width: 720px) {
+  .portal-app-main .ticket-submit-confirmation:not(.ticket-submit-success) {
+    width: min(100%, calc(100vw - 1.5rem));
+    padding: 16px;
+  }
+
+  .portal-app-main .ticket-submit-success {
+    width: min(460px, calc(100vw - 1.5rem)) !important;
+    padding: 16px !important;
+  }
+}
+
+.portal-app-main .ticket-submit-success {
+  width: min(460px, calc(100vw - 2rem)) !important;
+  text-align: center;
+}
+
+.portal-app-main .ticket-submit-success .success-icon {
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 12px;
+  border-radius: 8px;
+  background: #e8f7ee;
+  color: #15803d;
+  box-shadow: none;
+}
+
+.portal-app-main .ticket-submit-success .success-icon .admin-mono-icon {
+  width: 21px;
+  height: 21px;
+}
+
+.portal-app-main .ticket-submit-success p { max-width: 38ch; margin: 0 auto; }
+.portal-app-main .ticket-submit-success .modal-footer { justify-content: center; }
+
+body[data-portal-theme='dark'] .portal-app-main .ticket-submit-confirmation {
+  border-color: #354252 !important;
+  background: #1c2734 !important;
+  color: #e8edf4 !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4) !important;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .ticket-submit-confirmation h3 { color: #f3f6fa; }
+body[data-portal-theme='dark'] .portal-app-main .ticket-submit-confirmation .modal-divider { background: #354252; }
+body[data-portal-theme='dark'] .portal-app-main .ticket-submit-confirmation > p { color: #b6c4d6; }
+body[data-portal-theme='dark'] .portal-app-main .ticket-submit-confirmation .modal-ticket-summary span:not(.priority) {
+  border-color: #354252;
+  background: #202b39;
+  color: #d4dce7;
+}
+body[data-portal-theme='dark'] .portal-app-main .ticket-submit-confirmation .modal-footer {
+  border-color: #354252 !important;
+  background: transparent !important;
+}
+body[data-portal-theme='dark'] .portal-app-main .ticket-submit-confirmation .modal-btn.cancel {
+  border-color: #3a4655;
+  background: #202b39;
+  color: #d4dce7;
+}
+body[data-portal-theme='dark'] .portal-app-main .ticket-submit-confirmation .modal-btn.cancel:hover:not(:disabled) {
+  border-color: #536174;
+  background: #283545;
+}
+body[data-portal-theme='dark'] .portal-app-main .ticket-submit-confirmation .modal-btn.confirm { border-color: #a92525; background: #b92727; }
+body[data-portal-theme='dark'] .portal-app-main .ticket-submit-confirmation .modal-btn.confirm:hover:not(:disabled) { border-color: #bd4545; background: #a92323; }
+body[data-portal-theme='dark'] .portal-app-main .ticket-submit-confirmation .modal-btn:focus-visible { outline-color: #f08c8c; }
+body[data-portal-theme='dark'] .portal-app-main .ticket-submit-success .success-icon { background: #1e382f; color: #9bdbbd; }
 
 .portal-app-main .ticket-field {
   border: 1px solid #d9e0e8;
@@ -2314,21 +2569,35 @@ body[data-portal-theme='dark'] .portal-app-main .dashboard-view .admin-ticket-qu
 
 .portal-app-main .dashboard-watch-panel .dashboard-watch-summary {
   width: 100%;
+  height: 100%;
+  min-height: 0;
   margin: 0;
   align-content: start;
-  grid-template-rows: auto auto;
-  gap: 10px;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 4px;
 }
-.portal-app-main .dashboard-watch-panel > .admin-watchlist { align-items: stretch; justify-content: flex-start; }
-.portal-app-main .dashboard-watch-ticket-list { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
-.portal-app-main .dashboard-view .dashboard-ticket-columns > .dashboard-stack:last-child > .dashboard-watch-panel {
-  height: auto;
+.portal-app-main .dashboard-watch-panel { display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+.portal-app-main .dashboard-watch-panel > .section-head { flex: 0 0 auto; }
+.portal-app-main .dashboard-watch-panel > .admin-watchlist {
+  flex: 1 1 auto;
   min-height: 0;
-  max-height: none;
+  align-items: stretch;
+  justify-content: flex-start;
+  overflow: hidden;
+}
+.portal-app-main .dashboard-watch-ticket-list {
+  display: grid;
+  min-height: 0;
+  grid-template-columns: minmax(0, 1fr);
+  grid-auto-rows: minmax(0, auto);
+  align-content: start;
+  gap: 6px;
+  overflow-y: auto;
+  scrollbar-width: thin;
 }
 .portal-app-main .dashboard-watch-panel .dashboard-watch-summary-ticket {
   min-height: 0;
-  padding: 12px;
+  padding: 9px 10px;
   border-radius: 6px;
   box-shadow: none;
   align-items: flex-start;
@@ -2358,8 +2627,8 @@ body[data-portal-theme='dark'] .portal-app-main .dashboard-view .admin-ticket-qu
   line-height: 1.2;
   letter-spacing: 0;
 }
-.portal-app-main .dashboard-watch-panel .dashboard-watch-summary-copy h4 { margin: 8px 0 4px; font-size: 0.875rem; font-weight: 600; line-height: 1.4; }
-.portal-app-main .dashboard-watch-panel .dashboard-watch-summary-copy p { font-size: 0.75rem; font-weight: 400; line-height: 1.4; }
+.portal-app-main .dashboard-watch-panel .dashboard-watch-summary-copy h4 { margin: 5px 0 3px; font-size: 0.875rem; font-weight: 600; line-height: 1.3; }
+.portal-app-main .dashboard-watch-panel .dashboard-watch-summary-copy p { font-size: 0.75rem; font-weight: 400; line-height: 1.3; }
 .portal-app-main .dashboard-watch-ticket-meta {
   display: flex;
   align-items: center;
@@ -2417,6 +2686,7 @@ body[data-portal-theme='dark'] .portal-app-main .dashboard-watch-panel .dashboar
   transform: none;
 }
 .portal-app-main .dashboard-watch-panel .dashboard-watch-summary-position { font-size: 0.75rem; font-weight: 500; }
+.portal-app-main .dashboard-watch-panel .dashboard-watch-summary-footer { flex: 0 0 auto; min-height: 30px; }
 body[data-portal-theme='dark'] .portal-app-main .dashboard-watch-panel .dashboard-watch-summary-copy :is(.ticket-id, p) { color: #b6c4d6; }
 body[data-portal-theme='dark'] .portal-app-main .dashboard-watch-panel .dashboard-watch-summary-copy h4 { color: #edf2f7; }
 body[data-portal-theme='dark'] .portal-app-main .dashboard-watch-panel .dashboard-watch-count { border-color: #49576a; background: #283545; color: #e8edf4; }
@@ -2918,3 +3188,177 @@ body[data-portal-theme='dark'] .portal-app-main :is(.latest-ticket-card, .latest
   box-shadow: none !important;
   -webkit-text-fill-color: #d4dce6 !important;
 }
+
+/* User account editor: match the portal's compact panels, fields and actions. */
+.portal-app-main .portal-user-edit-modal {
+  width: min(1120px, calc(100vw - 2rem));
+  padding: 20px;
+  border: 1px solid #e1e6ee;
+  border-radius: 8px;
+  background: #fff;
+  color: #172033;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.16);
+}
+
+.portal-app-main .portal-user-edit-modal .admin-modal-head {
+  align-items: center;
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+  border-color: #e1e6ee;
+}
+
+.portal-app-main .portal-user-edit-modal .admin-modal-close {
+  width: 34px;
+  height: 34px;
+  flex-basis: 34px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #64748b;
+  font-size: 1.4rem;
+  opacity: 1;
+}
+
+.portal-app-main .portal-user-edit-modal .admin-modal-close:hover {
+  border: 0;
+  background: transparent;
+  color: #b42323;
+  transform: none;
+}
+
+.portal-app-main .portal-user-edit-modal .user-detail-layout { gap: 14px; }
+.portal-app-main .portal-user-edit-modal .user-detail-sidebar { gap: 10px; }
+.portal-app-main .portal-user-edit-modal :is(.user-profile-summary, .user-detail-facts) {
+  padding: 12px;
+  border-color: #e1e6ee;
+  border-radius: 8px;
+  background: #f8fafc;
+  box-shadow: none;
+}
+
+.portal-app-main .portal-user-edit-modal .user-profile-summary { gap: 10px; }
+.portal-app-main .portal-user-edit-modal .user-profile-summary strong { font-size: 0.95rem; font-weight: 700; }
+.portal-app-main .portal-user-edit-modal .user-profile-summary p { font-size: 0.8rem; }
+.portal-app-main .portal-user-edit-modal .user-avatar {
+  position: relative;
+  width: 46px;
+  height: 46px;
+  overflow: hidden;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 8px;
+  background: #c62828;
+  color: #fff;
+}
+
+.portal-app-main .portal-user-edit-modal .user-avatar > span { position: relative; z-index: 0; }
+.portal-app-main .portal-user-edit-modal .user-avatar > img {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.portal-app-main .portal-user-edit-modal .user-detail-facts { gap: 10px 12px; }
+.portal-app-main .portal-user-edit-modal .user-detail-facts span {
+  margin-bottom: 3px;
+  color: #778397;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+.portal-app-main .portal-user-edit-modal .user-detail-facts strong { font-size: 0.875rem; font-weight: 600; }
+.portal-app-main .portal-user-edit-modal .ticket-form-grid { gap: 12px; }
+.portal-app-main .portal-user-edit-modal .ticket-form-group { gap: 5px; }
+.portal-app-main .portal-user-edit-modal .ticket-form-group label,
+.portal-app-main .portal-user-edit-modal .field-label-row {
+  color: #475569;
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+.portal-app-main .portal-user-edit-modal .ticket-field { min-height: 40px; height: 40px; font-size: 0.875rem; }
+
+.portal-app-main .portal-user-edit-modal .password-refresh-card {
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid #f0cccc;
+  border-radius: 8px;
+  background: #fff8f8;
+  box-shadow: none;
+}
+.portal-app-main .portal-user-edit-modal .password-refresh-card strong { font-size: 0.9rem; font-weight: 700; }
+.portal-app-main .portal-user-edit-modal .password-refresh-card p { color: #64748b; font-size: 0.8rem; line-height: 1.45; }
+
+.portal-app-main .portal-user-edit-modal .modal-footer {
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-color: #e1e6ee;
+}
+.portal-app-main .portal-user-edit-modal .modal-btn {
+  min-width: 108px;
+  min-height: 40px;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.35;
+  box-shadow: none;
+  transform: none;
+  transition: background 0.16s ease, border-color 0.16s ease;
+}
+.portal-app-main .portal-user-edit-modal .modal-btn.cancel {
+  border: 1px solid #d9e0e8;
+  background: #fff;
+  color: #475569;
+}
+.portal-app-main .portal-user-edit-modal .modal-btn.cancel:hover:not(:disabled) { border-color: #cbd3df; background: #f8fafc; transform: none; }
+.portal-app-main .portal-user-edit-modal .modal-btn.confirm { border: 1px solid #bd2525; background: #c62828; color: #fff; }
+.portal-app-main .portal-user-edit-modal .modal-btn.confirm:hover:not(:disabled) { border-color: #a91f1f; background: #b42323; transform: none; }
+.portal-app-main .portal-user-edit-modal .modal-btn.danger {
+  border: 1px solid #f0cccc;
+  background: #fff5f5;
+  color: #b42323;
+}
+.portal-app-main .portal-user-edit-modal .modal-btn.danger:hover:not(:disabled) { border-color: #e7a6a6; background: #feecec; transform: none; }
+.portal-app-main .portal-user-edit-modal .modal-btn:focus-visible { outline: 2px solid #b42323; outline-offset: 3px; }
+
+@media (max-width: 900px) {
+  .portal-app-main .portal-user-edit-modal .user-detail-layout { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 640px) {
+  .portal-app-main .portal-user-edit-modal { width: min(100%, calc(100vw - 1rem)); padding: 14px; }
+  .portal-app-main .portal-user-edit-modal .modal-footer { align-items: stretch; }
+  .portal-app-main .portal-user-edit-modal .modal-footer > .modal-btn { width: 100%; }
+}
+
+body[data-portal-theme='dark'] .portal-app-main .portal-user-edit-modal {
+  border-color: #354252;
+  background: #1c2734;
+  color: #e8edf4;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+}
+body[data-portal-theme='dark'] .portal-app-main .portal-user-edit-modal .admin-modal-head { border-color: #354252; }
+body[data-portal-theme='dark'] .portal-app-main .portal-user-edit-modal .admin-modal-close { border: 0; background: transparent; color: #b6c4d6; }
+body[data-portal-theme='dark'] .portal-app-main .portal-user-edit-modal .admin-modal-close:hover { border: 0; background: transparent; color: #ffaaaa; }
+body[data-portal-theme='dark'] .portal-app-main .portal-user-edit-modal :is(.user-profile-summary, .user-detail-facts) { border-color: #354252; background: #202b39; }
+body[data-portal-theme='dark'] .portal-app-main .portal-user-edit-modal :is(.user-profile-summary strong, .user-detail-facts strong) { color: #edf2f7; }
+body[data-portal-theme='dark'] .portal-app-main .portal-user-edit-modal .user-detail-facts span { color: #9aa9bb; }
+body[data-portal-theme='dark'] .portal-app-main .portal-user-edit-modal .ticket-form-group label,
+body[data-portal-theme='dark'] .portal-app-main .portal-user-edit-modal .field-label-row { color: #c6d0dc; }
+body[data-portal-theme='dark'] .portal-app-main .portal-user-edit-modal .password-refresh-card { border-color: #704047; background: #30252b; }
+body[data-portal-theme='dark'] .portal-app-main .portal-user-edit-modal .password-refresh-card strong { color: #edf2f7; }
+body[data-portal-theme='dark'] .portal-app-main .portal-user-edit-modal .password-refresh-card p { color: #b6c4d6; }
+body[data-portal-theme='dark'] .portal-app-main .portal-user-edit-modal .modal-footer { border-color: #354252; }
+body[data-portal-theme='dark'] .portal-app-main .portal-user-edit-modal .modal-btn.cancel { border-color: #3a4655; background: #202b39; color: #d4dce7; }
+body[data-portal-theme='dark'] .portal-app-main .portal-user-edit-modal .modal-btn.cancel:hover:not(:disabled) { border-color: #536174; background: #283545; }
+body[data-portal-theme='dark'] .portal-app-main .portal-user-edit-modal .modal-btn.confirm { border-color: #a92525; background: #b92727; }
+body[data-portal-theme='dark'] .portal-app-main .portal-user-edit-modal .modal-btn.confirm:hover:not(:disabled) { border-color: #bd4545; background: #a92323; }
+body[data-portal-theme='dark'] .portal-app-main .portal-user-edit-modal .modal-btn.danger { border-color: #704047; background: #3b292e; color: #ffaaaa; }
+body[data-portal-theme='dark'] .portal-app-main .portal-user-edit-modal .modal-btn.danger:hover:not(:disabled) { border-color: #8a5158; background: #472e34; }
+body[data-portal-theme='dark'] .portal-app-main .portal-user-edit-modal .modal-btn:focus-visible { outline-color: #f08c8c; }

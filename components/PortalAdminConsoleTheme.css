@@ -553,3 +553,151 @@ body[data-portal-theme='dark'] .ma-editor-feedback.error {
     background: #111820;
   }
 }
+
+/* Keep the marketing console aligned with the shared portal component style. */
+.portal-app-main.marketing-admin-main .marketing-sidebar-nav { flex: 0 0 auto; }
+.portal-app-main.marketing-admin-main .marketing-sidebar-group {
+  margin-top: 14px;
+  padding-top: 12px;
+}
+
+.portal-app-main.marketing-admin-main .marketing-publisher-hero,
+.portal-app-main.marketing-admin-main .marketing-post-panel {
+  border: 1px solid #e1e6ee;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.035);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.portal-app-main.marketing-admin-main .marketing-publisher-hero { padding: 16px 18px; }
+.portal-app-main.marketing-admin-main .marketing-post-panel { padding: 16px; }
+.portal-app-main.marketing-admin-main .marketing-library-tools { gap: 10px; margin: 12px 0; }
+.portal-app-main.marketing-admin-main .marketing-search {
+  height: 40px;
+  border-color: #d9e0e8;
+  border-radius: 7px;
+  background: #fff;
+}
+.portal-app-main.marketing-admin-main .marketing-search:focus-within {
+  border-color: #bf4545;
+  box-shadow: 0 0 0 3px rgba(190, 52, 52, 0.1);
+}
+.portal-app-main.marketing-admin-main .marketing-search input { font-size: 0.875rem; }
+.portal-app-main.marketing-admin-main .marketing-filter-pills select {
+  height: 40px;
+  border-color: #d9e0e8;
+  border-radius: 7px;
+  padding-left: 10px;
+  background-color: #fff;
+  color: #344256;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+.portal-app-main.marketing-admin-main .marketing-filter-pills select:focus-visible {
+  outline: 2px solid #bf4545;
+  outline-offset: 2px;
+}
+.portal-app-main.marketing-admin-main .marketing-post-table {
+  min-width: 720px;
+  table-layout: fixed;
+}
+.portal-app-main.marketing-admin-main .marketing-post-table th:nth-child(1),
+.portal-app-main.marketing-admin-main .marketing-post-table td:nth-child(1) { width: auto !important; }
+.portal-app-main.marketing-admin-main .marketing-post-table th:nth-child(2),
+.portal-app-main.marketing-admin-main .marketing-post-table td:nth-child(2) { width: 180px !important; }
+.portal-app-main.marketing-admin-main .marketing-post-table th:nth-child(3),
+.portal-app-main.marketing-admin-main .marketing-post-table td:nth-child(3) { width: 200px !important; }
+.portal-app-main.marketing-admin-main .marketing-post-table td { height: 96px; }
+.portal-app-main.marketing-admin-main .marketing-story-cell { grid-template-columns: 72px minmax(0, 1fr); gap: 12px; }
+.portal-app-main.marketing-admin-main .marketing-story-cell > div { gap: 4px; }
+.portal-app-main.marketing-admin-main .marketing-story-thumb {
+  width: 72px;
+  height: 54px;
+  border: 1px solid #e1e6ee;
+  border-radius: 6px;
+  background: #f8fafc;
+  box-shadow: none;
+}
+.portal-app-main.marketing-admin-main .marketing-post-table .admin-table-main strong {
+  color: #172033;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+.portal-app-main.marketing-admin-main .marketing-post-table .admin-table-main span {
+  color: #718096;
+  font-size: 0.78rem;
+  font-weight: 400;
+}
+.portal-app-main.marketing-admin-main .marketing-post-table .admin-table-main :is(strong, span) {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.portal-app-main.marketing-admin-main .marketing-post-row { transition: background 0.16s ease; }
+.portal-app-main.marketing-admin-main .marketing-post-row:hover { background: #f8fafc; }
+.portal-app-main.marketing-admin-main .marketing-post-row:focus-visible {
+  outline: 2px solid #bf4545;
+  outline-offset: -2px;
+  background: #fff8f8;
+}
+.portal-app-main.marketing-admin-main .activity-badge {
+  min-height: 21px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+.portal-app-main.marketing-admin-main .marketing-activity strong { color: #172033; font-size: 0.85rem; font-weight: 600; }
+.portal-app-main.marketing-admin-main .marketing-activity small { color: #718096; font-size: 0.75rem; }
+.portal-app-main.marketing-admin-main .marketing-activity :is(strong, small) {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.portal-app-main.marketing-admin-main .marketing-pagination { gap: 8px; padding-top: 12px; }
+.portal-app-main.marketing-admin-main .marketing-pagination button {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #475569;
+  font-size: 0;
+  box-shadow: none;
+  cursor: pointer;
+  transition: color 0.16s ease;
+}
+.portal-app-main.marketing-admin-main .marketing-pagination button:hover:not(:disabled) { color: #b42323; }
+.portal-app-main.marketing-admin-main .marketing-pagination button:focus-visible { outline: 2px solid #b42323; outline-offset: 2px; }
+.portal-app-main.marketing-admin-main .marketing-pagination button .admin-mono-icon { width: 18px; height: 18px; }
+.portal-app-main.marketing-admin-main .marketing-pagination button:disabled { cursor: not-allowed; opacity: 0.38; }
+.portal-app-main.marketing-admin-main .marketing-pagination span { min-width: 100px; color: #526074; font-size: 0.875rem; font-weight: 600; }
+
+body[data-portal-theme='dark'] .portal-app-main.marketing-admin-main :is(.marketing-publisher-hero, .marketing-post-panel) {
+  border-color: #354252;
+  background: #1b2531;
+  color: #e8edf4;
+  box-shadow: none;
+}
+body[data-portal-theme='dark'] .portal-app-main.marketing-admin-main .marketing-search:focus-within {
+  border-color: #bd4545;
+  box-shadow: 0 0 0 3px rgba(240, 140, 140, 0.12);
+}
+body[data-portal-theme='dark'] .portal-app-main.marketing-admin-main .marketing-filter-pills select:focus-visible { outline-color: #f08c8c; }
+body[data-portal-theme='dark'] .portal-app-main.marketing-admin-main .marketing-story-thumb { border-color: #354252; }
+body[data-portal-theme='dark'] .portal-app-main.marketing-admin-main .marketing-post-table .admin-table-main strong,
+body[data-portal-theme='dark'] .portal-app-main.marketing-admin-main .marketing-activity strong { color: #edf2f7; }
+body[data-portal-theme='dark'] .portal-app-main.marketing-admin-main .marketing-post-table .admin-table-main span,
+body[data-portal-theme='dark'] .portal-app-main.marketing-admin-main .marketing-activity small { color: #aab6c5; }
+body[data-portal-theme='dark'] .portal-app-main.marketing-admin-main .marketing-post-row:hover { background: #202b39; }
+body[data-portal-theme='dark'] .portal-app-main.marketing-admin-main .marketing-post-row:focus-visible { outline-color: #f08c8c; background: #202b39; }
+body[data-portal-theme='dark'] .portal-app-main.marketing-admin-main .marketing-pagination button { color: #d4dce6; }
+body[data-portal-theme='dark'] .portal-app-main.marketing-admin-main .marketing-pagination button:hover:not(:disabled) { color: #ffaaaa; }
+body[data-portal-theme='dark'] .portal-app-main.marketing-admin-main .marketing-pagination button:focus-visible { outline-color: #f08c8c; }
+body[data-portal-theme='dark'] .portal-app-main.marketing-admin-main .marketing-pagination span { color: #c6d0dc; }

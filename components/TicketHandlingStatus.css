@@ -152,15 +152,32 @@
 .ticket-handling-metrics > div { min-width: 0; }
 .ticket-handling-metrics dt { color: #687587; font-size: 0.72rem; line-height: 1.4; }
 .ticket-handling-metrics dd { margin: 3px 0 0; color: #24354a; font-size: 0.84rem; font-weight: 600; overflow-wrap: anywhere; }
+.ticket-handling-metrics small { display: block; margin-top: 3px; color: #7a8796; font-size: 0.68rem; line-height: 1.4; overflow-wrap: anywhere; }
 .ticket-handling-activity-follow-up { margin: 10px 0 0; font-size: 0.77rem; }
-.ticket-handling-activity .ticket-handling-timeline { display: grid; max-height: 320px; margin: 0; padding: 0; overflow-y: auto; list-style: none; }
+.ticket-handling-activity .ticket-handling-timeline {
+  display: grid;
+  max-height: 320px;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  list-style: none;
+}
+.ticket-handling-activity .ticket-handling-timeline::-webkit-scrollbar { display: none; width: 0; height: 0; }
 .ticket-handling-timeline > li { min-width: 0; padding: 10px 2px; border-bottom: 1px solid #e8ecf0; }
 .ticket-handling-timeline > li:last-child { border-bottom: 0; }
 .ticket-handling-event-heading { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 16px; }
 .ticket-handling-event-heading strong { color: #2e3d51; font-size: 0.8rem; font-weight: 600; }
 .ticket-handling-event-heading time { color: #687587; font-size: 0.72rem; }
-.ticket-handling-timeline p, .ticket-handling-empty { margin: 3px 0 0; color: #687587; font-size: 0.74rem; line-height: 1.45; overflow-wrap: anywhere; }
+.ticket-handling-timeline p, .ticket-handling-timeline ul, .ticket-handling-empty { margin: 3px 0 0; color: #687587; font-size: 0.74rem; line-height: 1.45; overflow-wrap: anywhere; }
+.ticket-handling-timeline .ticket-handling-event-meta { display: flex; flex-wrap: wrap; gap: 3px 12px; }
+.ticket-handling-event-meta span + span { color: #495a70; font-weight: 550; }
+.ticket-handling-timeline .ticket-handling-event-details { display: grid; gap: 3px; padding-left: 1.1rem; }
+.ticket-handling-timeline .ticket-handling-event-details li { padding-left: 1px; white-space: pre-wrap; }
 .ticket-handling-timeline .ticket-handling-event-reason { color: #394b61; white-space: pre-wrap; }
+.ticket-handling-event-reason strong { color: #2e3d51; font-weight: 650; }
+.ticket-handling-timeline .ticket-handling-event-unavailable { color: #8a96a4; font-style: italic; }
 .ticket-handling-empty { padding: 10px 0; }
 
 body[data-portal-theme='dark'] .ticket-handling-status,
@@ -168,6 +185,11 @@ body[data-portal-theme='dark'] .ticket-handling-activity { color: #e5eaf0; }
 body[data-portal-theme='dark'] .ticket-handling-status :is(.ticket-handling-assignee, .ticket-handling-timestamp, .ticket-handling-editor, .ticket-handling-follow-up),
 body[data-portal-theme='dark'] .ticket-handling-activity :is(dt, time, p, .ticket-handling-event-count) { color: #b4c0ce; }
 body[data-portal-theme='dark'] .ticket-handling-activity :is(dd, strong) { color: #e2e9f1; }
+body[data-portal-theme='dark'] .ticket-handling-metrics small { color: #9eacba; }
+body[data-portal-theme='dark'] .ticket-handling-activity .ticket-handling-event-details { color: #b4c0ce; }
+body[data-portal-theme='dark'] .ticket-handling-activity .ticket-handling-event-unavailable { color: #9eacba; }
+body[data-portal-theme='dark'] .ticket-handling-event-meta span + span,
+body[data-portal-theme='dark'] .ticket-handling-event-reason strong { color: #d1d9e3; }
 body[data-portal-theme='dark'] .ticket-handling-status .is-overdue,
 body[data-portal-theme='dark'] .ticket-handling-activity .is-overdue { color: #fda4af !important; }
 body[data-portal-theme='dark'] .ticket-handling-activity,

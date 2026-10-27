@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import {
   BadgeCheck,
@@ -12,6 +13,7 @@ import {
   ChevronRight,
   CheckCircle2,
   Clock3,
+  Download,
   ExternalLink,
   Eye,
   FileText,
@@ -75,7 +77,9 @@ import '@/components/PortalWorkspaceTheme.css';
 import '@/components/TicketHandlingStatus.css';
 import '@/components/TicketModalLayout.css';
 import './employee-ticket-parity.css';
+import '@/components/TicketChat.css';
 import { mergeMessages } from '@/lib/tickets/workflow.mjs';
+import { createRequestId } from '@/lib/tickets/requestIdentity.mjs';
 
 /* =========================
    ROUTES
@@ -1413,7 +1417,7 @@ function Sidebar({ active, onNav, onLogout, open }) {
    SHARED COMPONENTS
 ========================= */
 
-function PhotoAttachmentGallery({ photos = [], emptyText = 'No photo attachments.', onRemove }) {
+function PhotoAttachmentGallery({ photos = [], emptyText = 'No photo attachments.', onRemove, className = '' }) {
   const validPhotos = Array.isArray(photos)
     ? photos.filter((photo) => photo?.dataUrl || photo?.url || photo?.publicUrl || photo?.path || photo?.name)
     : [];
@@ -1423,7 +1427,7 @@ function PhotoAttachmentGallery({ photos = [], emptyText = 'No photo attachments
   }
 
   return (
-    <div className="attached-photo-grid">
+    <div className={`attached-photo-grid ${className}`.trim()}>
       {validPhotos.map((photo, index) => {
         const source = photo.dataUrl || photo.url || photo.publicUrl || '';
         const fileName = photo.name || `Photo ${index + 1}`;
@@ -1571,15 +1575,17 @@ function TicketConversationPanel({
   messageError,
   isSending,
   floating = false,
+  className = '',
   canSend = true,
-  unreadCount = 0,
   onClose,
   onMessageChange,
   onPhotoChange,
+  onPastePhotos,
   onRemovePhoto,
   onSend,
 }) {
   const messageListRef = useRef(null);
+  const [isPastingImages, setIsPastingImages] = useState(false);
   const disabledMessage =
     'Conversation is closed. Replies are available only while ICT is actively handling an unresolved ticket.';
 
@@ -1605,8 +1611,23 @@ function TicketConversationPanel({
     onSend();
   };
 
+  const handleMessagePaste = async (event) => {
+    const pastedImages = Array.from(event.clipboardData?.items || [])
+      .filter((item) => item.kind === 'file' && item.type?.startsWith('image/'))
+      .map((item) => item.getAsFile())
+      .filter(Boolean);
+    if (!pastedImages.length) return;
+    event.preventDefault();
+    setIsPastingImages(true);
+    try {
+      await onPastePhotos?.(pastedImages);
+    } finally {
+      setIsPastingImages(false);
+    }
+  };
+
   return (
-    <section className={`ticket-conversation-section${floating ? ' floating-ticket-chat' : ''}`}>
+    <section className={`ticket-conversation-section${floating ? ' floating-ticket-chat' : ''}${className ? ` ${className}` : ''}`}>
       <div className="ticket-conversation-head">
         <div>
           <span className="section-kicker"><MonoIcon icon={MessageCircle} /> Conversation</span>
@@ -1620,10 +1641,8 @@ function TicketConversationPanel({
               'Employee and ICT communication'
             )}
           </h4>
+          <p className="ticket-chat-requester">{ticket?.technician || ticket?.assignedTo || 'Unassigned'}</p>
         </div>
-        <span className="ticket-conversation-count">
-          {unreadCount > 0 ? `${unreadCount} unread` : 'No unread'}
-        </span>
         {onClose && (
           <button type="button" className="ticket-chat-close" onClick={onClose} aria-label="Minimize conversation">
             &times;
@@ -1640,7 +1659,8 @@ function TicketConversationPanel({
               <article key={item.id} className={`ticket-message-item${isMine ? ' mine' : ''}`}>
                 <div className="ticket-message-meta">
                   <strong>{item.senderName}</strong>
-                  <span>{item.senderRole} · {item.createdAt}</span>
+                  <span className="ticket-message-sender-role">{item.senderRole}</span>
+                  <span className="ticket-message-sent-at">{item.createdAt}</span>
                 </div>
                 <div className="ticket-message-bubble">
                   {item.message && <p>{item.message}</p>}
@@ -1663,9 +1683,10 @@ function TicketConversationPanel({
           value={messageDraft}
           onChange={(e) => onMessageChange(e.target.value)}
           onKeyDown={handleMessageKeyDown}
+          onPaste={handleMessagePaste}
           placeholder={canSend ? 'Write a reply or update for ICT...' : disabledMessage}
           maxLength={800}
-          disabled={!canSend}
+          disabled={!canSend || isSending || isPastingImages}
         />
 
         {messagePhotos.length > 0 && (
@@ -1676,6 +1697,7 @@ function TicketConversationPanel({
                 type="button"
                 className="message-photo-preview"
                 onClick={() => onRemovePhoto(photo.id)}
+                disabled={isSending || isPastingImages}
                 title="Remove photo"
               >
                 <img src={photo.dataUrl} alt={photo.name} />
@@ -1686,14 +1708,12 @@ function TicketConversationPanel({
         )}
 
         <div className="ticket-message-actions">
-          <label className={`message-attach-btn${canSend ? '' : ' disabled'}`}>
+          <label className={`message-attach-btn ticket-message-icon-btn${canSend && !isSending && !isPastingImages ? '' : ' disabled'}`} title="Attach photos" aria-label="Attach photos">
             <MonoIcon icon={Paperclip} />
-            Attach photos
-            <input type="file" accept={PHOTO_ACCEPT} multiple onChange={onPhotoChange} disabled={!canSend} />
+            <input type="file" accept={PHOTO_ACCEPT} multiple onChange={onPhotoChange} disabled={!canSend || isSending || isPastingImages} />
           </label>
-          <button type="button" className="modal-btn confirm" onClick={onSend} disabled={isSending || !canSend}>
+          <button type="button" className="modal-btn confirm ticket-message-icon-btn ticket-message-send-btn" onClick={onSend} disabled={isSending || !canSend} title={isSending ? 'Sending reply' : 'Send reply'} aria-label={isSending ? 'Sending reply' : 'Send reply'}>
             <MonoIcon icon={Send} />
-            {isSending ? 'Sending...' : 'Send Reply'}
           </button>
         </div>
 
@@ -1728,6 +1748,7 @@ function EmployeeTicketDetailModal({
   onChatClose,
   onMessageChange,
   onPhotoChange,
+  onPastePhotos,
   onRemovePhoto,
   onSend,
 }) {
@@ -1788,7 +1809,6 @@ function EmployeeTicketDetailModal({
         'modal-overlay',
         'employee-ticket-action-overlay',
         'ticket-action-overlay',
-        isChatOpen ? 'chat-open' : '',
       ].filter(Boolean).join(' ')}
       role="dialog"
       aria-modal="true"
@@ -1820,14 +1840,16 @@ function EmployeeTicketDetailModal({
             {' | '}Calendar hours; continues while waiting
           </p>
 
-          <button
-            type="button"
-            className="admin-modal-close"
-            onClick={onClose}
-            aria-label="Close modal"
-          >
-            <X aria-hidden="true" />
-          </button>
+          <div className="ticket-action-header-actions">
+            <button
+              type="button"
+              className="admin-modal-close"
+              onClick={onClose}
+              aria-label="Close modal"
+            >
+              <X aria-hidden="true" />
+            </button>
+          </div>
         </div>
 
         <div className="ticket-action-scroll-content employee-admin-scroll-content">
@@ -1967,19 +1989,69 @@ function EmployeeTicketDetailModal({
           ))}
         </dl>
 
+        <div className="ticket-action-attachment-chat-row employee-ticket-attachment-chat-row">
         {previewPhotos.length > 0 && <section className="employee-ticket-attachments" aria-label="Ticket attachments">
-          <h4><Paperclip size={16} aria-hidden="true" />Attachments <span>{previewPhotos.length}</span></h4>
-          <div className="employee-ticket-attachment-list">
-            {previewPhotos.map((photo, index) => (
-              <button type="button" key={photo.id || photo.path || index} className="employee-ticket-attachment"
-                onClick={() => setPreviewPhotoIndex(index)} aria-label={`Preview ${photo.name || `image ${index + 1}`}`}>
-                <img src={photo.dataUrl || photo.url || photo.publicUrl} alt="" />
-                <span>{photo.name || `Image ${index + 1}`}</span>
-                <ExternalLink size={14} aria-hidden="true" />
-              </button>
-            ))}
+          <div className="employee-ticket-attachment-summary">
+            <h4>PHOTO / SCREENSHOT ATTACHMENTS</h4>
+            <p>{previewPhotos.length} photo{previewPhotos.length === 1 ? '' : 's'} attached to this ticket</p>
+          </div>
+          <div className="employee-ticket-attachment-previews">
+            {previewPhotos.map((photo, index) => {
+              const source = photo.dataUrl || photo.url || photo.publicUrl;
+              const fileName = photo.name || `Image ${index + 1}`;
+              return (
+                <div className="employee-ticket-attachment-preview" key={photo.id || photo.path || index}>
+                  <button
+                    type="button"
+                    className="employee-ticket-attachment-image"
+                    onClick={() => setPreviewPhotoIndex(index)}
+                    aria-label={`Preview ${fileName}`}
+                  >
+                    <img src={source} alt={`Ticket attachment ${index + 1}`} />
+                  </button>
+                  <a href={source} download={fileName} className="employee-ticket-attachment-download"
+                    aria-label={`Download ${fileName}`} title="Download image">
+                    <Download size={18} aria-hidden="true" />
+                  </a>
+                </div>
+              );
+            })}
           </div>
         </section>}
+        {isChatOpen && (
+          typeof document !== 'undefined' && createPortal(
+            <TicketConversationPanel
+              ticket={ticket}
+              currentUser={user}
+              messages={messages}
+              messageDraft={messageDraft}
+              messagePhotos={messagePhotos}
+              messageError={messageError}
+              isSending={isSendingMessage}
+              floating
+              className="ticket-modal-floating-chat employee-floating-ticket-chat"
+              canSend={canSendConversationMessage || Boolean(pendingMessageIdRef.current)}
+              onClose={onChatClose}
+              onMessageChange={onMessageChange}
+              onPhotoChange={onPhotoChange}
+              onPastePhotos={onPastePhotos}
+              onRemovePhoto={onRemovePhoto}
+              onSend={onSend}
+            />,
+            document.body,
+          )
+        )}
+        {shouldShowConversation && isChatMinimized && (
+          typeof document !== 'undefined' && createPortal(
+            <TicketChatLauncher
+              className="ticket-modal-floating-launcher"
+              onClick={onChatOpen}
+              unreadCount={unreadCount}
+            />,
+            document.body,
+          )
+        )}
+        </div>
 
         <TicketWorkTimer ticket={ticket} now={now} />
         <TicketHandlingActivity ticket={ticket} now={now} />
@@ -2043,30 +2115,6 @@ function EmployeeTicketDetailModal({
         </div>
       )}
 
-      {/* Existing Employee conversation behavior is unchanged. */}
-      {isChatOpen && (
-        <TicketConversationPanel
-          ticket={ticket}
-          currentUser={user}
-          messages={messages}
-          messageDraft={messageDraft}
-          messagePhotos={messagePhotos}
-          messageError={messageError}
-          isSending={isSendingMessage}
-          floating
-          canSend={canSendConversationMessage}
-          unreadCount={unreadCount}
-          onClose={onChatClose}
-          onMessageChange={onMessageChange}
-          onPhotoChange={onPhotoChange}
-          onRemovePhoto={onRemovePhoto}
-          onSend={onSend}
-        />
-      )}
-
-      {shouldShowConversation && isChatMinimized && (
-        <TicketChatLauncher onClick={onChatOpen} unreadCount={unreadCount} />
-      )}
     </div>
   );
 }
@@ -2503,6 +2551,7 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab, now, notificat
   const [messagePhotos, setMessagePhotos] = useState([]);
   const [messageError, setMessageError] = useState('');
   const [isSendingMessage, setIsSendingMessage] = useState(false);
+  const pendingMessageIdRef = useRef('');
   const [isChatMinimized, setIsChatMinimized] = useState(true);
   const [unreadConversationCount, setUnreadConversationCount] = useState(0);
   const [isLoadingTicketDetails, setIsLoadingTicketDetails] = useState(false);
@@ -2607,6 +2656,7 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab, now, notificat
   // Subscribe to messages and ticket updates — same pattern as admin
   useEffect(() => {
     if (!viewTicket?.id) {
+      pendingMessageIdRef.current = '';
       setTicketMessages([]);
       setMessageDraft('');
       setMessagePhotos([]);
@@ -2673,6 +2723,7 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab, now, notificat
     setIsChatMinimized(conversationOnOpenRef.current !== viewTicket?.id);
     conversationOnOpenRef.current = '';
     setUnreadConversationCount(0);
+    pendingMessageIdRef.current = '';
   }, [viewTicket?.id]);
 
   useEffect(() => {
@@ -2922,6 +2973,7 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab, now, notificat
 
     try {
       const nextPhotos = await filesToPhotoAttachments(files, messagePhotos.length);
+      if (nextPhotos.length) pendingMessageIdRef.current = '';
       setMessagePhotos((current) => [...current, ...nextPhotos]);
     } catch (error) {
       setMessageError(error.message || 'Unable to attach selected photos.');
@@ -2930,12 +2982,23 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab, now, notificat
     }
   };
 
+  const handleConversationImagePaste = async (files) => {
+    setMessageError('');
+    try {
+      const nextPhotos = await filesToPhotoAttachments(files, messagePhotos.length);
+      if (nextPhotos.length) pendingMessageIdRef.current = '';
+      setMessagePhotos((current) => [...current, ...nextPhotos]);
+    } catch (error) {
+      setMessageError(error.message || 'Unable to attach pasted image.');
+    }
+  };
+
   const sendTicketMessage = async () => {
     if (!viewTicket?.id) return;
 
     const cleanMessage = messageDraft.trim();
 
-    if (!canSendConversationMessage) {
+    if (!canSendConversationMessage && !pendingMessageIdRef.current) {
       setMessageError('Conversation is closed for tickets that are not actively being handled or are already resolved.');
       return;
     }
@@ -2945,6 +3008,7 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab, now, notificat
       return;
     }
 
+    if (!pendingMessageIdRef.current) pendingMessageIdRef.current = createRequestId();
     setIsSendingMessage(true);
     setMessageError('');
 
@@ -2953,6 +3017,7 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab, now, notificat
         sender: user,
         message: cleanMessage,
         attachments: messagePhotos,
+        clientMessageId: pendingMessageIdRef.current,
       });
 
       ticketMessageIdsRef.current.add(sentMessage.id);
@@ -2962,11 +3027,22 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab, now, notificat
       });
       setMessageDraft('');
       setMessagePhotos([]);
+      pendingMessageIdRef.current = '';
     } catch (error) {
       setMessageError(error.message || 'Unable to send reply.');
     } finally {
       setIsSendingMessage(false);
     }
+  };
+
+  const updateConversationDraft = (value) => {
+    pendingMessageIdRef.current = '';
+    setMessageDraft(value);
+  };
+
+  const removeConversationPhoto = (photoId) => {
+    pendingMessageIdRef.current = '';
+    setMessagePhotos((current) => current.filter((photo) => photo.id !== photoId));
   };
 
   const validateForm = () => {
@@ -3514,7 +3590,11 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab, now, notificat
 
                 {form.photoAttachments.length > 0 && (
                   <div className="photo-preview-shell">
-                    <PhotoAttachmentGallery photos={form.photoAttachments} onRemove={removePhotoAttachment} />
+                    <PhotoAttachmentGallery
+                      photos={form.photoAttachments}
+                      onRemove={removePhotoAttachment}
+                      className="ticket-form-photo-gallery"
+                    />
                   </div>
                 )}
               </div>
@@ -3541,8 +3621,8 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab, now, notificat
 
       {/* Confirm submission modal */}
       {showConfirm && (
-        <div className="modal-overlay" role="dialog" aria-modal="true" aria-label="Confirm ticket submission">
-          <div className="modal-box glass">
+        <div className="modal-overlay ticket-submit-confirmation-overlay" role="dialog" aria-modal="true" aria-label="Confirm ticket submission">
+          <div className="modal-box glass ticket-submit-confirmation">
             <h3>{editingId ? 'Save Ticket Changes?' : 'Submit Ticket?'}</h3>
             <div className="modal-divider" />
             <p>
@@ -3582,8 +3662,8 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab, now, notificat
       )}
 
       {successNotice && (
-        <div className="modal-overlay" role="dialog" aria-modal="true" aria-label="Ticket submission successful">
-          <div className="modal-box glass success-modal">
+        <div className="modal-overlay ticket-submit-confirmation-overlay" role="dialog" aria-modal="true" aria-label="Ticket submission successful">
+          <div className="modal-box glass success-modal ticket-submit-confirmation ticket-submit-success">
             <div className="success-icon"><MonoIcon icon={CheckCircle2} /></div>
             <h3>{successNotice.title}</h3>
             <p>{successNotice.message}</p>
@@ -3624,9 +3704,10 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab, now, notificat
             setUnreadConversationCount(0);
           }}
           onChatClose={() => setIsChatMinimized(true)}
-          onMessageChange={setMessageDraft}
+          onMessageChange={updateConversationDraft}
           onPhotoChange={handleConversationPhotoChange}
-          onRemovePhoto={(photoId) => setMessagePhotos((current) => current.filter((p) => p.id !== photoId))}
+          onPastePhotos={handleConversationImagePaste}
+          onRemovePhoto={removeConversationPhoto}
           onSend={sendTicketMessage}
         />
       )}

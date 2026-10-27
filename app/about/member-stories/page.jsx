@@ -6,6 +6,7 @@ import Link from 'next/link';
 import Navbar from '@/components/Navbar/Navbar';
 import Footer from '@/components/Footer/Footer';
 import { listPublishedMemberStories } from '@/lib/marketing/marketingPosts';
+import { createClient } from '@/lib/supabase/client';
 import { MEMBER_STORIES, toMemberStory } from '@/lib/memberStories';
 import './member-experiences.css';
 
@@ -76,8 +77,25 @@ export default function MemberStoriesPage() {
 
     void loadStories();
 
+    const reload = () => void loadStories();
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') reload();
+    };
+    window.addEventListener('focus', reload);
+    window.addEventListener('pageshow', reload);
+    document.addEventListener('visibilitychange', onVisibility);
+    const supabase = createClient();
+    const channel = supabase
+      .channel('member-stories-page-marketing-posts-sync')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'marketing_posts' }, reload)
+      .subscribe();
+
     return () => {
       cancelled = true;
+      window.removeEventListener('focus', reload);
+      window.removeEventListener('pageshow', reload);
+      document.removeEventListener('visibilitychange', onVisibility);
+      supabase.removeChannel(channel);
     };
   }, []);
 

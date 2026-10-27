@@ -5523,6 +5523,55 @@ button {
   overflow: hidden;
 }
 
+.ticket-form-photo-gallery {
+  grid-template-columns: repeat(auto-fill, minmax(0, max-content)) !important;
+  justify-content: stretch !important;
+  align-items: start !important;
+  max-width: 100% !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+.ticket-form-photo-gallery .attached-photo-card-wrap {
+  display: block !important;
+  width: fit-content !important;
+  min-width: 0 !important;
+}
+
+.ticket-form-photo-gallery .attached-photo-card {
+  width: fit-content !important;
+  min-width: 0 !important;
+  padding: 0 !important;
+  overflow: visible !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.ticket-form-photo-gallery .attached-photo-card > span,
+.ticket-form-photo-gallery .attached-photo-card > em {
+  display: none !important;
+}
+
+.ticket-form-photo-gallery .attached-photo-preview,
+.ticket-form-photo-gallery .attached-photo-open {
+  display: block !important;
+  width: fit-content !important;
+}
+
+.ticket-form-photo-gallery .attached-photo-preview :is(img, .attached-photo-placeholder) {
+  display: block !important;
+  width: auto !important;
+  max-width: min(220px, 50vw) !important;
+  height: auto !important;
+  max-height: 160px !important;
+  aspect-ratio: auto !important;
+  object-fit: contain !important;
+  margin: 0 !important;
+  border-radius: 8px !important;
+}
+
 .employee-ticket-modal .modal-date-note {
   margin: 0.1rem 0.85rem 0;
   color: var(--softer);
@@ -5752,7 +5801,7 @@ button {
 
 .ticket-chat-launcher {
   position: fixed !important;
-  right: clamp(0.85rem, 2vw, 1.5rem) !important;
+  right: max(0.85rem, calc((100vw - 1480px) / 2 - 70px)) !important;
   bottom: clamp(0.85rem, 2vw, 1.5rem) !important;
   z-index: 10095 !important;
   width: 66px;
@@ -5811,8 +5860,8 @@ button {
 
 .floating-ticket-chat {
   position: fixed !important;
-  right: clamp(0.85rem, 2vw, 1.5rem) !important;
-  bottom: clamp(0.85rem, 2vw, 1.5rem) !important;
+  right: max(1rem, calc((100vw - 92vw) / 2 - 42px)) !important;
+  bottom: clamp(2.6rem, 5vh, 3.5rem) !important;
   z-index: 10090 !important;
   width: min(420px, calc(100vw - 1.7rem)) !important;
   max-height: min(640px, calc(100dvh - 1.7rem)) !important;
@@ -6280,21 +6329,16 @@ button {
 }
 
 .ticket-chat-title-id {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 34px;
-  padding: 0.38rem 0.78rem;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.92);
-  border: 1px solid rgba(220, 38, 38, 0.18);
+  display: inline;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   color: #dc2626;
   font-size: 0.86rem;
   font-weight: 950;
   letter-spacing: 0.04em;
-  box-shadow:
-    0 12px 28px rgba(220, 38, 38, 0.13),
-    inset 0 1px 0 rgba(255, 255, 255, 0.86);
+  box-shadow: none;
 }
 
 .other-services-view {
@@ -10860,18 +10904,18 @@ button {
 /* Match the Admin chat launcher's size and edge placement. */
 .employee-ticket-action-overlay .ticket-chat-launcher {
   position: fixed !important;
-  right: clamp(0.85rem, 2vw, 1.5rem) !important;
-  bottom: clamp(0.85rem, 2vw, 1.5rem) !important;
+  right: max(1.5rem, calc((100vw - 92vw) / 2 - 36px)) !important;
+  bottom: clamp(1.5rem, 3vh, 2rem) !important;
   z-index: 10120 !important;
   width: 58px !important;
   height: 58px !important;
   min-width: 58px !important;
   min-height: 58px !important;
-  transform: translateX(38%) !important;
+  transform: none !important;
 }
 
 .employee-ticket-action-overlay .ticket-chat-launcher:hover {
-  transform: translate(38%, -1px) !important;
+  transform: translateY(-1px) !important;
 }
 
 /* Match the Admin ticket modal's header, status indicator, and action sizing. */
@@ -11346,3 +11390,553 @@ button {
   line-height: 1.2 !important;
   white-space: nowrap !important;
 }
+.employee-ticket-action-overlay .ticket-action-head {
+  position: relative;
+}
+
+.employee-ticket-action-overlay .ticket-action-header-actions {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.employee-ticket-action-overlay .ticket-action-head-main {
+  padding-right: 178px;
+}
+
+.employee-ticket-action-overlay .ticket-action-header-actions > .admin-modal-close {
+  position: static !important;
+  inset: auto !important;
+  flex: 0 0 auto;
+}
+
+.employee-ticket-action-overlay .ticket-action-header-actions .ticket-chat-header-toggle {
+  position: relative !important;
+  inset: auto !important;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  width: auto !important;
+  min-width: 40px !important;
+  height: 38px !important;
+  min-height: 38px !important;
+  padding: 0 11px !important;
+  border: 1px solid rgba(220, 38, 38, 0.18) !important;
+  border-radius: 9px !important;
+  background: rgba(255, 255, 255, 0.92) !important;
+  color: #b4232f !important;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06) !important;
+  cursor: pointer;
+  font-size: 0.78rem !important;
+  font-weight: 750 !important;
+}
+
+.employee-ticket-action-overlay .ticket-action-header-actions .ticket-chat-header-toggle:hover {
+  background: #fff5f5 !important;
+  border-color: rgba(220, 38, 38, 0.35) !important;
+}
+
+.employee-ticket-action-overlay .ticket-action-header-actions .ticket-chat-header-toggle:focus-visible {
+  outline: 2px solid #b4232f;
+  outline-offset: 2px;
+}
+
+.employee-ticket-action-overlay .ticket-action-header-actions .ticket-chat-header-toggle .admin-mono-icon {
+  width: 18px !important;
+  height: 18px !important;
+}
+
+.employee-ticket-action-overlay .ticket-action-header-actions .ticket-chat-header-toggle .ticket-chat-header-label {
+  position: static !important;
+  display: inline !important;
+  min-width: 0 !important;
+  width: auto !important;
+  height: auto !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: inherit !important;
+  font-size: inherit !important;
+  font-weight: inherit !important;
+  line-height: inherit !important;
+}
+
+.employee-ticket-action-overlay .ticket-action-header-actions .ticket-chat-header-toggle .ticket-chat-unread-count {
+  position: absolute !important;
+  top: -7px !important;
+  right: -7px !important;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px !important;
+  width: auto !important;
+  height: 18px !important;
+  padding: 0 4px !important;
+  border: 1px solid #fff !important;
+  border-radius: 999px !important;
+  background: #dc2626 !important;
+  color: #fff !important;
+  font-size: 0.65rem !important;
+  font-weight: 800 !important;
+  line-height: 1 !important;
+}
+
+@media (max-width: 520px) {
+  .employee-ticket-action-overlay .ticket-action-head-main {
+    padding-right: 92px;
+  }
+
+  .employee-ticket-action-overlay .ticket-action-header-actions .ticket-chat-header-toggle {
+    width: 40px !important;
+    padding: 0 !important;
+  }
+
+  .employee-ticket-action-overlay .ticket-action-header-actions .ticket-chat-header-label {
+    display: none !important;
+  }
+}
+
+
+/* Shared ticket conversation panel treatment */
+:is(.ticket-action-overlay, .employee-ticket-action-overlay) .ticket-action-attachment-chat-row {
+  position: relative !important;
+  display: grid !important;
+  grid-template-columns: max-content minmax(320px, 420px) !important;
+  align-items: start !important;
+  justify-content: start !important;
+  gap: 1rem !important;
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
+:is(.ticket-action-overlay, .employee-ticket-action-overlay) .ticket-action-attachment-chat-row > .floating-ticket-chat {
+  position: relative !important;
+  inset: auto !important;
+  justify-self: start !important;
+  width: min(420px, 100%) !important;
+  height: min(390px, 42dvh) !important;
+  min-height: 280px !important;
+  max-height: 390px !important;
+  margin: 0 !important;
+}
+
+:is(.ticket-action-overlay, .employee-ticket-action-overlay) .ticket-chat-launcher {
+  position: absolute !important;
+  top: auto !important;
+  right: 0.85rem !important;
+  bottom: 0.85rem !important;
+  left: auto !important;
+  z-index: 10120 !important;
+  transform: none !important;
+}
+
+:is(.ticket-action-overlay, .employee-ticket-action-overlay) .ticket-chat-launcher:hover {
+  transform: translateY(-1px) !important;
+}
+
+:is(.ticket-action-overlay, .employee-ticket-action-overlay) .ticket-action-attachment-chat-row > .ticket-action-attachments-row {
+  width: max-content !important;
+  max-width: 100% !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+:is(.ticket-action-overlay, .employee-ticket-action-overlay) .ticket-action-attachment-chat-row > .employee-ticket-attachments {
+  width: fit-content !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+}
+
+@media (max-width: 1100px) {
+  :is(.ticket-action-overlay, .employee-ticket-action-overlay) .ticket-action-attachment-chat-row {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  :is(.ticket-action-overlay, .employee-ticket-action-overlay) .ticket-action-attachment-chat-row > .floating-ticket-chat {
+    width: min(520px, 100%) !important;
+    height: min(390px, 48dvh) !important;
+  }
+}
+
+:is(.ticket-action-overlay, .employee-ticket-action-overlay) .floating-ticket-chat {
+  position: fixed !important;
+  right: clamp(0.85rem, 2vw, 1.5rem) !important;
+  bottom: clamp(0.85rem, 2vw, 1.5rem) !important;
+  z-index: 10080 !important;
+  display: grid !important;
+  grid-template-rows: auto minmax(0, 1fr) auto !important;
+  width: min(420px, calc(100vw - 1.7rem)) !important;
+  max-height: min(640px, calc(100dvh - 1.7rem)) !important;
+  min-height: 280px;
+  margin: 0 !important;
+  overflow: hidden !important;
+  border: 1px solid var(--border, rgba(226, 232, 240, 0.85)) !important;
+  border-radius: var(--radius-lg, 14px) !important;
+  background: var(--surface, #fff) !important;
+  color: var(--text, #172033);
+  box-shadow: 0 24px 56px rgba(15, 23, 42, 0.22) !important;
+  font: inherit;
+}
+
+/* The modal overlay clips overflow; render the launcher at the viewport edge. */
+.ticket-chat-launcher.ticket-modal-floating-launcher {
+  position: fixed !important;
+  top: auto !important;
+  right: 0.75rem !important;
+  bottom: 2.2rem !important;
+  left: auto !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0.6rem !important;
+  width: auto !important;
+  min-width: 0 !important;
+  height: 48px !important;
+  min-height: 48px !important;
+  padding: 0 1rem !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 999px !important;
+  background: #fff !important;
+  color: #243247 !important;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.14) !important;
+  z-index: 13000 !important;
+  transform: none !important;
+}
+
+.ticket-chat-launcher.ticket-modal-floating-launcher .admin-mono-icon {
+  width: 19px !important;
+  height: 19px !important;
+  color: #dc2626 !important;
+  stroke: #dc2626 !important;
+}
+
+.ticket-chat-launcher.ticket-modal-floating-launcher .ticket-chat-launcher-label {
+  position: static !important;
+  min-width: 0 !important;
+  height: auto !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: #334155 !important;
+  font-size: 0.875rem !important;
+  font-weight: 750 !important;
+  line-height: 1 !important;
+}
+
+.ticket-chat-launcher.ticket-modal-floating-launcher .ticket-chat-unread-count {
+  position: absolute !important;
+  top: -6px !important;
+  right: -6px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-width: 20px !important;
+  width: auto !important;
+  height: 20px !important;
+  padding: 0 5px !important;
+  border: 2px solid #fff !important;
+  border-radius: 999px !important;
+  background: #dc2626 !important;
+  color: #fff !important;
+  font-size: 0.68rem !important;
+  font-weight: 800 !important;
+  line-height: 1 !important;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.18) !important;
+}
+
+.ticket-chat-launcher.ticket-modal-floating-launcher:hover {
+  background: #fff5f5 !important;
+  border-color: rgba(220, 38, 38, 0.4) !important;
+  box-shadow: 0 6px 15px rgba(15, 23, 42, 0.16) !important;
+}
+
+.ticket-chat-launcher.ticket-modal-floating-launcher:hover {
+  transform: translateY(-2px) !important;
+}
+
+@media (max-width: 520px) {
+  .ticket-chat-launcher.ticket-modal-floating-launcher {
+    width: 48px !important;
+    min-width: 48px !important;
+    padding: 0 !important;
+  }
+
+  .ticket-chat-launcher.ticket-modal-floating-launcher .ticket-chat-launcher-label {
+    display: none !important;
+  }
+}
+
+.floating-ticket-chat.ticket-modal-floating-chat {
+  background: #fff !important;
+  color: #243247 !important;
+  opacity: 1 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 18px 44px rgba(15, 23, 42, 0.2) !important;
+  isolation: isolate;
+}
+
+.ticket-chat-requester {
+  margin: 0.42rem 0 0.08rem !important;
+  color: #64748b !important;
+  font-size: 0.8rem !important;
+  font-weight: 750 !important;
+  line-height: 1.25 !important;
+}
+
+.ticket-message-icon-btn {
+  position: relative;
+  width: 42px !important;
+  min-width: 42px !important;
+  height: 42px !important;
+  min-height: 42px !important;
+  padding: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: #64748b !important;
+  box-shadow: none !important;
+  cursor: pointer;
+}
+
+.ticket-message-icon-btn .admin-mono-icon {
+  width: 18px !important;
+  height: 18px !important;
+}
+
+.ticket-message-send-btn {
+  border-color: transparent !important;
+  background: transparent !important;
+  color: #dc2626 !important;
+  box-shadow: none !important;
+}
+
+.ticket-message-send-btn .admin-mono-icon {
+  color: #dc2626 !important;
+  stroke: #dc2626 !important;
+}
+
+.ticket-message-icon-btn:hover:not(:disabled) {
+  border-color: transparent !important;
+  background: transparent !important;
+  color: #b4232f !important;
+}
+
+.ticket-message-send-btn:hover:not(:disabled) {
+  background: transparent !important;
+  color: #b4232f !important;
+}
+
+.ticket-message-icon-btn:focus-visible {
+  outline: 2px solid rgba(220, 38, 38, 0.45);
+  outline-offset: 2px;
+}
+
+.ticket-message-icon-btn.disabled,
+.ticket-message-icon-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.floating-ticket-chat.ticket-modal-floating-chat {
+  position: fixed !important;
+  top: auto !important;
+  right: 0.75rem !important;
+  bottom: 2.2rem !important;
+  left: auto !important;
+  z-index: 13010 !important;
+  width: min(420px, calc(100vw - 1.5rem)) !important;
+  height: min(440px, calc(100dvh - 4.4rem)) !important;
+  max-height: calc(100dvh - 4.4rem) !important;
+}
+
+@media (min-width: 1180px) {
+  .employee-ticket-action-overlay.chat-open {
+    align-items: flex-start !important;
+    justify-content: flex-start !important;
+    padding-left: clamp(1rem, 4vw, 4rem) !important;
+    padding-right: calc(420px + clamp(1.5rem, 3vw, 3rem)) !important;
+  }
+
+  .employee-ticket-action-overlay.chat-open .employee-ticket-modal {
+    width: min(1320px, calc(100vw - 420px - clamp(4rem, 7vw, 7rem))) !important;
+    max-width: min(1320px, calc(100vw - 420px - clamp(4rem, 7vw, 7rem))) !important;
+    margin: 0 !important;
+  }
+}
+
+@media (max-width: 700px) {
+  .floating-ticket-chat.ticket-modal-floating-chat {
+    right: 0.5rem !important;
+    bottom: 1.25rem !important;
+    width: calc(100vw - 1rem) !important;
+    height: min(520px, calc(100dvh - 2.5rem)) !important;
+    max-height: calc(100dvh - 2.5rem) !important;
+  }
+}
+
+@media (max-width: 700px) {
+  .ticket-chat-launcher.ticket-modal-floating-launcher {
+    right: 0.75rem !important;
+    bottom: 1.25rem !important;
+  }
+}
+
+:is(.ticket-action-overlay, .employee-ticket-action-overlay) .floating-ticket-chat .ticket-message-list {
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+}
+
+:is(.ticket-action-overlay, .employee-ticket-action-overlay) .floating-ticket-chat .ticket-message-composer {
+  flex: 0 0 auto;
+  position: relative;
+  z-index: 1;
+}
+
+@media (max-width: 700px) {
+  :is(.ticket-action-overlay, .employee-ticket-action-overlay) .floating-ticket-chat {
+    right: 0.5rem !important;
+    bottom: 0.5rem !important;
+    width: calc(100vw - 1rem) !important;
+    max-height: calc(100dvh - 1rem) !important;
+    min-height: min(360px, calc(100dvh - 1rem));
+    border-radius: 14px !important;
+  }
+}
+
+/* Ticket attachment preview mirrors the Admin preview while using Employee modal colors. */
+.employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-ticket-attachments {
+  width: fit-content !important;
+  max-width: calc(100% - 1.8rem) !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+  display: inline-grid !important;
+  grid-template-columns: 350px 344px !important;
+  justify-self: start !important;
+  align-items: start !important;
+  gap: 0.75rem !important;
+  margin: 0 0.9rem 0.55rem !important;
+  padding: 0.6rem 0.72rem !important;
+  border: 1px solid #dce6f7 !important;
+  border-radius: 10px !important;
+  background: #eff4ff !important;
+  box-shadow: none !important;
+}
+
+.employee-ticket-action-overlay .employee-ticket-attachment-summary {
+  min-width: 0;
+  padding-top: 0.08rem;
+}
+
+.employee-ticket-action-overlay .employee-ticket-attachment-summary h4 {
+  margin: 0 0 0.12rem !important;
+  color: #245bf3 !important;
+  font-size: 0.75rem !important;
+  font-weight: 850 !important;
+  letter-spacing: 0.075em !important;
+  line-height: 1.25 !important;
+}
+
+.employee-ticket-action-overlay .employee-ticket-attachment-summary p {
+  margin: 0 !important;
+  color: #475569 !important;
+  font-size: 0.84rem !important;
+  line-height: 1.3 !important;
+}
+
+.employee-ticket-action-overlay .employee-ticket-attachment-previews {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.45rem;
+  width: 344px;
+  max-width: 100%;
+  min-width: 0;
+  max-height: 230px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.employee-ticket-action-overlay .employee-ticket-attachment-preview {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  border-radius: 8px;
+  background: #e2e8f0;
+}
+
+.employee-ticket-action-overlay .employee-ticket-attachment-image {
+  display: block !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  height: 230px !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  border: 0 !important;
+  border-radius: 8px !important;
+  background: transparent !important;
+  cursor: zoom-in;
+}
+
+.employee-ticket-action-overlay .employee-ticket-attachment-image img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.employee-ticket-action-overlay .employee-ticket-attachment-download {
+  position: absolute;
+  right: 7px;
+  bottom: 7px;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  background: rgba(15, 23, 42, 0.48);
+  color: #fff;
+  text-decoration: none;
+  filter: drop-shadow(0 1px 2px rgba(15, 23, 42, 0.5));
+}
+
+.employee-ticket-action-overlay .employee-ticket-attachment-download:hover {
+  background: rgba(15, 23, 42, 0.72);
+}
+
+@media (max-width: 700px) {
+  .employee-ticket-action-overlay .employee-ticket-modal.ticket-action-modal.is-support-modal .employee-ticket-attachments {
+    display: grid !important;
+    width: calc(100% - 1.8rem) !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .employee-ticket-action-overlay .employee-ticket-attachment-previews {
+    width: 100%;
+    max-height: 230px;
+  }
+}
+
+.floating-ticket-chat.ticket-modal-floating-chat {
+  background: #fff !important;
+  opacity: 1 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border-color: #e2e8f0 !important;
+}
+
+
