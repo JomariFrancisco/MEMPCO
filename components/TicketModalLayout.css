@@ -1,0 +1,410 @@
+/* Ticket sections stay in document flow; only the modal body scrolls. */
+:is(.ticket-action-overlay, .employee-ticket-action-overlay) :is(form, article).ticket-action-modal.ticket-modal-readable:is(.is-support-modal, .is-burnout-modal) {
+  display: flex !important;
+  flex-direction: column !important;
+  min-height: 0 !important;
+  max-height: calc(100dvh - 16px) !important;
+  overflow: hidden !important;
+}
+
+:is(.ticket-action-overlay, .employee-ticket-action-overlay) :is(form, article).ticket-action-modal.ticket-modal-readable:is(.is-support-modal, .is-burnout-modal) > :is(.ticket-action-head, .modal-footer) {
+  flex: 0 0 auto !important;
+  min-width: 0 !important;
+}
+
+:is(.ticket-action-overlay, .employee-ticket-action-overlay) :is(form, article).ticket-action-modal.ticket-modal-readable:is(.is-support-modal, .is-burnout-modal) > .ticket-action-scroll-content {
+  display: block !important;
+  flex: 1 1 auto !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  height: auto !important;
+  max-height: none !important;
+  padding: 12px 16px !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain !important;
+  scrollbar-gutter: stable !important;
+}
+
+:is(.ticket-action-overlay, .employee-ticket-action-overlay) :is(form, article).ticket-action-modal.ticket-modal-readable:is(.is-support-modal, .is-burnout-modal) .ticket-action-scroll-content > :is(.ticket-action-info-grid, .ticket-action-details-row, .ticket-action-notes-grid, .ticket-action-attachments-row, .ticket-handling-activity) {
+  position: static !important;
+  flex: none !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  height: auto !important;
+  max-height: none !important;
+  margin: 0 0 12px !important;
+  contain: none !important;
+  transform: none !important;
+}
+
+:is(.ticket-action-overlay, .employee-ticket-action-overlay) :is(form, article).ticket-action-modal.ticket-modal-readable:is(.is-support-modal, .is-burnout-modal) .ticket-action-info-grid {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  grid-template-rows: none !important;
+  grid-auto-rows: max-content !important;
+  gap: 8px !important;
+}
+
+:is(.ticket-action-overlay, .employee-ticket-action-overlay) :is(form, article).ticket-action-modal.ticket-modal-readable:is(.is-support-modal, .is-burnout-modal) .ticket-meta-cell {
+  min-width: 0 !important;
+  min-height: 50px !important;
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+:is(.ticket-action-overlay, .employee-ticket-action-overlay) :is(form, article).ticket-action-modal.ticket-modal-readable:is(.is-support-modal, .is-burnout-modal) .ticket-meta-cell :is(span, p) {
+  max-width: 100% !important;
+  max-height: none !important;
+  white-space: normal !important;
+  overflow: visible !important;
+  overflow-wrap: anywhere !important;
+  text-overflow: clip !important;
+}
+
+:is(.ticket-action-overlay, .employee-ticket-action-overlay) :is(form, article).ticket-action-modal.ticket-modal-readable:is(.is-support-modal, .is-burnout-modal) .ticket-action-details-row {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 340px) !important;
+  grid-template-rows: none !important;
+  grid-auto-rows: max-content !important;
+  align-items: stretch !important;
+  align-content: start !important;
+  gap: 12px !important;
+  overflow: visible !important;
+}
+
+:is(.ticket-action-overlay, .employee-ticket-action-overlay) :is(form, article).ticket-action-modal.ticket-modal-readable:is(.is-support-modal, .is-burnout-modal) :is(.ticket-action-description-column, .employee-ticket-description-column) {
+  display: grid !important;
+  grid-template-rows: minmax(0, 1fr) !important;
+  align-self: stretch !important;
+  align-content: stretch !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  height: auto !important;
+  gap: 8px !important;
+  /* Let the controls size the row instead of a long description. */
+  contain: size !important;
+}
+
+:is(.ticket-action-overlay, .employee-ticket-action-overlay) :is(form, article).ticket-action-modal.ticket-modal-readable:is(.is-support-modal, .is-burnout-modal) :is(.ticket-action-description-column, .employee-ticket-description-column).is-waiting-workflow {
+  grid-template-rows: repeat(2, minmax(0, 1fr)) !important;
+}
+
+:is(.ticket-action-overlay, .employee-ticket-action-overlay) :is(form, article).ticket-action-modal.ticket-modal-readable:is(.is-support-modal, .is-burnout-modal) :is(.ticket-action-description, .ticket-action-control-stack) {
+  align-self: stretch !important;
+  flex: none !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  height: auto !important;
+  max-height: none !important;
+  margin: 0 !important;
+  padding: 12px !important;
+  overflow: visible !important;
+}
+
+:is(.ticket-action-overlay, .employee-ticket-action-overlay) :is(form, article).ticket-action-modal.ticket-modal-readable:is(.is-support-modal, .is-burnout-modal) :is(.ticket-action-description-column, .employee-ticket-description-column) > :is(.ticket-action-description, .employee-ticket-followup-note) p {
+  display: block !important;
+  flex: 1 1 auto !important;
+  width: 100% !important;
+  min-height: 0 !important;
+  height: auto !important;
+  max-height: none !important;
+  margin: 0 !important;
+  overflow: auto !important;
+  overflow-wrap: anywhere !important;
+  white-space: pre-wrap !important;
+  text-overflow: clip !important;
+  -webkit-line-clamp: unset !important;
+  font-size: 0.9rem !important;
+  line-height: 1.45 !important;
+}
+
+:is(.ticket-action-overlay, .employee-ticket-action-overlay) :is(form, article).ticket-action-modal.ticket-modal-readable :is(.ticket-meta-cell > span, .ticket-action-description > span, .employee-ticket-description-heading > span, .employee-ticket-followup-note > span) {
+  color: #52627a !important;
+  font-size: 0.75rem !important;
+  font-weight: 700 !important;
+  line-height: 1.4 !important;
+  letter-spacing: 0 !important;
+}
+
+:is(.ticket-action-overlay, .employee-ticket-action-overlay) :is(form, article).ticket-action-modal.ticket-modal-readable:is(.is-support-modal, .is-burnout-modal) :is(.ticket-action-description-column, .employee-ticket-description-column) > :is(.ticket-action-description, .ticket-waiting-reason, .employee-ticket-followup-note) {
+  display: flex !important;
+  flex-direction: column !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  margin: 0 !important;
+  padding: 12px !important;
+  gap: 6px !important;
+  border: 1px solid #dfe6ef !important;
+  border-radius: 8px !important;
+  background: #f8fafc !important;
+  overflow: hidden !important;
+}
+
+:is(.ticket-action-overlay, .employee-ticket-action-overlay) :is(form, article).ticket-action-modal.ticket-modal-readable:is(.is-support-modal, .is-burnout-modal) :is(.ticket-action-description-column, .employee-ticket-description-column) > :is(.ticket-action-description, .employee-ticket-followup-note) > :is(span, .employee-ticket-description-heading) {
+  flex: 0 0 auto !important;
+}
+
+:is(.ticket-action-overlay, .employee-ticket-action-overlay) :is(form, article).ticket-action-modal.ticket-modal-readable:is(.is-support-modal, .is-burnout-modal) .ticket-action-control-stack {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  grid-template-rows: none !important;
+  grid-auto-rows: max-content !important;
+  align-content: start !important;
+  gap: 10px !important;
+}
+
+:is(.ticket-action-overlay, .employee-ticket-action-overlay) :is(form, article).ticket-action-modal.ticket-modal-readable:is(.is-support-modal, .is-burnout-modal) :is(.ticket-action-control-stack, .ticket-action-notes-grid, .ticket-waiting-reason) .ticket-form-group,
+:is(.ticket-action-overlay, .employee-ticket-action-overlay) :is(form, article).ticket-action-modal.ticket-modal-readable:is(.is-support-modal, .is-burnout-modal) .ticket-waiting-reason {
+  display: flex !important;
+  flex: none !important;
+  flex-direction: column !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  height: auto !important;
+  margin: 0 !important;
+  gap: 4px !important;
+}
+
+:is(.ticket-action-overlay, .employee-ticket-action-overlay) :is(form, article).ticket-action-modal.ticket-modal-readable:is(.is-support-modal, .is-burnout-modal) :is(.ticket-action-control-stack, .ticket-action-notes-grid, .ticket-waiting-reason) label {
+  margin: 0 !important;
+  white-space: normal !important;
+  font-size: 0.8rem !important;
+  line-height: 1.4 !important;
+}
+
+:is(.ticket-action-overlay, .employee-ticket-action-overlay) :is(form, article).ticket-action-modal.ticket-modal-readable:is(.is-support-modal, .is-burnout-modal) .ticket-action-notes-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  grid-template-rows: none !important;
+  grid-auto-rows: max-content !important;
+  align-items: start !important;
+  align-content: start !important;
+  gap: 12px !important;
+  padding: 10px !important;
+  overflow: visible !important;
+}
+
+:is(.ticket-action-overlay, .employee-ticket-action-overlay) :is(form, article).ticket-action-modal.ticket-modal-readable:is(.is-support-modal, .is-burnout-modal) :is(.ticket-action-notes-grid, .ticket-waiting-reason) textarea {
+  flex: none !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 104px !important;
+  height: 104px !important;
+  max-height: none !important;
+  padding: 8px 10px !important;
+  overflow: auto !important;
+  resize: vertical !important;
+  white-space: pre-wrap !important;
+  overflow-wrap: anywhere !important;
+  font-size: 0.9rem !important;
+  line-height: 1.45 !important;
+}
+
+:is(.ticket-action-overlay, .employee-ticket-action-overlay) :is(form, article).ticket-action-modal.ticket-modal-readable:is(.is-support-modal, .is-burnout-modal) .employee-admin-readonly-field {
+  display: block !important;
+  min-height: 40px !important;
+  height: auto !important;
+  padding: 9px 10px !important;
+  white-space: normal !important;
+  overflow: visible !important;
+  overflow-wrap: anywhere !important;
+}
+
+body > button.ticket-chat-launcher.ticket-chat-launcher-standalone {
+  position: fixed !important;
+  top: auto !important;
+  right: var(--ticket-chat-right, 16px) !important;
+  bottom: var(--ticket-chat-bottom, 16px) !important;
+  left: auto !important;
+  z-index: 10120 !important;
+  display: grid !important;
+  place-items: center !important;
+  width: 44px !important;
+  min-width: 44px !important;
+  min-height: 44px !important;
+  height: 44px !important;
+  max-height: 44px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: #dc2626 !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+body > button.ticket-chat-launcher.ticket-chat-launcher-standalone .admin-mono-icon {
+  width: 30px !important;
+  height: 30px !important;
+}
+
+body > button.ticket-chat-launcher.ticket-chat-launcher-standalone:hover {
+  transform: translateY(-1px) !important;
+}
+
+body > button.ticket-chat-launcher.ticket-chat-launcher-standalone:focus-visible {
+  outline: 2px solid #b91c1c;
+  outline-offset: 3px;
+}
+
+@media (min-width: 901px) {
+  :is(.ticket-action-overlay, .employee-ticket-action-overlay) :is(form, article).ticket-action-modal.ticket-modal-readable:is(.is-support-modal, .is-burnout-modal) :is(.ticket-action-description-column, .employee-ticket-description-column).is-waiting-workflow .ticket-waiting-reason textarea.ticket-textarea {
+    flex: 1 1 0 !important;
+    min-height: 0 !important;
+    height: 0 !important;
+    max-height: none !important;
+    resize: none !important;
+  }
+}
+
+:is(.ticket-action-overlay, .employee-ticket-action-overlay) :is(form, article).ticket-action-modal.ticket-modal-readable.is-support-modal .modal-footer > .ticket-locked-pill.employee-admin-lock-pill {
+  max-width: 100% !important;
+  min-height: 0 !important;
+  height: auto !important;
+  padding: 7px 10px !important;
+  border-radius: 6px !important;
+  font-size: 0.8rem !important;
+  line-height: 1.4 !important;
+  white-space: normal !important;
+  overflow: visible !important;
+  overflow-wrap: anywhere !important;
+  text-overflow: clip !important;
+}
+
+body[data-portal-theme='dark'] :is(.ticket-action-overlay, .employee-ticket-action-overlay) :is(form, article).ticket-action-modal.ticket-modal-readable :is(.ticket-action-control-stack, .ticket-action-notes-grid, .ticket-waiting-reason) label {
+  color: #cbd5e1 !important;
+}
+
+body[data-portal-theme='dark'] :is(.ticket-action-overlay, .employee-ticket-action-overlay) :is(form, article).ticket-action-modal.ticket-modal-readable :is(.ticket-meta-cell > span, .ticket-action-description > span, .employee-ticket-description-heading > span, .employee-ticket-followup-note > span) {
+  color: #b6c4d6 !important;
+}
+
+body[data-portal-theme='dark'] :is(.ticket-action-overlay, .employee-ticket-action-overlay) :is(form, article).ticket-action-modal.ticket-modal-readable .ticket-action-head > :is(.ticket-sla-deadline-note, .employee-ticket-sla-deadline-note) {
+  color: #b6c4d6 !important;
+}
+
+body[data-portal-theme='dark'] :is(.ticket-action-overlay, .employee-ticket-action-overlay) :is(form, article).ticket-action-modal.ticket-modal-readable .ticket-action-control-stack :is(.ticket-select, .ticket-input, .employee-admin-readonly-field) {
+  background-color: #202b39 !important;
+  color: #edf2f7 !important;
+  -webkit-text-fill-color: #edf2f7 !important;
+  color-scheme: dark;
+}
+
+body[data-portal-theme='dark'] :is(.ticket-action-overlay, .employee-ticket-action-overlay) :is(form, article).ticket-action-modal.ticket-modal-readable :is(.ticket-action-description-column, .employee-ticket-description-column) > :is(.ticket-action-description, .ticket-waiting-reason, .employee-ticket-followup-note) {
+  border-color: #384456 !important;
+  background: #18212e !important;
+}
+
+/* Keep the shared ticket surfaces dark even when portal-specific layouts use
+   fixed light colors. These selectors cover both editable and read-only views. */
+body[data-portal-theme='dark'] :is(.ticket-action-overlay, .employee-ticket-action-overlay) :is(form, article).ticket-action-modal.ticket-modal-readable:is(.is-support-modal, .is-burnout-modal) {
+  color-scheme: dark;
+  background: #1b2531 !important;
+  color: #edf2f7 !important;
+  border-color: #384456 !important;
+}
+
+body[data-portal-theme='dark'] :is(.ticket-action-overlay, .employee-ticket-action-overlay) :is(form, article).ticket-action-modal.ticket-modal-readable:is(.is-support-modal, .is-burnout-modal) > :is(.ticket-action-head, .modal-footer),
+body[data-portal-theme='dark'] :is(.ticket-action-overlay, .employee-ticket-action-overlay) :is(form, article).ticket-action-modal.ticket-modal-readable:is(.is-support-modal, .is-burnout-modal) .ticket-action-info-grid .ticket-meta-cell,
+body[data-portal-theme='dark'] :is(.ticket-action-overlay, .employee-ticket-action-overlay) :is(form, article).ticket-action-modal.ticket-modal-readable:is(.is-support-modal, .is-burnout-modal) .ticket-action-details-row .ticket-action-control-stack {
+  background: #202b39 !important;
+  color: #edf2f7 !important;
+  border-color: #384456 !important;
+}
+
+body[data-portal-theme='dark'] :is(.ticket-action-overlay, .employee-ticket-action-overlay) :is(form, article).ticket-action-modal.ticket-modal-readable:is(.is-support-modal, .is-burnout-modal) .ticket-action-title-copy h3,
+body[data-portal-theme='dark'] :is(.ticket-action-overlay, .employee-ticket-action-overlay) :is(form, article).ticket-action-modal.ticket-modal-readable:is(.is-support-modal, .is-burnout-modal) .ticket-action-info-grid .ticket-meta-cell p,
+body[data-portal-theme='dark'] :is(.ticket-action-overlay, .employee-ticket-action-overlay) :is(form, article).ticket-action-modal.ticket-modal-readable:is(.is-support-modal, .is-burnout-modal) .ticket-action-details-row :is(.ticket-action-description, .employee-ticket-followup-note) p {
+  color: #edf2f7 !important;
+  -webkit-text-fill-color: #edf2f7 !important;
+}
+
+body[data-portal-theme='dark'] :is(.ticket-action-overlay, .employee-ticket-action-overlay) :is(form, article).ticket-action-modal.ticket-modal-readable:is(.is-support-modal, .is-burnout-modal) :is(.ticket-action-title-copy p, .ticket-action-identity-group > .ticket-id, .ticket-form-group > dt) {
+  color: #b6c4d6 !important;
+  -webkit-text-fill-color: #b6c4d6 !important;
+}
+
+body[data-portal-theme='dark'] :is(.ticket-action-overlay, .employee-ticket-action-overlay) :is(form, article).ticket-action-modal.ticket-modal-readable:is(.is-support-modal, .is-burnout-modal) .modal-footer :is(.ticket-locked-pill, .modal-btn.print),
+body[data-portal-theme='dark'] :is(.ticket-action-overlay, .employee-ticket-action-overlay) :is(form, article).ticket-action-modal.ticket-modal-readable:is(.is-support-modal, .is-burnout-modal) .admin-modal-close {
+  background: #283545 !important;
+  border-color: #49576a !important;
+  color: #edf2f7 !important;
+  -webkit-text-fill-color: #edf2f7 !important;
+}
+
+body[data-portal-theme='dark'] :is(.ticket-action-overlay, .employee-ticket-action-overlay) :is(form, article).ticket-action-modal.ticket-modal-readable:is(.is-support-modal, .is-burnout-modal) :is(.modal-btn.print, .admin-modal-close):hover {
+  background: #354456 !important;
+}
+
+body[data-portal-theme='dark'] > button.ticket-chat-launcher.ticket-chat-launcher-standalone {
+  color: #f87171 !important;
+}
+
+@media (max-width: 1100px) {
+  body > button.ticket-chat-launcher.ticket-chat-launcher-standalone {
+    bottom: var(--ticket-chat-bottom, 160px) !important;
+  }
+}
+
+@media (max-width: 1050px) {
+  :is(.ticket-action-overlay, .employee-ticket-action-overlay) :is(form, article).ticket-action-modal.ticket-modal-readable:is(.is-support-modal, .is-burnout-modal) .ticket-action-info-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 900px) {
+  :is(.ticket-action-overlay, .employee-ticket-action-overlay) :is(form, article).ticket-action-modal.ticket-modal-readable:is(.is-support-modal, .is-burnout-modal) .ticket-action-details-row {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  :is(.ticket-action-overlay, .employee-ticket-action-overlay) :is(form, article).ticket-action-modal.ticket-modal-readable:is(.is-support-modal, .is-burnout-modal) .ticket-action-control-stack {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  :is(.ticket-action-overlay, .employee-ticket-action-overlay) :is(form, article).ticket-action-modal.ticket-modal-readable:is(.is-support-modal, .is-burnout-modal) :is(.ticket-action-description-column, .employee-ticket-description-column) {
+    grid-template-rows: none !important;
+    grid-auto-rows: max-content !important;
+    contain: none !important;
+  }
+
+  :is(.ticket-action-overlay, .employee-ticket-action-overlay) :is(form, article).ticket-action-modal.ticket-modal-readable:is(.is-support-modal, .is-burnout-modal) :is(.ticket-action-description-column, .employee-ticket-description-column).is-waiting-workflow {
+    grid-template-rows: none !important;
+  }
+
+  :is(.ticket-action-overlay, .employee-ticket-action-overlay) :is(form, article).ticket-action-modal.ticket-modal-readable:is(.is-support-modal, .is-burnout-modal) :is(.ticket-action-description-column, .employee-ticket-description-column) > :is(.ticket-action-description, .ticket-waiting-reason, .employee-ticket-followup-note) {
+    min-height: 140px !important;
+  }
+
+  :is(.ticket-action-overlay, .employee-ticket-action-overlay) :is(form, article).ticket-action-modal.ticket-modal-readable:is(.is-support-modal, .is-burnout-modal) :is(.ticket-action-description-column, .employee-ticket-description-column) > :is(.ticket-action-description, .employee-ticket-followup-note) p {
+    overflow: visible !important;
+  }
+
+  :is(.ticket-action-overlay, .employee-ticket-action-overlay) :is(form, article).ticket-action-modal.ticket-modal-readable:is(.is-support-modal, .is-burnout-modal) :is(.ticket-action-description-column, .employee-ticket-description-column).is-waiting-workflow .ticket-waiting-reason textarea.ticket-textarea {
+    min-height: 104px !important;
+    height: 104px !important;
+    max-height: none !important;
+    resize: vertical !important;
+  }
+}
+
+@media (max-width: 600px) {
+  :is(.ticket-action-overlay, .employee-ticket-action-overlay) :is(form, article).ticket-action-modal.ticket-modal-readable:is(.is-support-modal, .is-burnout-modal) > .ticket-action-scroll-content {
+    padding: 10px !important;
+  }
+
+  :is(.ticket-action-overlay, .employee-ticket-action-overlay) :is(form, article).ticket-action-modal.ticket-modal-readable:is(.is-support-modal, .is-burnout-modal) :is(.ticket-action-control-stack, .ticket-action-notes-grid) {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
+
+@media (max-width: 420px) {
+  :is(.ticket-action-overlay, .employee-ticket-action-overlay) :is(form, article).ticket-action-modal.ticket-modal-readable:is(.is-support-modal, .is-burnout-modal) .ticket-action-info-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}

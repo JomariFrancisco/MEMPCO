@@ -15018,7 +15018,7 @@ button:not(:disabled),
   grid-auto-flow: row !important;
   grid-template-columns: minmax(0, 1fr) !important;
   grid-template-rows: none !important;
-  grid-auto-rows: 122px !important;
+  grid-auto-rows: max-content !important;
   align-content: start !important;
   align-items: stretch !important;
   gap: 0.55rem !important;
@@ -15026,14 +15026,14 @@ button:not(:disabled),
 
 .dashboard-view .admin-ticket-queue.queue-summary .ticket-queue-summary-row {
   min-width: 0;
-  height: 122px;
-  min-height: 122px;
-  max-height: 122px;
+  height: auto;
+  min-height: 0;
+  max-height: none;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: 32px minmax(0, 1fr) 18px;
-  row-gap: 0.32rem;
-  padding: 0.56rem 0.7rem;
+  grid-template-rows: auto auto auto;
+  row-gap: 8px;
+  padding: 12px;
   border: 1px solid rgba(226, 232, 240, 0.82);
   border-radius: var(--radius-md);
   background: rgba(255, 255, 255, 0.92);
@@ -15087,8 +15087,7 @@ button:not(:disabled),
   white-space: nowrap !important;
 }
 
-.dashboard-view .admin-ticket-queue.queue-summary .ticket-queue-summary-concern,
-.dashboard-view .admin-ticket-queue.queue-summary .ticket-queue-summary-description {
+.dashboard-view .admin-ticket-queue.queue-summary .ticket-queue-summary-concern {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -15126,17 +15125,9 @@ button:not(:disabled),
 .dashboard-view .admin-ticket-queue.queue-summary .ticket-queue-summary-problem {
   min-width: 0;
   display: grid;
-  grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
-  align-content: center;
-  row-gap: 0.14rem;
+  grid-template-rows: auto;
+  align-content: start;
   overflow: hidden;
-}
-
-.dashboard-view .admin-ticket-queue.queue-summary .ticket-queue-summary-description {
-  color: var(--muted);
-  font-size: 0.76rem;
-  font-weight: 600;
-  line-height: 1.2;
 }
 
 .dashboard-view .admin-ticket-queue.queue-summary .ticket-queue-summary-details {
@@ -15823,7 +15814,7 @@ button:not(:disabled),
 
 @media (max-width: 760px) {
   .dashboard-view .admin-ticket-queue.queue-summary .admin-ticket-queue-grid {
-    grid-auto-rows: minmax(122px, auto) !important;
+    grid-auto-rows: max-content !important;
   }
 
   .dashboard-view .admin-ticket-queue.queue-summary .ticket-queue-summary-row {
@@ -15861,11 +15852,10 @@ button:not(:disabled),
   }
 
   .dashboard-view .admin-ticket-queue.queue-summary .ticket-queue-summary-problem {
-    grid-template-rows: auto auto;
+    grid-template-rows: auto;
   }
 
   .dashboard-view .admin-ticket-queue.queue-summary .ticket-queue-summary-concern,
-  .dashboard-view .admin-ticket-queue.queue-summary .ticket-queue-summary-description,
   .dashboard-view .admin-ticket-queue.queue-summary .ticket-queue-summary-detail,
   .dashboard-view .admin-ticket-queue.queue-summary .ticket-queue-summary-detail > span {
     overflow: visible;
@@ -15912,6 +15902,7 @@ button:not(:disabled),
 }
 
 /* ICT ticket cards share MRDSS's readable reference and compact tag treatment. */
+.branch-monitor-view .branch-monitor-ticket-card .admin-ticket-title .ticket-id,
 .helpdesk-view .admin-ticket-queue:not(.compact) .admin-ticket-card .admin-ticket-title .ticket-id,
 .burnout-report-view .admin-ticket-queue:not(.compact) .admin-ticket-card .admin-ticket-title .ticket-id {
   display: inline-block !important;
@@ -15935,12 +15926,14 @@ button:not(:disabled),
   box-shadow: none !important;
 }
 
+.branch-monitor-view .branch-monitor-ticket-card .admin-ticket-title .ticket-id::before,
 .helpdesk-view .admin-ticket-queue:not(.compact) .admin-ticket-card .admin-ticket-title .ticket-id::before,
 .burnout-report-view .admin-ticket-queue:not(.compact) .admin-ticket-card .admin-ticket-title .ticket-id::before {
   display: none !important;
   content: none !important;
 }
 
+.branch-monitor-view .branch-monitor-ticket-card .admin-inline-badges :is(.status, .priority),
 .helpdesk-view .admin-ticket-queue:not(.compact) .admin-ticket-card .admin-inline-badges .status,
 .helpdesk-view .admin-ticket-queue:not(.compact) .admin-ticket-card .admin-inline-badges .priority,
 .burnout-report-view .admin-ticket-queue:not(.compact) .admin-ticket-card .admin-inline-badges .status,

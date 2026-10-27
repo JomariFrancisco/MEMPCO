@@ -279,6 +279,65 @@
   box-shadow: none;
 }
 
+.portal-app-main .burnout-request-view .auth-submit-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  max-width: 320px;
+  min-height: 44px;
+  height: auto;
+  padding: 10px 16px;
+  border: 1px solid #bd2525;
+  border-radius: 6px;
+  background: #c62828;
+  color: #fff;
+  -webkit-text-fill-color: #fff;
+  font-size: 0.875rem;
+  font-weight: 700;
+  line-height: 1.4;
+  letter-spacing: 0;
+  white-space: normal;
+  box-shadow: none;
+  cursor: pointer;
+  transition: background 0.16s ease, border-color 0.16s ease;
+}
+
+.portal-app-main .burnout-request-view .auth-submit-btn:hover:not(:disabled) {
+  border-color: #a91f1f;
+  background: #b42323;
+  transform: none;
+  box-shadow: none;
+  filter: none;
+}
+
+.portal-app-main .burnout-request-view .auth-submit-btn:focus-visible {
+  outline: 2px solid #b42323;
+  outline-offset: 3px;
+}
+
+.portal-app-main .burnout-request-view .auth-submit-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.68;
+  transform: none;
+  box-shadow: none;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .burnout-request-view .auth-submit-btn {
+  border-color: #a92525;
+  background: #b92727;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .burnout-request-view .auth-submit-btn:hover:not(:disabled) {
+  border-color: #bd4545;
+  background: #a92323;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .burnout-request-view .auth-submit-btn:focus-visible {
+  outline-color: #f08c8c;
+}
+
 .portal-app-main .ticket-field {
   border: 1px solid #d9e0e8;
   border-radius: 7px;
@@ -1417,6 +1476,11 @@ body[data-portal-theme='dark'] .portal-app-main .report-period-actions .report-p
   letter-spacing: 0.02em;
 }
 
+body[data-portal-theme='dark'] .portal-app-main .branch-monitor-view .branch-monitor-ticket-card .admin-ticket-title .ticket-id {
+  color: #b6c4d6 !important;
+  -webkit-text-fill-color: #b6c4d6 !important;
+}
+
 .portal-app-main .branch-monitor-view .branch-monitor-ticket-card .admin-ticket-title h4 {
   margin: 2px 0 0;
   color: #172033;
@@ -1435,15 +1499,17 @@ body[data-portal-theme='dark'] .portal-app-main .report-period-actions .report-p
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-start;
-  gap: 8px;
+  gap: 6px;
 }
 
 .portal-app-main .branch-monitor-view .branch-monitor-ticket-card .ticket-badges .status,
 .portal-app-main .branch-monitor-view .branch-monitor-ticket-card .ticket-badges .priority {
-  min-height: 32px;
-  padding: 5px 10px;
-  font-size: 0.78rem;
-  line-height: 1.1;
+  min-height: 21px;
+  padding: 0.15rem 0.38rem;
+  border-radius: 3px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  line-height: 1.2;
 }
 
 .portal-app-main .branch-monitor-view .branch-monitor-ticket-card .ticket-handling-indicator {
@@ -2147,7 +2213,705 @@ body[data-portal-theme='dark'] .portal-app-main .dashboard-support-main .dashboa
   -webkit-text-fill-color: #fda4af !important;
 }
 
-body[data-portal-theme='dark'] .portal-app-main .latest-ticket-card .dashboard-latest-description {
+.portal-app-main .portal-account-entry-view .hero-copy h2 { font-size: 1.2rem; font-weight: 750; line-height: 1.3; letter-spacing: 0; }
+.portal-app-main .portal-account-entry-view .meta-pill {
+  min-height: 24px;
+  padding: 4px 8px;
+  border: 1px solid #e1e6ee;
+  border-radius: 4px;
+  background: #f8fafc;
+  color: #526074;
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.4;
+  box-shadow: none;
+}
+.portal-app-main .portal-account-entry-view .admin-account-form { gap: 16px; }
+.portal-app-main .portal-account-entry-view .admin-form-head { margin: 0; }
+.portal-app-main .portal-account-entry-view .admin-form-head h3 { margin: 4px 0; font-size: 1.08rem; font-weight: 750; line-height: 1.3; letter-spacing: 0; }
+.portal-app-main .portal-account-entry-view .admin-form-head p { margin: 0; color: #64748b; font-size: 0.82rem; line-height: 1.5; }
+.portal-app-main .portal-account-entry-view .ticket-form-grid { gap: 14px; }
+.portal-app-main .portal-account-entry-view .ticket-form-group { gap: 6px; }
+.portal-app-main .portal-account-entry-view .ticket-form-group label { font-size: 0.8rem; font-weight: 600; line-height: 1.4; }
+.portal-app-main .portal-account-entry-view .ticket-field { min-height: 40px; height: 40px; padding: 9px 12px; border-radius: 6px; font-size: 0.875rem; line-height: 1.4; }
+.portal-app-main .portal-account-entry-view select.ticket-field { padding-right: 32px; }
+.portal-app-main .portal-account-entry-view textarea.ticket-field {
+  min-height: 120px;
+  height: 120px;
+  resize: vertical;
+  line-height: 1.5;
+}
+.portal-app-main .portal-account-entry-view .ticket-form-hint {
+  color: #64748b;
+  font-size: 0.75rem;
+  font-weight: 400;
+  line-height: 1.5;
+}
+body[data-portal-theme='dark'] .portal-app-main .portal-account-entry-view .ticket-form-hint { color: #b6c4d6; }
+.portal-app-main .portal-account-entry-view .admin-form-actions { margin: 0; padding-top: 4px; }
+.portal-app-main .portal-account-entry-view .admin-form-actions .modal-btn.confirm,
+body[data-portal-theme='dark'] .portal-app-main .portal-account-entry-view .admin-form-actions .modal-btn.confirm {
+  min-height: 40px;
+  height: auto;
+  padding: 9px 14px;
+  border: 1px solid #bd2525 !important;
+  border-radius: 6px;
+  background: #c62828 !important;
+  color: #fff !important;
+  -webkit-text-fill-color: #fff !important;
+  font-size: 0.875rem;
+  font-weight: 700;
+  line-height: 1.4;
+  letter-spacing: 0;
+  box-shadow: none;
+  transform: none;
+}
+.portal-app-main .portal-account-entry-view .admin-form-actions .modal-btn.confirm:hover:not(:disabled) { background: #b42323 !important; box-shadow: none; transform: none; }
+.portal-app-main .portal-account-entry-view .admin-form-actions .modal-btn.confirm:focus-visible { outline: 2px solid #ef8d8d; outline-offset: 3px; }
+body[data-portal-theme='dark'] .portal-app-main .portal-account-entry-view .meta-pill { border-color: #384456; background: #202b39; color: #cbd5e1; }
+body[data-portal-theme='dark'] .portal-app-main .portal-account-entry-view .admin-form-head p { color: #b6c4d6; }
+
+.portal-app-main .dashboard-view .admin-ticket-queue.queue-summary .ticket-queue-summary-row {
+  border-radius: 6px;
+  box-shadow: none;
+}
+.portal-app-main .dashboard-view .admin-ticket-queue.queue-summary .ticket-queue-summary-row:hover {
+  border-color: #cbd3df;
+  box-shadow: none;
+  transform: none;
+}
+.portal-app-main .dashboard-view .admin-ticket-queue.queue-summary .ticket-queue-summary-id {
+  display: inline-block;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #607087;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.4;
+  letter-spacing: 0;
+  box-shadow: none;
+}
+.portal-app-main .dashboard-view .admin-ticket-queue.queue-summary .ticket-queue-summary-id::before { display: none; content: none; }
+.portal-app-main .dashboard-view .admin-ticket-queue.queue-summary .ticket-queue-summary-sla {
+  min-height: 21px;
+  padding: 0.15rem 0.38rem;
+  border-radius: 3px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0;
+}
+.portal-app-main .dashboard-view .admin-ticket-queue.queue-summary .ticket-queue-summary-concern { font-size: 0.875rem; font-weight: 600; line-height: 1.4; }
+.portal-app-main .dashboard-view .admin-ticket-queue.queue-summary .ticket-queue-summary-date { font-size: 0.75rem; font-weight: 500; line-height: 1.4; }
+.portal-app-main .dashboard-view .admin-ticket-queue.queue-summary .ticket-queue-summary-detail { font-size: 0.75rem; font-weight: 400; line-height: 1.4; }
+.portal-app-main .dashboard-view .admin-ticket-queue.queue-summary .ticket-queue-summary-detail strong { color: #64748b; font-weight: 500; }
+body[data-portal-theme='dark'] .portal-app-main .dashboard-view .admin-ticket-queue.queue-summary :is(.ticket-queue-summary-id, .ticket-queue-summary-date, .ticket-queue-summary-detail strong) { color: #b6c4d6; }
+body[data-portal-theme='dark'] .portal-app-main .dashboard-view .admin-ticket-queue.queue-summary .ticket-queue-summary-detail > span { color: #edf2f7; }
+body[data-portal-theme='dark'] .portal-app-main .dashboard-view .admin-ticket-queue.queue-summary .ticket-queue-summary-row:hover { border-color: #49576a !important; background: #202b39 !important; }
+
+.portal-app-main .dashboard-watch-panel .dashboard-watch-summary {
+  width: 100%;
+  margin: 0;
+  align-content: start;
+  grid-template-rows: auto auto;
+  gap: 10px;
+}
+.portal-app-main .dashboard-watch-panel > .admin-watchlist { align-items: stretch; justify-content: flex-start; }
+.portal-app-main .dashboard-watch-ticket-list { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
+.portal-app-main .dashboard-view .dashboard-ticket-columns > .dashboard-stack:last-child > .dashboard-watch-panel {
+  height: auto;
+  min-height: 0;
+  max-height: none;
+}
+.portal-app-main .dashboard-watch-panel .dashboard-watch-summary-ticket {
+  min-height: 0;
+  padding: 12px;
+  border-radius: 6px;
+  box-shadow: none;
+  align-items: flex-start;
+}
+.portal-app-main .dashboard-watch-panel .dashboard-watch-summary-ticket:hover { transform: none; box-shadow: none; border-color: #cbd3df; }
+.portal-app-main .dashboard-watch-panel .dashboard-watch-summary-copy .ticket-id {
+  display: inline-block;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #607087;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.4;
+  letter-spacing: 0;
+  box-shadow: none;
+}
+.portal-app-main .dashboard-watch-panel .dashboard-watch-summary-copy .ticket-id::before { display: none; content: none; }
+.portal-app-main .dashboard-watch-panel .admin-inline-badges :is(.status, .priority) {
+  min-height: 21px;
+  padding: 0.15rem 0.38rem;
+  border-radius: 3px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0;
+}
+.portal-app-main .dashboard-watch-panel .dashboard-watch-summary-copy h4 { margin: 8px 0 4px; font-size: 0.875rem; font-weight: 600; line-height: 1.4; }
+.portal-app-main .dashboard-watch-panel .dashboard-watch-summary-copy p { font-size: 0.75rem; font-weight: 400; line-height: 1.4; }
+.portal-app-main .dashboard-watch-ticket-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+}
+.portal-app-main .dashboard-watch-ticket-meta > p { flex: 1 1 140px; min-width: 0; }
+.portal-app-main .dashboard-watch-ticket-meta .ticket-work-timer {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: 5px;
+  width: auto;
+  min-height: 24px;
+  margin: 0 0 0 auto;
+  padding: 3px 6px;
+  border-radius: 4px;
+  box-shadow: none;
+}
+.portal-app-main .dashboard-watch-ticket-meta .ticket-work-timer strong { font-size: 0.75rem; font-weight: 600; line-height: 1.4; }
+.portal-app-main .dashboard-watch-ticket-meta .ticket-work-timer > span { margin: 0; }
+.portal-app-main .dashboard-watch-panel .dashboard-watch-ticket-meta .ticket-work-timer.ticket-handling-timer,
+body[data-portal-theme='dark'] .portal-app-main .dashboard-watch-panel .dashboard-watch-ticket-meta .ticket-work-timer.ticket-handling-timer {
+  min-width: 0 !important;
+  min-height: 0 !important;
+  height: auto !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  font-size: 0.75rem !important;
+  line-height: 1.4 !important;
+}
+.portal-app-main .dashboard-watch-panel .dashboard-watch-ticket-meta .ticket-work-timer :is(strong, span) {
+  font-size: 0.75rem !important;
+  font-weight: 400 !important;
+  line-height: 1.4 !important;
+}
+.portal-app-main .dashboard-watch-panel .dashboard-watch-ticket-meta .ticket-work-timer svg { width: 12px !important; height: 12px !important; }
+.portal-app-main .dashboard-watch-panel .dashboard-watch-count { min-width: 21px; height: 21px; padding: 2px 5px; border-radius: 3px; font-size: 0.65rem; font-weight: 700; }
+.portal-app-main .dashboard-watch-panel > .section-head .ticket-work-timer { min-height: 32px; padding: 6px 8px; border-radius: 6px; background: #f8fafc; border-color: #e1e6ee; }
+.portal-app-main .dashboard-watch-panel > .section-head .ticket-work-timer strong { font-size: 0.82rem; font-weight: 600; }
+.portal-app-main .dashboard-watch-panel .dashboard-watch-summary-nav button,
+body[data-portal-theme='dark'] .portal-app-main .dashboard-watch-panel .dashboard-watch-summary-nav button {
+  width: 36px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #344256;
+  box-shadow: none;
+  transform: none;
+}
+.portal-app-main .dashboard-watch-panel .dashboard-watch-summary-position { font-size: 0.75rem; font-weight: 500; }
+body[data-portal-theme='dark'] .portal-app-main .dashboard-watch-panel .dashboard-watch-summary-copy :is(.ticket-id, p) { color: #b6c4d6; }
+body[data-portal-theme='dark'] .portal-app-main .dashboard-watch-panel .dashboard-watch-summary-copy h4 { color: #edf2f7; }
+body[data-portal-theme='dark'] .portal-app-main .dashboard-watch-panel .dashboard-watch-count { border-color: #49576a; background: #283545; color: #e8edf4; }
+body[data-portal-theme='dark'] .portal-app-main .dashboard-watch-panel > .section-head .ticket-work-timer { border-color: #384456; background: #202b39; }
+body[data-portal-theme='dark'] .portal-app-main .dashboard-watch-panel > .section-head .ticket-work-timer strong { color: #fda4af; }
+body[data-portal-theme='dark'] .portal-app-main .dashboard-watch-panel .dashboard-watch-summary-nav button { color: #e8edf4; }
+
+/* Keep account pages stable when filtering or paging through fewer rows. */
+.portal-app-main .users-panel { min-width: 0; gap: 14px; }
+.portal-app-main .users-panel .admin-users-toolbar { margin-bottom: 0; gap: 12px; }
+.portal-app-main .users-panel .admin-users-toolbar .ticket-form-group > span { font-size: 0.8rem; font-weight: 600; line-height: 1.4; }
+.portal-app-main .users-panel .admin-users-toolbar .ticket-field { min-height: 40px; height: 40px; font-size: 0.875rem; }
+.portal-app-main .users-panel .users-table-wrap {
+  position: relative;
+  flex: 0 0 334px;
+  width: 100%;
+  min-width: 0;
+  min-height: 334px;
+  height: 334px;
+  max-height: 334px;
+  overflow: auto;
+  border-radius: 6px;
+}
+.portal-app-main .users-panel .users-table { height: auto; min-height: 0; border-collapse: collapse; }
+.portal-app-main .users-panel .users-table thead tr { height: 38px; }
+.portal-app-main .users-panel .users-table tbody tr { height: 56px; }
+.portal-app-main .users-panel .users-table :is(th, td) {
+  padding: 10px 12px;
+  white-space: nowrap !important;
+  vertical-align: middle;
+  line-height: 1.4;
+}
+.portal-app-main .users-panel .users-table th { font-size: 0.7rem; font-weight: 600; letter-spacing: 0; }
+.portal-app-main .users-panel .users-table td { font-size: 0.82rem; }
+.portal-app-main .users-panel .users-table .admin-table-main strong { font-size: inherit; font-weight: 600; }
+.portal-app-main .users-panel .users-table .status {
+  min-height: 21px;
+  padding: 0.15rem 0.38rem;
+  border-radius: 3px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0;
+}
+.portal-app-main .users-panel .users-table .user-clickable-row:is(:hover, :focus-visible) > td { background: #f5f7fa !important; }
+.portal-app-main .users-panel .users-table .user-clickable-row:focus-visible { outline: 2px solid #b42323; outline-offset: -2px; }
+.portal-app-main .users-panel .users-table-wrap > .empty-state {
+  position: absolute;
+  inset: 38px 0 0;
+  min-height: 0;
+  margin: 0;
+  border: 0;
+}
+.portal-app-main .users-panel .users-pagination { flex: 0 0 44px; min-height: 44px; margin: 0; }
+body[data-portal-theme='dark'] .portal-app-main .users-panel .users-table .user-clickable-row:is(:hover, :focus-visible) > td {
+  background: #283545 !important;
+  color: #edf2f7 !important;
+}
+body[data-portal-theme='dark'] .portal-app-main .users-panel .users-table .user-clickable-row:focus-visible { outline-color: #f08c8c; }
+
+/* Workload and breakdown panels use the same compact report hierarchy. */
+.portal-app-main .admin-report-grid .admin-breakdown-list { gap: 8px; }
+.portal-app-main .admin-report-grid .admin-breakdown-item {
+  padding: 10px 12px;
+  border: 1px solid #e1e6ee;
+  border-radius: 6px;
+  background: #f8fafc;
+  box-shadow: none;
+}
+.portal-app-main .admin-report-grid .admin-breakdown-copy { margin: 0; gap: 10px; }
+.portal-app-main .admin-report-grid .admin-breakdown-copy strong { font-size: 0.875rem; font-weight: 600; line-height: 1.4; letter-spacing: 0; }
+.portal-app-main .admin-report-grid .admin-breakdown-copy span { font-size: 0.78rem; font-weight: 500; line-height: 1.4; letter-spacing: 0; }
+.portal-app-main .admin-workload-count {
+  min-height: 24px;
+  padding: 3px 7px;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+.portal-app-main .admin-workload-card { padding: 10px; gap: 10px; border-radius: 6px; box-shadow: none; }
+.portal-app-main .admin-workload-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  background: #c62828;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  box-shadow: none;
+}
+.portal-app-main .admin-workload-person strong { font-size: 0.875rem; font-weight: 600; line-height: 1.4; }
+.portal-app-main .admin-workload-avatar { overflow: hidden; flex-shrink: 0; }
+.portal-app-main .admin-workload-avatar img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.portal-app-main .admin-workload-person p { margin: 2px 0 0; font-size: 0.75rem; font-weight: 400; line-height: 1.4; }
+.portal-app-main .admin-workload-meter { height: 4px; background: #e1e6ee; }
+.portal-app-main .admin-workload-meter span { background: #c62828; }
+.portal-app-main .admin-workload-stats { gap: 6px; background: transparent; }
+.portal-app-main .admin-workload-stats > div { padding: 7px; border-radius: 4px; }
+.portal-app-main .admin-workload-stats em { color: #64748b; font-size: 0.68rem; font-weight: 500; line-height: 1.4; }
+.portal-app-main .admin-workload-stats b { margin-top: 3px; color: #172033; font-size: 0.95rem; font-weight: 700; line-height: 1.3; }
+
+body[data-portal-theme='dark'] .portal-app-main .admin-workload-count,
+body[data-portal-theme='dark'] .portal-app-main .admin-workload-stats > div {
+  border-color: #384456;
+  background: #202b39;
+  color: #e8edf4;
+}
+body[data-portal-theme='dark'] .portal-app-main .admin-workload-stats { background: transparent !important; }
+body[data-portal-theme='dark'] .portal-app-main .admin-workload-person p,
+body[data-portal-theme='dark'] .portal-app-main .admin-workload-stats em { color: #b6c4d6; }
+body[data-portal-theme='dark'] .portal-app-main .admin-workload-stats b { color: #edf2f7; -webkit-text-fill-color: #edf2f7; }
+body[data-portal-theme='dark'] .portal-app-main .admin-workload-meter { background: #384456; }
+body[data-portal-theme='dark'] .portal-app-main .admin-workload-meter span { background: #ef7777; }
+body[data-portal-theme='dark'] .portal-app-main .admin-workload-card.is-clear .admin-workload-meter span { background: #86cfa7; }
+
+/* Calendar reports share the portal's typography and quiet surface styling. */
+.portal-app-main .report-calendar-head h3 {
+  margin: 4px 0 0;
+  font-size: 1.08rem;
+  font-weight: 750;
+  line-height: 1.3;
+  letter-spacing: 0;
+}
+.portal-app-main .report-calendar-grid { gap: 6px; }
+.portal-app-main .report-calendar-weekday {
+  padding: 8px 0;
+  color: #64748b;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.portal-app-main .report-calendar-day {
+  padding: 10px;
+  border: 1px solid #e1e6ee;
+  border-radius: 6px;
+  background: #f8fafc;
+  box-shadow: none;
+  transform: none;
+}
+.portal-app-main .report-calendar-day > span { font-size: 0.875rem; font-weight: 600; letter-spacing: 0; }
+.portal-app-main .report-calendar-day > strong {
+  width: auto;
+  min-width: 21px;
+  height: 21px;
+  min-height: 21px;
+  padding: 2px 5px;
+  border-radius: 3px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1.2;
+  box-shadow: none;
+}
+.portal-app-main .report-calendar-day:hover:not(:disabled) { border-color: #cbd3df; box-shadow: none; transform: none; }
+.portal-app-main .report-calendar-day.selected { border-color: #ef7777; background: #fff3f3; box-shadow: none; }
+.portal-app-main .report-calendar-day::before { height: 2px; }
+.portal-app-main .report-calendar-insights h3 { font-size: 1.08rem; font-weight: 750; line-height: 1.4; letter-spacing: 0; }
+.portal-app-main .report-insight-item { padding: 10px 12px; border-radius: 6px; background: #f8fafc; box-shadow: none; }
+.portal-app-main .report-insight-item :is(span, em),
+.portal-app-main .report-selected-day-head > span {
+  color: #64748b;
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.portal-app-main .report-insight-item strong { font-size: 1.15rem; font-weight: 700; line-height: 1.4; letter-spacing: 0; }
+.portal-app-main .report-selected-day { border-color: #e1e6ee; }
+.portal-app-main .report-selected-day-head { align-items: flex-start; gap: 6px; }
+.portal-app-main .report-selected-day-head strong { font-size: 0.875rem; font-weight: 600; line-height: 1.4; letter-spacing: 0; text-align: left; }
+.portal-app-main .report-selected-empty { font-size: 0.82rem; line-height: 1.5; }
+.portal-app-main .report-selected-ticket { padding: 10px; border-radius: 6px; box-shadow: none; }
+.portal-app-main .report-selected-ticket > span { font-size: 0.72rem; font-weight: 600; letter-spacing: 0; }
+.portal-app-main .report-selected-ticket > strong { font-size: 0.875rem; font-weight: 600; letter-spacing: 0; }
+.portal-app-main .report-selected-ticket > em { font-size: 0.75rem; font-weight: 400; letter-spacing: 0; }
+
+.portal-app-main .report-calendar-layout :is(.report-calendar-nav, .report-selected-ticket-pager) button,
+body[data-portal-theme='dark'] .portal-app-main .report-calendar-layout :is(.report-calendar-nav, .report-selected-ticket-pager) button {
+  width: 36px;
+  min-width: 36px;
+  height: 44px;
+  padding: 0;
+  border: 0 !important;
+  border-radius: 0;
+  background: transparent !important;
+  color: #344256;
+  box-shadow: none !important;
+  transform: none;
+}
+.portal-app-main .report-calendar-layout :is(.report-calendar-nav, .report-selected-ticket-pager) button:hover:not(:disabled) { color: #b42323; }
+.portal-app-main .report-calendar-layout button:focus-visible { outline: 2px solid #b42323; outline-offset: 2px; }
+body[data-portal-theme='dark'] .portal-app-main .report-calendar-layout :is(.report-calendar-nav, .report-selected-ticket-pager) button { color: #e8edf4 !important; }
+body[data-portal-theme='dark'] .portal-app-main .report-calendar-layout :is(.report-calendar-nav, .report-selected-ticket-pager) button:hover:not(:disabled) { color: #ffb0b0 !important; }
+body[data-portal-theme='dark'] .portal-app-main .report-calendar-layout button:focus-visible { outline-color: #f08c8c; }
+body[data-portal-theme='dark'] .portal-app-main .report-selected-day { border-color: #384456; }
+
+/* Report controls follow the same flat, compact portal controls. */
+.portal-app-main :is(.report-period-actions, .burnout-month-actions) {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.portal-app-main :is(.report-print-btn, .burnout-month-trigger) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 36px;
+  height: auto;
+  padding: 7px 11px;
+  border: 1px solid #e0e5ec;
+  border-radius: 6px;
+  background: #fff;
+  color: #344256;
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.4;
+  letter-spacing: 0;
+  box-shadow: none;
+  transform: none;
+  cursor: pointer;
+}
+
+.portal-app-main .report-period-actions .report-print-btn,
+.portal-app-main .burnout-month-actions :is(.report-print-btn, .burnout-month-trigger) {
+  min-height: 36px;
+  padding: 7px 11px;
+  border-radius: 6px;
+}
+
+.portal-app-main :is(.report-print-btn, .burnout-month-trigger):hover:not(:disabled) {
+  border-color: #cbd3df;
+  background: #f8fafc;
+  color: #172033;
+  box-shadow: none;
+  transform: none;
+}
+
+.portal-app-main .burnout-month-actions .burnout-month-picker,
+body[data-portal-theme='dark'] .portal-app-main .burnout-month-actions .burnout-month-picker {
+  min-height: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.portal-app-main .burnout-month-trigger :is(.burnout-month-label, .burnout-month-value) {
+  font-size: inherit;
+  line-height: inherit;
+  letter-spacing: 0;
+}
+.portal-app-main .burnout-month-label { color: #64748b; font-weight: 500; }
+.portal-app-main .burnout-month-value { color: #172033; font-weight: 700; }
+
+.portal-app-main .report-period-tabs {
+  gap: 4px;
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid #e1e6ee;
+  border-radius: 0;
+  background: transparent;
+}
+.portal-app-main .report-period-tabs button {
+  min-width: 60px;
+  min-height: 36px;
+  padding: 7px 12px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 4px 4px 0 0;
+  background: transparent;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  box-shadow: none;
+}
+.portal-app-main .report-period-tabs button.active {
+  border-bottom-color: #c62828;
+  background: #fff5f5;
+  color: #b91c1c;
+  box-shadow: none;
+}
+.portal-app-main .report-period-tabs button:hover:not(.active) { background: #f8fafc; }
+.portal-app-main .report-period-card .admin-breakdown-item { border-radius: 6px; }
+.portal-app-main .report-period-card .admin-breakdown-copy strong { font-size: 0.875rem; font-weight: 600; }
+.portal-app-main .report-period-card .admin-breakdown-copy span { font-size: 0.78rem; font-weight: 500; }
+
+.portal-app-main .report-period-pager button,
+body[data-portal-theme='dark'] .portal-app-main .report-period-card .report-period-pager button {
+  width: 36px;
+  min-height: 44px;
+  border: 0 !important;
+  border-radius: 0;
+  background: transparent !important;
+  color: #344256;
+  box-shadow: none !important;
+  transform: none;
+}
+.portal-app-main .report-period-pager button:hover:not(:disabled) { color: #b42323; }
+.portal-app-main :is(.report-print-btn, .burnout-month-trigger, .report-period-tabs button, .report-period-pager button):focus-visible {
+  outline: 2px solid #b42323;
+  outline-offset: 2px;
+}
+
+body[data-portal-theme='dark'] .portal-app-main :is(.report-print-btn, .report-period-actions .report-print-btn, .burnout-month-trigger) {
+  border-color: #3a4655 !important;
+  background: #202b39 !important;
+  color: #e8edf4 !important;
+  -webkit-text-fill-color: #e8edf4 !important;
+  box-shadow: none !important;
+}
+body[data-portal-theme='dark'] .portal-app-main :is(.report-print-btn, .burnout-month-trigger):hover:not(:disabled) { background: #283545 !important; border-color: #536174 !important; }
+body[data-portal-theme='dark'] .portal-app-main .burnout-month-trigger :is(.burnout-month-label, .burnout-month-value) { color: #e8edf4; }
+body[data-portal-theme='dark'] .portal-app-main .report-period-tabs { border-color: #384456; background: transparent; }
+body[data-portal-theme='dark'] .portal-app-main .report-period-tabs button { background: transparent; color: #b4c0ce; }
+body[data-portal-theme='dark'] .portal-app-main .report-period-tabs button.active { border-bottom-color: #fda4af; background: #32282d; color: #fda4af; }
+body[data-portal-theme='dark'] .portal-app-main .report-period-tabs button:hover:not(.active) { background: #283545; }
+body[data-portal-theme='dark'] .portal-app-main .report-period-pager button { color: #e8edf4 !important; }
+body[data-portal-theme='dark'] .portal-app-main .report-period-pager button:hover:not(:disabled) { color: #ffb0b0 !important; }
+
+@media (max-width: 640px) {
+  .portal-app-main .report-period-actions { justify-content: flex-start; }
+  .portal-app-main .report-period-actions .report-print-btn { flex: 0 1 auto; }
+  .portal-app-main .report-period-tabs { flex: 0 0 auto; width: auto; }
+  .portal-app-main .burnout-month-actions { justify-content: flex-start; }
+  .portal-app-main .burnout-month-actions :is(.report-print-btn, .burnout-month-picker, .burnout-month-trigger) { width: auto; max-width: 100%; }
+  .portal-app-main .burnout-month-trigger { flex-wrap: wrap; justify-content: flex-start; }
+}
+
+/* Compact pagination: retain button hit areas without visible boxes. */
+.portal-app-main :is(.ticket-pagination, .branch-monitor-page-control),
+body[data-portal-theme='dark'] .portal-app-main :is(.ticket-pagination, .branch-monitor-page-control) {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-wrap: nowrap !important;
+  gap: 8px !important;
+  min-height: 44px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.portal-app-main .ticket-pagination .pagination-copy {
+  min-width: 0 !important;
+  width: auto !important;
+}
+
+.portal-app-main :is(.ticket-pagination .pagination-copy strong, .branch-monitor-page-control > span) {
+  color: #344256 !important;
+  font-size: 0.875rem !important;
+  font-weight: 700 !important;
+  line-height: 1.4 !important;
+  letter-spacing: 0 !important;
+}
+
+.portal-app-main :is(.pagination-arrow, .branch-monitor-page-control button),
+body[data-portal-theme='dark'] .portal-app-main :is(.ticket-pagination, .users-pagination) button.pagination-arrow,
+body[data-portal-theme='dark'] .portal-app-main .branch-monitor-page-control button {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 36px !important;
+  min-width: 36px !important;
+  height: 44px !important;
+  min-height: 44px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: #344256 !important;
+  -webkit-text-fill-color: currentColor !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+.portal-app-main :is(.pagination-arrow, .branch-monitor-page-control button) svg {
+  width: 20px;
+  height: 20px;
+}
+
+.portal-app-main :is(.pagination-arrow, .branch-monitor-page-control button):hover:not(:disabled) {
+  background: transparent !important;
+  color: #b42323 !important;
+}
+
+.portal-app-main :is(.pagination-arrow, .branch-monitor-page-control button):disabled { opacity: 0.4; cursor: not-allowed; }
+.portal-app-main :is(.pagination-arrow, .branch-monitor-page-control button):focus-visible { outline: 2px solid #b42323; outline-offset: 2px; }
+
+body[data-portal-theme='dark'] .portal-app-main :is(.pagination-arrow, .branch-monitor-page-control button, .ticket-pagination .pagination-copy strong, .branch-monitor-page-control > span) { color: #e8edf4 !important; }
+body[data-portal-theme='dark'] .portal-app-main :is(.pagination-arrow, .branch-monitor-page-control button):hover:not(:disabled) { color: #ffb0b0 !important; }
+
+.portal-app-main .attached-photo-preview {
+  position: relative;
+  margin-bottom: 14px;
+}
+
+.portal-app-main .attached-photo-open {
+  display: block;
+  border-radius: 6px;
+}
+
+.portal-app-main .attached-photo-preview :is(img, .attached-photo-placeholder) {
+  margin: 0;
+  border-radius: 6px;
+}
+
+.portal-app-main .attached-photo-preview .attached-photo-action {
+  position: absolute;
+  right: -6px;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  min-width: 32px;
+  height: 32px;
+  min-height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #fff;
+  box-shadow: none;
+  filter: drop-shadow(0 1px 2px #111820);
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.portal-app-main .attached-photo-preview .attached-photo-remove { top: -6px; }
+.portal-app-main .attached-photo-preview .attached-photo-save { bottom: -6px; }
+.portal-app-main .attached-photo-preview .attached-photo-action:hover { background: transparent; color: #ffb0b0; }
+.portal-app-main :is(.attached-photo-action, .attached-photo-open):focus-visible {
+  outline: 2px solid #b42323;
+  outline-offset: 3px;
+}
+
+body[data-portal-theme='dark'] .portal-app-main :is(.photo-upload-card, .issue-description-paper, .issue-description-line) {
+  border-color: #384456;
+  background: #18212e;
+  color: #edf2f7;
+  box-shadow: none;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .issue-description-label {
+  border-color: #384456;
+  background: #202b39;
+  color: #cbd5e1;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .issue-description-answer {
+  background: #141c26;
+  color: #edf2f7;
+  -webkit-text-fill-color: #edf2f7;
+  color-scheme: dark;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .issue-description-answer::placeholder {
+  color: #a2afbe;
+  -webkit-text-fill-color: #a2afbe;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .issue-description-answer:focus {
+  background: #1b2531;
+  box-shadow: inset 3px 0 0 #ef8d8d;
+}
+
+body[data-portal-theme='dark'] .portal-app-main :is(.photo-upload-card .ticket-form-hint, .issue-description-composer .char-count, .attached-photo-card em) {
+  color: #b6c4d6;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .attached-photo-card > span { color: #edf2f7; }
+body[data-portal-theme='dark'] .portal-app-main .attached-photo-preview .attached-photo-action {
+  border: 0;
+  background: transparent;
+  color: #edf2f7;
+}
+body[data-portal-theme='dark'] .portal-app-main .attached-photo-preview .attached-photo-action:hover { background: transparent; color: #ffb0b0; }
+body[data-portal-theme='dark'] .portal-app-main .attached-photo-preview .attached-photo-remove:hover { color: #ffb0b0; }
+body[data-portal-theme='dark'] .portal-app-main :is(.attached-photo-action, .attached-photo-open):focus-visible { outline-color: #f08c8c; }
+
+body[data-portal-theme='dark'] .portal-app-main .helpdesk-banner-copy h2 {
+  color: #edf2f7 !important;
+  -webkit-text-fill-color: #edf2f7 !important;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .helpdesk-banner-copy p {
+  color: #bdc8d5 !important;
+  -webkit-text-fill-color: #bdc8d5 !important;
+}
+
+body[data-portal-theme='dark'] .portal-app-main :is(.latest-ticket-card, .latest-activity-card) .dashboard-latest-description {
   border-color: #354252 !important;
   background: #202b39 !important;
   color: #d4dce6 !important;

@@ -38,20 +38,23 @@
 }
 
 .helpdesk-inbox-panel {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
+  position: fixed;
+  z-index: 10010;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
   width: min(380px, calc(100vw - 28px));
   max-height: min(70vh, 540px);
   overflow: hidden;
   border: 1px solid var(--border, #d7dee8);
   border-radius: 6px;
-  color: var(--text, #26364a);
-  background: var(--surface, #fff);
+  color: #26364a;
+  background: #fff;
   box-shadow: 0 14px 40px rgb(18 31 49 / 18%);
 }
 
 .helpdesk-inbox-header {
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -64,28 +67,16 @@
   margin: 0;
   font-size: 15px;
   line-height: 1.3;
-}
-
-.helpdesk-inbox-mark-read {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 5px;
-  border: 0;
-  color: #245c83;
-  background: transparent;
-  font-size: 12px;
-  cursor: pointer;
-}
-
-.helpdesk-inbox-mark-read:disabled {
-  opacity: .45;
-  cursor: default;
+  color: inherit;
+  letter-spacing: 0;
 }
 
 .helpdesk-inbox-list {
-  max-height: calc(min(70vh, 540px) - 53px);
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
   overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .helpdesk-inbox-item {
@@ -128,6 +119,8 @@
 
 .helpdesk-inbox-item-copy strong {
   font-size: 13px;
+  line-height: 1.4;
+  color: inherit;
 }
 
 .helpdesk-inbox-item-copy span {
@@ -147,6 +140,20 @@
   color: var(--muted, #58677a);
   font-size: 13px;
 }
+
+.helpdesk-inbox-panel:focus { outline: none; }
+.helpdesk-inbox-item:focus-visible { outline: 2px solid #b91c1c; outline-offset: -3px; }
+.helpdesk-inbox-error { display: flex; flex: 0 0 auto; align-items: center; gap: 8px; padding: 10px 14px; color: #a12f38; background: #fff4f4; font-size: 12px; line-height: 1.4; }
+.helpdesk-inbox-error span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.helpdesk-inbox-error button { display: grid; flex: 0 0 32px; width: 32px; height: 32px; place-items: center; border: 1px solid #e9bcc0; border-radius: 5px; background: transparent; color: inherit; cursor: pointer; }
+.helpdesk-inbox-item > svg { margin-top: 2px; }
+
+body[data-portal-theme='dark'] .helpdesk-inbox-panel { border-color: #354252; background: #1b2531; color: #e8edf4; }
+body[data-portal-theme='dark'] .helpdesk-inbox-panel :is(.helpdesk-inbox-header, .helpdesk-inbox-item) { border-color: #354252; }
+body[data-portal-theme='dark'] .helpdesk-inbox-panel :is(.helpdesk-inbox-item-copy span, time, .helpdesk-inbox-empty) { color: #b4c0ce; }
+body[data-portal-theme='dark'] .helpdesk-inbox-item:hover,
+body[data-portal-theme='dark'] .helpdesk-inbox-item.is-unread { background: #253241; }
+body[data-portal-theme='dark'] .helpdesk-inbox-error { background: #42262d; color: #ffb0b8; }
 
 .ticket-sla-deadline-note {
   margin: 0 0 12px;

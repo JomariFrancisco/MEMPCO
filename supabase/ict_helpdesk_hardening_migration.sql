@@ -463,6 +463,7 @@ create trigger tickets_queue_file_cleanup before delete on public.tickets for ea
 drop trigger if exists messages_queue_file_cleanup on public.ticket_messages;
 create trigger messages_queue_file_cleanup before delete on public.ticket_messages for each row execute function public.queue_deleted_helpdesk_files();
 
+-- Apply ict_employee_notifications_migration.sql afterward for owner replies and targeted employee alerts.
 create or replace function public.notify_helpdesk_activity() returns trigger
 language plpgsql security definer set search_path=public as $$
 declare ticket public.tickets; actor uuid; heading text;

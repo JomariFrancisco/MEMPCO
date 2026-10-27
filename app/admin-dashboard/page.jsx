@@ -83,9 +83,13 @@ import PortalProfilePhotoControl from '@/components/PortalProfilePhotoControl';
 import PortalThemeToggle from '@/components/PortalThemeToggle';
 import { useConfirmDialog } from '@/components/ConfirmationDialog';
 import './admin-dashboard.css';
-import { mergeMessages, monthlyTicketSnapshots, queueRank, availableStatuses, isClosed, isHelpdeskQueueEligible } from '@/lib/tickets/workflow.mjs';
+import { mergeMessages, monthlyTicketSnapshots, queueRank, availableStatuses, isClosed, isHelpdeskQueueEligible, handlingMilliseconds } from '@/lib/tickets/workflow.mjs';
+import TicketHandlingIndicator, { TicketHandlingActivity, TicketWorkTimer } from '@/components/TicketHandlingStatus';
+import TicketChatLauncher from '@/components/TicketChatLauncher';
 import HelpdeskInbox from '@/components/HelpdeskInbox';
 import '@/components/PortalWorkspaceTheme.css';
+import '@/components/TicketHandlingStatus.css';
+import '@/components/TicketModalLayout.css';
 
 /* =========================
    ROUTES
@@ -102,7 +106,7 @@ const REPORT_PERIOD_OPTIONS = [
   { key: 'month', label: 'Month', title: 'Tickets by Month', meta: 'Monthly trend' },
 ];
 const REPORT_PERIOD_PAGE_SIZE = 8;
-const DASHBOARD_QUEUE_PAGE_SIZE = 4;
+const DASHBOARD_QUEUE_PAGE_SIZE = 5;
 const SELECTED_DAY_TICKET_PAGE_SIZE = 2;
 const PHOTO_MAX_SIZE = 4 * 1024 * 1024;
 const PHOTO_MAX_COUNT = 5;
@@ -1556,10 +1560,9 @@ const formatPrintWorkDuration = (startedAt, endedAt, previousSeconds = 0) => {
   const start = getTimeValue(startedAt);
   if (!start) return 'Not started';
 
-  const end = getTimeValue(endedAt) || Date.now();
   const isOngoing = !getTimeValue(endedAt);
 
-  const totalMinutes = Math.max(0, Math.floor((end - start + previousSeconds*1000) / 60000));
+  const totalMinutes = Math.floor(handlingMilliseconds({ workStartedAt: startedAt, workEndedAt: endedAt, handlingSeconds: previousSeconds }) / 60000);
   const days = Math.floor(totalMinutes / 1440);
   const hours = Math.floor((totalMinutes % 1440) / 60);
   const minutes = totalMinutes % 60;
@@ -2856,23 +2859,13 @@ const isTicketLockActive = (ticket) => {
 const isTicketLockedByOther = (ticket, userId) =>
   isTicketLockActive(ticket) && ticket.lockedBy && ticket.lockedBy !== userId;
 
-const formatTicketLockTime = (value) => {
-  const parsed = new Date(value || '');
-
-  if (Number.isNaN(parsed.getTime())) return '';
-
-  return parsed.toLocaleTimeString('en-PH', {
-    hour: 'numeric',
-    minute: '2-digit',
-  });
-};
-
 const formatTicketHandlingTimestamp = (value) => {
-  const parsed = parsePortalTimestamp(value);
+  const parsed = typeof value === 'number' ? new Date(value) : parsePortalTimestamp(value);
 
   if (!parsed) return String(value || '');
 
   return new Intl.DateTimeFormat('en-PH', {
+    timeZone: 'Asia/Manila',
     month: 'short',
     day: 'numeric',
     year: 'numeric',
@@ -2899,122 +2892,9 @@ const formatTicketQueueDateTime = (value) => {
   return `${date} • ${time}`;
 };
 
-const getTicketHandlingState = (ticket = {}) => {
-  const activeLock = isTicketLockActive(ticket);
-  const lockOwner = String(ticket.lockedByName || '').trim() || 'IT staff';
-  const assignedTechnician = hasAssignedTechnician(ticket) ? ticket.technician : '';
-  const startedAt = getTicketWorkStartedAt(ticket);
-  const endedAt = getTicketWorkEndedAt(ticket);
-  const status = normalizeTicketStatus(ticket.status);
-  const closedStatuses = [
-    'resolved',
-    'canceled',
-    'cancelled',
-    'passed burnout',
-    'ready for deployment',
-    'deployed',
-    'failed burnout',
-    'damaged',
-    'for repair',
-    'for replacement',
-  ];
-  const isClosed = closedStatuses.includes(status) || (!isUnresolved(ticket.status) && Boolean(startedAt));
-
-  if (endedAt || isClosed) {
-    const closedTitle =
-      status === 'resolved'
-        ? 'Resolved'
-        : ['canceled', 'cancelled'].includes(status)
-          ? 'Cancelled'
-          : 'Work completed';
-
-    return {
-      tone: 'done',
-      icon: ShieldCheck,
-      title: closedTitle,
-      detail: assignedTechnician ? `Handled by ${assignedTechnician}` : 'ICT action recorded',
-      meta: endedAt
-        ? `Ended ${formatTicketHandlingTimestamp(endedAt)}`
-        : formatTicketHandlingTimestamp(ticket.lastUpdated || ticket.adminUpdatedAt),
-    };
-  }
-
-  if (activeLock) {
-    const lockExpiry = formatTicketLockTime(ticket.lockExpiresAt);
-
-    return {
-      tone: 'live',
-      icon: Wrench,
-      title: 'Being handled now',
-      detail: `Opened by ${lockOwner}`,
-      meta: lockExpiry ? `Reserved until ${lockExpiry}` : 'Live admin lock',
-    };
-  }
-
-  if (!isTicketBeingHandled(ticket)) return null;
-
-  if (status === 'for inspection') {
-    return {
-      tone: 'queued',
-      icon: Clock3,
-      title: 'Queued for inspection',
-      detail: assignedTechnician ? `Assigned to ${assignedTechnician}` : 'ICT review is underway',
-      meta: startedAt
-        ? `Started ${formatTicketHandlingTimestamp(startedAt)}`
-        : formatTicketHandlingTimestamp(ticket.lastUpdated),
-    };
-  }
-
-  if (status === 'under burnout') {
-    return {
-      tone: 'live',
-      icon: Monitor,
-      title: 'Under burnout monitoring',
-      detail: assignedTechnician ? `Assigned to ${assignedTechnician}` : 'Unit is being monitored',
-      meta: startedAt
-        ? `Started ${formatTicketHandlingTimestamp(startedAt)}`
-        : formatTicketHandlingTimestamp(ticket.lastUpdated),
-    };
-  }
-
-  return {
-    tone: status === 'escalated' ? 'escalated' : 'active',
-    icon: status === 'escalated' ? ExternalLink : Wrench,
-    title: status === 'moved date' ? 'Scheduled work' : 'Being catered',
-    detail: assignedTechnician ? `Assigned to ${assignedTechnician}` : 'ICT has started work',
-    meta: startedAt
-      ? `Started ${formatTicketHandlingTimestamp(startedAt)}`
-      : formatTicketHandlingTimestamp(ticket.lastUpdated),
-  };
-};
-
 const getTimeValue = (value) => {
   const parsed = new Date(value || '').getTime();
   return Number.isNaN(parsed) ? 0 : parsed;
-};
-
-const formatElapsedTime = (startedAt, endedAt, now = Date.now(), previousSeconds = 0) => {
-  const start = getTimeValue(startedAt);
-  if (!start) return 'Not started';
-
-  const end = getTimeValue(endedAt) || now;
-  const totalSeconds = Math.max(0, Math.floor((end - start) / 1000) + previousSeconds);
-  const days = Math.floor(totalSeconds / 86400);
-  const hours = Math.floor((totalSeconds % 86400) / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
-  const paddedMinutes = String(minutes).padStart(2, '0');
-  const paddedSeconds = String(seconds).padStart(2, '0');
-
-  if (days > 0) {
-    return `${days}d ${hours}h ${paddedMinutes}m ${paddedSeconds}s`;
-  }
-
-  if (hours > 0) {
-    return `${hours}h ${paddedMinutes}m ${paddedSeconds}s`;
-  }
-
-  return `${minutes}m ${paddedSeconds}s`;
 };
 
 const getActionButtonLabel = (ticket) => {
@@ -3153,56 +3033,21 @@ function TicketBadges({ ticket }) {
 }
 
 
-function DashboardWatchSummary({ tickets, type, activeIndex = 0, onChangeIndex, onOpenTicket }) {
-  const summaryRef = useRef(null);
-  const lastIndex = Math.max(0, tickets.length - 1);
-  const currentIndex = Math.min(Math.max(activeIndex, 0), lastIndex);
-  const ticket = tickets[currentIndex];
+function DashboardWatchSummary({ tickets, type, activeIndex = 0, onChangeIndex, onOpenTicket, now }) {
+  const pageSize = 2;
+  const lastIndex = Math.max(0, Math.floor((tickets.length - 1) / pageSize) * pageSize);
+  const currentIndex = Math.min(Math.max(Math.floor(activeIndex / pageSize) * pageSize, 0), lastIndex);
+  const visibleTickets = tickets.slice(currentIndex, currentIndex + pageSize);
   const ticketLabel = type === 'urgent' ? 'urgent ticket' : 'moved-date ticket';
 
-  useEffect(() => {
-    const summary = summaryRef.current;
-    const panel = summary?.closest('.dashboard-watch-panel');
-    if (!panel) return;
-
-    const heading = panel.querySelector('.section-head');
-    let frame;
-    const updateOverflow = () => {
-      // Measure the original layout so fitting cards keep their existing spacing.
-      summary.classList.remove('is-constrained');
-      if (!window.matchMedia('(min-width: 1281px)').matches) return;
-
-      const panelBounds = panel.getBoundingClientRect();
-      const summaryBounds = summary.getBoundingClientRect();
-      const headingBounds = heading.getBoundingClientRect();
-      const headingBottom = Math.max(
-        headingBounds.bottom,
-        ...Array.from(heading.children, child => child.getBoundingClientRect().bottom)
-      );
-      summary.classList.toggle('is-constrained',
-        summaryBounds.bottom > panelBounds.bottom - 8 || summaryBounds.top < headingBottom
-      );
-    };
-    const observer = new ResizeObserver(() => {
-      cancelAnimationFrame(frame);
-      frame = requestAnimationFrame(updateOverflow);
-    });
-    observer.observe(panel);
-    observer.observe(heading);
-    observer.observe(summary);
-    observer.observe(summary.querySelector('.dashboard-watch-summary-copy'));
-    updateOverflow();
-    return () => {
-      observer.disconnect();
-      cancelAnimationFrame(frame);
-    };
-  }, [ticket]);
-
-  if (!ticket) return null;
+  if (!visibleTickets.length) return null;
 
   return (
-    <div ref={summaryRef} className={'dashboard-watch-summary is-' + type}>
+    <div className={'dashboard-watch-summary is-' + type}>
+      <div className="dashboard-watch-ticket-list">
+      {visibleTickets.map((ticket) => (
       <article
+        key={ticket.id}
         className="dashboard-watch-summary-ticket"
         role="button"
         tabIndex={0}
@@ -3221,19 +3066,24 @@ function DashboardWatchSummary({ tickets, type, activeIndex = 0, onChangeIndex, 
             <TicketBadges ticket={ticket} />
           </div>
           <h4>{ticket.concernType || 'Unspecified concern'}</h4>
-          <p>{ticket.branch || 'No branch'} - {ticket.requester || ticket.ownerEmail || 'Employee'}</p>
+          <div className="dashboard-watch-ticket-meta">
+            <p>{ticket.branch || 'No branch'} - {ticket.requester || ticket.ownerEmail || 'Employee'}</p>
+            <TicketWorkTimer ticket={ticket} now={now} compact showLabel={false} />
+          </div>
         </div>
       </article>
+      ))}
+      </div>
 
-      {tickets.length > 1 && (
+      {tickets.length > pageSize && (
         <div className="dashboard-watch-summary-footer">
           <p className="dashboard-watch-summary-position">
-            Ticket {currentIndex + 1} of {tickets.length}
+            Tickets {currentIndex + 1}-{Math.min(currentIndex + pageSize, tickets.length)} of {tickets.length}
           </p>
           <div className="dashboard-watch-summary-nav" aria-label={ticketLabel + ' navigation'}>
             <button
               type="button"
-              onClick={() => onChangeIndex((index) => Math.max(0, index - 1))}
+              onClick={() => onChangeIndex(Math.max(0, currentIndex - pageSize))}
               disabled={currentIndex === 0}
               aria-label={'Previous ' + ticketLabel}
               title={'Previous ' + ticketLabel}
@@ -3242,7 +3092,7 @@ function DashboardWatchSummary({ tickets, type, activeIndex = 0, onChangeIndex, 
             </button>
             <button
               type="button"
-              onClick={() => onChangeIndex((index) => Math.min(lastIndex, index + 1))}
+              onClick={() => onChangeIndex(Math.min(lastIndex, currentIndex + pageSize))}
               disabled={currentIndex === lastIndex}
               aria-label={'Next ' + ticketLabel}
               title={'Next ' + ticketLabel}
@@ -3408,60 +3258,6 @@ function AdminProfileView({
       emptyActivityTitle="No handled tickets yet"
       emptyActivityText="Tickets assigned to or updated by this admin will appear here."
     />
-  );
-}
-
-function TicketHandlingIndicator({
-  ticket,
-  compact = false,
-  inline = false,
-  metaPlacement = 'inline',
-  primaryOnly = false,
-}) {
-  const handlingState = getTicketHandlingState(ticket);
-
-  if (!handlingState) return null;
-
-  const showMetaBelow = metaPlacement === 'below';
-  const fullHandlingLabel = [
-    handlingState.title,
-    handlingState.detail,
-    handlingState.meta,
-  ].filter(Boolean).join('\n');
-  const displayedHandlingLabel = primaryOnly ? handlingState.title : fullHandlingLabel;
-
-  return (
-    <div
-      className={[
-        'ticket-handling-indicator',
-        handlingState.tone,
-        compact ? 'compact' : '',
-        inline ? 'inline' : '',
-        showMetaBelow ? 'meta-below' : '',
-        primaryOnly ? 'primary-only' : '',
-      ].filter(Boolean).join(' ')}
-      aria-label={displayedHandlingLabel.replace(/\n/g, '. ')}
-      data-handling-summary={displayedHandlingLabel}
-      title={displayedHandlingLabel}
-    >
-      {primaryOnly ? (
-        <strong>{handlingState.title}</strong>
-      ) : (
-        <>
-          <span className="ticket-handling-icon">
-            <MonoIcon icon={handlingState.icon} />
-          </span>
-          <div className="ticket-handling-copy">
-            <div className="ticket-handling-title-row">
-              <strong>{handlingState.title}</strong>
-              {!showMetaBelow && handlingState.meta && <span className="ticket-handling-meta">{handlingState.meta}</span>}
-            </div>
-            <p>{handlingState.detail}</p>
-            {showMetaBelow && handlingState.meta && <span className="ticket-handling-meta">{handlingState.meta}</span>}
-          </div>
-        </>
-      )}
-    </div>
   );
 }
 
@@ -4306,89 +4102,8 @@ function TicketConversationPanel({
   );
 }
 
-function TicketWorkTimer({ ticket, now, compact = false, showLabel = true }) {
-  const startedAt = getTicketWorkStartedAt(ticket);
-  const endedAt = getTicketWorkEndedAt(ticket);
-  const startedAtLabel = formatTicketHandlingTimestamp(startedAt);
-  const endedAtLabel = formatTicketHandlingTimestamp(endedAt);
-
-  if (!startedAt) return null;
-
-  const isRunning = isUnresolved(ticket.status) && !endedAt;
-  const timerLabel = isBurnoutTicket(ticket)
-    ? isRunning ? 'Burnout timer' : 'Burnout completed'
-    : isRunning ? 'Work timer' : 'Work completed';
-  const timerClassName = [
-    'ticket-work-timer',
-    compact && 'compact',
-    !showLabel && 'icon-only',
-    isRunning ? 'running' : 'ended',
-  ].filter(Boolean).join(' ');
-
-  return (
-    <div className={timerClassName}>
-      <span
-        className={showLabel ? '' : 'ticket-work-timer-icon'}
-        role={showLabel ? undefined : 'img'}
-        aria-label={showLabel ? undefined : timerLabel}
-        title={showLabel ? undefined : timerLabel}
-      >
-        <MonoIcon icon={Clock3} />
-        {showLabel && timerLabel}
-      </span>
-      <strong>{formatElapsedTime(startedAt, endedAt, now, ticket.handlingSeconds)}</strong>
-      {!compact && (
-        <p>
-          Started {startedAtLabel}
-          {endedAt ? ' - Ended ' + endedAtLabel : ''}
-        </p>
-      )}
-    </div>
-  );
-}
-
-function TicketStatusTools({
-  ticket,
-  now,
-  compact = false,
-  timerCompact = compact,
-  inline = false,
-  className = '',
-  metaPlacement = 'inline',
-  indicatorPrimaryOnly = false,
-  showTimer = true,
-}) {
-  const hasIndicator = Boolean(getTicketHandlingState(ticket));
-  const hasTimer = showTimer && Boolean(getTicketWorkStartedAt(ticket));
-
-  if (!hasIndicator && !hasTimer) return null;
-
-  return (
-    <div
-      className={[
-        'ticket-status-tools',
-        className,
-        compact ? 'compact' : '',
-        (!hasIndicator || !hasTimer) ? 'solo' : '',
-      ].filter(Boolean).join(' ')}
-    >
-      <TicketHandlingIndicator
-        ticket={ticket}
-        compact={compact}
-        inline={inline}
-        metaPlacement={metaPlacement}
-        primaryOnly={indicatorPrimaryOnly}
-      />
-      {showTimer && <TicketWorkTimer ticket={ticket} now={now} compact={timerCompact} />}
-    </div>
-  );
-}
-
 function TicketPagination({ page, totalPages, totalItems, pageSize, onPageChange, alwaysShow = false }) {
   if (totalPages <= 1 && !alwaysShow) return null;
-
-  const start = (page - 1) * pageSize + 1;
-  const end = Math.min(page * pageSize, totalItems);
 
   return (
     <div className="ticket-pagination" aria-label="Ticket pagination">
@@ -4403,8 +4118,7 @@ function TicketPagination({ page, totalPages, totalItems, pageSize, onPageChange
       </button>
 
       <div className="pagination-copy">
-        <strong>Page {page} of {totalPages}</strong>
-        <span>Showing {start}-{end} of {totalItems} tickets</span>
+        <strong aria-label={`Page ${page} of ${totalPages}`}>Page {page}</strong>
       </div>
 
       <button
@@ -4423,7 +4137,6 @@ function TicketPagination({ page, totalPages, totalItems, pageSize, onPageChange
 function TicketQueueSummaryRow({ ticket, onOpenTicket }) {
   const ticketCode = getTicketDisplayCode(ticket);
   const concernType = ticket.concernType || 'Unspecified concern';
-  const description = String(ticket.description || '').trim() || 'No description provided';
   const sla = ticket.sla || 'Low';
   const submittedAt = ticket.createdAt || ticket.date || '';
   const submittedAtLabel = formatTicketQueueDateTime(submittedAt);
@@ -4436,7 +4149,7 @@ function TicketQueueSummaryRow({ ticket, onOpenTicket }) {
       className="ticket-queue-summary-row"
       role="button"
       tabIndex={0}
-      aria-label={`View ticket ${ticketCode}: ${concernType}. ${description}. SLA ${sla}. Submitted ${submittedAtLabel}. Requester ${requester}, branch ${branch}, department ${department}.`}
+      aria-label={`View ticket ${ticketCode}: ${concernType}. SLA ${sla}. Submitted ${submittedAtLabel}. Requester ${requester}, branch ${branch}, department ${department}.`}
       onClick={() => onOpenTicket(ticket)}
       onKeyDown={(event) => {
         if (event.key === 'Enter' || event.key === ' ') {
@@ -4459,7 +4172,6 @@ function TicketQueueSummaryRow({ ticket, onOpenTicket }) {
 
       <div className="ticket-queue-summary-problem">
         <strong className="ticket-queue-summary-concern" title={concernType}>{concernType}</strong>
-        <span className="ticket-queue-summary-description" title={description}>{description}</span>
       </div>
 
       <div className="ticket-queue-summary-details">
@@ -4486,7 +4198,6 @@ function TicketTable({
   compact = false,
   queueSummary = false,
   renderPagination = true,
-  handlingMetaPlacement = 'inline',
   emptyTitle = 'No tickets found',
   emptyDescription = 'New employee requests will appear here once submitted.',
   now,
@@ -4538,8 +4249,8 @@ function TicketTable({
 
                 <TicketHandlingIndicator
                   ticket={ticket}
+                  now={now}
                   compact={compact}
-                  metaPlacement={handlingMetaPlacement}
                 />
 
                 <div className="admin-ticket-summary-grid">
@@ -4651,6 +4362,17 @@ function BreakdownList({ title, kicker, items, className = '' }) {
   );
 }
 
+function WorkloadAvatar({ name, profilePhoto }) {
+  const [failedPhoto, setFailedPhoto] = useState('');
+  return (
+    <span className="admin-workload-avatar" aria-hidden="true">
+      {profilePhoto && failedPhoto !== profilePhoto ? (
+        <img src={profilePhoto} alt="" onError={() => setFailedPhoto(profilePhoto)} />
+      ) : getInitials(name)}
+    </span>
+  );
+}
+
 function AdminWorkloadPanel({ tickets, users = [] }) {
   const workloadItems = useMemo(() => {
     const activeIctUsers = users.filter((user) => isAdminRole(user.role) && !isInactivePortalUser(user));
@@ -4659,26 +4381,27 @@ function AdminWorkloadPanel({ tickets, users = [] }) {
     const groups = new Map();
 
     activeIctUsers.forEach((user) => {
-      groups.set(`profile:${user.id}`, { name: user.name, tickets: [] });
+      groups.set(`profile:${user.id}`, { name: user.name, profilePhoto: user.profilePhoto || '', tickets: [] });
     });
 
     tickets.forEach((ticket) => {
       const name = getReportTechnicianName(ticket.technician);
       const profile = usersById.get(ticket.technicianId) || usersByName.get(normalizeComparable(name));
       const key = profile?.id ? `profile:${profile.id}` : name ? `legacy:${normalizeComparable(name)}` : 'unassigned';
-      const group = groups.get(key) || { name: profile?.name || name || 'Unassigned', tickets: [] };
+      const group = groups.get(key) || { name: profile?.name || name || 'Unassigned', profilePhoto: profile?.profilePhoto || '', tickets: [] };
       group.tickets.push(ticket);
       groups.set(key, group);
     });
 
     return [...groups.values()]
-      .map(({ name, tickets: assignedTickets }) => {
+      .map(({ name, profilePhoto, tickets: assignedTickets }) => {
         const active = assignedTickets.filter((ticket) => isUnresolved(ticket.status)).length;
         const urgent = assignedTickets.filter(isSlaWatchTicket).length;
         const resolved = assignedTickets.filter(isTicketResolved).length;
 
         return {
           name,
+          profilePhoto,
           total: assignedTickets.length,
           active,
           urgent,
@@ -4716,7 +4439,7 @@ function AdminWorkloadPanel({ tickets, users = [] }) {
               className={`admin-workload-card${hasUrgent ? ' has-urgent' : ''}${isClear ? ' is-clear' : ''}`}
             >
               <div className="admin-workload-person">
-                <span className="admin-workload-avatar">{getInitials(item.name)}</span>
+                <WorkloadAvatar name={item.name} profilePhoto={item.profilePhoto} />
                 <div>
                   <strong>{item.name}</strong>
                   <p>{hasUrgent ? `${item.urgent} urgent item${item.urgent === 1 ? '' : 's'}` : isClear ? 'No active load' : `${item.active} active item${item.active === 1 ? '' : 's'}`}</p>
@@ -4981,8 +4704,6 @@ function DashboardView({ tickets, summary, categorySummary, onGoTo, onOpenTicket
     .filter(isMovedDateTicket)
     .sort(compareTicketSubmissionOrder)
     .slice(0, 3);
-  const urgentActiveTicket = urgentTickets[urgentWatchIndex] || null;
-  const movedDateActiveTicket = movedDateTickets[movedDateWatchIndex] || null;
 
   useEffect(() => {
     setQueuePage((page) => Math.min(page, totalQueuePages));
@@ -5084,9 +4805,6 @@ function DashboardView({ tickets, summary, categorySummary, onGoTo, onOpenTicket
                   )}
                 </div>
               </div>
-              {urgentActiveTicket && (
-                <TicketWorkTimer ticket={urgentActiveTicket} now={now} compact showLabel={false} />
-              )}
             </div>
 
             <div className="admin-watchlist">
@@ -5099,6 +4817,7 @@ function DashboardView({ tickets, summary, categorySummary, onGoTo, onOpenTicket
                 <DashboardWatchSummary
                   tickets={urgentTickets}
                   type="urgent"
+                  now={now}
                   activeIndex={urgentWatchIndex}
                   onChangeIndex={setUrgentWatchIndex}
                   onOpenTicket={onOpenTicket}
@@ -5124,9 +4843,6 @@ function DashboardView({ tickets, summary, categorySummary, onGoTo, onOpenTicket
                   )}
                 </div>
               </div>
-              {movedDateActiveTicket && (
-                <TicketWorkTimer ticket={movedDateActiveTicket} now={now} compact showLabel={false} />
-              )}
             </div>
 
             <div className="admin-watchlist">
@@ -5139,6 +4855,7 @@ function DashboardView({ tickets, summary, categorySummary, onGoTo, onOpenTicket
                 <DashboardWatchSummary
                   tickets={movedDateTickets}
                   type="moved"
+                  now={now}
                   activeIndex={movedDateWatchIndex}
                   onChangeIndex={setMovedDateWatchIndex}
                   onOpenTicket={onOpenTicket}
@@ -5305,7 +5022,6 @@ function TicketsView({
         <TicketTable
           tickets={filteredTickets}
           onOpenTicket={onOpenTicket}
-          handlingMetaPlacement={scope === 'all' || scope === 'support' ? 'below' : 'inline'}
           now={now}
           pagination={{
             tickets: pagedTickets,
@@ -5513,7 +5229,6 @@ function BurnoutReportView({ tickets, onOpenTicket, now }) {
         <TicketTable
           tickets={filteredTickets}
           onOpenTicket={onOpenTicket}
-          handlingMetaPlacement="below"
           emptyTitle="No burnout tickets found"
           emptyDescription="Burnout unit condition checks will appear here once submitted."
           now={now}
@@ -5690,7 +5405,7 @@ function BranchesView({ branchSummary, tickets, onOpenTicket, now }) {
                     <TicketBadges ticket={ticket} />
                   </div>
 
-                  <TicketHandlingIndicator ticket={ticket} compact metaPlacement="below" />
+                  <TicketHandlingIndicator ticket={ticket} now={now} compact />
 
                   <div className="admin-ticket-summary-grid">
                     <div>
@@ -5833,7 +5548,7 @@ function BranchesView({ branchSummary, tickets, onOpenTicket, now }) {
    REPORTS VIEW
 ========================= */
 
-function ReportsView({ tickets, summary, categorySummary, statusSummary, branchSummary, onOpenTicket }) {
+function ReportsView({ tickets, users = [], summary, categorySummary, statusSummary, branchSummary, onOpenTicket }) {
   const [periodMode, setPeriodMode] = useState('day');
   const [calendarMonth, setCalendarMonth] = useState(null);
   const [selectedCalendarDate, setSelectedCalendarDate] = useState('');
@@ -6191,8 +5906,6 @@ function UsersView({ users, canEditUsers, canDeleteUsers, canEditRoles, currentU
   const safeUserPage = Math.min(userPage, userTotalPages);
   const userPageStartIndex = (safeUserPage - 1) * USERS_PAGE_SIZE;
   const pagedUsers = filteredUsers.slice(userPageStartIndex, userPageStartIndex + USERS_PAGE_SIZE);
-  const visibleStart = filteredUsers.length ? userPageStartIndex + 1 : 0;
-  const visibleEnd = Math.min(userPageStartIndex + USERS_PAGE_SIZE, filteredUsers.length);
 
   useEffect(() => {
     setUserPage(1);
@@ -6489,8 +6202,7 @@ function UsersView({ users, canEditUsers, canDeleteUsers, canEditRoles, currentU
           )}
         </div>
 
-        {filteredUsers.length > USERS_PAGE_SIZE && (
-          <div className="users-pagination" aria-label="User account pagination">
+          <div className="users-pagination ticket-pagination" aria-label="User account pagination">
             <button
               type="button"
               className="pagination-arrow"
@@ -6502,8 +6214,7 @@ function UsersView({ users, canEditUsers, canDeleteUsers, canEditRoles, currentU
             </button>
 
             <div className="pagination-copy">
-              <strong>Page {safeUserPage} - {userTotalPages}</strong>
-              <span>Showing {visibleStart}-{visibleEnd} of {filteredUsers.length} accounts</span>
+              <strong aria-label={`Page ${safeUserPage} of ${userTotalPages}`}>Page {safeUserPage}</strong>
             </div>
 
             <button
@@ -6516,7 +6227,6 @@ function UsersView({ users, canEditUsers, canDeleteUsers, canEditRoles, currentU
               <MonoIcon icon={ChevronRight} />
             </button>
           </div>
-        )}
       </section>
 
       {editingUser && editForm && (
@@ -6881,7 +6591,7 @@ function CreateUserView({ users = [], onCreated }) {
   };
 
   return (
-    <div className="dashboard-view">
+    <div className="dashboard-view create-user-view portal-account-entry-view">
       <section className="panel-card glass hero-panel">
         <div className="hero-copy">
           <span className="section-kicker">Create User</span>
@@ -7178,7 +6888,7 @@ function CreateIctTicketView({ admin, users = [], onCreated }) {
   };
 
   return (
-    <div className="dashboard-view">
+    <div className="dashboard-view ict-ticket-submission-view portal-account-entry-view">
       <section className="panel-card glass hero-panel">
         <div className="hero-copy">
           <span className="section-kicker">ICT Ticket Submission</span>
@@ -7440,7 +7150,7 @@ function TicketActionModal({ ticket, currentUser, users = [], onClose, onSave, o
   const normalizedDraftStatus = normalizeTicketStatus(draft.status);
   const isEscalationStatus = normalizedDraftStatus === 'escalated';
   const isWaitingStatus = ['waiting for requester', 'waiting for vendor', 'waiting for approval'].includes(normalizedDraftStatus);
-  const isNoScrollWorkflowStatus = ['escalated', 'moved date'].includes(normalizedDraftStatus) || isWaitingStatus;
+  const isExpandedWorkflowStatus = ['escalated', 'moved date'].includes(normalizedDraftStatus) || isWaitingStatus;
   const draftTechnicianIsAssigned = hasAssignedTechnician({ technician: draft.technician });
   const technicianProfileIsAvailable = technicianProfiles.some((user) => user.id === draft.technicianId);
   const visibleTechnicianId = technicianProfileIsAvailable
@@ -7839,9 +7549,8 @@ function TicketActionModal({ ticket, currentUser, users = [], onClose, onSave, o
     >
       <form
         className={[
-          'modal-box glass admin-modal-box ticket-action-modal',
+          'modal-box glass admin-modal-box ticket-action-modal ticket-modal-readable',
           isBurnout ? 'is-burnout-modal' : 'is-support-modal',
-          isNoScrollWorkflowStatus ? 'is-no-scroll-workflow' : '',
           isResolvedLocked ? 'resolved-locked' : '',
         ].filter(Boolean).join(' ')}
         onSubmit={handleSubmit}
@@ -7857,16 +7566,11 @@ function TicketActionModal({ ticket, currentUser, users = [], onClose, onSave, o
             </div>
 
             <div className="ticket-action-header-status">
-              <TicketStatusTools
+              <TicketHandlingIndicator
                 ticket={ticket}
                 now={now}
-                compact
-                timerCompact
-                inline
-                metaPlacement="below"
-                indicatorPrimaryOnly
-                showTimer={false}
-                className="ticket-action-status-tools title-row-tools"
+                detailed
+                currentUserId={currentUser?.id}
               />
             </div>
           </div>
@@ -7957,7 +7661,7 @@ function TicketActionModal({ ticket, currentUser, users = [], onClose, onSave, o
         </div>
 
 
-        <div className={`ticket-action-details-row${isNoScrollWorkflowStatus ? ' is-expanded-workflow' : ''}`}>
+        <div className={`ticket-action-details-row${isExpandedWorkflowStatus ? ' is-expanded-workflow' : ''}`}>
           <div className={`ticket-action-description-column${isWaitingStatus ? ' is-waiting-workflow' : ''}`}>
             <div className="admin-description-box ticket-action-description">
               <span>Description of Problem</span>
@@ -7969,7 +7673,7 @@ function TicketActionModal({ ticket, currentUser, users = [], onClose, onSave, o
             </div>}
           </div>
 
-          <div className={`ticket-action-control-stack${isNoScrollWorkflowStatus ? ' is-expanded-workflow' : ''}`}>
+          <div className={`ticket-action-control-stack${isExpandedWorkflowStatus ? ' is-expanded-workflow' : ''}`}>
           <div className="ticket-form-group">
             <label>Status</label>
             <select
@@ -8120,6 +7824,7 @@ function TicketActionModal({ ticket, currentUser, users = [], onClose, onSave, o
         {formError && <div className="form-error">{formError}</div>}
           </>
         )}
+        <TicketHandlingActivity ticket={ticket} now={now} />
         </div>
 
         <div className="modal-footer">
@@ -8208,18 +7913,13 @@ function TicketActionModal({ ticket, currentUser, users = [], onClose, onSave, o
       )}
 
       {!isBurnout && shouldShowConversation && isChatMinimized && (
-        <button
-          type="button"
-          className="ticket-chat-launcher"
+        <TicketChatLauncher
+          unreadCount={unreadConversationCount}
           onClick={() => {
             setIsChatMinimized(false);
             setUnreadConversationCount(0);
           }}
-          aria-label="Open ticket conversation"
-        >
-          <MonoIcon icon={MessageCircle} />
-          {unreadConversationCount > 0 && <span>{unreadConversationCount}</span>}
-        </button>
+        />
       )}
     </div>
   );
@@ -8238,6 +7938,10 @@ export default function AdminDashboardPage() {
   const [admin, setAdmin] = useState(null);
   const [tickets, setTickets] = useState([]);
   const [users, setUsers] = useState([]);
+  useEffect(() => {
+    if (!admin?.id) return;
+    setUsers((current) => current.map((user) => user.id === admin.id ? { ...user, ...admin } : user));
+  }, [admin]);
   const [selectedTicket, setSelectedTicket] = useState(null);
   const handleTicketRealtimeUpdate=useCallback((updatedTicket)=>{
     setTickets(current=>current.map(ticket=>ticket.id===updatedTicket.id && (updatedTicket.version || 0)>=(ticket.version || 0) ? updatedTicket : ticket));
@@ -8445,13 +8149,13 @@ Current role: ${activeUser.role || 'No role found'}`
       return Boolean(startedAt) && !endedAt && isUnresolved(ticket.status);
     });
 
-    if (!selectedTicket && !hasRunningWorkTimer) return undefined;
+    if (!selectedTicket && tickets.length === 0) return undefined;
 
     setTimerNow(Date.now());
 
     const intervalId = window.setInterval(() => {
       setTimerNow(Date.now());
-    }, 1000);
+    }, selectedTicket || hasRunningWorkTimer ? 1000 : 30000);
 
     return () => window.clearInterval(intervalId);
   }, [tickets, selectedTicket]);
@@ -8942,6 +8646,7 @@ Current role: ${activeUser.role || 'No role found'}`
               {activeSection === 'reports' && (
                 <ReportsView
                   tickets={tickets}
+                  users={users}
                   summary={summary}
                   categorySummary={categorySummary}
                   statusSummary={statusSummary}

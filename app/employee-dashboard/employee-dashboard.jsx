@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   BadgeCheck,
@@ -27,6 +27,7 @@ import {
   PenLine,
   Phone,
   Printer,
+  Save,
   Send,
   ShieldCheck,
   Ticket,
@@ -66,8 +67,14 @@ import {
 } from '@/lib/tickets/portalTickets';
 import PortalProfileLayout from '@/components/PortalProfileLayout';
 import PortalThemeToggle from '@/components/PortalThemeToggle';
+import TicketChatLauncher from '@/components/TicketChatLauncher';
+import HelpdeskInbox from '@/components/HelpdeskInbox';
+import TicketHandlingIndicator, { TicketHandlingActivity, TicketWorkTimer } from '@/components/TicketHandlingStatus';
 import './employee-dashboard.css';
 import '@/components/PortalWorkspaceTheme.css';
+import '@/components/TicketHandlingStatus.css';
+import '@/components/TicketModalLayout.css';
+import './employee-ticket-parity.css';
 import { mergeMessages } from '@/lib/tickets/workflow.mjs';
 
 /* =========================
@@ -468,14 +475,7 @@ const getEmployeeTicketStatusLabel = (status = '') => {
   if (normalized === 'escalated') return 'Escalated';
   if (normalized.startsWith('waiting for ')) return normalized.replace(/\b\w/g, (letter) => letter.toUpperCase());
 
-  return 'Pending';
-};
-
-const getEmployeeTicketStatusTone = (label) => {
-  if (Object.values(EMPLOYEE_FINAL_OUTCOME_LABELS).includes(label) || label === 'Cancelled') return 'done';
-  if (label === 'Escalated') return 'escalated';
-  if (['In Progress', 'For Inspection', 'Under Burnout'].includes(label)) return 'active';
-  return 'queued';
+  return normalized ? normalized.replace(/\b\w/g, (letter) => letter.toUpperCase()) : 'Pending';
 };
 
 const isEmployeePendingTicket = (ticket = {}) => EMPLOYEE_PENDING_STATUSES.has(normalizeEmployeeTicketStatus(ticket.status));
@@ -1128,22 +1128,6 @@ const formatCompactDateTime = (value) => {
   return parsed ? compactDateFormatter.format(parsed) : value;
 };
 
-const formatCompactDuration = (startValue, endValue) => {
-  const start = toDate(startValue);
-  const end = toDate(endValue);
-
-  if (!start || !end || end.getTime() < start.getTime()) return '';
-
-  const totalSeconds = Math.max(0, Math.floor((end.getTime() - start.getTime()) / 1000));
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
-
-  if (hours > 0) return `${hours}h ${minutes}m ${seconds}s`;
-  if (minutes > 0) return `${minutes}m ${seconds}s`;
-  return `${seconds}s`;
-};
-
 const escapeTicketPrintHtml = (value) => String(value ?? '')
   .replaceAll('&', '&amp;')
   .replaceAll('<', '&lt;')
@@ -1429,7 +1413,7 @@ function Sidebar({ active, onNav, onLogout, open }) {
    SHARED COMPONENTS
 ========================= */
 
-function PhotoAttachmentGallery({ photos = [], emptyText = 'No photo attachments.' }) {
+function PhotoAttachmentGallery({ photos = [], emptyText = 'No photo attachments.', onRemove }) {
   const validPhotos = Array.isArray(photos)
     ? photos.filter((photo) => photo?.dataUrl || photo?.url || photo?.publicUrl || photo?.path || photo?.name)
     : [];
@@ -1446,27 +1430,32 @@ function PhotoAttachmentGallery({ photos = [], emptyText = 'No photo attachments
 
         return (
           <div key={photo.id || photo.path || `${fileName}-${index}`} className="attached-photo-card-wrap">
-            <a
-              className="attached-photo-card"
-              href={source || '#'}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label={`Open ${fileName}`}
-            >
-              {source ? (
-                <img src={source} alt={fileName} />
-              ) : (
-                <span className="attached-photo-placeholder"><MonoIcon icon={ImageIcon} /></span>
-              )}
-              <span>{fileName}</span>
+            <div className="attached-photo-card">
+              <div className="attached-photo-preview">
+                <a className="attached-photo-open" href={source || '#'} target="_blank"
+                  rel="noopener noreferrer" aria-label={`Open ${fileName}`}>
+                  {source ? (
+                    <img src={source} alt={fileName} />
+                  ) : (
+                    <span className="attached-photo-placeholder"><MonoIcon icon={ImageIcon} /></span>
+                  )}
+                </a>
+                {onRemove && (
+                  <button type="button" className="attached-photo-action attached-photo-remove"
+                    onClick={() => onRemove(photo.id)} aria-label={`Remove ${fileName}`} title="Remove image">
+                    <X size={18} aria-hidden="true" />
+                  </button>
+                )}
+                {source && (
+                  <a className="attached-photo-action attached-photo-save" href={source} download={fileName}
+                    aria-label={`Save ${fileName}`} title="Save image">
+                    <Save size={18} aria-hidden="true" />
+                  </a>
+                )}
+              </div>
+              <span title={fileName}>{fileName}</span>
               <em>{photo.sizeLabel || 'Image file'}</em>
-            </a>
-
-            {source && (
-              <a className="attached-photo-save" href={source} download={fileName}>
-                Save Image
-              </a>
-            )}
+            </div>
           </div>
         );
       })}
@@ -1526,9 +1515,6 @@ function IssueDescriptionBuilder({ form, onChange }) {
 function TicketPagination({ page, totalPages, totalItems, pageSize, onPageChange }) {
   if (totalPages <= 1) return null;
 
-  const start = (page - 1) * pageSize + 1;
-  const end = Math.min(page * pageSize, totalItems);
-
   return (
     <div className="ticket-pagination" aria-label="Ticket pagination">
       <button
@@ -1542,8 +1528,7 @@ function TicketPagination({ page, totalPages, totalItems, pageSize, onPageChange
       </button>
 
       <div className="pagination-copy">
-        <strong>Page {page} of {totalPages}</strong>
-        <span>Showing {start}-{end} of {totalItems} tickets</span>
+        <strong aria-label={`Page ${page} of ${totalPages}`}>Page {page}</strong>
       </div>
 
       <button
@@ -1726,6 +1711,7 @@ function TicketConversationPanel({
 
 function EmployeeTicketDetailModal({
   ticket,
+  now = Date.now(),
   user,
   messages,
   messageDraft,
@@ -1750,9 +1736,8 @@ function EmployeeTicketDetailModal({
   const isWaitingWorkflow = EMPLOYEE_WAITING_STATUSES.has(normalizedStatus);
   const hasNextAction = EMPLOYEE_NEXT_ACTION_STATUSES.has(normalizedStatus);
   const isEscalated = normalizedStatus === 'escalated';
-  const isNoScrollWorkflow = isWaitingWorkflow || isEscalated || normalizedStatus === 'moved date';
+  const isExpandedWorkflow = isWaitingWorkflow || isEscalated || normalizedStatus === 'moved date';
   const employeeStatusLabel = getEmployeeTicketStatusLabel(ticket.status);
-  const employeeStatusTone = getEmployeeTicketStatusTone(employeeStatusLabel);
   const closedTicketMessage = getEmployeeClosedTicketMessage(ticket);
   const lockReason =
     closedTicketMessage ||
@@ -1790,6 +1775,12 @@ function EmployeeTicketDetailModal({
 
   const activePreviewPhoto = previewPhotoIndex === null ? null : previewPhotos[previewPhotoIndex];
   const activePreviewSource = activePreviewPhoto?.dataUrl || activePreviewPhoto?.url || activePreviewPhoto?.publicUrl;
+  const ictUpdates = [
+    ['Action Taken', ticket.actionTaken, 'No action recorded yet.'],
+    ['First ICT Response', ticket.firstResponseAt ? formatCompactDateTime(ticket.firstResponseAt) : '', 'No first response recorded yet.'],
+    ['Resolution Notes', ticket.resolution, 'No resolution recorded yet.'],
+    ['Recommendation', ticket.recommendation, 'No recommendation recorded.'],
+  ];
 
   return (
     <div
@@ -1803,12 +1794,7 @@ function EmployeeTicketDetailModal({
       aria-modal="true"
       aria-label="Ticket details"
     >
-      <article
-        className={[
-          'modal-box glass employee-admin-modal-box employee-ticket-modal ticket-action-modal is-support-modal',
-          isNoScrollWorkflow ? 'is-no-scroll-workflow' : '',
-        ].join(' ')}
-      >
+      <article data-employee-details className="modal-box glass employee-admin-modal-box employee-ticket-modal ticket-action-modal is-support-modal ticket-modal-readable">
         {/* Admin-matched ticket identity and SLA header */}
         <div className="admin-modal-head ticket-action-head employee-admin-ticket-head">
           <div className="ticket-action-head-main">
@@ -1824,9 +1810,7 @@ function EmployeeTicketDetailModal({
             </div>
 
             <div className="ticket-action-header-status employee-ticket-action-header-status" aria-label="Ticket status">
-              <div className={`ticket-handling-indicator primary-only ${employeeStatusTone} employee-admin-status-badge`}>
-                <strong>{employeeStatusLabel}</strong>
-              </div>
+              <TicketHandlingIndicator ticket={ticket} now={now} detailed currentUserId={user?.id} />
             </div>
           </div>
 
@@ -1842,7 +1826,7 @@ function EmployeeTicketDetailModal({
             onClick={onClose}
             aria-label="Close modal"
           >
-            &times;
+            <X aria-hidden="true" />
           </button>
         </div>
 
@@ -1916,7 +1900,7 @@ function EmployeeTicketDetailModal({
         </div>
 
         {/* Ticket context and status-specific follow-up match the Admin layout. */}
-        <div className={`ticket-action-details-row employee-admin-details-row${isNoScrollWorkflow ? ' is-expanded-workflow' : ''}`}>
+        <div className={`ticket-action-details-row employee-admin-details-row${isExpandedWorkflow ? ' is-expanded-workflow' : ''}`}>
           <div className={`employee-ticket-description-column${isWaitingWorkflow ? ' is-waiting-workflow' : ''}`}>
             <div className="admin-description-box ticket-action-description">
               <div className="employee-ticket-description-heading">
@@ -1924,15 +1908,12 @@ function EmployeeTicketDetailModal({
                 {previewPhotos.length > 0 && (
                   <button
                     type="button"
-                    className="employee-ticket-image-trigger"
+                    className="employee-ticket-attachment-trigger"
                     onClick={() => setPreviewPhotoIndex(0)}
                     aria-label={`Preview ${previewPhotos.length} attached image${previewPhotos.length === 1 ? '' : 's'}`}
                     title="Preview attached image"
                   >
-                    <img
-                      src={previewPhotos[0].dataUrl || previewPhotos[0].url || previewPhotos[0].publicUrl}
-                      alt=""
-                    />
+                    <ImageIcon size={16} aria-hidden="true" />
                     <span>{previewPhotos.length} image{previewPhotos.length === 1 ? '' : 's'}</span>
                   </button>
                 )}
@@ -1946,106 +1927,62 @@ function EmployeeTicketDetailModal({
             </div>}
           </div>
 
-          <div className={`ticket-action-control-stack employee-ticket-update-stack employee-admin-control-stack${isNoScrollWorkflow ? ' is-expanded-workflow' : ''}`}>
+          <dl className={`ticket-action-control-stack employee-ticket-update-stack employee-admin-control-stack${isExpandedWorkflow ? ' is-expanded-workflow' : ''}`} aria-label="Ticket handling details">
             <div className="ticket-form-group">
-              <label>Status</label>
-              <select
-                className="ticket-field ticket-select employee-admin-readonly-select"
-                defaultValue={employeeStatusLabel}
-                disabled
-                aria-label="Status"
-              >
-                <option value={employeeStatusLabel}>{employeeStatusLabel}</option>
-              </select>
+              <dt>Status</dt>
+              <dd className="employee-admin-readonly-field">{employeeStatusLabel}</dd>
             </div>
 
             <div className="ticket-form-group">
-              <label>SLA</label>
-              <select
-                className="ticket-field ticket-select employee-admin-readonly-select"
-                defaultValue={ticket.sla || 'Low'}
-                disabled
-                aria-label="SLA"
-              >
-                <option value={ticket.sla || 'Low'}>{ticket.sla || 'Low'}</option>
-              </select>
+              <dt>SLA</dt>
+              <dd className="employee-admin-readonly-field">{ticket.sla || 'Low'}</dd>
             </div>
 
             <div className="ticket-form-group">
-              <label>Assigned ICT Staff</label>
-              <select
-                className="ticket-field ticket-select employee-admin-readonly-select"
-                defaultValue={assignedStaff}
-                disabled
-                aria-label="Assigned ICT Staff"
-              >
-                <option value={assignedStaff}>{assignedStaff}</option>
-              </select>
+              <dt>Assigned ICT Staff</dt>
+              <dd className="employee-admin-readonly-field">{assignedStaff}</dd>
             </div>
 
             {isEscalated && <div className="ticket-form-group">
-              <label>Escalation Partner</label>
-              <div className="employee-admin-readonly-field">{ticket.escalationPartner || 'Not recorded'}</div>
+              <dt>Escalation Partner</dt>
+              <dd className="employee-admin-readonly-field">{ticket.escalationPartner || 'Not recorded'}</dd>
             </div>}
 
             {hasNextAction && <div className="ticket-form-group">
-              <label>Next Action</label>
-              <div className="employee-admin-readonly-field">
+              <dt>Next Action</dt>
+              <dd className="employee-admin-readonly-field">
                 {formatCompactDateTime(ticket.nextActionAt || ticket.next_action_at || 'Not scheduled')}
-              </div>
+              </dd>
             </div>}
 
-          </div>
+          </dl>
         </div>
 
-        {/* Read-only fields retain the Admin modal's textarea geometry. */}
-        <div className="ticket-action-notes-grid employee-admin-notes-grid">
-          <div className="ticket-form-group">
-            <label>Action Taken</label>
-            <textarea
-              className="ticket-field ticket-textarea admin-small-textarea employee-admin-readonly-textarea"
-              value={ticket.actionTaken || ''}
-              placeholder="No action recorded yet."
-              readOnly
-              aria-label="Action Taken"
-            />
+        <dl className="ticket-action-notes-grid employee-admin-notes-grid employee-ticket-updates" aria-label="ICT updates">
+          {ictUpdates.map(([label, value, empty]) => (
+            <div className="ticket-form-group" key={label}>
+              <dt>{label}</dt>
+              <dd className={`employee-ticket-update-value${value ? '' : ' is-empty'}`}>{value || empty}</dd>
+            </div>
+          ))}
+        </dl>
+
+        {previewPhotos.length > 0 && <section className="employee-ticket-attachments" aria-label="Ticket attachments">
+          <h4><Paperclip size={16} aria-hidden="true" />Attachments <span>{previewPhotos.length}</span></h4>
+          <div className="employee-ticket-attachment-list">
+            {previewPhotos.map((photo, index) => (
+              <button type="button" key={photo.id || photo.path || index} className="employee-ticket-attachment"
+                onClick={() => setPreviewPhotoIndex(index)} aria-label={`Preview ${photo.name || `image ${index + 1}`}`}>
+                <img src={photo.dataUrl || photo.url || photo.publicUrl} alt="" />
+                <span>{photo.name || `Image ${index + 1}`}</span>
+                <ExternalLink size={14} aria-hidden="true" />
+              </button>
+            ))}
           </div>
+        </section>}
 
-          <div className="ticket-form-group">
-            <label>First ICT Response</label>
-            <textarea
-              className="ticket-field ticket-textarea admin-small-textarea employee-admin-readonly-textarea"
-              value={ticket.firstResponseAt ? formatCompactDateTime(ticket.firstResponseAt) : ''}
-              placeholder="No first response recorded yet."
-              readOnly
-              aria-label="First ICT Response"
-            />
-          </div>
-
-          <div className="ticket-form-group">
-            <label>Resolution Notes</label>
-            <textarea
-              className="ticket-field ticket-textarea admin-small-textarea employee-admin-readonly-textarea"
-              value={ticket.resolution || ''}
-              placeholder="No resolution recorded yet."
-              readOnly
-              aria-label="Resolution Notes"
-            />
-          </div>
-
-          <div className="ticket-form-group">
-            <label>Recommendation</label>
-            <textarea
-              className="ticket-field ticket-textarea admin-small-textarea employee-admin-readonly-textarea"
-              value={ticket.recommendation || ''}
-              placeholder="No recommendation recorded."
-              readOnly
-              aria-label="Recommendation"
-            />
-          </div>
-
-        </div>
-
+        <TicketWorkTimer ticket={ticket} now={now} />
+        <TicketHandlingActivity ticket={ticket} now={now} />
         </div>
 
         {/* Admin footer layout with Employee-appropriate actions. */}
@@ -2128,15 +2065,7 @@ function EmployeeTicketDetailModal({
       )}
 
       {shouldShowConversation && isChatMinimized && (
-        <button
-          type="button"
-          className="ticket-chat-launcher"
-          onClick={onChatOpen}
-          aria-label="Open ticket conversation"
-        >
-          <MonoIcon icon={MessageCircle} />
-          {unreadCount > 0 && <span>{unreadCount}</span>}
-        </button>
+        <TicketChatLauncher onClick={onChatOpen} unreadCount={unreadCount} />
       )}
     </div>
   );
@@ -2146,7 +2075,7 @@ function EmployeeTicketDetailModal({
    DASHBOARD VIEW
 ========================= */
 
-function DashboardView({ user, tickets, openTickets, onGoTo }) {
+function DashboardView({ user, tickets, openTickets, onGoTo, now }) {
   const resolvedCount = tickets.filter(isEmployeeResolvedTicket).length;
   const pendingCount = tickets.filter(isEmployeePendingTicket).length;
   const urgentCount = tickets.filter(
@@ -2294,14 +2223,12 @@ function DashboardView({ user, tickets, openTickets, onGoTo }) {
                   </span>
                 </div>
 
+                <TicketHandlingIndicator ticket={latestTicket} now={now} compact currentUserId={user?.id} />
+
                 <div className="dashboard-ticket-info-grid">
                   <div className="dashboard-ticket-meta-cell">
                     <span>Category</span>
                     <p>{latestTicket.supportCategory || 'Not specified'}</p>
-                  </div>
-                  <div className="dashboard-ticket-meta-cell">
-                    <span>Technician</span>
-                    <p>{latestTicket.technician || 'Unassigned'}</p>
                   </div>
                   <div className="dashboard-ticket-meta-cell">
                     <span>Last Updated</span>
@@ -2558,7 +2485,7 @@ function ProfileView({ user, tickets = [], onGoTo, onUserUpdate }) {
    HELPDESK VIEW
 ========================= */
 
-function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
+function HelpdeskView({ user, tickets, reloadTickets, initialTab, now, notificationTicket, onNotificationOpened }) {
   const [tab, setTab] = useState(initialTab || 'tickets');
   const [form, setForm] = useState(() => getNewTicketForm(user));
   const [editingId, setEditingId] = useState(null);
@@ -2579,6 +2506,8 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
   const [isChatMinimized, setIsChatMinimized] = useState(true);
   const [unreadConversationCount, setUnreadConversationCount] = useState(0);
   const [isLoadingTicketDetails, setIsLoadingTicketDetails] = useState(false);
+  const [ticketOpenError, setTicketOpenError] = useState('');
+  const conversationOnOpenRef = useRef('');
 
   const isChatMinimizedRef = useRef(true);
   const currentUserIdRef = useRef(user?.id || '');
@@ -2741,7 +2670,8 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
 
   // Reset chat state when a new ticket is opened — same as admin
   useEffect(() => {
-    setIsChatMinimized(true);
+    setIsChatMinimized(conversationOnOpenRef.current !== viewTicket?.id);
+    conversationOnOpenRef.current = '';
     setUnreadConversationCount(0);
   }, [viewTicket?.id]);
 
@@ -2827,6 +2757,7 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
 
     setIsLoadingTicketDetails(true);
     setFormError('');
+    setTicketOpenError('');
 
     try {
       const fullTicket = await getTicket(ticket.id);
@@ -2838,6 +2769,30 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
       setIsLoadingTicketDetails(false);
     }
   };
+
+  useEffect(() => {
+    if (!notificationTicket?.id) return undefined;
+    let cancelled = false;
+    setIsLoadingTicketDetails(true);
+    setTicketOpenError('');
+    setTab('tickets');
+    const openNotification = async () => {
+      try {
+        const ticket = await getTicket(notificationTicket.id);
+        if (cancelled) return;
+        if (!ticket || ticket.ownerId !== user.id) throw new Error('This ticket is no longer available to your account.');
+        conversationOnOpenRef.current = notificationTicket.reply ? ticket.id : '';
+        setViewTicket(ticket);
+        setIsChatMinimized(!notificationTicket.reply);
+      } catch (error) {
+        if (!cancelled) setTicketOpenError(error.message || 'Unable to open this ticket. Please try again.');
+      } finally {
+        if (!cancelled) { setIsLoadingTicketDetails(false); onNotificationOpened?.(); }
+      }
+    };
+    void openNotification();
+    return () => { cancelled = true; };
+  }, [notificationTicket, onNotificationOpened, user.id]);
 
   const handleSaarFileChange = async (e) => {
     const file = e.target.files?.[0];
@@ -3208,39 +3163,61 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
       </section>
 
       <section className="panel-card glass">
-        <div className="segmented-tabs" role="tablist">
+        <div className={`segmented-tabs employee-helpdesk-tabs${canSubmitBurnout ? ' has-burnout' : ''}`} role="tablist" aria-label="Helpdesk sections"
+          onKeyDown={(event) => {
+            if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+            const tabs = [...event.currentTarget.querySelectorAll('[role="tab"]')];
+            const current = tabs.indexOf(document.activeElement);
+            if (current < 0) return;
+            event.preventDefault();
+            const next = event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1
+              : (current + (event.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length;
+            tabs[next].focus();
+            tabs[next].click();
+          }}>
           <button
             type="button"
             role="tab"
+            tabIndex={tab === 'tickets' ? 0 : -1}
             aria-selected={tab === 'tickets'}
             className={tab === 'tickets' ? 'active' : ''}
             onClick={() => setTab('tickets')}
           >
-            My Tickets
+            <Ticket size={16} aria-hidden="true" />
+            <span className="employee-helpdesk-tab-label">My Tickets</span>
           </button>
 
           <button
             type="button"
             role="tab"
+            tabIndex={tab === 'submit' ? 0 : -1}
             aria-selected={tab === 'submit'}
             className={tab === 'submit' ? 'active' : ''}
             onClick={switchToSubmit}
           >
-            {editingId ? 'Edit Ticket' : 'Submit Ticket'}
+            {editingId ? <PenLine size={16} aria-hidden="true" /> : <Send size={16} aria-hidden="true" />}
+            <span className="employee-helpdesk-tab-label">{editingId ? 'Edit Ticket' : 'Submit Ticket'}</span>
           </button>
 
           {canSubmitBurnout && (
             <button
               type="button"
               role="tab"
+              tabIndex={tab === 'burnout' ? 0 : -1}
               aria-selected={tab === 'burnout'}
               className={tab === 'burnout' ? 'active' : ''}
               onClick={() => setTab('burnout')}
             >
-              Burnout Request
+              <Wrench size={16} aria-hidden="true" />
+              <span className="employee-helpdesk-tab-label">Burnout Request</span>
             </button>
           )}
         </div>
+
+        {ticketOpenError && <div className="employee-ticket-open-notice" role="alert"><span>{ticketOpenError}</span>
+          <button type="button" onClick={() => setTicketOpenError('')} aria-label="Dismiss ticket error"><X size={16} aria-hidden="true" /></button>
+        </div>}
+        {isLoadingTicketDetails && <p className="employee-ticket-opening" role="status">Opening ticket...</p>}
 
         {tab === 'tickets' && (
           <div className="employee-ticket-queue">
@@ -3257,34 +3234,6 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
                     const employeeStatusLabel = getEmployeeTicketStatusLabel(ticket.status);
                     const queueLabel = getEmployeeQueueLabel(ticket);
                     const requesterName = getCompactTicketRequester(ticket, user);
-                    const startedLabel = formatCompactDateTime(ticket.workStartedAt);
-                    const endedLabel = formatCompactDateTime(ticket.workEndedAt);
-                    const durationLabel = formatCompactDuration(ticket.workStartedAt, ticket.workEndedAt);
-                    const hasWorkSummary = Boolean(ticket.workStartedAt || ticket.workEndedAt || durationLabel);
-                    const assignedStaff = [ticket.technician, ticket.assignedTo].find((staff) => {
-                      const normalizedStaff = String(staff || '').trim().toLowerCase();
-                      return normalizedStaff && normalizedStaff !== 'unassigned';
-                    });
-                    const handlingCopy = assignedStaff
-                      ? `Handled by ${assignedStaff}`
-                      : queueLabel
-                        ? 'Awaiting ICT review'
-                        : 'Awaiting ICT assignment';
-                    const handlingTone =
-                      employeeStatusLabel === 'Resolved'
-                        ? 'done'
-                        : employeeStatusLabel === 'In Progress'
-                          ? 'active'
-                          : employeeStatusLabel === 'Escalated'
-                            ? 'escalated'
-                            : employeeStatusLabel === 'Cancelled'
-                              ? 'cancelled'
-                              : 'queued';
-                    const handlingMeta = endedLabel
-                      ? `Ended ${endedLabel}`
-                      : startedLabel
-                        ? `Started ${startedLabel}`
-                        : '';
 
                     return (
                       <article
@@ -3315,30 +3264,16 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
                             <span className={`priority ${slugify(ticket.sla || 'Low')}`}>
                               {ticket.sla || 'Low'}
                             </span>
-                            {ticket.saarRequired && <span className="status saar">SAAR Required</span>}
+                            {(ticket.saarRequired || ticket.saarAttachment?.name) && <span className="status saar">SAAR</span>}
                           </div>
                         </div>
 
-                        <div className={`employee-admin-handling-indicator ${handlingTone}`}>
-                          <span className="employee-admin-handling-icon">
-                            <MonoIcon icon={ShieldCheck} />
-                          </span>
-                          <div className="employee-admin-handling-copy">
-                            <strong>{employeeStatusLabel}</strong>
-                            <p>{handlingCopy}</p>
-                            {queueLabel && (
-                              <span
-                                className="employee-admin-queue-note"
-                                title="Priority-based ICT review position. Urgent tickets may move ahead."
-                              >
-                                <MonoIcon icon={Clock3} />
-                                {queueLabel}
-                              </span>
-                            )}
-                            {handlingMeta && (
-                              <span className="employee-admin-handling-meta">{handlingMeta}</span>
-                            )}
-                          </div>
+                        <div className="employee-ticket-handling-summary">
+                          <TicketHandlingIndicator ticket={ticket} now={now} currentUserId={user?.id} />
+                          {queueLabel && <span className="employee-ticket-queue-position"
+                            title="Priority-based ICT review position. Urgent tickets may move ahead.">
+                            <Clock3 size={14} aria-hidden="true" />{queueLabel}
+                          </span>}
                         </div>
 
                         <div className="employee-admin-ticket-summary-grid">
@@ -3358,16 +3293,7 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
                           {ticket.description || 'No description provided.'}
                         </p>
 
-                        {hasWorkSummary && (
-                          <div className="employee-admin-ticket-work-timer">
-                            <span><MonoIcon icon={Clock3} />Work Completed</span>
-                            {durationLabel && <strong>{durationLabel}</strong>}
-                            <p>
-                              {startedLabel ? `Started ${startedLabel}` : 'Started time not recorded'}
-                              {endedLabel ? ` - Ended ${endedLabel}` : ''}
-                            </p>
-                          </div>
-                        )}
+                        <TicketWorkTimer ticket={ticket} now={now} />
                       </article>
                     );
                   })}
@@ -3588,14 +3514,7 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
 
                 {form.photoAttachments.length > 0 && (
                   <div className="photo-preview-shell">
-                    <PhotoAttachmentGallery photos={form.photoAttachments} />
-                    <div className="photo-remove-row">
-                      {form.photoAttachments.map((photo) => (
-                        <button key={photo.id || photo.name} type="button" onClick={() => removePhotoAttachment(photo.id)}>
-                          Remove {photo.name}
-                        </button>
-                      ))}
-                    </div>
+                    <PhotoAttachmentGallery photos={form.photoAttachments} onRemove={removePhotoAttachment} />
                   </div>
                 )}
               </div>
@@ -3681,6 +3600,7 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab }) {
       {viewTicket && (
         <EmployeeTicketDetailModal
           ticket={viewTicket}
+          now={now}
           user={user}
           messages={ticketMessages}
           messageDraft={messageDraft}
@@ -3969,7 +3889,7 @@ function BurnoutRequestView({ user, reloadTickets }) {
 
           {formError && <div className="form-error">{formError}</div>}
 
-          <button type="submit" className="auth-submit-btn" disabled={isSubmitting}>
+          <button type="submit" className="auth-submit-btn" disabled={isSubmitting} aria-busy={isSubmitting}>
             <MonoIcon icon={Send} />
             {isSubmitting ? 'Submitting...' : 'Submit Burnout Request'}
           </button>
@@ -4073,6 +3993,9 @@ export default function EmployeeDashboardPage() {
   const [user, setUser] = useState(null);
   const [tickets, setTickets] = useState([]);
   const [authChecked, setAuthChecked] = useState(false);
+  const [timerNow, setTimerNow] = useState(Date.now());
+  const [notificationTicket, setNotificationTicket] = useState(null);
+  const notificationOpened = useCallback(() => setNotificationTicket(null), []);
   const [isInactiveBlocked, setIsInactiveBlocked] = useState(false);
   const [isPageTransitioning, setIsPageTransitioning] = useState(false);
   const [transitionLabel, setTransitionLabel] = useState(employeeTransitionLabels.dashboard);
@@ -4157,6 +4080,14 @@ export default function EmployeeDashboardPage() {
   }, [user]);
 
   useEffect(() => {
+    if (!authChecked || !tickets.length || !['dashboard', 'helpdesk'].includes(activeSection)) return undefined;
+    const hasRunningTimer = tickets.some((ticket) => ['in progress', 'for inspection', 'escalated', 'under burnout'].includes(normalizeEmployeeTicketStatus(ticket.status)));
+    setTimerNow(Date.now());
+    const intervalId = window.setInterval(() => setTimerNow(Date.now()), hasRunningTimer ? 1000 : 30000);
+    return () => window.clearInterval(intervalId);
+  }, [authChecked, tickets, activeSection]);
+
+  useEffect(() => {
     if (!isPageTransitioning) return undefined;
 
     const timer = window.setTimeout(() => {
@@ -4226,6 +4157,10 @@ export default function EmployeeDashboardPage() {
             </div>
 
             <div className="portal-topbar-actions">
+              <HelpdeskInbox key={user.id} userId={user.id} audience="employee" onTicket={(id, notification) => {
+                setNotificationTicket({ id, reply: notification.kind === 'reply' });
+                goTo('helpdesk', 'tickets');
+              }} />
               <PortalThemeToggle />
               <div className="profile-chip">
                 <span className="profile-chip-avatar">
@@ -4271,6 +4206,7 @@ export default function EmployeeDashboardPage() {
               {activeSection === 'dashboard' && (
                 <DashboardView
                   user={user}
+                  now={timerNow}
                   tickets={tickets}
                   openTickets={openTickets}
                   onGoTo={goTo}
@@ -4284,10 +4220,13 @@ export default function EmployeeDashboardPage() {
               {activeSection === 'helpdesk' && (
                 <HelpdeskView
                   key={helpdeskTab}
+                  now={timerNow}
                   user={user}
                   tickets={tickets}
                   reloadTickets={() => loadTickets()}
                   initialTab={helpdeskTab}
+                  notificationTicket={notificationTicket}
+                  onNotificationOpened={notificationOpened}
                 />
               )}
 

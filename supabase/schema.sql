@@ -1,6 +1,7 @@
 -- =====================================================
 -- MEMPCO WEBSITE SUPABASE SCHEMA - FULL UPDATED
 -- Run in Supabase SQL Editor, then run supabase/ict_helpdesk_hardening_migration.sql before deploying the ICT helpdesk app.
+-- Then run supabase/ict_employee_notifications_migration.sql for employee notification delivery.
 -- Separate MRDSS migration files are for existing deployments only.
 -- Includes:
 -- 1. Portal auth/profiles

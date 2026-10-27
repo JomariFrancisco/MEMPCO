@@ -1,0 +1,191 @@
+.ticket-handling-status {
+  display: grid;
+  justify-items: start;
+  align-content: start;
+  gap: 4px;
+  min-width: 0;
+  max-width: 100%;
+  padding: 8px 0;
+  color: #233042;
+  text-align: left;
+}
+
+.ticket-handling-status .ticket-handling-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  max-width: 100%;
+  min-height: 28px;
+  padding: 4px 9px;
+  border: 1px solid var(--handling-border, #dce2e7);
+  border-radius: 5px;
+  background: var(--handling-background, #f4f6f8);
+  color: var(--handling-color, #4b5563);
+  font-size: 0.8rem;
+  font-weight: 650;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  letter-spacing: 0;
+}
+
+.ticket-handling-dot {
+  flex: 0 0 6px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.ticket-handling-topline { display: flex; flex-wrap: wrap; align-items: center; gap: 5px 12px; min-width: 0; max-width: 100%; }
+
+.ticket-handling-badge.tone-active { --handling-border: #b8dedb; --handling-background: #eef9f7; --handling-color: #0f6860; }
+.ticket-handling-badge.tone-waiting { --handling-border: #ead5a3; --handling-background: #fff8e8; --handling-color: #82590d; }
+.ticket-handling-badge.tone-success { --handling-border: #bfe0c9; --handling-background: #eff9f1; --handling-color: #25683c; }
+.ticket-handling-badge.tone-danger { --handling-border: #efc6c6; --handling-background: #fff2f2; --handling-color: #a92d35; }
+
+.ticket-handling-status :is(.ticket-handling-assignee, .ticket-handling-timestamp, .ticket-handling-editor, .ticket-handling-follow-up) {
+  min-width: 0;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  color: #607083;
+  font-size: 0.73rem;
+  font-weight: 400;
+  line-height: 1.4;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.ticket-handling-status .ticket-handling-assignee { color: #354458; font-weight: 550; }
+.ticket-handling-status .ticket-handling-editor {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 0;
+  color: #738092;
+  font-size: 0.69rem;
+}
+.ticket-handling-editor svg { flex: 0 0 12px; }
+.ticket-handling-status.is-detailed { padding: 0; }
+.ticket-action-modal .ticket-handling-status.is-detailed { width: min(310px, 100%); }
+.ticket-handling-status.is-compact { gap: 3px; padding: 4px 0; }
+.ticket-handling-status .is-overdue, .ticket-handling-activity .is-overdue { color: #b12e36; }
+
+.ticket-work-timer.ticket-handling-timer {
+  display: grid;
+  flex: 0 0 auto;
+  min-width: 0;
+  gap: 4px;
+  margin: 0;
+  padding: 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+.ticket-work-timer.ticket-handling-timer > span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+  color: #738092;
+  font-size: 0.79rem;
+  font-weight: 700;
+  line-height: 1.4;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+.ticket-handling-timer .admin-mono-icon { flex: 0 0 16px; width: 16px; height: 16px; }
+.ticket-work-timer.ticket-handling-timer > strong {
+  color: #233042;
+  font-size: 1.2rem;
+  font-weight: 750;
+  line-height: 1.35;
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.ticket-work-timer.ticket-handling-timer > p {
+  margin: 0;
+  color: #607083;
+  font-size: 0.83rem;
+  line-height: 1.45;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.ticket-work-timer.ticket-handling-timer.running { border-color: #fecaca; background: #fff7f7; }
+.ticket-work-timer.ticket-handling-timer.running > strong { color: #dc2626; }
+.ticket-work-timer.ticket-handling-timer.compact { padding: 10px; }
+.ticket-work-timer.ticket-handling-timer.compact > strong { font-size: 1.08rem; }
+
+.ticket-handling-activity {
+  flex: 0 0 auto;
+  min-width: 0;
+  margin-top: 14px;
+  border-top: 1px solid #dce3e9;
+  color: #233042;
+}
+
+.ticket-handling-activity > summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 0;
+  cursor: pointer;
+  font-size: 0.84rem;
+  font-weight: 650;
+  list-style: none;
+}
+.ticket-handling-activity > summary::-webkit-details-marker { display: none; }
+.ticket-handling-activity > summary:focus-visible { outline: 2px solid #0f766e; outline-offset: 3px; border-radius: 3px; }
+.ticket-handling-event-count { margin-left: auto; color: #64748b; font-size: 0.73rem; font-weight: 400; }
+.ticket-handling-disclosure { flex: 0 0 16px; transition: transform 150ms ease; }
+.ticket-handling-activity[open] .ticket-handling-disclosure { transform: rotate(180deg); }
+
+.ticket-handling-activity .ticket-handling-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px 16px;
+  margin: 0;
+  padding: 8px 0 14px;
+  border-bottom: 1px solid #e1e6eb;
+}
+.ticket-handling-metrics > div { min-width: 0; }
+.ticket-handling-metrics dt { color: #687587; font-size: 0.72rem; line-height: 1.4; }
+.ticket-handling-metrics dd { margin: 3px 0 0; color: #24354a; font-size: 0.84rem; font-weight: 600; overflow-wrap: anywhere; }
+.ticket-handling-activity-follow-up { margin: 10px 0 0; font-size: 0.77rem; }
+.ticket-handling-activity .ticket-handling-timeline { display: grid; max-height: 320px; margin: 0; padding: 0; overflow-y: auto; list-style: none; }
+.ticket-handling-timeline > li { min-width: 0; padding: 10px 2px; border-bottom: 1px solid #e8ecf0; }
+.ticket-handling-timeline > li:last-child { border-bottom: 0; }
+.ticket-handling-event-heading { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 16px; }
+.ticket-handling-event-heading strong { color: #2e3d51; font-size: 0.8rem; font-weight: 600; }
+.ticket-handling-event-heading time { color: #687587; font-size: 0.72rem; }
+.ticket-handling-timeline p, .ticket-handling-empty { margin: 3px 0 0; color: #687587; font-size: 0.74rem; line-height: 1.45; overflow-wrap: anywhere; }
+.ticket-handling-timeline .ticket-handling-event-reason { color: #394b61; white-space: pre-wrap; }
+.ticket-handling-empty { padding: 10px 0; }
+
+body[data-portal-theme='dark'] .ticket-handling-status,
+body[data-portal-theme='dark'] .ticket-handling-activity { color: #e5eaf0; }
+body[data-portal-theme='dark'] .ticket-handling-status :is(.ticket-handling-assignee, .ticket-handling-timestamp, .ticket-handling-editor, .ticket-handling-follow-up),
+body[data-portal-theme='dark'] .ticket-handling-activity :is(dt, time, p, .ticket-handling-event-count) { color: #b4c0ce; }
+body[data-portal-theme='dark'] .ticket-handling-activity :is(dd, strong) { color: #e2e9f1; }
+body[data-portal-theme='dark'] .ticket-handling-status .is-overdue,
+body[data-portal-theme='dark'] .ticket-handling-activity .is-overdue { color: #fda4af !important; }
+body[data-portal-theme='dark'] .ticket-handling-activity,
+body[data-portal-theme='dark'] .ticket-handling-activity :is(.ticket-handling-metrics, li) { border-color: #364253; }
+body[data-portal-theme='dark'] .ticket-work-timer.ticket-handling-timer { border-color: #354252; background: #202b39; }
+body[data-portal-theme='dark'] .ticket-work-timer.ticket-handling-timer > strong { color: #edf2f7; }
+body[data-portal-theme='dark'] .ticket-work-timer.ticket-handling-timer > :is(span, p) { color: #b4c0ce; }
+body[data-portal-theme='dark'] .ticket-work-timer.ticket-handling-timer.running > strong { color: #fda4af; }
+body[data-portal-theme='dark'] .ticket-handling-badge { --handling-border: #465361; --handling-background: #26323e; --handling-color: #d0d9e3; }
+body[data-portal-theme='dark'] .ticket-handling-badge.tone-active { --handling-border: #37635e; --handling-background: #193c38; --handling-color: #9eddd0; }
+body[data-portal-theme='dark'] .ticket-handling-badge.tone-waiting { --handling-border: #735d30; --handling-background: #3d321e; --handling-color: #f5d28a; }
+body[data-portal-theme='dark'] .ticket-handling-badge.tone-success { --handling-border: #3d6949; --handling-background: #213c2a; --handling-color: #ade0b8; }
+body[data-portal-theme='dark'] .ticket-handling-badge.tone-danger { --handling-border: #78464d; --handling-background: #42262d; --handling-color: #ffb0b8; }
+
+@media (max-width: 600px) {
+  .ticket-handling-activity .ticket-handling-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ticket-handling-disclosure { transition: none; }
+}
