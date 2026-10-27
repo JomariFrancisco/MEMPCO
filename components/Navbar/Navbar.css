@@ -301,20 +301,28 @@ html[data-home-hero-nav='video'] .navbar.top .nav-trigger {
 .about-dropdown-menu {
   position: fixed;
   top: var(--navbar-height);
-  left: 4%;
-  right: 4%;
-  width: 92%;
+  left: 50%;
+  right: auto;
+  translate: -50% 0;
+  width: min(92%, 1500px);
   box-sizing: border-box;
   min-width: 0;
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: clamp(0.75rem, 1.5vw, 1.25rem);
-  padding: 2rem clamp(1.5rem, 4vw, 4rem) 2.5rem;
-  border-top: 3px solid var(--nav-accent);
-  border-radius: 12px;
+  gap: clamp(0.6rem, 1.2vw, 1rem);
+  padding: 1.05rem clamp(1.2rem, 2vw, 2rem) 1.2rem;
+  border-top: 2px solid var(--nav-accent);
+  border-radius: 10px;
 }
 
 @media (min-width: 1025px) {
+  .about-mega__heading,
+  .services-mega__heading,
+  .about-mega__links a,
+  .services-mega__links a {
+    text-align: center;
+  }
+
   .about-mega__links a[href="/about/history"],
   .about-mega__links a[href="/about/awards"],
   .about-mega__links a[href="/about/member-stories"] {
@@ -325,128 +333,18 @@ html[data-home-hero-nav='video'] .navbar.top .nav-trigger {
 .membership-dropdown-menu,
 .whats-new-dropdown-menu,
 .contact-dropdown-menu {
-  position: fixed;
-  top: var(--navbar-height);
-  left: 0;
-  right: 0;
-  width: 100%;
-  min-width: 0;
   display: grid;
-  gap: clamp(2rem, 5vw, 5rem);
-  padding: 2.5rem clamp(3rem, 8vw, 11rem) 3rem;
-  border-top: 3px solid var(--nav-accent);
-  border-radius: 12px;
-}
-
-.membership-dropdown-menu,
-.whats-new-dropdown-menu {
-  left: 10%;
-  right: 10%;
-  width: 80%;
-  box-sizing: border-box;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
-.contact-dropdown-menu {
-  box-sizing: border-box;
-  position: absolute;
-  top: calc(100% + 15px);
-  left: 0;
-  right: auto;
-  translate: none;
-  width: min(360px, calc(100vw - 2rem));
-  max-width: calc(100vw - 2rem);
-  height: fit-content;
   grid-template-columns: minmax(0, 1fr);
-  justify-content: stretch;
-  align-content: start;
   gap: 0;
-  padding: 1.15rem 1.25rem 1rem;
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  border-top: 3px solid var(--nav-accent);
-  border-radius: 12px;
+  width: max-content;
+  max-width: calc(100vw - 2rem);
 }
 
-.navbar.scrolled .nav-item--contact > .contact-dropdown-menu {
-  top: calc(100% + 15px);
-}
-
-.navbar.scrolled .membership-dropdown-menu,
-.navbar.scrolled .whats-new-dropdown-menu,
-.navbar.scrolled .contact-dropdown-menu {
-  top: 60px;
-}
-
-.membership-mega__column,
-.whats-new-mega__column,
-.contact-mega__column {
-  min-width: 0;
-}
-
-.membership-mega__heading,
-.whats-new-mega__heading,
-.contact-mega__heading {
-  display: block;
-  box-sizing: border-box;
-  min-height: 3.5rem;
-  margin: 0;
-  padding: 0 0 0.8rem;
-  color: #111111;
-  border-bottom: 1px solid rgba(15, 23, 42, 0.09);
-  font-size: 1rem;
-  font-weight: 750;
-  line-height: 1.3;
-  text-decoration: none;
-}
-
-.membership-mega__links,
-.whats-new-mega__links,
-.contact-mega__links {
-  display: grid;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.membership-mega__links li,
-.whats-new-mega__links li,
-.contact-mega__links li {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.membership-mega__links a,
-.whats-new-mega__links a,
-.contact-mega__links a {
-  display: block;
-  padding: 0.72rem 0;
-  color: #4b4b4b;
-  font-size: 0.98rem;
-  font-weight: 450;
-  line-height: 1.4;
-  text-decoration: none;
-  transition:
-    color 0.18s ease,
-    transform 0.18s ease;
-}
-
-.contact-mega__heading {
-  min-height: 0;
-  padding-bottom: 0.55rem;
-  text-align: center;
-}
-
-.contact-mega__links a {
-  padding: 0.42rem 0;
-  text-align: center;
-}
-
-.membership-mega__links a:hover,
-.whats-new-mega__links a:hover,
-.contact-mega__links a:hover {
-  color: var(--nav-accent);
-  transform: translateX(3px);
+.dropdown-link.is-disabled,
+.dropdown-link.is-disabled:hover {
+  color: #98a2b3;
+  background: transparent;
+  cursor: not-allowed;
 }
 
 .navbar.scrolled .about-dropdown-menu {
@@ -460,9 +358,9 @@ html[data-home-hero-nav='video'] .navbar.top .nav-trigger {
 .about-mega__heading {
   display: block;
   box-sizing: border-box;
-  min-height: 3.5rem;
+  min-height: 2.5rem;
   margin: 0;
-  padding: 0 0 0.8rem;
+  padding: 0 0 0.5rem;
   color: #111111;
   border-bottom: 1px solid rgba(15, 23, 42, 0.09);
   font-size: 1rem;
@@ -486,11 +384,11 @@ html[data-home-hero-nav='video'] .navbar.top .nav-trigger {
 
 .about-mega__links a {
   display: block;
-  padding: 0.72rem 0;
+  padding: 0.42rem 0;
   color: #4b4b4b;
   font-size: 0.98rem;
   font-weight: 450;
-  line-height: 1.4;
+  line-height: 1.35;
   text-decoration: none;
   transition:
     color 0.18s ease,
@@ -499,24 +397,25 @@ html[data-home-hero-nav='video'] .navbar.top .nav-trigger {
 
 .about-mega__links a:hover {
   color: var(--nav-accent);
-  transform: translateX(3px);
+  transform: none;
 }
 
 .services-dropdown-menu {
   position: fixed;
   top: var(--navbar-height);
-  left: 10%;
-  right: 10%;
-  width: 80%;
+  left: 50%;
+  right: auto;
+  translate: -50% 0;
+  width: min(88%, 1400px);
   box-sizing: border-box;
   min-width: 0;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: clamp(2rem, 5vw, 5rem);
-  padding: 2.5rem clamp(3rem, 8vw, 11rem) 3rem;
+  gap: clamp(0.75rem, 1.6vw, 1.5rem);
+  padding: 1.1rem clamp(1rem, 1.7vw, 1.75rem) 1.2rem;
   border: 1px solid rgba(255, 255, 255, 0.5);
-  border-top: 3px solid var(--nav-accent);
-  border-radius: 12px;
+  border-top: 2px solid var(--nav-accent);
+  border-radius: 10px;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.82), rgba(255, 255, 255, 0.64)),
     linear-gradient(105deg, rgba(185, 28, 28, 0.07), rgba(255, 255, 255, 0.02));
@@ -538,9 +437,9 @@ html[data-home-hero-nav='video'] .navbar.top .nav-trigger {
 .services-mega__heading {
   display: block;
   box-sizing: border-box;
-  min-height: 3.5rem;
+  min-height: 2.5rem;
   margin: 0;
-  padding: 0 0 0.8rem;
+  padding: 0 0 0.5rem;
   color: #111111;
   border-bottom: 1px solid rgba(15, 23, 42, 0.09);
   font-size: 1rem;
@@ -565,11 +464,11 @@ html[data-home-hero-nav='video'] .navbar.top .nav-trigger {
 
 .services-mega__links a {
   display: block;
-  padding: 0.72rem 0;
+  padding: 0.42rem 0;
   color: #4b4b4b;
   font-size: 0.98rem;
   font-weight: 450;
-  line-height: 1.4;
+  line-height: 1.35;
   text-decoration: none;
   transition:
     color 0.18s ease,
@@ -578,7 +477,7 @@ html[data-home-hero-nav='video'] .navbar.top .nav-trigger {
 
 .services-mega__links a:hover {
   color: var(--nav-accent);
-  transform: translateX(3px);
+  transform: none;
 }
 
 .nav-dropdown-menu > li,
@@ -624,6 +523,14 @@ html[data-home-hero-nav='video'] .navbar.top .nav-trigger {
 .dropdown-sublink.active {
   color: var(--nav-accent);
   background: var(--nav-accent-soft);
+}
+
+.membership-dropdown-menu .dropdown-link,
+.whats-new-dropdown-menu .dropdown-link,
+.contact-dropdown-menu .dropdown-link {
+  font-size: 0.98rem;
+  font-weight: 450;
+  line-height: 1.4;
 }
 
 .dropdown-group-toggle,
@@ -872,6 +779,8 @@ html[data-home-hero-nav='video'] .navbar.top .nav-trigger {
     border-top: 0;
   }
 
+  .membership-dropdown-menu,
+  .whats-new-dropdown-menu,
   .contact-dropdown-menu {
     display: none;
     grid-template-columns: 1fr;
@@ -880,90 +789,10 @@ html[data-home-hero-nav='video'] .navbar.top .nav-trigger {
     border-top: 0;
   }
 
-  .membership-dropdown-menu,
-  .whats-new-dropdown-menu {
-    display: none;
-    grid-template-columns: 1fr;
-    gap: 0;
-    padding: 0.35rem 0 0.35rem 0.7rem;
-    border-top: 0;
-  }
-
   .nav-dropdown.open > .membership-dropdown-menu,
-  .nav-dropdown.open > .whats-new-dropdown-menu {
-    display: grid;
-  }
-
-  .membership-mega__column,
-  .whats-new-mega__column {
-    padding: 0.45rem 0;
-    border-bottom: 1px solid rgba(15, 23, 42, 0.07);
-  }
-
-  .membership-mega__column:last-child,
-  .whats-new-mega__column:last-child {
-    border-bottom: 0;
-  }
-
-  .membership-mega__heading,
-  .whats-new-mega__heading {
-    min-height: 0;
-    padding: 0.55rem 0.68rem;
-    border-bottom: 0;
-    font-size: 0.96rem;
-  }
-
-  .membership-mega__links,
-  .whats-new-mega__links {
-    padding-left: 0.65rem;
-  }
-
-  .membership-mega__links a,
-  .whats-new-mega__links a {
-    padding: 0.55rem 0.68rem;
-    border-radius: 5px;
-    font-size: 0.92rem;
-  }
-
-  .membership-mega__links a:hover,
-  .whats-new-mega__links a:hover {
-    background: var(--nav-accent-soft);
-    transform: none;
-  }
-
+  .nav-dropdown.open > .whats-new-dropdown-menu,
   .nav-dropdown.open > .contact-dropdown-menu {
     display: grid;
-  }
-
-  .contact-mega__column {
-    padding: 0.45rem 0;
-    border-bottom: 1px solid rgba(15, 23, 42, 0.07);
-  }
-
-  .contact-mega__column:last-child {
-    border-bottom: 0;
-  }
-
-  .contact-mega__heading {
-    min-height: 0;
-    padding: 0.55rem 0.68rem;
-    border-bottom: 0;
-    font-size: 0.96rem;
-  }
-
-  .contact-mega__links {
-    padding-left: 0.65rem;
-  }
-
-  .contact-mega__links a {
-    padding: 0.55rem 0.68rem;
-    border-radius: 5px;
-    font-size: 0.92rem;
-  }
-
-  .contact-mega__links a:hover {
-    background: var(--nav-accent-soft);
-    transform: none;
   }
 
   .nav-dropdown.open > .about-dropdown-menu {

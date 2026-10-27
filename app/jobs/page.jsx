@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { FileText, Upload, X } from 'lucide-react';
 import Navbar from '@/components/Navbar/Navbar';
 import Footer from '@/components/Footer/Footer';
 import { createJobApplication, listOpenJobOpenings } from '@/lib/hr/hrContent';
@@ -24,6 +25,61 @@ const VALUES = [
   },
 ];
 
+function ApplicationDocumentField({
+  id,
+  label,
+  description,
+  required = false,
+  accept,
+  fileName,
+  inputRef,
+  onChange,
+  onClear,
+}) {
+  return (
+    <div className={`cp-application-document${fileName ? ' has-file' : ''}`}>
+      <label className="cp-application-upload">
+        <input
+          ref={inputRef}
+          id={id}
+          className="cp-application-file-input"
+          type="file"
+          accept={accept}
+          required={required}
+          aria-label={`${label}${required ? ', required' : ', optional'}`}
+          aria-describedby={`${id}-description`}
+          onChange={onChange}
+        />
+        <span className="cp-application-upload-icon" aria-hidden="true">
+          <FileText size={18} />
+        </span>
+        <span className="cp-application-upload-copy">
+          <strong>
+            <span>{label}</span>
+            <small>{required ? 'Required' : 'Optional'}</small>
+          </strong>
+          <span id={`${id}-description`}>{description}</span>
+        </span>
+        <span className="cp-application-upload-choice" title={fileName || 'Choose file'}>
+          <span>{fileName || 'Choose file'}</span>
+          <Upload size={16} aria-hidden="true" />
+        </span>
+      </label>
+      {fileName ? (
+        <button
+          className="cp-application-file-clear"
+          type="button"
+          title={`Remove ${label.toLowerCase()}`}
+          aria-label={`Remove ${label.toLowerCase()}`}
+          onClick={onClear}
+        >
+          <X size={16} aria-hidden="true" />
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
 export default function Career() {
   const [selectedJob, setSelectedJob] = useState(null);
   const [jobOpenings, setJobOpenings] = useState([]);
@@ -35,7 +91,8 @@ export default function Career() {
     phone: '',
     resumeFile: null,
     resumeFileName: '',
-    coverLetter: '',
+    coverLetterFile: null,
+    coverLetterFileName: '',
   });
   const [applicationStatus, setApplicationStatus] = useState({ type: '', text: '' });
   const [isApplicationModalOpen, setIsApplicationModalOpen] = useState(false);
@@ -45,19 +102,44 @@ export default function Career() {
     if (!isApplicationModalOpen) return;
 
     const onKey = (event) => {
-      if (event.key === 'Escape') {
+      if (event.key === 'Escape' && !isSubmittingApplication) {
         setIsApplicationModalOpen(false);
       }
     };
 
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
+  }, [isApplicationModalOpen, isSubmittingApplication]);
+
+  useEffect(() => {
+    if (!isApplicationModalOpen) return;
+
+    const root = document.documentElement;
+    const body = document.body;
+    const previousRootOverflow = root.style.overflow;
+    const previousBodyOverflow = body.style.overflow;
+    const previousBodyPaddingRight = body.style.paddingRight;
+    const scrollbarWidth = window.innerWidth - root.clientWidth;
+
+    root.style.overflow = 'hidden';
+    body.style.overflow = 'hidden';
+    if (scrollbarWidth > 0) {
+      const currentPadding = Number.parseFloat(window.getComputedStyle(body).paddingRight) || 0;
+      body.style.paddingRight = `${currentPadding + scrollbarWidth}px`;
+    }
+
+    return () => {
+      root.style.overflow = previousRootOverflow;
+      body.style.overflow = previousBodyOverflow;
+      body.style.paddingRight = previousBodyPaddingRight;
+    };
   }, [isApplicationModalOpen]);
 
   const showcaseAnchorRef = useRef(null);
   const showcaseStageRef = useRef(null);
   const applyAnchorRef = useRef(null);
   const resumeInputRef = useRef(null);
+  const coverLetterInputRef = useRef(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -120,24 +202,66 @@ export default function Career() {
     setApplicationStatus({ type: '', text: '' });
   };
 
-  const handleResumeChange = (event) => {
+  const handleApplicationFileChange = (field, event) => {
     const file = event.target.files?.[0] || null;
     setApplicationStatus({ type: '', text: '' });
+    const isResume = field === 'resume';
+    const fileKey = isResume ? 'resumeFile' : 'coverLetterFile';
+    const fileNameKey = isResume ? 'resumeFileName' : 'coverLetterFileName';
+    const inputRef = isResume ? resumeInputRef : coverLetterInputRef;
 
     if (!file) {
       setApplicationForm((current) => ({
         ...current,
-        resumeFile: null,
-        resumeFileName: '',
+        [fileKey]: null,
+        [fileNameKey]: '',
       }));
+      return;
+    }
+
+    const extension = file.name.toLowerCase().split('.').pop();
+    const acceptedExtensions = ['pdf'];
+
+    if (
+      !acceptedExtensions.includes(extension) ||
+      (file.type && file.type !== 'application/pdf')
+    ) {
+      inputRef.current.value = '';
+      setApplicationStatus({
+        type: 'error',
+        text: isResume
+          ? 'Choose a PDF resume.'
+          : 'Choose a PDF cover letter.',
+      });
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      inputRef.current.value = '';
+      setApplicationStatus({
+        type: 'error',
+        text: `${isResume ? 'Resume' : 'Cover letter'} must be 10 MB or smaller.`,
+      });
       return;
     }
 
     setApplicationForm((current) => ({
       ...current,
-      resumeFile: file,
-      resumeFileName: file.name,
+      [fileKey]: file,
+      [fileNameKey]: file.name,
     }));
+  };
+
+  const clearApplicationFile = (field) => {
+    const isResume = field === 'resume';
+    const inputRef = isResume ? resumeInputRef : coverLetterInputRef;
+    setApplicationForm((current) => ({
+      ...current,
+      [isResume ? 'resumeFile' : 'coverLetterFile']: null,
+      [isResume ? 'resumeFileName' : 'coverLetterFileName']: '',
+    }));
+    if (inputRef.current) inputRef.current.value = '';
+    setApplicationStatus({ type: '', text: '' });
   };
 
   const handleApplicationSubmit = async (event) => {
@@ -166,10 +290,14 @@ export default function Career() {
         phone: '',
         resumeFile: null,
         resumeFileName: '',
-        coverLetter: '',
+        coverLetterFile: null,
+        coverLetterFileName: '',
       });
       if (resumeInputRef.current) {
         resumeInputRef.current.value = '';
+      }
+      if (coverLetterInputRef.current) {
+        coverLetterInputRef.current.value = '';
       }
       setApplicationStatus({ type: '', text: '' });
       setIsApplicationModalOpen(false);
@@ -441,16 +569,21 @@ export default function Career() {
           aria-modal="true"
           aria-label="Submit application"
           onClick={(event) => {
-            if (event.target === event.currentTarget) {
+            if (event.target === event.currentTarget && !isSubmittingApplication) {
               setIsApplicationModalOpen(false);
             }
           }}
         >
-          <form className="cp-application-dialog" onSubmit={handleApplicationSubmit}>
+          <form
+            className="cp-application-dialog"
+            aria-labelledby="cp-application-title"
+            aria-busy={isSubmittingApplication}
+            onSubmit={handleApplicationSubmit}
+          >
             <div className="cp-application-dialog-head">
               <div>
                 <p className="cp-section-kicker">Application</p>
-                <h3>{selectedTitle}</h3>
+                <h3 id="cp-application-title">{selectedTitle}</h3>
                 <span>{selectedDepartment} - {selectedLocation}</span>
               </div>
               <button
@@ -458,8 +591,9 @@ export default function Career() {
                 className="cp-application-close"
                 onClick={() => setIsApplicationModalOpen(false)}
                 aria-label="Close application form"
+                disabled={isSubmittingApplication}
               >
-                &times;
+                <X size={19} aria-hidden="true" />
               </button>
             </div>
 
@@ -469,64 +603,75 @@ export default function Career() {
               </div>
             ) : null}
 
-            <label className="cp-application-field">
-              <span>Full Name</span>
-              <input
-                type="text"
-                required
-                value={applicationForm.applicantName}
-                onChange={(event) => updateApplicationForm('applicantName', event.target.value)}
-                placeholder="Enter your full name"
-              />
-            </label>
-
-            <div className="cp-application-row">
-              <label className="cp-application-field">
-                <span>Email</span>
+            <div className="cp-application-form-grid">
+              <label className="cp-application-field cp-application-field-wide">
+                <span>Full Name</span>
                 <input
-                  type="email"
+                  type="text"
+                  autoComplete="name"
                   required
-                  value={applicationForm.email}
-                  onChange={(event) => updateApplicationForm('email', event.target.value)}
-                  placeholder="name@email.com"
+                  value={applicationForm.applicantName}
+                  onChange={(event) => updateApplicationForm('applicantName', event.target.value)}
+                  placeholder="Enter your full name"
                 />
               </label>
 
-              <label className="cp-application-field">
-                <span>Phone</span>
-                <input
-                  type="tel"
-                  required
-                  value={applicationForm.phone}
-                  onChange={(event) => updateApplicationForm('phone', event.target.value)}
-                  placeholder="09XX XXX XXXX"
-                />
-              </label>
+              <div className="cp-application-row">
+                <label className="cp-application-field">
+                  <span>Email</span>
+                  <input
+                    type="email"
+                    autoComplete="email"
+                    required
+                    value={applicationForm.email}
+                    onChange={(event) => updateApplicationForm('email', event.target.value)}
+                    placeholder="name@email.com"
+                  />
+                </label>
+
+                <label className="cp-application-field">
+                  <span>Phone</span>
+                  <input
+                    type="tel"
+                    autoComplete="tel"
+                    required
+                    value={applicationForm.phone}
+                    onChange={(event) => updateApplicationForm('phone', event.target.value)}
+                    placeholder="09XX XXX XXXX"
+                  />
+                </label>
+              </div>
             </div>
 
-            <label className="cp-application-field">
-              <span>Resume Attachment</span>
-              <input
-                ref={resumeInputRef}
-                type="file"
-                required
-                accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                onChange={handleResumeChange}
-              />
-              <small className="cp-application-file-hint">
-                {applicationForm.resumeFileName || 'Accepted files: PDF, DOC, or DOCX up to 10 MB.'}
-              </small>
-            </label>
-
-            <label className="cp-application-field">
-              <span>Cover Letter</span>
-              <textarea
-                value={applicationForm.coverLetter}
-                onChange={(event) => updateApplicationForm('coverLetter', event.target.value)}
-                placeholder="Briefly introduce yourself and your interest in the role."
-                rows={3}
-              />
-            </label>
+            <section className="cp-application-documents" aria-labelledby="cp-application-documents-title">
+              <div className="cp-application-documents-head">
+                <h4 id="cp-application-documents-title">Application documents</h4>
+                <span>Attach your resume and an optional cover letter.</span>
+              </div>
+              <div className="cp-application-document-grid">
+                <ApplicationDocumentField
+                  id="application-resume"
+                  label="Resume"
+                  description="PDF only - up to 10 MB"
+                  required
+                  accept=".pdf,application/pdf"
+                  fileName={applicationForm.resumeFileName}
+                  inputRef={resumeInputRef}
+                  onChange={(event) => handleApplicationFileChange('resume', event)}
+                  onClear={() => clearApplicationFile('resume')}
+                />
+                <ApplicationDocumentField
+                  id="application-cover-letter"
+                  label="Cover letter"
+                  description="PDF only - up to 10 MB"
+                  accept=".pdf,application/pdf"
+                  fileName={applicationForm.coverLetterFileName}
+                  inputRef={coverLetterInputRef}
+                  onChange={(event) => handleApplicationFileChange('coverLetter', event)}
+                  onClear={() => clearApplicationFile('coverLetter')}
+                />
+              </div>
+            </section>
 
             <div className="cp-application-dialog-actions">
               <button

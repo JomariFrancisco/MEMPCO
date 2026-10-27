@@ -1,0 +1,555 @@
+body[data-portal-theme='dark'] .hr-admin-main,
+body[data-portal-theme='dark'] .marketing-admin-main {
+  --page-bg: #111820;
+  --surface: #1b2531;
+  --surface-soft: #202b39;
+  --surface-card: #1b2531;
+  --border: #354252;
+  --border-sub: #354252;
+  --text: #edf2f7;
+  --text-soft: #c6d0dc;
+  --muted: #aab6c5;
+  --softer: #8d9bad;
+  background: #111820 !important;
+  color: #e8edf4;
+}
+
+body[data-portal-theme='dark'] :is(.hr-admin-main, .marketing-admin-main) .profile-chip-copy strong {
+  color: #f1f5f9;
+}
+
+body[data-portal-theme='dark'] :is(.hr-admin-main, .marketing-admin-main) .profile-chip-copy span {
+  color: #bdc8d5;
+}
+
+body[data-portal-theme='dark'] .hr-admin-main :is(
+  .hr-console-hero,
+  .hr-dashboard-focus-panel,
+  .hr-focus-panel,
+  .hr-operations-panel,
+  .hr-panel
+) {
+  border-color: #303c4a !important;
+  background: #1b2531 !important;
+  color: #e8edf4;
+  box-shadow: none !important;
+}
+
+body[data-portal-theme='dark'] .hr-admin-main :is(
+  .hr-command-metric,
+  .hr-focus-row,
+  .hr-ops-row,
+  .hr-opening-card,
+  .hr-application-row,
+  .hr-report-card,
+  .hr-command-empty,
+  .hr-empty,
+  .hr-editor-section,
+  .hr-applicant-record-head,
+  .hr-applicant-record-card,
+  .hr-applicant-record-fields,
+  .hr-current-status-panel,
+  .hr-record-section,
+  .hr-detail-section,
+  .hr-detail-grid > div,
+  .hr-action-status-preview,
+  .hr-remarks-summary,
+  .hr-remarks-summary > div,
+  .hr-lock-notice
+) {
+  border-color: #354252 !important;
+  background: #202b39 !important;
+  color: #e8edf4;
+  box-shadow: none !important;
+}
+
+body[data-portal-theme='dark'] .hr-admin-main :is(
+  .hr-console-hero h2,
+  .hr-panel-head h2,
+  .hr-applicant-record-copy h2,
+  .hr-current-status-panel strong,
+  .hr-action-status-preview strong,
+  .hr-final-decision-action,
+  .hr-detail-grid strong,
+  .hr-remarks-summary strong,
+  .hr-history-item strong,
+  .hr-history-title,
+  .hr-command-section-head strong,
+  .hr-command-metric strong,
+  .hr-focus-row strong,
+  .hr-ops-row strong,
+  .hr-opening-card-main strong,
+  .hr-application-row-main strong,
+  .hr-history-line strong,
+  .hr-report-remarks-list,
+  .hr-applicant-record-identity strong,
+  .hr-applicant-record-field > strong,
+  .hr-field span,
+  .hr-poster-field > span,
+  .hr-editor-section-head h3,
+  .hr-editor-section-head strong,
+  .hr-review-disclosure > summary,
+  .hr-detail-section-head h3,
+  .hr-applicant-record-copy strong
+) {
+  color: #edf2f7 !important;
+}
+
+body[data-portal-theme='dark'] .hr-admin-main :is(
+  .hr-console-hero p,
+  .hr-section-head p,
+  .hr-command-metric span,
+  .hr-command-metric small,
+  .hr-command-section-head span,
+  .hr-focus-row small,
+  .hr-ops-row small,
+  .hr-ops-row em,
+  .hr-opening-card small,
+  .hr-opening-card-main small,
+  .hr-opening-card-main em,
+  .hr-application-row-main span,
+  .hr-application-row-main small,
+  .hr-application-row small,
+  .hr-application-row-meta small,
+  .hr-applicant-record-copy p,
+  .hr-applicant-record-copy small,
+  .hr-applicant-record-meta small,
+  .hr-history-line span,
+  .hr-history-meta,
+  .hr-history-details span,
+  .hr-detail-grid span,
+  .hr-editor-section-head small,
+  .hr-record-section-head small,
+  .hr-review-disclosure > summary small,
+  .hr-final-decision-note,
+  .hr-final-decision-meta,
+  .hr-application-legacy-letter > p,
+  .hr-detail-section-head small,
+  .hr-remarks-summary span,
+  .hr-action-status-field > span,
+  .hr-action-outcome,
+  .hr-muted-note,
+  .hr-poster-selection > span,
+  .hr-poster-empty,
+  .hr-report-no-remarks,
+  .hr-applicant-record-identity small,
+  .hr-applicant-record-field > small,
+  .hr-applicant-record-empty,
+  .hr-report-pagination,
+  .hr-labeled-control > span,
+  .hr-sort-control span,
+  .hr-lock-notice
+) {
+  color: #bdc8d5 !important;
+}
+
+body[data-portal-theme='dark'] .hr-admin-main :is(.hr-panel-kicker, .hr-editor-section-head .section-kicker) {
+  color: #ff9292 !important;
+}
+
+body[data-portal-theme='dark'] .hr-admin-main .hr-report-card strong,
+body[data-portal-theme='dark'] .hr-admin-main .hr-command-metric em {
+  color: #ff9292 !important;
+}
+
+body[data-portal-theme='dark'] .hr-admin-main :is(
+  .hr-search,
+  .hr-search-field,
+  .hr-field input,
+  .hr-field select,
+  .hr-field textarea,
+  .hr-application-tools select,
+  .hr-sort-control select
+) {
+  border-color: #3a4655 !important;
+  background: #141c26 !important;
+  color: #e8edf4 !important;
+  color-scheme: dark;
+}
+
+body[data-portal-theme='dark'] .hr-admin-main :is(
+  .hr-search input,
+  .hr-search-field input
+) {
+  background: transparent !important;
+  color: #e8edf4 !important;
+}
+
+body[data-portal-theme='dark'] .hr-admin-main :is(
+  .hr-search input,
+  .hr-search-field input,
+  .hr-field input,
+  .hr-field textarea
+)::placeholder {
+  color: #8997a8 !important;
+}
+
+body[data-portal-theme='dark'] .hr-admin-main :is(
+  .hr-btn:not(.hr-btn-primary):not(.hr-btn-danger),
+  .hr-icon-link,
+  .hr-opening-card-actions button,
+  .hr-report-actions button,
+  .hr-pagination-btn,
+  .hr-report-pagination button,
+  .hr-filter-pill
+) {
+  border-color: #3a4655 !important;
+  background: #202b39 !important;
+  color: #e8edf4 !important;
+  box-shadow: none;
+}
+
+body[data-portal-theme='dark'] .hr-admin-main :is(
+  .hr-btn:not(.hr-btn-primary):not(.hr-btn-danger),
+  .hr-icon-link,
+  .hr-opening-card-actions button,
+  .hr-report-actions button,
+  .hr-pagination-btn,
+  .hr-report-pagination button,
+  .hr-filter-pill
+):hover:not(:disabled) {
+  border-color: #536174 !important;
+  background: #283545 !important;
+  color: #ffaaaa !important;
+}
+
+body[data-portal-theme='dark'] .hr-admin-main .hr-btn-primary {
+  border-color: #a92525;
+  background: #b92727;
+  color: #fff;
+}
+
+body[data-portal-theme='dark'] .hr-admin-main .hr-btn-danger {
+  border-color: #6d373d;
+  background: #3b272c;
+  color: #ffaaaa;
+}
+
+body[data-portal-theme='dark'] .hr-admin-main .hr-editor-close {
+  color: #bdc8d5;
+}
+
+body[data-portal-theme='dark'] .hr-admin-main .hr-editor-close:hover {
+  color: #ffaaaa;
+}
+
+body[data-portal-theme='dark'] .hr-admin-main .hr-sync-button {
+  color: #bdc8d5;
+}
+
+body[data-portal-theme='dark'] .hr-admin-main .hr-sync-button:hover {
+  color: #ffaaaa;
+}
+
+body[data-portal-theme='dark'] .hr-admin-main :is(.hr-opening-card-actions, .hr-pagination, .hr-opening-card-actions button) {
+  border-color: #354252;
+}
+
+body[data-portal-theme='dark'] .hr-admin-main .hr-applicant-record-card:hover,
+body[data-portal-theme='dark'] .hr-admin-main .hr-applicant-record-card:focus-visible {
+  border-color: #536174 !important;
+  background: #283545 !important;
+}
+
+body[data-portal-theme='dark'] .hr-admin-main .hr-applicant-record-card.is-selected {
+  border-color: #704047 !important;
+  background: #3b292e !important;
+}
+
+body[data-portal-theme='dark'] .hr-admin-main .hr-status-chip {
+  border-color: #3a4655;
+  background: #283545;
+  color: #d4dce6;
+}
+
+body[data-portal-theme='dark'] .hr-admin-main .hr-status-chip.status-open,
+body[data-portal-theme='dark'] .hr-admin-main .hr-status-chip.status-hired {
+  border-color: #315848;
+  background: #1e382f;
+  color: #9bdbbd;
+}
+
+body[data-portal-theme='dark'] .hr-admin-main .hr-status-chip.status-draft,
+body[data-portal-theme='dark'] .hr-admin-main .hr-status-chip.status-new,
+body[data-portal-theme='dark'] .hr-admin-main .hr-status-chip.status-rejected {
+  border-color: #704047;
+  background: #3b272c;
+  color: #ffaaaa;
+}
+
+body[data-portal-theme='dark'] .hr-admin-main .hr-status-chip.status-reviewing,
+body[data-portal-theme='dark'] .hr-admin-main .hr-status-chip.status-shortlisted,
+body[data-portal-theme='dark'] .hr-admin-main .hr-status-chip.status-interview {
+  border-color: #574176;
+  background: #30263f;
+  color: #d8c3ff;
+}
+
+body[data-portal-theme='dark'] .hr-admin-main .hr-status-chip.status-closed,
+body[data-portal-theme='dark'] .hr-admin-main .hr-status-chip.status-archived {
+  border-color: #3a4655;
+  background: #283545;
+  color: #c6d0dc;
+}
+
+body[data-portal-theme='dark'] .hr-admin-main .hr-applicant-record-actions {
+  border-bottom-color: #354252;
+}
+
+body[data-portal-theme='dark'] .hr-admin-main .hr-history-item {
+  border-bottom-color: #354252;
+}
+
+body[data-portal-theme='dark'] .hr-admin-main .hr-history-remark {
+  border-left-color: #704047;
+  color: #c6d0dc;
+}
+
+body[data-portal-theme='dark'] .hr-admin-main .hr-poster-selection img {
+  border-color: #354252;
+  background: #141c26;
+}
+
+body[data-portal-theme='dark'] .hr-admin-main .hr-poster-remove {
+  color: #bdc8d5;
+}
+
+body[data-portal-theme='dark'] .hr-admin-main .hr-poster-remove:hover {
+  color: #ffaaaa;
+}
+
+body[data-portal-theme='dark'] .hr-admin-main :is(
+  .hr-poster-content,
+  .hr-review-disclosure[open] > summary
+) {
+  border-color: #354252;
+}
+
+body[data-portal-theme='dark'] .hr-admin-main .hr-opening-thumb {
+  border-color: #354252;
+  background: #141c26;
+}
+
+body[data-portal-theme='dark'] .hr-admin-main .hr-aging-badge {
+  background: #283545;
+  color: #c6d0dc;
+}
+
+body[data-portal-theme='dark'] .hr-admin-main .hr-aging-badge.is-alert {
+  background: #3c3320;
+  color: #eed28a;
+}
+
+body[data-portal-theme='dark'] .marketing-admin-main .marketing-sidebar-group {
+  border-top-color: #303c4a;
+}
+
+body[data-portal-theme='dark'] .marketing-admin-main .marketing-sidebar-label {
+  color: #8997a8;
+}
+
+body[data-portal-theme='dark'] .marketing-admin-main :is(.marketing-search, .marketing-filter-pills select) {
+  border-color: #3a4655;
+  background: #141c26;
+  color: #e8edf4;
+}
+
+body[data-portal-theme='dark'] .marketing-admin-main .marketing-search input {
+  color: #e8edf4;
+}
+
+body[data-portal-theme='dark'] .marketing-admin-main .marketing-search input::placeholder {
+  color: #8997a8;
+}
+
+body[data-portal-theme='dark'] .marketing-admin-main .marketing-search .admin-mono-icon {
+  color: #aab6c5;
+}
+
+body[data-portal-theme='dark'] .marketing-admin-main .marketing-story-thumb {
+  background: #141c26;
+  box-shadow: none;
+}
+
+body[data-portal-theme='dark'] .marketing-admin-main .marketing-post-row:hover,
+body[data-portal-theme='dark'] .marketing-admin-main .marketing-post-row:focus-visible {
+  background: #202b39;
+}
+
+body[data-portal-theme='dark'] .marketing-admin-main .marketing-activity strong,
+body[data-portal-theme='dark'] .marketing-admin-main .marketing-pagination span {
+  color: #edf2f7;
+}
+
+body[data-portal-theme='dark'] .marketing-admin-main .marketing-activity small {
+  color: #aab6c5;
+}
+
+body[data-portal-theme='dark'] .marketing-admin-main .activity-badge {
+  background: #283545;
+  color: #d4dce6;
+}
+
+body[data-portal-theme='dark'] .marketing-admin-main .activity-badge.edited {
+  background: #3c3320;
+  color: #eed28a;
+}
+
+body[data-portal-theme='dark'] .marketing-admin-main .activity-badge.republished {
+  background: #3b272c;
+  color: #ffaaaa;
+}
+
+body[data-portal-theme='dark'] .marketing-admin-main .activity-badge.published {
+  background: #1e382f;
+  color: #9bdbbd;
+}
+
+body[data-portal-theme='dark'] .marketing-admin-main .marketing-pagination button {
+  border-color: #3a4655;
+  background: #202b39;
+  color: #ffaaaa;
+}
+
+body[data-portal-theme='dark'] .ma-editor-overlay {
+  background: rgba(6, 10, 15, 0.78);
+}
+
+body[data-portal-theme='dark'] .ma-editor-drawer {
+  border-color: #354252;
+  background: #111820;
+  color: #e8edf4;
+}
+
+body[data-portal-theme='dark'] .ma-profile-head,
+body[data-portal-theme='dark'] .ma-editor-actions {
+  border-color: #354252;
+  background: #1b2531;
+  color: #e8edf4;
+}
+
+body[data-portal-theme='dark'] .ma-profile-head h2,
+body[data-portal-theme='dark'] .ma-upload-box strong,
+body[data-portal-theme='dark'] .ma-placement-option strong {
+  color: #edf2f7;
+}
+
+body[data-portal-theme='dark'] .ma-field > span,
+body[data-portal-theme='dark'] .ma-check span,
+body[data-portal-theme='dark'] .ma-settings-head > span {
+  color: #ff9292;
+}
+
+body[data-portal-theme='dark'] .ma-drawer-close {
+  color: #d4dce6;
+}
+
+body[data-portal-theme='dark'] .ma-drawer-close:hover,
+body[data-portal-theme='dark'] .ma-drawer-close:focus-visible {
+  color: #ffaaaa;
+}
+
+body[data-portal-theme='dark'] .ma-editor {
+  background: #111820;
+  color: #e8edf4;
+}
+
+body[data-portal-theme='dark'] .ma-field input,
+body[data-portal-theme='dark'] .ma-field select,
+body[data-portal-theme='dark'] .ma-field textarea {
+  border-color: #3a4655;
+  background: #141c26;
+  color: #e8edf4;
+  color-scheme: dark;
+}
+
+body[data-portal-theme='dark'] .ma-field input::placeholder,
+body[data-portal-theme='dark'] .ma-field textarea::placeholder {
+  color: #8997a8;
+}
+
+body[data-portal-theme='dark'] .ma-field small,
+body[data-portal-theme='dark'] .ma-settings-head small,
+body[data-portal-theme='dark'] .ma-upload-box span {
+  color: #aab6c5;
+}
+
+body[data-portal-theme='dark'] .ma-settings-card,
+body[data-portal-theme='dark'] .ma-placement-option,
+body[data-portal-theme='dark'] .ma-mini-btn,
+body[data-portal-theme='dark'] .ma-inline-preview button,
+body[data-portal-theme='dark'] .ma-command:not(.save):not(.delete):not(.publish) {
+  border-color: #354252;
+  background: #1b2531;
+  color: #d4dce6;
+}
+
+body[data-portal-theme='dark'] .ma-placement-option.active {
+  border-color: #704047;
+  background: #3b292e;
+  color: #ffaaaa;
+}
+
+body[data-portal-theme='dark'] .ma-placement-option span,
+body[data-portal-theme='dark'] .ma-autosave-state {
+  color: #bdc8d5;
+}
+
+body[data-portal-theme='dark'] .ma-upload-box {
+  border-color: #49576a;
+  background: #202b39;
+}
+
+body[data-portal-theme='dark'] .ma-inline-preview,
+body[data-portal-theme='dark'] .ma-full-image-preview {
+  border-color: #354252;
+  background-color: #141c26;
+}
+
+body[data-portal-theme='dark'] .ma-full-image-preview {
+  background-image:
+    linear-gradient(45deg, rgba(53, 66, 82, 0.55) 25%, transparent 25%),
+    linear-gradient(-45deg, rgba(53, 66, 82, 0.55) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, rgba(53, 66, 82, 0.55) 75%),
+    linear-gradient(-45deg, transparent 75%, rgba(53, 66, 82, 0.55) 75%);
+  background-color: #141c26;
+}
+
+body[data-portal-theme='dark'] .ma-inline-preview img {
+  background: #141c26;
+}
+
+body[data-portal-theme='dark'] .ma-command.publish {
+  border-color: #526074;
+  background: #283545;
+  color: #f1f5f9;
+}
+
+body[data-portal-theme='dark'] .ma-command.archive {
+  border-color: #66552f;
+  background: #3c3320;
+  color: #eed28a;
+}
+
+body[data-portal-theme='dark'] .ma-command.save,
+body[data-portal-theme='dark'] .ma-command.delete {
+  border-color: #a92525;
+  background: #b92727;
+  color: #fff;
+}
+
+body[data-portal-theme='dark'] .ma-autosave-state.saved,
+body[data-portal-theme='dark'] .ma-editor-feedback {
+  color: #9bdbbd;
+}
+
+body[data-portal-theme='dark'] .ma-autosave-state.error,
+body[data-portal-theme='dark'] .ma-editor-feedback.error {
+  color: #ffaaaa;
+}
+
+@media (max-width: 760px) {
+  body[data-portal-theme='dark'] .ma-editor-overlay {
+    background: #111820;
+  }
+}

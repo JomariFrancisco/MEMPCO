@@ -310,23 +310,21 @@ button {
   transition: transform var(--transition);
 }
 
-.admin-profile-chip-button {
+.admin-profile-chip-copy-button {
   width: auto;
   max-width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
   font: inherit;
   text-align: left;
   cursor: pointer;
 }
 
-.admin-profile-chip-button .profile-chip-avatar {
-  background: #f8fafc;
-  color: #64748b;
-  border: 1px solid rgba(148, 163, 184, 0.5);
-  box-shadow: 0 8px 16px rgba(15, 23, 42, 0.08);
-}
-
-.admin-profile-chip-button .profile-chip-avatar img {
-  background: #f8fafc;
+.admin-profile-chip-copy-button:focus-visible {
+  outline: 2px solid #dc2626;
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 
 .profile-chip:hover {
@@ -3826,6 +3824,77 @@ button {
 .modal-btn.print:hover {
   transform: translateY(-1px);
   background: rgba(220, 38, 38, 0.13);
+}
+
+.temporary-password-panel .temporary-password-actions .temporary-password-copy,
+.temporary-password-panel .temporary-password-actions .temporary-password-done {
+  display: inline-flex;
+  width: 116px;
+  min-width: 116px;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0 0.85rem;
+  border-radius: 8px;
+  font-size: 0.94rem;
+  line-height: 1;
+  font-weight: 750;
+  transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
+}
+
+.temporary-password-panel .temporary-password-actions .temporary-password-copy {
+  border: 1px solid rgba(21, 128, 61, 0.2);
+  background: #fff;
+  color: #3f5548;
+  box-shadow: 0 2px 5px rgba(15, 23, 42, 0.05);
+}
+
+.temporary-password-panel .temporary-password-actions .temporary-password-copy:hover {
+  transform: translateY(-1px);
+  border-color: rgba(21, 128, 61, 0.42);
+  background: #f7fcf8;
+  color: #166534;
+}
+
+.temporary-password-panel .temporary-password-actions .temporary-password-copy.is-copied {
+  border-color: rgba(21, 128, 61, 0.28);
+  background: #f0fbf3;
+  color: #15803d;
+}
+
+.temporary-password-panel .temporary-password-actions .temporary-password-copy.is-error {
+  border-color: rgba(220, 38, 38, 0.24);
+  background: #fff8f8;
+  color: #b91c1c;
+}
+
+.temporary-password-panel .temporary-password-actions .temporary-password-done {
+  border: 1px solid #cf2028;
+  background: #dc2626;
+  color: #fff;
+  box-shadow: 0 5px 12px rgba(220, 38, 38, 0.18);
+}
+
+.temporary-password-panel .temporary-password-actions .temporary-password-done:hover {
+  transform: translateY(-1px);
+  border-color: #b91c1c;
+  background: #c81e26;
+  box-shadow: 0 7px 15px rgba(220, 38, 38, 0.22);
+}
+
+@media (max-width: 640px) {
+  .temporary-password-panel .temporary-password-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .temporary-password-panel .temporary-password-actions .temporary-password-copy,
+  .temporary-password-panel .temporary-password-actions .temporary-password-done {
+    width: 100%;
+    min-width: 0;
+  }
 }
 
 .ticket-lock-notice-overlay {
@@ -12326,6 +12395,12 @@ button:not(:disabled),
   contain: paint;
 }
 
+.portal-topbar:has(.helpdesk-inbox-trigger[aria-expanded='true']) {
+  position: relative;
+  z-index: 60;
+  contain: none;
+}
+
 /* Keep blur on the primary glass surfaces, but avoid stacking multiple
    expensive backdrop-filter layers inside one another. */
 .glass .glass,
@@ -13454,7 +13529,7 @@ button:not(:disabled),
 
 /* The card gets one consistent desktop footprint.  The value is responsive,
    but both cards in a row always receive the exact same grid track height. */
-.admin-ticket-queue:not(.compact) .admin-ticket-queue-grid > .admin-ticket-card {
+.admin-ticket-queue:not(.compact) .admin-ticket-queue-grid > .admin-ticket-card:not(.mrdss-case-item) {
   min-height: clamp(560px, 68vh, 660px) !important;
 }
 
@@ -13804,7 +13879,7 @@ button:not(:disabled),
     gap: 0.8rem !important;
   }
 
-  .admin-ticket-queue:not(.compact) .admin-ticket-card,
+  .admin-ticket-queue:not(.compact) .admin-ticket-card:not(.mrdss-case-item),
   .helpdesk-view .admin-ticket-card,
   .burnout-report-view .admin-ticket-card {
     min-height: 600px !important;
@@ -14386,7 +14461,7 @@ button:not(:disabled),
 }
 
 /* Desktop ticket row: one stable responsive height for the whole row. */
-.admin-ticket-queue:not(.compact) .admin-ticket-queue-grid,
+.admin-ticket-queue:not(.compact) .admin-ticket-queue-grid:not(.mrdss-case-grid),
 .helpdesk-view .admin-ticket-queue:not(.compact) .admin-ticket-queue-grid,
 .burnout-report-view .admin-ticket-queue:not(.compact) .admin-ticket-queue-grid {
   display: grid;
@@ -14399,7 +14474,7 @@ button:not(:disabled),
 
 /* Every card in the row occupies the exact same reserved height.
    No visual styling is changed here. */
-.admin-ticket-queue:not(.compact) .admin-ticket-queue-grid > .admin-ticket-card,
+.admin-ticket-queue:not(.compact) .admin-ticket-queue-grid:not(.mrdss-case-grid) > .admin-ticket-card,
 .helpdesk-view .admin-ticket-queue:not(.compact) .admin-ticket-grid > .admin-ticket-card,
 .helpdesk-view .admin-ticket-queue:not(.compact) .admin-ticket-queue-grid > .admin-ticket-card,
 .burnout-report-view .admin-ticket-queue:not(.compact) .admin-ticket-queue-grid > .admin-ticket-card {
@@ -14502,14 +14577,14 @@ button:not(:disabled),
    -------------------------------------------------------------------------- */
 
 @media (max-width: 1180px) and (min-width: 901px) {
-  .admin-ticket-queue:not(.compact) .admin-ticket-queue-grid,
+  .admin-ticket-queue:not(.compact) .admin-ticket-queue-grid:not(.mrdss-case-grid),
   .helpdesk-view .admin-ticket-queue:not(.compact) .admin-ticket-queue-grid,
   .burnout-report-view .admin-ticket-queue:not(.compact) .admin-ticket-queue-grid {
     grid-template-rows: 720px;
     grid-auto-rows: 720px;
   }
 
-  .admin-ticket-queue:not(.compact) .admin-ticket-queue-grid > .admin-ticket-card,
+  .admin-ticket-queue:not(.compact) .admin-ticket-queue-grid:not(.mrdss-case-grid) > .admin-ticket-card,
   .helpdesk-view .admin-ticket-queue:not(.compact) .admin-ticket-queue-grid > .admin-ticket-card,
   .burnout-report-view .admin-ticket-queue:not(.compact) .admin-ticket-queue-grid > .admin-ticket-card {
     height: 720px;
@@ -14519,7 +14594,7 @@ button:not(:disabled),
 }
 
 @media (max-width: 900px) {
-  .admin-ticket-queue:not(.compact) .admin-ticket-queue-grid,
+  .admin-ticket-queue:not(.compact) .admin-ticket-queue-grid:not(.mrdss-case-grid),
   .helpdesk-view .admin-ticket-queue:not(.compact) .admin-ticket-queue-grid,
   .burnout-report-view .admin-ticket-queue:not(.compact) .admin-ticket-queue-grid {
     grid-template-columns: 1fr;
@@ -14527,7 +14602,7 @@ button:not(:disabled),
     grid-auto-rows: 700px;
   }
 
-  .admin-ticket-queue:not(.compact) .admin-ticket-queue-grid > .admin-ticket-card,
+  .admin-ticket-queue:not(.compact) .admin-ticket-queue-grid:not(.mrdss-case-grid) > .admin-ticket-card,
   .helpdesk-view .admin-ticket-queue:not(.compact) .admin-ticket-queue-grid > .admin-ticket-card,
   .burnout-report-view .admin-ticket-queue:not(.compact) .admin-ticket-queue-grid > .admin-ticket-card {
     height: 700px;
@@ -14543,14 +14618,14 @@ button:not(:disabled),
 }
 
 @media (max-width: 640px) {
-  .admin-ticket-queue:not(.compact) .admin-ticket-queue-grid,
+  .admin-ticket-queue:not(.compact) .admin-ticket-queue-grid:not(.mrdss-case-grid),
   .helpdesk-view .admin-ticket-queue:not(.compact) .admin-ticket-queue-grid,
   .burnout-report-view .admin-ticket-queue:not(.compact) .admin-ticket-queue-grid {
     grid-template-rows: 720px;
     grid-auto-rows: 720px;
   }
 
-  .admin-ticket-queue:not(.compact) .admin-ticket-queue-grid > .admin-ticket-card,
+  .admin-ticket-queue:not(.compact) .admin-ticket-queue-grid:not(.mrdss-case-grid) > .admin-ticket-card,
   .helpdesk-view .admin-ticket-queue:not(.compact) .admin-ticket-queue-grid > .admin-ticket-card,
   .burnout-report-view .admin-ticket-queue:not(.compact) .admin-ticket-queue-grid > .admin-ticket-card {
     height: 720px;
@@ -14566,14 +14641,14 @@ button:not(:disabled),
 }
 
 @media (max-width: 420px) {
-  .admin-ticket-queue:not(.compact) .admin-ticket-queue-grid,
+  .admin-ticket-queue:not(.compact) .admin-ticket-queue-grid:not(.mrdss-case-grid),
   .helpdesk-view .admin-ticket-queue:not(.compact) .admin-ticket-queue-grid,
   .burnout-report-view .admin-ticket-queue:not(.compact) .admin-ticket-queue-grid {
     grid-template-rows: 740px;
     grid-auto-rows: 740px;
   }
 
-  .admin-ticket-queue:not(.compact) .admin-ticket-queue-grid > .admin-ticket-card,
+  .admin-ticket-queue:not(.compact) .admin-ticket-queue-grid:not(.mrdss-case-grid) > .admin-ticket-card,
   .helpdesk-view .admin-ticket-queue:not(.compact) .admin-ticket-queue-grid > .admin-ticket-card,
   .burnout-report-view .admin-ticket-queue:not(.compact) .admin-ticket-queue-grid > .admin-ticket-card {
     height: 740px;
@@ -14597,7 +14672,7 @@ button:not(:disabled),
 .ticket-action-overlay form.ticket-action-modal.is-support-modal {
   width: min(1760px, calc(100vw - (var(--ticket-action-inline-gap) * 2))) !important;
   max-width: calc(100vw - (var(--ticket-action-inline-gap) * 2)) !important;
-  height: auto !important;
+  height: calc(100dvh - (var(--ticket-action-block-gap) * 2)) !important;
   min-height: 0 !important;
   max-height: calc(100dvh - (var(--ticket-action-block-gap) * 2)) !important;
   display: flex !important;
@@ -14614,7 +14689,7 @@ button:not(:disabled),
 }
 
 .ticket-action-overlay form.ticket-action-modal.is-support-modal .ticket-action-scroll-content {
-  flex: 0 1 auto !important;
+  flex: 1 1 auto !important;
   width: 100% !important;
   min-height: 0 !important;
   max-height: none !important;
@@ -14943,7 +15018,7 @@ button:not(:disabled),
   grid-auto-flow: row !important;
   grid-template-columns: minmax(0, 1fr) !important;
   grid-template-rows: none !important;
-  grid-auto-rows: 122px !important;
+  grid-auto-rows: max-content !important;
   align-content: start !important;
   align-items: stretch !important;
   gap: 0.55rem !important;
@@ -14951,14 +15026,14 @@ button:not(:disabled),
 
 .dashboard-view .admin-ticket-queue.queue-summary .ticket-queue-summary-row {
   min-width: 0;
-  height: 122px;
-  min-height: 122px;
-  max-height: 122px;
+  height: auto;
+  min-height: 0;
+  max-height: none;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: 32px minmax(0, 1fr) 18px;
-  row-gap: 0.32rem;
-  padding: 0.56rem 0.7rem;
+  grid-template-rows: auto auto auto;
+  row-gap: 8px;
+  padding: 12px;
   border: 1px solid rgba(226, 232, 240, 0.82);
   border-radius: var(--radius-md);
   background: rgba(255, 255, 255, 0.92);
@@ -15012,8 +15087,7 @@ button:not(:disabled),
   white-space: nowrap !important;
 }
 
-.dashboard-view .admin-ticket-queue.queue-summary .ticket-queue-summary-concern,
-.dashboard-view .admin-ticket-queue.queue-summary .ticket-queue-summary-description {
+.dashboard-view .admin-ticket-queue.queue-summary .ticket-queue-summary-concern {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -15051,17 +15125,9 @@ button:not(:disabled),
 .dashboard-view .admin-ticket-queue.queue-summary .ticket-queue-summary-problem {
   min-width: 0;
   display: grid;
-  grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
-  align-content: center;
-  row-gap: 0.14rem;
+  grid-template-rows: auto;
+  align-content: start;
   overflow: hidden;
-}
-
-.dashboard-view .admin-ticket-queue.queue-summary .ticket-queue-summary-description {
-  color: var(--muted);
-  font-size: 0.76rem;
-  font-weight: 600;
-  line-height: 1.2;
 }
 
 .dashboard-view .admin-ticket-queue.queue-summary .ticket-queue-summary-details {
@@ -15136,6 +15202,9 @@ button:not(:disabled),
   display: flex !important;
   flex-direction: column !important;
   align-items: stretch !important;
+  height: calc(100dvh - (var(--ticket-action-edge-gap, 0.75rem) * 2)) !important;
+  min-height: 0 !important;
+  max-height: calc(100dvh - (var(--ticket-action-edge-gap, 0.75rem) * 2)) !important;
   overflow: hidden !important;
   box-sizing: border-box !important;
 }
@@ -15145,7 +15214,7 @@ button:not(:disabled),
 }
 
 .ticket-action-overlay form.ticket-action-modal.is-burnout-modal .ticket-action-scroll-content {
-  flex: 0 1 auto !important;
+  flex: 1 1 0 !important;
   width: 100% !important;
   min-height: 0 !important;
   max-height: none !important;
@@ -15153,6 +15222,36 @@ button:not(:disabled),
   overflow-y: auto !important;
   overscroll-behavior: contain !important;
   scrollbar-gutter: stable !important;
+  -webkit-overflow-scrolling: touch !important;
+}
+
+.ticket-action-modal.is-support-modal .ticket-action-head .ticket-sla-deadline-note {
+  margin: 0 !important;
+  color: #64748b !important;
+  font-size: 0.72rem !important;
+  line-height: 1.2 !important;
+}
+
+@media (min-width: 1051px) {
+  .ticket-action-overlay form.ticket-action-modal.is-support-modal .ticket-action-scroll-content {
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  .ticket-action-overlay form.ticket-action-modal.is-support-modal .ticket-action-scroll-content > .ticket-action-notes-grid {
+    flex: 1 0 auto !important;
+    grid-template-rows: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .ticket-action-overlay form.ticket-action-modal.is-support-modal .ticket-action-notes-grid .ticket-form-group {
+    min-height: 0 !important;
+  }
+
+  .ticket-action-overlay form.ticket-action-modal.is-support-modal .ticket-action-notes-grid .admin-small-textarea {
+    flex: 1 1 auto !important;
+    height: auto !important;
+    max-height: none !important;
+  }
 }
 
 .ticket-action-overlay form.ticket-action-modal.is-burnout-modal .ticket-action-head {
@@ -15426,6 +15525,210 @@ button:not(:disabled),
   margin-top: 0.5rem !important;
 }
 
+.ticket-action-overlay form.ticket-action-modal.is-support-modal.is-no-scroll-workflow .ticket-action-scroll-content {
+  display: flex !important;
+  flex: 1 1 auto !important;
+  flex-direction: column !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  overflow-x: hidden !important;
+  overflow-y: hidden !important;
+  scrollbar-gutter: auto !important;
+}
+
+.ticket-action-overlay form.ticket-action-modal.is-support-modal.is-no-scroll-workflow .ticket-action-scroll-content > .ticket-action-info-grid {
+  flex: 0 0 auto !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+}
+
+.ticket-action-overlay form.ticket-action-modal.is-support-modal .ticket-action-control-stack .ticket-select,
+.ticket-action-overlay form.ticket-action-modal.is-support-modal .ticket-action-control-stack .ticket-input {
+  box-sizing: border-box !important;
+  height: 40px !important;
+  min-height: 40px !important;
+  max-height: 40px !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  border-radius: 8px !important;
+  font-size: 0.86rem !important;
+  line-height: 1.2 !important;
+}
+
+.ticket-action-overlay form.ticket-action-modal.is-support-modal .ticket-action-control-stack .ticket-select {
+  --ticket-action-select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%236b7280' viewBox='0 0 20 20'%3E%3Cpath d='M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.937a.75.75 0 111.08 1.04l-4.24 4.5a.75.75 0 01-1.08 0l-4.24-4.5a.75.75 0 01.02-1.06z'/%3E%3C/svg%3E");
+  min-width: 0 !important;
+  padding-right: 2.25rem !important;
+  padding-left: 0.72rem !important;
+  color: #172033 !important;
+  background-color: #fff !important;
+  background-image: var(--ticket-action-select-chevron) !important;
+  background-repeat: no-repeat !important;
+  background-position: right 0.72rem center !important;
+  background-size: 15px !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.ticket-action-overlay form.ticket-action-modal.is-support-modal .ticket-action-control-stack .ticket-select:hover {
+  border-color: #b8c2cf !important;
+}
+
+.ticket-action-overlay form.ticket-action-modal.is-support-modal .ticket-action-control-stack .ticket-select:focus {
+  color: #172033 !important;
+  background-color: #fff !important;
+  background-image: var(--ticket-action-select-chevron) !important;
+  border-color: #d55a60 !important;
+  box-shadow: 0 0 0 3px rgba(213, 90, 96, 0.12) !important;
+  outline: none !important;
+}
+
+.ticket-action-overlay form.ticket-action-modal.is-support-modal .ticket-action-control-stack .ticket-select option {
+  color: #172033;
+  background: #fff;
+}
+
+.ticket-action-overlay form.ticket-action-modal.is-support-modal .ticket-action-details-row.is-expanded-workflow {
+  flex: 0 0 auto !important;
+  grid-auto-rows: max-content !important;
+  align-items: stretch !important;
+  min-height: 0 !important;
+  box-sizing: border-box !important;
+}
+
+.ticket-action-overlay form.ticket-action-modal.is-support-modal .ticket-action-description-column {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0.42rem !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+}
+
+.ticket-action-overlay form.ticket-action-modal.is-support-modal .ticket-action-description-column > .ticket-action-description {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+}
+
+.ticket-action-overlay form.ticket-action-modal.is-support-modal .ticket-action-description-column.is-waiting-workflow > .ticket-action-description {
+  min-height: 96px !important;
+}
+
+.ticket-action-overlay form.ticket-action-modal.is-support-modal .ticket-action-description-column .ticket-waiting-reason {
+  min-width: 0 !important;
+  gap: 0.16rem !important;
+  margin: 0 !important;
+}
+
+.ticket-action-overlay form.ticket-action-modal.is-support-modal .ticket-action-description-column .ticket-waiting-reason label {
+  color: #334155 !important;
+  font-size: 0.74rem !important;
+  line-height: 1.15 !important;
+}
+
+.ticket-action-overlay form.ticket-action-modal.is-support-modal .ticket-action-description-column .ticket-waiting-reason .ticket-textarea {
+  box-sizing: border-box !important;
+  height: 56px !important;
+  min-height: 56px !important;
+  max-height: 56px !important;
+  padding: 0.42rem 0.65rem !important;
+  border-radius: 8px !important;
+  font-size: 0.84rem !important;
+  line-height: 1.25 !important;
+  resize: none !important;
+}
+
+.ticket-action-overlay form.ticket-action-modal.is-support-modal.is-no-scroll-workflow .ticket-action-scroll-content > .ticket-action-info-grid .ticket-meta-cell {
+  min-width: 0 !important;
+  overflow: hidden !important;
+}
+
+.ticket-action-overlay form.ticket-action-modal.is-support-modal.is-no-scroll-workflow .ticket-action-scroll-content > .ticket-action-info-grid .ticket-meta-cell p {
+  max-width: 100% !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.ticket-action-overlay form.ticket-action-modal.is-support-modal .ticket-action-control-stack.is-expanded-workflow {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  grid-auto-rows: max-content !important;
+  align-content: start !important;
+  gap: 0.38rem !important;
+  padding: 0.58rem 0.62rem 0.72rem !important;
+  min-height: 0 !important;
+  height: auto !important;
+  overflow: visible !important;
+  box-sizing: border-box !important;
+}
+
+.ticket-action-overlay form.ticket-action-modal.is-support-modal .ticket-action-control-stack.is-expanded-workflow .ticket-form-group {
+  min-width: 0 !important;
+  gap: 0.16rem !important;
+}
+
+.ticket-action-overlay form.ticket-action-modal.is-support-modal .ticket-action-control-stack.is-expanded-workflow label {
+  color: #334155 !important;
+  font-size: 0.74rem !important;
+  line-height: 1.15 !important;
+}
+
+.ticket-action-overlay form.ticket-action-modal.is-support-modal.is-no-scroll-workflow .ticket-action-notes-grid {
+  flex: 1 1 0 !important;
+  min-height: 0 !important;
+  grid-template-rows: repeat(2, minmax(0, 1fr)) !important;
+}
+
+.ticket-action-overlay form.ticket-action-modal.is-support-modal.is-no-scroll-workflow .ticket-action-notes-grid .ticket-form-group {
+  min-height: 0 !important;
+}
+
+.ticket-action-overlay form.ticket-action-modal.is-support-modal.is-no-scroll-workflow .ticket-action-notes-grid .admin-small-textarea {
+  flex: 1 1 auto !important;
+  height: auto !important;
+  min-height: 44px !important;
+  max-height: none !important;
+  resize: none !important;
+}
+
+@media (max-width: 1050px) {
+  .ticket-action-overlay form.ticket-action-modal.is-support-modal.is-no-scroll-workflow .ticket-action-scroll-content > .ticket-action-info-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .ticket-action-overlay form.ticket-action-modal.is-support-modal .ticket-action-control-stack.is-expanded-workflow {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 0.42rem !important;
+  }
+
+  .ticket-action-overlay form.ticket-action-modal.is-support-modal.is-no-scroll-workflow .ticket-action-notes-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-height: 760px) {
+  .ticket-action-overlay form.ticket-action-modal.is-support-modal.is-no-scroll-workflow .ticket-action-scroll-content > .ticket-action-info-grid .ticket-meta-cell {
+    min-height: 36px !important;
+    padding: 0.24rem 0.38rem !important;
+  }
+
+  .ticket-action-overlay form.ticket-action-modal.is-support-modal .ticket-action-control-stack .ticket-select,
+  .ticket-action-overlay form.ticket-action-modal.is-support-modal .ticket-action-control-stack .ticket-input {
+    height: 36px !important;
+    min-height: 36px !important;
+    max-height: 36px !important;
+  }
+
+  .ticket-action-overlay form.ticket-action-modal.is-support-modal .ticket-action-description-column .ticket-waiting-reason .ticket-textarea {
+    height: 44px !important;
+    min-height: 44px !important;
+    max-height: 44px !important;
+  }
+
+  .ticket-action-overlay form.ticket-action-modal.is-support-modal.is-no-scroll-workflow .ticket-action-notes-grid .admin-small-textarea {
+    min-height: 34px !important;
+  }
+}
+
 .dashboard-view .dashboard-ticket-columns > .dashboard-stack:first-child > .ticket-queue-panel {
   display: flex;
   flex-direction: column;
@@ -15511,7 +15814,7 @@ button:not(:disabled),
 
 @media (max-width: 760px) {
   .dashboard-view .admin-ticket-queue.queue-summary .admin-ticket-queue-grid {
-    grid-auto-rows: minmax(122px, auto) !important;
+    grid-auto-rows: max-content !important;
   }
 
   .dashboard-view .admin-ticket-queue.queue-summary .ticket-queue-summary-row {
@@ -15549,11 +15852,10 @@ button:not(:disabled),
   }
 
   .dashboard-view .admin-ticket-queue.queue-summary .ticket-queue-summary-problem {
-    grid-template-rows: auto auto;
+    grid-template-rows: auto;
   }
 
   .dashboard-view .admin-ticket-queue.queue-summary .ticket-queue-summary-concern,
-  .dashboard-view .admin-ticket-queue.queue-summary .ticket-queue-summary-description,
   .dashboard-view .admin-ticket-queue.queue-summary .ticket-queue-summary-detail,
   .dashboard-view .admin-ticket-queue.queue-summary .ticket-queue-summary-detail > span {
     overflow: visible;
@@ -15597,4 +15899,2932 @@ button:not(:disabled),
     white-space: normal;
     overflow-wrap: anywhere;
   }
+}
+
+/* ICT ticket cards share MRDSS's readable reference and compact tag treatment. */
+.branch-monitor-view .branch-monitor-ticket-card .admin-ticket-title .ticket-id,
+.helpdesk-view .admin-ticket-queue:not(.compact) .admin-ticket-card .admin-ticket-title .ticket-id,
+.burnout-report-view .admin-ticket-queue:not(.compact) .admin-ticket-card .admin-ticket-title .ticket-id {
+  display: inline-block !important;
+  width: fit-content !important;
+  max-width: 100% !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: #607087 !important;
+  font-size: 0.72rem !important;
+  font-weight: 740 !important;
+  line-height: 1.25 !important;
+  letter-spacing: 0 !important;
+  text-align: left !important;
+  white-space: normal !important;
+  overflow: visible !important;
+  overflow-wrap: anywhere !important;
+  text-overflow: clip !important;
+  box-shadow: none !important;
+}
+
+.branch-monitor-view .branch-monitor-ticket-card .admin-ticket-title .ticket-id::before,
+.helpdesk-view .admin-ticket-queue:not(.compact) .admin-ticket-card .admin-ticket-title .ticket-id::before,
+.burnout-report-view .admin-ticket-queue:not(.compact) .admin-ticket-card .admin-ticket-title .ticket-id::before {
+  display: none !important;
+  content: none !important;
+}
+
+.branch-monitor-view .branch-monitor-ticket-card .admin-inline-badges :is(.status, .priority),
+.helpdesk-view .admin-ticket-queue:not(.compact) .admin-ticket-card .admin-inline-badges .status,
+.helpdesk-view .admin-ticket-queue:not(.compact) .admin-ticket-card .admin-inline-badges .priority,
+.burnout-report-view .admin-ticket-queue:not(.compact) .admin-ticket-card .admin-inline-badges .status,
+.burnout-report-view .admin-ticket-queue:not(.compact) .admin-ticket-card .admin-inline-badges .priority {
+  min-height: 21px !important;
+  padding: 0.15rem 0.38rem !important;
+  border-radius: 3px !important;
+  font-size: 0.65rem !important;
+  font-weight: 700 !important;
+  line-height: 1.2 !important;
+  white-space: nowrap !important;
+}
+
+.ticket-action-overlay form.ticket-action-modal:is(.is-support-modal, .is-burnout-modal) .ticket-action-identity-group > .ticket-id {
+  display: inline-block !important;
+  width: fit-content !important;
+  max-width: min(42vw, 420px) !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: #607087 !important;
+  font-size: 0.72rem !important;
+  font-weight: 740 !important;
+  line-height: 1.25 !important;
+  letter-spacing: 0 !important;
+  text-align: left !important;
+  white-space: normal !important;
+  overflow: visible !important;
+  overflow-wrap: anywhere !important;
+  text-overflow: clip !important;
+  box-shadow: none !important;
+}
+
+.ticket-action-overlay form.ticket-action-modal:is(.is-support-modal, .is-burnout-modal) .ticket-action-identity-group > .ticket-id::before {
+  display: none !important;
+  content: none !important;
+}
+
+/* Burnout checklist wizard: keep the ticket frame fixed and page through the full form. */
+.ticket-action-overlay form.ticket-action-modal.is-burnout-modal .ticket-action-scroll-content {
+  display: flex !important;
+  flex: 1 1 0 !important;
+  min-height: 0 !important;
+  padding: 0.48rem 0.82rem 0.58rem !important;
+  overflow: hidden !important;
+  overflow-y: hidden !important;
+  scrollbar-gutter: auto !important;
+  box-sizing: border-box !important;
+}
+
+.ticket-action-overlay form.ticket-action-modal.is-burnout-modal .burnout-wizard {
+  display: flex !important;
+  flex: 1 1 0 !important;
+  flex-direction: column !important;
+  gap: 0.42rem !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  height: 100% !important;
+  margin: 0 !important;
+  padding: 0.52rem 0.62rem !important;
+  overflow: hidden !important;
+  border-color: #dfe7f0 !important;
+  border-radius: 8px !important;
+  background: #fff !important;
+}
+
+.burnout-wizard-topline,
+.burnout-section-heading,
+.burnout-wizard-navigation,
+.burnout-heading-actions,
+.burnout-page-caption,
+.burnout-section-heading > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.55rem;
+  min-width: 0;
+}
+
+.burnout-wizard-topline h4,
+.burnout-section-heading h5,
+.burnout-section-heading p,
+.burnout-page-caption,
+.burnout-wizard-navigation span {
+  margin: 0;
+}
+
+.burnout-wizard-topline h4 {
+  color: #142033;
+  font-size: 0.92rem;
+  line-height: 1.2;
+}
+
+.burnout-wizard-topline .section-kicker {
+  display: block;
+  margin-bottom: 0.06rem;
+  font-size: 0.62rem;
+}
+
+.burnout-wizard-step-count,
+.burnout-section-heading p,
+.burnout-page-caption,
+.burnout-wizard-navigation span {
+  color: #64748b;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.burnout-wizard-steps {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.28rem;
+  min-width: 0;
+}
+
+.burnout-wizard-steps button {
+  display: grid;
+  grid-template-columns: 23px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.32rem;
+  min-width: 0;
+  min-height: 34px;
+  padding: 0.25rem 0.35rem;
+  border: 1px solid #e1e8f0;
+  border-radius: 6px;
+  color: #526176;
+  background: #f8fafc;
+  text-align: left;
+  cursor: pointer;
+}
+
+.burnout-wizard-steps button.active {
+  border-color: rgba(220, 38, 38, 0.35);
+  color: #b91c1c;
+  background: #fff7f7;
+}
+
+.burnout-step-number {
+  display: grid;
+  place-items: center;
+  width: 21px;
+  height: 21px;
+  border: 1px solid #d8e0ea;
+  border-radius: 50%;
+  background: #fff;
+  font-size: 0.66rem;
+  font-weight: 800;
+}
+
+.burnout-wizard-steps button.active .burnout-step-number {
+  border-color: #dc2626;
+  color: #fff;
+  background: #dc2626;
+}
+
+.burnout-step-label {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 0.66rem;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.burnout-wizard-steps small {
+  color: #75849a;
+  font-size: 0.6rem;
+  font-weight: 800;
+}
+
+.burnout-wizard-error {
+  flex: 0 0 auto;
+  margin: 0 !important;
+  padding: 0.34rem 0.55rem !important;
+  font-size: 0.72rem !important;
+}
+
+.burnout-step-stage {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.burnout-step-content {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  gap: 0.48rem;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.burnout-section-heading {
+  flex: 0 0 auto;
+  min-height: 27px;
+}
+
+.burnout-section-heading > div {
+  justify-content: flex-start;
+}
+
+.burnout-section-heading > div > span {
+  color: #9aa8bb;
+  font-size: 0.68rem;
+  font-weight: 850;
+}
+
+.burnout-section-heading h5 {
+  color: #1e293b;
+  font-size: 0.84rem;
+  line-height: 1.2;
+}
+
+.burnout-section-heading.compact {
+  min-height: 22px;
+}
+
+.burnout-request-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.34rem;
+}
+
+.burnout-request-cell,
+.burnout-unit-summary > div {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+  min-height: 40px;
+  padding: 0.32rem 0.48rem;
+  border: 1px solid #e3eaf2;
+  border-radius: 6px;
+  background: #f8fafc;
+}
+
+.burnout-request-cell span,
+.burnout-unit-summary span {
+  color: #8998ad;
+  font-size: 0.59rem;
+  font-weight: 850;
+  line-height: 1.15;
+  text-transform: uppercase;
+}
+
+.burnout-request-cell strong,
+.burnout-unit-summary strong {
+  overflow: hidden;
+  margin-top: 0.12rem;
+  color: #172338;
+  font-size: 0.73rem;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.burnout-request-attachments {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 32px;
+  max-height: 66px;
+  overflow: hidden;
+}
+
+.burnout-request-attachments > a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  max-width: 50%;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid #e1e8f0;
+  border-radius: 6px;
+  color: #40516a;
+  font-size: 0.7rem;
+  font-weight: 750;
+  text-decoration: none;
+}
+
+.burnout-request-attachments > a svg {
+  width: 15px;
+  height: 15px;
+  flex: 0 0 auto;
+}
+
+.burnout-request-attachments .attached-photo-grid {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.3rem;
+  max-width: 50%;
+  overflow: hidden;
+}
+
+.burnout-handling-controls {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.45rem;
+}
+
+.burnout-handling-controls .ticket-form-group,
+.burnout-handling-notes .ticket-form-group,
+.burnout-unit-fields .ticket-form-group {
+  min-width: 0;
+  gap: 0.18rem;
+}
+
+.burnout-handling-controls label,
+.burnout-handling-notes label,
+.burnout-unit-fields label {
+  color: #3e4d63;
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.burnout-handling-controls .ticket-select,
+.burnout-unit-fields .ticket-input {
+  box-sizing: border-box;
+  width: 100%;
+  height: 35px !important;
+  min-height: 35px !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  font-size: 0.77rem;
+}
+
+.burnout-handling-notes {
+  display: grid;
+  flex: 1 1 auto;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  gap: 0.45rem;
+  min-height: 0;
+}
+
+.burnout-handling-notes .ticket-form-group {
+  min-height: 0;
+}
+
+.burnout-handling-notes .ticket-textarea,
+.burnout-evaluation-row .ticket-textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 0 !important;
+  height: 100% !important;
+  max-height: none !important;
+  padding: 0.42rem 0.5rem !important;
+  resize: none !important;
+  overflow: auto !important;
+  font-size: 0.74rem;
+  line-height: 1.35;
+}
+
+.burnout-reopen-reason {
+  grid-column: 1 / -1;
+}
+
+.burnout-unit-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.4rem;
+}
+
+.burnout-unit-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) repeat(2, minmax(150px, 0.6fr));
+  gap: 0.5rem;
+  max-width: 760px;
+}
+
+.burnout-period-note {
+  display: flex;
+  align-items: center;
+  gap: 0.42rem;
+  padding: 0.48rem 0.58rem;
+  border: 1px solid #dfe8f2;
+  border-radius: 6px;
+  color: #52647b;
+  background: #f8fafc;
+  font-size: 0.72rem;
+  font-weight: 650;
+}
+
+.burnout-period-note svg {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+  color: #64748b;
+}
+
+.burnout-page-caption {
+  flex: 0 0 auto;
+  min-height: 18px;
+  justify-content: flex-start;
+  gap: 0.65rem;
+}
+
+.burnout-page-caption span {
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.burnout-check-list,
+.burnout-software-list,
+.burnout-monitoring-list,
+.burnout-evaluation-list {
+  display: grid;
+  flex: 1 1 auto;
+  gap: 0.38rem;
+  min-height: 0;
+  align-content: stretch;
+}
+
+.burnout-check-list {
+  grid-template-rows: repeat(var(--burnout-visible-rows, 4), minmax(0, 1fr));
+}
+
+.burnout-check-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(130px, 0.42fr) minmax(150px, 0.68fr);
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  padding: 0.42rem 0.55rem;
+  border: 1px solid #e2e9f1;
+  border-radius: 6px;
+  background: #fbfcfe;
+}
+
+.burnout-check-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.burnout-check-copy strong,
+.burnout-monitoring-row strong,
+.burnout-evaluation-row strong {
+  color: #25344a;
+  font-size: 0.75rem;
+  line-height: 1.2;
+}
+
+.burnout-check-copy span {
+  display: -webkit-box;
+  overflow: hidden;
+  color: #718096;
+  font-size: 0.66rem;
+  line-height: 1.2;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.burnout-check-row .ticket-input,
+.burnout-check-row .ticket-select,
+.burnout-software-row .ticket-input,
+.burnout-software-row .ticket-textarea,
+.burnout-monitoring-row .ticket-input,
+.burnout-evaluation-row .ticket-input {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  height: 34px !important;
+  min-height: 34px !important;
+  padding: 0.35rem 0.48rem !important;
+  font-size: 0.72rem;
+}
+
+.burnout-software-list {
+  grid-template-rows: repeat(var(--burnout-visible-rows, 4), minmax(0, 1fr));
+}
+
+.burnout-software-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(118px, 0.38fr) minmax(130px, 0.55fr) 30px;
+  align-items: center;
+  gap: 0.42rem;
+  min-width: 0;
+  padding: 0.35rem 0.48rem;
+  border: 1px solid #e2e9f1;
+  border-radius: 6px;
+  background: #fbfcfe;
+}
+
+.burnout-software-main {
+  display: grid;
+  grid-template-columns: minmax(120px, 0.75fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 0.36rem;
+  min-width: 0;
+}
+
+.burnout-software-row .ticket-textarea {
+  height: 34px !important;
+  max-height: 34px !important;
+  resize: none !important;
+  overflow: auto !important;
+}
+
+.burnout-installed-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.34rem;
+  min-width: 0;
+  color: #475569;
+  font-size: 0.68rem;
+  font-weight: 750;
+}
+
+.burnout-installed-toggle input {
+  width: 16px;
+  height: 16px;
+  accent-color: #dc2626;
+}
+
+.burnout-heading-actions {
+  justify-content: flex-end;
+}
+
+.burnout-heading-actions .modal-btn {
+  min-height: 30px !important;
+  height: 30px !important;
+  padding: 0 0.5rem !important;
+  font-size: 0.68rem !important;
+}
+
+.burnout-monitoring-list {
+  grid-template-rows: repeat(var(--burnout-visible-rows, 3), minmax(0, 1fr));
+}
+
+.burnout-monitoring-row {
+  display: grid;
+  grid-template-columns: minmax(160px, 0.8fr) minmax(140px, 0.55fr) minmax(180px, 1fr);
+  align-items: center;
+  gap: 0.48rem;
+  min-width: 0;
+  padding: 0.42rem 0.55rem;
+  border: 1px solid #e2e9f1;
+  border-radius: 6px;
+  background: #fbfcfe;
+}
+
+.burnout-evaluation-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-content: start;
+}
+
+.burnout-evaluation-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(110px, 0.65fr);
+  gap: 0.45rem;
+  min-width: 0;
+  padding: 0.55rem;
+  border: 1px solid #e2e9f1;
+  border-radius: 6px;
+  background: #fbfcfe;
+}
+
+.burnout-evaluation-row strong {
+  align-self: center;
+}
+
+.burnout-evaluation-row .ticket-textarea {
+  grid-column: 1 / -1;
+  height: 84px !important;
+}
+
+.burnout-completion-summary {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 0.42rem;
+  min-height: 30px;
+  padding: 0.35rem 0.55rem;
+  border: 1px solid #e3eaf2;
+  border-radius: 6px;
+  color: #53647a;
+  background: #f8fafc;
+  font-size: 0.68rem;
+  font-weight: 750;
+}
+
+.burnout-completion-summary.complete {
+  border-color: #b9e5cd;
+  color: #166534;
+  background: #f0fdf4;
+}
+
+.burnout-completion-summary svg {
+  width: 15px;
+  height: 15px;
+  flex: 0 0 auto;
+}
+
+.burnout-wizard-navigation {
+  flex: 0 0 auto;
+  min-height: 34px;
+  justify-content: space-between;
+  padding-top: 0.35rem;
+  border-top: 1px solid #e8edf3;
+}
+
+.burnout-wizard-navigation .modal-btn {
+  min-height: 30px !important;
+  height: 30px !important;
+  padding: 0 0.55rem !important;
+  font-size: 0.68rem !important;
+}
+
+.burnout-wizard-navigation .modal-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+@media (max-width: 980px) {
+  .burnout-wizard-steps {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .burnout-wizard-steps button {
+    grid-template-columns: 21px minmax(0, 1fr);
+  }
+
+  .burnout-wizard-steps small {
+    display: none;
+  }
+
+  .burnout-request-grid,
+  .burnout-unit-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .ticket-action-overlay form.ticket-action-modal.is-burnout-modal .ticket-action-scroll-content {
+    padding: 0.35rem !important;
+  }
+
+  .burnout-wizard {
+    padding: 0.4rem !important;
+  }
+
+  .burnout-wizard-steps {
+    gap: 0.22rem;
+  }
+
+  .burnout-wizard-steps button {
+    min-height: 31px;
+    padding: 0.18rem 0.25rem;
+  }
+
+  .burnout-step-label {
+    font-size: 0.61rem;
+  }
+
+  .burnout-request-grid {
+    gap: 0.25rem;
+  }
+
+  .burnout-request-cell {
+    min-height: 34px;
+    padding: 0.26rem 0.36rem;
+  }
+
+  .burnout-request-cell strong {
+    font-size: 0.66rem;
+  }
+
+  .burnout-check-row {
+    grid-template-columns: minmax(0, 1fr) 112px;
+    gap: 0.32rem;
+    padding: 0.32rem 0.4rem;
+  }
+
+  .burnout-check-copy {
+    grid-column: 1 / -1;
+  }
+
+  .burnout-check-copy span {
+    -webkit-line-clamp: 1;
+  }
+
+  .burnout-check-row .ticket-select,
+  .burnout-check-row .ticket-input,
+  .burnout-monitoring-row .ticket-input {
+    height: 32px !important;
+    min-height: 32px !important;
+  }
+
+  .burnout-software-row {
+    grid-template-columns: minmax(0, 1fr) 112px;
+    gap: 0.3rem;
+    padding: 0.3rem 0.38rem;
+  }
+
+  .burnout-software-main {
+    grid-column: 1 / -1;
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1fr);
+  }
+
+  .burnout-software-row > .ticket-input {
+    grid-column: 1 / -1;
+  }
+
+  .burnout-software-row .burnout-row-icon-btn {
+    grid-column: 2;
+    grid-row: 2;
+    justify-self: end;
+  }
+
+  .burnout-monitoring-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.34rem;
+    padding: 0.34rem 0.4rem;
+  }
+
+  .burnout-monitoring-row strong {
+    grid-column: 1 / -1;
+  }
+
+  .burnout-evaluation-list {
+    grid-template-columns: 1fr;
+    gap: 0.35rem;
+  }
+
+  .burnout-evaluation-row {
+    grid-template-columns: minmax(0, 1fr) minmax(100px, 0.5fr);
+    gap: 0.32rem;
+    padding: 0.4rem;
+  }
+
+  .burnout-evaluation-row .ticket-textarea {
+    height: 58px !important;
+  }
+
+  .burnout-handling-controls {
+    grid-template-columns: 1fr;
+    gap: 0.28rem;
+  }
+
+  .burnout-handling-controls .ticket-form-group {
+    display: grid;
+    grid-template-columns: minmax(92px, 0.4fr) minmax(0, 1fr);
+    align-items: center;
+  }
+
+  .burnout-handling-controls .ticket-select {
+    height: 31px !important;
+    min-height: 31px !important;
+  }
+
+  .burnout-handling-notes {
+    gap: 0.3rem;
+  }
+
+  .burnout-handling-notes label,
+  .burnout-unit-fields label {
+    font-size: 0.62rem;
+  }
+
+  .burnout-unit-fields {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.38rem;
+  }
+
+  .burnout-unit-fields .ticket-form-group:first-child {
+    grid-column: 1 / -1;
+  }
+
+  .burnout-page-caption {
+    font-size: 0.64rem;
+  }
+
+  .burnout-page-caption span {
+    max-width: 56%;
+  }
+
+  .burnout-heading-actions > p {
+    display: none;
+  }
+}
+
+/* Keep each checklist's item, result, and remarks in the same row rhythm. */
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-hardware-row,
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-software-row,
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-monitoring-row {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) 126px !important;
+  align-items: center !important;
+  gap: 0.3rem 0.45rem !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  padding: 0.4rem 0 !important;
+  border: 0 !important;
+  border-bottom: 1px solid #e9edf1 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-hardware-row > .burnout-row-copy,
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-software-row > .burnout-software-main,
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-monitoring-row > .burnout-row-copy {
+  grid-column: 1 !important;
+  grid-row: 1 !important;
+  min-width: 0 !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-hardware-row > select,
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-monitoring-row > .burnout-row-status {
+  grid-column: 2 !important;
+  grid-row: 1 !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-hardware-row > .burnout-row-remarks,
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-software-row > .burnout-row-remarks,
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-monitoring-row > .burnout-row-remarks {
+  grid-column: 1 / -1 !important;
+  grid-row: 2 !important;
+  width: 100% !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-software-main {
+  grid-template-columns: minmax(0, 1fr) !important;
+  align-items: stretch !important;
+  gap: 0.18rem !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-software-main > .ticket-field {
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 29px !important;
+  height: auto !important;
+  padding: 0.28rem 0.42rem !important;
+  border-radius: 4px !important;
+  font-size: 0.7rem !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-software-main textarea {
+  min-height: 29px !important;
+  max-height: 120px !important;
+  overflow-y: auto !important;
+  resize: vertical !important;
+  white-space: pre-wrap !important;
+  overflow-wrap: anywhere !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-row-actions {
+  display: flex !important;
+  grid-column: 2 !important;
+  grid-row: 1 !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 0.25rem !important;
+  min-width: 0 !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-row-actions .burnout-installed-toggle {
+  justify-content: flex-end !important;
+  gap: 0.28rem !important;
+  min-width: 0 !important;
+  color: #4e6078 !important;
+  font-size: 0.65rem !important;
+  white-space: normal !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-row-actions .burnout-row-icon-btn {
+  flex: 0 0 27px !important;
+  width: 27px !important;
+  height: 27px !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-hardware-row .ticket-field,
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-software-row .ticket-field,
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-monitoring-row .ticket-field {
+  min-width: 0 !important;
+  min-height: 30px !important;
+  height: auto !important;
+  padding: 0.28rem 0.42rem !important;
+  border-radius: 4px !important;
+  font-size: 0.69rem !important;
+  line-height: 1.25 !important;
+}
+
+@media (max-height: 700px) {
+  .ticket-action-overlay form.ticket-action-modal.is-burnout-modal .ticket-action-head {
+    min-height: 64px !important;
+    padding-top: 0.55rem !important;
+    padding-bottom: 0.55rem !important;
+  }
+
+  .ticket-action-overlay form.ticket-action-modal.is-burnout-modal .modal-footer {
+    min-height: 46px !important;
+    padding-top: 0.35rem !important;
+    padding-bottom: 0.35rem !important;
+  }
+
+  .burnout-wizard {
+    gap: 0.3rem !important;
+    padding-top: 0.35rem !important;
+    padding-bottom: 0.35rem !important;
+  }
+
+  .burnout-request-cell {
+    min-height: 34px;
+  }
+
+  .burnout-wizard-navigation {
+    min-height: 30px;
+    padding-top: 0.22rem;
+  }
+}
+
+@media (max-height: 700px) and (max-width: 760px) {
+  .burnout-wizard-steps {
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+  }
+
+  .burnout-wizard-steps button {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    min-height: 27px;
+    padding: 0.12rem;
+  }
+
+  .burnout-wizard-steps .burnout-step-label,
+  .burnout-wizard-steps small {
+    display: none;
+  }
+
+  .burnout-step-number {
+    width: 20px;
+    height: 20px;
+  }
+
+  .burnout-request-cell {
+    min-height: 30px;
+    padding: 0.2rem 0.32rem;
+  }
+
+  .burnout-request-attachments {
+    max-height: 40px;
+    min-height: 28px;
+  }
+}
+
+/* Burnout editor: one dialog scroll area, clear steps, and a steady action bar. */
+.ticket-action-overlay.burnout-modal-open {
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 1rem !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal {
+  display: flex !important;
+  flex-direction: column !important;
+  width: 90vw !important;
+  height: auto !important;
+  max-height: 90dvh !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  border: 1px solid #dce3eb !important;
+  border-radius: 8px !important;
+  background: #fff !important;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.22) !important;
+}
+
+.ticket-action-overlay.burnout-modal-open .ticket-action-head {
+  position: relative !important;
+  top: auto !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 0.5rem !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0.75rem 3.5rem 0.65rem 1rem !important;
+  border-bottom: 1px solid #e4e9ef !important;
+  background: #fff !important;
+}
+
+.ticket-action-overlay.burnout-modal-open .ticket-action-head-main {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  gap: 1rem !important;
+  width: 100% !important;
+}
+
+.ticket-action-overlay.burnout-modal-open .ticket-action-identity-group {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.75rem !important;
+  flex-wrap: wrap !important;
+  min-width: 0 !important;
+  width: auto !important;
+  max-width: 100% !important;
+}
+
+.ticket-action-overlay.burnout-modal-open .ticket-id {
+  flex: 0 1 auto !important;
+  width: auto !important;
+  max-width: 100% !important;
+  min-height: 32px !important;
+  padding: 0.35rem 0.65rem !important;
+  border-radius: 6px !important;
+  font-size: 0.78rem !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+}
+
+.ticket-action-overlay.burnout-modal-open .ticket-action-title-copy {
+  min-width: 0 !important;
+  gap: 0.16rem !important;
+}
+
+.ticket-action-overlay.burnout-modal-open .ticket-action-title-copy h3 {
+  margin: 0 !important;
+  color: #172338 !important;
+  font-size: 1.12rem !important;
+  line-height: 1.25 !important;
+  letter-spacing: 0 !important;
+}
+
+.ticket-action-overlay.burnout-modal-open .ticket-action-title-copy p {
+  margin: 0 !important;
+  color: #637187 !important;
+  font-size: 0.82rem !important;
+  line-height: 1.3 !important;
+}
+
+.ticket-action-overlay.burnout-modal-open .ticket-action-header-status {
+  min-width: 0 !important;
+}
+
+.ticket-action-overlay.burnout-modal-open .ticket-sla-deadline-note {
+  margin: 0 !important;
+  color: #718096 !important;
+  font-size: 0.76rem !important;
+  line-height: 1.3 !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+}
+
+.ticket-action-overlay.burnout-modal-open .admin-modal-close {
+  position: absolute !important;
+  top: 0.75rem !important;
+  right: 0.8rem !important;
+  display: grid !important;
+  place-items: center !important;
+  width: 34px !important;
+  height: 34px !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 6px !important;
+  background: #fff !important;
+  color: #59677a !important;
+  opacity: 1 !important;
+}
+
+.ticket-action-overlay.burnout-modal-open .admin-modal-close svg {
+  width: 18px;
+  height: 18px;
+}
+
+.ticket-action-overlay.burnout-modal-open .ticket-action-scroll-content {
+  display: block !important;
+  flex: 0 1 auto !important;
+  width: 100% !important;
+  min-height: 0 !important;
+  padding: 0.8rem 1rem !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  scrollbar-gutter: stable !important;
+  overscroll-behavior: contain !important;
+  background: #f7f9fb !important;
+}
+
+.ticket-action-overlay.burnout-modal-open .burnout-report-panel.burnout-wizard {
+  display: flex !important;
+  flex: 0 1 auto !important;
+  flex-direction: column !important;
+  gap: 0.65rem !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  height: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: visible !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+}
+
+.ticket-action-overlay.burnout-modal-open .burnout-wizard-topline h4 {
+  color: #172338;
+  font-size: 1.08rem;
+  line-height: 1.3;
+}
+
+.ticket-action-overlay.burnout-modal-open .burnout-wizard-topline .section-kicker {
+  margin-bottom: 0.2rem;
+  color: #b4232d;
+  font-size: 0.68rem;
+}
+
+.ticket-action-overlay.burnout-modal-open .burnout-wizard-step-count {
+  color: #59677a;
+  font-size: 0.78rem;
+}
+
+.ticket-action-overlay.burnout-modal-open .burnout-wizard-steps {
+  grid-template-columns: repeat(8, minmax(0, 1fr)) !important;
+  gap: 0.35rem !important;
+}
+
+.ticket-action-overlay.burnout-modal-open .burnout-wizard-steps button {
+  grid-template-columns: 28px minmax(0, 1fr) auto !important;
+  min-height: 42px !important;
+  padding: 0.35rem 0.5rem !important;
+  border-color: #d7dee7 !important;
+  border-radius: 6px !important;
+  background: #fff !important;
+  transition: border-color 140ms ease, background-color 140ms ease, color 140ms ease;
+}
+
+.ticket-action-overlay.burnout-modal-open .burnout-wizard-steps button:hover {
+  border-color: #aeb9c7 !important;
+  background: #f7f9fb !important;
+}
+
+.ticket-action-overlay.burnout-modal-open .burnout-wizard-steps button.active {
+  border-color: #c83a43 !important;
+  color: #a91f2b !important;
+  background: #fff7f7 !important;
+}
+
+.ticket-action-overlay.burnout-modal-open .burnout-step-number {
+  width: 21px;
+  height: 21px;
+  font-size: 0.72rem;
+}
+
+.ticket-action-overlay.burnout-modal-open .burnout-step-label {
+  overflow: visible !important;
+  font-size: 0.76rem !important;
+  line-height: 1.25 !important;
+  text-overflow: clip !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+}
+
+.ticket-action-overlay.burnout-modal-open .burnout-wizard-steps small {
+  font-size: 0.72rem !important;
+}
+
+.ticket-action-overlay.burnout-modal-open .burnout-step-stage,
+.ticket-action-overlay.burnout-modal-open .burnout-step-content {
+  display: flex !important;
+  flex: 0 1 auto !important;
+  flex-direction: column !important;
+  gap: 0.55rem !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  overflow: visible !important;
+}
+
+.ticket-action-overlay.burnout-modal-open .burnout-section-heading {
+  min-height: 30px !important;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid #e5e9ef;
+}
+
+.ticket-action-overlay.burnout-modal-open .burnout-section-heading h5 {
+  color: #243247;
+  font-size: 0.98rem;
+}
+
+.ticket-action-overlay.burnout-modal-open .burnout-section-heading > div > span {
+  color: #66758a;
+  font-size: 0.76rem;
+}
+
+.ticket-action-overlay.burnout-modal-open .burnout-section-heading p,
+.ticket-action-overlay.burnout-modal-open .burnout-page-caption {
+  color: #66758a;
+  font-size: 0.78rem;
+}
+
+.ticket-action-overlay.burnout-modal-open .burnout-request-grid,
+.ticket-action-overlay.burnout-modal-open .burnout-unit-summary {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 0.55rem !important;
+}
+
+.ticket-action-overlay.burnout-modal-open .burnout-request-cell,
+.ticket-action-overlay.burnout-modal-open .burnout-unit-summary > div {
+  min-height: 48px !important;
+  padding: 0.4rem 0.55rem !important;
+  border-color: #dce3eb !important;
+  border-radius: 6px !important;
+  background: #fff !important;
+}
+
+.ticket-action-overlay.burnout-modal-open .burnout-request-cell span,
+.ticket-action-overlay.burnout-modal-open .burnout-unit-summary span {
+  color: #59677a !important;
+  font-size: 0.72rem !important;
+}
+
+.ticket-action-overlay.burnout-modal-open .burnout-request-cell strong,
+.ticket-action-overlay.burnout-modal-open .burnout-unit-summary strong {
+  margin-top: 0.24rem !important;
+  color: #1e293b !important;
+  font-size: 0.84rem !important;
+  line-height: 1.35 !important;
+  overflow: visible !important;
+  overflow-wrap: anywhere !important;
+  text-overflow: clip !important;
+  white-space: normal !important;
+}
+
+.ticket-action-overlay.burnout-modal-open .burnout-period-note,
+.ticket-action-overlay.burnout-modal-open .burnout-completion-summary {
+  border-color: #dce3eb !important;
+  border-radius: 6px !important;
+  background: #f8fafc !important;
+  color: #526176 !important;
+  box-shadow: none !important;
+}
+
+.ticket-action-overlay.burnout-modal-open .burnout-completion-summary.complete {
+  border-color: #b9dfca !important;
+  background: #f2faf5 !important;
+  color: #286447 !important;
+}
+
+.ticket-action-overlay.burnout-modal-open .burnout-check-row,
+.ticket-action-overlay.burnout-modal-open .burnout-software-row,
+.ticket-action-overlay.burnout-modal-open .burnout-monitoring-row,
+.ticket-action-overlay.burnout-modal-open .burnout-evaluation-row {
+  border-color: #dce3eb !important;
+  border-radius: 6px !important;
+  background: #fff !important;
+  box-shadow: none !important;
+}
+
+.ticket-action-overlay.burnout-modal-open .burnout-handling-controls {
+  gap: 0.8rem !important;
+}
+
+.ticket-action-overlay.burnout-modal-open .burnout-handling-controls label,
+.ticket-action-overlay.burnout-modal-open .burnout-handling-notes label,
+.ticket-action-overlay.burnout-modal-open .burnout-unit-fields label {
+  color: #455468 !important;
+  font-size: 0.78rem !important;
+}
+
+.ticket-action-overlay.burnout-modal-open .burnout-wizard .ticket-field {
+  min-width: 0 !important;
+  border-radius: 6px !important;
+  border-color: #cfd8e3 !important;
+  background: #fff !important;
+  color: #202b3a !important;
+  font-size: 0.88rem !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+.ticket-action-overlay.burnout-modal-open .burnout-wizard .ticket-field:focus {
+  border-color: #bd3c43 !important;
+  background: #fff !important;
+  box-shadow: 0 0 0 3px rgba(189, 60, 67, 0.12) !important;
+  transform: none !important;
+}
+
+.ticket-action-overlay.burnout-modal-open .burnout-wizard .ticket-field:disabled,
+.ticket-action-overlay.burnout-modal-open .burnout-wizard .ticket-field[readonly] {
+  border-color: #e1e6ec !important;
+  background: #f3f5f7 !important;
+  color: #667085 !important;
+}
+
+.ticket-action-overlay.burnout-modal-open .burnout-check-list,
+.ticket-action-overlay.burnout-modal-open .burnout-software-list,
+.ticket-action-overlay.burnout-modal-open .burnout-monitoring-list {
+  grid-template-rows: none !important;
+  grid-auto-rows: minmax(56px, auto) !important;
+  align-content: start !important;
+  flex: 0 0 auto !important;
+  gap: 0.55rem !important;
+  overflow: visible !important;
+}
+
+.ticket-action-overlay.burnout-modal-open .burnout-evaluation-list {
+  grid-template-rows: none !important;
+  align-content: start !important;
+  flex: 0 0 auto !important;
+  gap: 0.55rem !important;
+  overflow: visible !important;
+}
+
+.ticket-action-overlay.burnout-modal-open .burnout-check-row,
+.ticket-action-overlay.burnout-modal-open .burnout-software-row,
+.ticket-action-overlay.burnout-modal-open .burnout-monitoring-row,
+.ticket-action-overlay.burnout-modal-open .burnout-evaluation-row {
+  min-height: 56px !important;
+  padding: 0.45rem 0.55rem !important;
+}
+
+.ticket-action-overlay.burnout-modal-open .burnout-check-copy strong,
+.ticket-action-overlay.burnout-modal-open .burnout-monitoring-row strong,
+.ticket-action-overlay.burnout-modal-open .burnout-evaluation-row strong {
+  color: #26364b !important;
+  font-size: 0.86rem !important;
+}
+
+.ticket-action-overlay.burnout-modal-open .burnout-check-copy span {
+  display: block !important;
+  color: #59677a !important;
+  font-size: 0.76rem !important;
+  line-height: 1.4 !important;
+  overflow: visible !important;
+  overflow-wrap: anywhere !important;
+  -webkit-box-orient: initial !important;
+  -webkit-line-clamp: unset !important;
+}
+
+.ticket-action-overlay.burnout-modal-open .burnout-page-caption span {
+  overflow: visible !important;
+  overflow-wrap: anywhere !important;
+  text-overflow: clip !important;
+  white-space: normal !important;
+}
+
+.ticket-action-overlay.burnout-modal-open .burnout-check-row .ticket-field,
+.ticket-action-overlay.burnout-modal-open .burnout-software-row .ticket-field,
+.ticket-action-overlay.burnout-modal-open .burnout-monitoring-row .ticket-field,
+.ticket-action-overlay.burnout-modal-open .burnout-evaluation-row .ticket-field,
+.ticket-action-overlay.burnout-modal-open .burnout-unit-fields .ticket-field {
+  height: 36px !important;
+  min-height: 36px !important;
+  padding: 0.45rem 0.6rem !important;
+}
+
+.ticket-action-overlay.burnout-modal-open .burnout-software-row .ticket-textarea {
+  height: auto !important;
+  min-height: 56px !important;
+  max-height: none !important;
+  padding: 0.5rem 0.6rem !important;
+  line-height: 1.35 !important;
+  resize: vertical !important;
+  overflow: hidden !important;
+  white-space: pre-wrap !important;
+  field-sizing: content;
+}
+
+.ticket-action-overlay.burnout-modal-open .burnout-handling-notes {
+  grid-template-rows: none !important;
+  align-items: start !important;
+  gap: 0.8rem !important;
+}
+
+.ticket-action-overlay.burnout-modal-open .burnout-handling-notes .ticket-textarea {
+  height: 88px !important;
+  min-height: 88px !important;
+  resize: vertical !important;
+}
+
+.ticket-action-overlay.burnout-modal-open .burnout-wizard-navigation {
+  min-height: 36px !important;
+  padding-top: 0.5rem !important;
+  border-top-color: #e3e8ee !important;
+}
+
+.ticket-action-overlay.burnout-modal-open .burnout-wizard-navigation .modal-btn {
+  height: 36px !important;
+  min-height: 36px !important;
+  padding: 0 0.75rem !important;
+  font-size: 0.8rem !important;
+}
+
+.ticket-action-overlay.burnout-modal-open .burnout-wizard-navigation .modal-btn:disabled {
+  border-color: #e0e5eb !important;
+  background: #f5f7f9 !important;
+  color: #98a2b3 !important;
+  opacity: 1 !important;
+  cursor: not-allowed !important;
+}
+
+.ticket-action-overlay.burnout-modal-open .modal-footer {
+  position: static !important;
+  display: flex !important;
+  flex: 0 0 auto !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 0.75rem !important;
+  min-height: 52px !important;
+  margin: 0 !important;
+  padding: 0.5rem 1rem !important;
+  border-top: 1px solid #e1e6ec !important;
+  background: #fff !important;
+}
+
+.ticket-action-overlay.burnout-modal-open .ticket-action-footer-tools {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 0.55rem !important;
+  width: auto !important;
+  margin-left: auto !important;
+}
+
+.ticket-action-overlay.burnout-modal-open .modal-footer .modal-btn {
+  min-width: 0 !important;
+  min-height: 40px !important;
+  height: 40px !important;
+  padding: 0 0.85rem !important;
+  border-radius: 6px !important;
+  font-size: 0.84rem !important;
+  font-weight: 700 !important;
+  box-shadow: none !important;
+  transform: none !important;
+  transition: border-color 140ms ease, background-color 140ms ease, color 140ms ease !important;
+}
+
+.ticket-action-overlay.burnout-modal-open .burnout-wizard-navigation .modal-btn,
+.ticket-action-overlay.burnout-modal-open .burnout-heading-actions .modal-btn.print,
+.ticket-action-overlay.burnout-modal-open .modal-footer .modal-btn.print {
+  border: 1px solid #cfd8e3 !important;
+  border-radius: 6px !important;
+  background: #fff !important;
+  color: #344054 !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+.ticket-action-overlay.burnout-modal-open .burnout-wizard-navigation .modal-btn:hover:not(:disabled),
+.ticket-action-overlay.burnout-modal-open .burnout-heading-actions .modal-btn.print:hover,
+.ticket-action-overlay.burnout-modal-open .modal-footer .modal-btn.print:hover {
+  border-color: #aeb9c7 !important;
+  background: #f5f7fa !important;
+  color: #202b3a !important;
+}
+
+.ticket-action-overlay.burnout-modal-open .modal-footer .modal-btn.confirm {
+  border: 1px solid #b91c1c !important;
+  background: #c62828 !important;
+  color: #fff !important;
+}
+
+.ticket-action-overlay.burnout-modal-open .modal-footer .modal-btn.confirm:hover:not(:disabled) {
+  border-color: #a91f25 !important;
+  background: #b91f26 !important;
+}
+
+.ticket-action-overlay.burnout-modal-open .modal-footer > .modal-btn.danger {
+  border: 1px solid #e7b7bb !important;
+  background: #fff7f7 !important;
+  color: #a52b33 !important;
+}
+
+.ticket-action-overlay.burnout-modal-open .modal-footer > .modal-btn.danger:hover:not(:disabled) {
+  border-color: #d99399 !important;
+  background: #fff0f1 !important;
+  color: #8f1f27 !important;
+}
+
+.ticket-action-overlay.burnout-modal-open .burnout-row-icon-btn {
+  border: 1px solid #e7b7bb !important;
+  border-radius: 6px !important;
+  background: #fff7f7 !important;
+  color: #a52b33 !important;
+  box-shadow: none !important;
+  transition: border-color 140ms ease, background-color 140ms ease, color 140ms ease !important;
+}
+
+.ticket-action-overlay.burnout-modal-open .burnout-row-icon-btn:hover {
+  border-color: #d99399 !important;
+  background: #fff0f1 !important;
+  color: #8f1f27 !important;
+}
+
+.ticket-action-overlay.burnout-modal-open .burnout-wizard-steps button:focus-visible,
+.ticket-action-overlay.burnout-modal-open .burnout-row-icon-btn:focus-visible,
+.ticket-action-overlay.burnout-modal-open .burnout-wizard-navigation .modal-btn:focus-visible,
+.ticket-action-overlay.burnout-modal-open .modal-footer .modal-btn:focus-visible,
+.ticket-action-overlay.burnout-modal-open .burnout-heading-actions .modal-btn:focus-visible {
+  outline: 3px solid rgba(189, 60, 67, 0.24) !important;
+  outline-offset: 2px !important;
+}
+
+@media (max-width: 1000px) {
+  .ticket-action-overlay.burnout-modal-open .burnout-wizard-steps {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 850px) {
+  .ticket-action-overlay.burnout-modal-open .burnout-wizard-steps {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+
+  .ticket-action-overlay.burnout-modal-open .burnout-request-grid,
+  .ticket-action-overlay.burnout-modal-open .burnout-unit-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .ticket-action-overlay.burnout-modal-open .burnout-check-row {
+    grid-template-columns: minmax(0, 1fr) minmax(120px, 0.45fr) !important;
+  }
+
+  .ticket-action-overlay.burnout-modal-open .burnout-check-copy {
+    grid-column: 1 / -1;
+  }
+
+  .ticket-action-overlay.burnout-modal-open .burnout-software-row {
+    grid-template-columns: minmax(0, 1fr) minmax(120px, 0.45fr) !important;
+  }
+
+  .ticket-action-overlay.burnout-modal-open .burnout-software-main {
+    grid-column: 1 / -1;
+  }
+
+  .ticket-action-overlay.burnout-modal-open .burnout-software-row > .ticket-input {
+    grid-column: 1 / -1;
+  }
+
+  .ticket-action-overlay.burnout-modal-open .burnout-handling-controls,
+  .ticket-action-overlay.burnout-modal-open .burnout-unit-fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 620px) {
+  .ticket-action-overlay.burnout-modal-open {
+    align-items: center !important;
+    padding: 0.4rem !important;
+  }
+
+  .ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal {
+    width: 90vw !important;
+    height: auto !important;
+    max-height: 90dvh !important;
+  }
+
+  .ticket-action-overlay.burnout-modal-open .ticket-action-head {
+    padding: 0.8rem 3rem 0.7rem 0.8rem !important;
+  }
+
+  .ticket-action-overlay.burnout-modal-open .ticket-action-head-main {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 0.55rem !important;
+  }
+
+  .ticket-action-overlay.burnout-modal-open .ticket-action-identity-group {
+    align-items: flex-start !important;
+    flex-direction: column !important;
+    gap: 0.35rem !important;
+  }
+
+  .ticket-action-overlay.burnout-modal-open .ticket-action-title-copy h3 {
+    font-size: 1rem !important;
+  }
+
+  .ticket-action-overlay.burnout-modal-open .ticket-action-scroll-content {
+    padding: 0.65rem !important;
+  }
+
+  .ticket-action-overlay.burnout-modal-open .burnout-wizard-topline {
+    align-items: flex-start !important;
+  }
+
+  .ticket-action-overlay.burnout-modal-open .burnout-wizard-topline h4 {
+    font-size: 0.96rem !important;
+  }
+
+  .ticket-action-overlay.burnout-modal-open .burnout-wizard-steps {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .ticket-action-overlay.burnout-modal-open .burnout-request-grid,
+  .ticket-action-overlay.burnout-modal-open .burnout-unit-summary,
+  .ticket-action-overlay.burnout-modal-open .burnout-handling-controls,
+  .ticket-action-overlay.burnout-modal-open .burnout-handling-notes,
+  .ticket-action-overlay.burnout-modal-open .burnout-unit-fields,
+  .ticket-action-overlay.burnout-modal-open .burnout-evaluation-list {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .ticket-action-overlay.burnout-modal-open .burnout-check-row,
+  .ticket-action-overlay.burnout-modal-open .burnout-software-row,
+  .ticket-action-overlay.burnout-modal-open .burnout-monitoring-row,
+  .ticket-action-overlay.burnout-modal-open .burnout-evaluation-row {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .ticket-action-overlay.burnout-modal-open .burnout-software-main {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .ticket-action-overlay.burnout-modal-open .burnout-check-copy,
+  .ticket-action-overlay.burnout-modal-open .burnout-software-main,
+  .ticket-action-overlay.burnout-modal-open .burnout-software-row > .ticket-input,
+  .ticket-action-overlay.burnout-modal-open .burnout-evaluation-row .ticket-textarea {
+    grid-column: auto !important;
+  }
+
+  .ticket-action-overlay.burnout-modal-open .burnout-wizard-navigation {
+    flex-wrap: wrap;
+  }
+
+  .ticket-action-overlay.burnout-modal-open .modal-footer {
+    align-items: stretch !important;
+    flex-direction: column !important;
+    padding: 0.65rem 0.8rem !important;
+  }
+
+  .ticket-action-overlay.burnout-modal-open .ticket-action-footer-tools {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr) !important;
+    width: 100% !important;
+    margin: 0 !important;
+  }
+
+  .ticket-action-overlay.burnout-modal-open .modal-footer .ticket-action-footer-tools .modal-btn {
+    height: auto !important;
+    min-height: 44px !important;
+    padding: 0.42rem 0.5rem !important;
+    line-height: 1.2 !important;
+    white-space: normal !important;
+  }
+
+  .ticket-action-overlay.burnout-modal-open .ticket-autosave-status {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Outrank the older support-modal overrides for the Burnout-only frame. */
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .ticket-action-head {
+  position: relative !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0.75rem 3.5rem 0.65rem 1rem !important;
+  border-bottom: 1px solid #e4e9ef !important;
+  background: #fff !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .ticket-action-head-main {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  gap: 1rem !important;
+  width: 100% !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .ticket-action-identity-group {
+  display: flex !important;
+  align-items: center !important;
+  flex-direction: row !important;
+  flex-wrap: wrap !important;
+  gap: 0.75rem !important;
+  width: auto !important;
+  min-width: 0 !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .ticket-id {
+  width: auto !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  min-height: 32px !important;
+  white-space: normal !important;
+  overflow: visible !important;
+  overflow-wrap: anywhere !important;
+  text-overflow: clip !important;
+  line-height: 1.25 !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .ticket-action-title-copy {
+  width: auto !important;
+  min-width: 0 !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .ticket-action-title-copy h3 {
+  margin: 0 !important;
+  color: #172338 !important;
+  font-size: 1.12rem !important;
+  line-height: 1.25 !important;
+  letter-spacing: 0 !important;
+  overflow: visible !important;
+  overflow-wrap: anywhere !important;
+  text-overflow: clip !important;
+  white-space: normal !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .ticket-action-title-copy p {
+  margin: 0 !important;
+  color: #637187 !important;
+  font-size: 0.82rem !important;
+  line-height: 1.3 !important;
+  overflow: visible !important;
+  overflow-wrap: anywhere !important;
+  text-overflow: clip !important;
+  white-space: normal !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .ticket-action-header-status {
+  width: auto !important;
+  min-width: 0 !important;
+  justify-self: end !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .admin-modal-close {
+  position: absolute !important;
+  top: 0.75rem !important;
+  right: 0.8rem !important;
+  display: grid !important;
+  place-items: center !important;
+  width: 34px !important;
+  height: 34px !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 6px !important;
+  background: #fff !important;
+  opacity: 1 !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .ticket-action-scroll-content {
+  display: block !important;
+  flex: 0 1 auto !important;
+  min-height: 0 !important;
+  padding: 0.8rem 1rem !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  scrollbar-gutter: stable !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-report-panel.burnout-wizard {
+  display: flex !important;
+  flex: 0 1 auto !important;
+  flex-direction: column !important;
+  height: auto !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: visible !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-step-stage,
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-step-content {
+  flex: 0 1 auto !important;
+  min-height: 0 !important;
+  overflow: visible !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .modal-footer {
+  position: static !important;
+  display: flex !important;
+  flex: 0 0 auto !important;
+  align-items: center !important;
+  flex-direction: row !important;
+  justify-content: space-between !important;
+  min-height: 52px !important;
+  margin: 0 !important;
+  padding: 0.5rem 1rem !important;
+  border-top: 1px solid #e1e6ec !important;
+  background: #fff !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .ticket-action-footer-tools {
+  width: auto !important;
+  min-width: 0 !important;
+  margin-left: auto !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .ticket-autosave-status {
+  max-width: none !important;
+  overflow: visible !important;
+  overflow-wrap: anywhere !important;
+  text-overflow: clip !important;
+  white-space: normal !important;
+}
+
+.ticket-action-overlay.burnout-modal-open .burnout-wizard-steps .burnout-step-label {
+  display: block !important;
+}
+
+@media (max-width: 1050px) {
+  .ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .ticket-action-head-main {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .ticket-action-identity-group {
+    max-width: 100% !important;
+  }
+
+  .ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .ticket-action-header-status {
+    justify-self: start !important;
+  }
+}
+
+@media (max-width: 620px) {
+  .ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .ticket-action-head {
+    padding: 0.8rem 3rem 0.7rem 0.8rem !important;
+  }
+
+  .ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .ticket-action-head-main {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 0.55rem !important;
+  }
+
+  .ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .ticket-action-identity-group {
+    align-items: flex-start !important;
+    flex-direction: column !important;
+    gap: 0.35rem !important;
+  }
+
+  .ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .ticket-action-header-status {
+    justify-self: start !important;
+  }
+
+  .ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .ticket-action-scroll-content {
+    padding: 0.65rem !important;
+  }
+
+  .ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .modal-footer {
+    align-items: stretch !important;
+    flex-direction: column !important;
+    padding: 0.65rem 0.8rem !important;
+  }
+
+  .ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .ticket-action-footer-tools {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    width: 100% !important;
+    margin: 0 !important;
+  }
+}
+
+/* Burnout modal workspace: clear chrome, one section rail, continuous registers. */
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal {
+  width: 90vw !important;
+  max-width: calc(100vw - 1rem) !important;
+  height: auto !important;
+  max-height: 90dvh !important;
+  border: 1px solid #d8e0e8 !important;
+  border-radius: 10px !important;
+  background: #fff !important;
+  box-shadow: 0 22px 64px rgba(20, 32, 48, 0.2) !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .ticket-action-head {
+  gap: 0.4rem !important;
+  padding: 0.85rem 3.5rem 0.75rem 1.15rem !important;
+  border-bottom-color: #e3e8ee !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .ticket-action-title-copy h3 {
+  color: #182536 !important;
+  font-size: 1.16rem !important;
+  font-weight: 750 !important;
+  line-height: 1.25 !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .ticket-action-title-copy p {
+  color: #5f6f82 !important;
+  font-size: 0.82rem !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .ticket-id {
+  border: 0 !important;
+  border-radius: 4px !important;
+  background: #f1f4f7 !important;
+  color: #536276 !important;
+  font-weight: 700 !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .ticket-action-scroll-content {
+  padding: 0.9rem 1.1rem !important;
+  background: #f5f7f9 !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .modal-footer {
+  min-height: 60px !important;
+  padding: 0.6rem 1.1rem !important;
+  border-top-color: #e0e6ec !important;
+  background: #fff !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .modal-footer .modal-btn {
+  min-height: 40px !important;
+  height: 40px !important;
+  border-radius: 6px !important;
+  font-weight: 700 !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-workspace {
+  display: grid !important;
+  grid-template-columns: minmax(180px, 208px) minmax(0, 1fr) !important;
+  align-items: start !important;
+  gap: 1.15rem !important;
+  min-width: 0 !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-wizard-steps {
+  position: sticky !important;
+  top: 0.25rem !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  align-content: start !important;
+  gap: 0.18rem !important;
+  min-width: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-wizard-steps button {
+  display: grid !important;
+  grid-template-columns: 27px minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  gap: 0.55rem !important;
+  min-width: 0 !important;
+  min-height: 40px !important;
+  padding: 0.35rem 0.55rem !important;
+  border: 1px solid transparent !important;
+  border-left: 3px solid transparent !important;
+  border-radius: 5px !important;
+  background: transparent !important;
+  color: #4a596d !important;
+  text-align: left !important;
+  box-shadow: none !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-wizard-steps button:hover:not(.active) {
+  border-color: #e3e8ee !important;
+  background: #fff !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-wizard-steps button.active {
+  border-color: #f2d5d7 !important;
+  border-left-color: #c83a43 !important;
+  background: #fff !important;
+  color: #a91f2b !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-wizard-steps button.complete:not(.active) {
+  color: #356348 !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-step-number {
+  display: grid !important;
+  place-items: center !important;
+  width: 24px !important;
+  height: 24px !important;
+  border: 1px solid #d9e1e9 !important;
+  border-radius: 50% !important;
+  background: #fff !important;
+  color: #566579 !important;
+  font-size: 0.72rem !important;
+  font-weight: 700 !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-step-number svg {
+  width: 14px !important;
+  height: 14px !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-wizard-steps button.active .burnout-step-number {
+  border-color: #bd333b !important;
+  background: #bd333b !important;
+  color: #fff !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-wizard-steps button.complete:not(.active) .burnout-step-number {
+  border-color: #c9dfd1 !important;
+  background: #f1f8f3 !important;
+  color: #356348 !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-step-label {
+  min-width: 0 !important;
+  overflow: visible !important;
+  overflow-wrap: anywhere !important;
+  text-overflow: clip !important;
+  white-space: normal !important;
+  font-size: 0.8rem !important;
+  line-height: 1.25 !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-wizard-steps small {
+  color: #77869a !important;
+  font-size: 0.7rem !important;
+  font-weight: 700 !important;
+  white-space: nowrap !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-optional-navigation {
+  display: grid !important;
+  gap: 0.18rem !important;
+  margin-top: 0.55rem !important;
+  padding-top: 0.55rem !important;
+  border-top: 1px solid #dfe5eb !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-optional-navigation > span {
+  padding: 0 0.6rem 0.15rem !important;
+  color: #8793a2 !important;
+  font-size: 0.64rem !important;
+  font-weight: 800 !important;
+  text-transform: uppercase !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-optional-navigation button {
+  display: grid !important;
+  grid-template-columns: 27px minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: 0.55rem !important;
+  min-height: 40px !important;
+  padding: 0.35rem 0.55rem !important;
+  border: 1px solid transparent !important;
+  border-left: 3px solid transparent !important;
+  border-radius: 5px !important;
+  background: transparent !important;
+  color: #4a596d !important;
+  text-align: left !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-optional-navigation button.active {
+  border-color: #f2d5d7 !important;
+  border-left-color: #c83a43 !important;
+  background: #fff !important;
+  color: #a91f2b !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-optional-icon {
+  display: grid !important;
+  place-items: center !important;
+  width: 24px !important;
+  height: 24px !important;
+  border: 1px solid #d9e1e9 !important;
+  border-radius: 50% !important;
+  background: #fff !important;
+  color: #708096 !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-optional-icon svg {
+  width: 13px !important;
+  height: 13px !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-optional-badge {
+  margin-left: 0.35rem !important;
+  padding: 0.18rem 0.42rem !important;
+  border-radius: 4px !important;
+  background: #eef2f6 !important;
+  color: #5f6e80 !important;
+  font-size: 0.64rem !important;
+  font-weight: 750 !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-workspace-main {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0.65rem !important;
+  min-width: 0 !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-wizard-topline {
+  display: flex !important;
+  align-items: end !important;
+  justify-content: space-between !important;
+  gap: 0.75rem !important;
+  padding-bottom: 0.7rem !important;
+  border-bottom: 1px solid #e0e6ec !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-wizard-topline .section-kicker {
+  color: #a82d34 !important;
+  font-size: 0.65rem !important;
+  font-weight: 800 !important;
+  text-transform: uppercase !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-wizard-topline h4 {
+  margin: 0 !important;
+  color: #1d2a3b !important;
+  font-size: 1.08rem !important;
+  font-weight: 650 !important;
+  line-height: 1.3 !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-wizard-step-count {
+  flex: 0 0 auto !important;
+  padding-bottom: 0.08rem !important;
+  color: #5f6e80 !important;
+  font-size: 0.76rem !important;
+  font-weight: 700 !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-wizard-step-count.is-optional {
+  color: #64748b !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-step-stage {
+  min-width: 0 !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-wizard-navigation {
+  position: sticky !important;
+  bottom: -0.9rem !important;
+  z-index: 3 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 0.75rem !important;
+  margin-top: 0.15rem !important;
+  padding: 0.65rem 0 0.35rem !important;
+  border-top: 1px solid #e1e6ec !important;
+  background: #f7f9fb !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-wizard-navigation.optional-active {
+  justify-content: flex-end !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-page-caption {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: baseline !important;
+  gap: 0.25rem 0.75rem !important;
+}
+
+@media (max-width: 1100px) {
+  .ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-workspace {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 0.65rem !important;
+  }
+
+  .ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-wizard-steps {
+    position: static !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 620px) {
+  .ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-wizard-steps {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-wizard-steps button {
+    grid-template-columns: 25px minmax(0, 1fr) auto !important;
+    gap: 0.4rem !important;
+    min-height: 40px !important;
+    padding: 0.35rem 0.4rem !important;
+  }
+
+  .ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-wizard-navigation {
+    bottom: -0.65rem !important;
+    padding: 0.5rem 0 0.25rem !important;
+  }
+}
+
+/* Burnout report dashboard layout. */
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal {
+  display: flex !important;
+  flex-direction: column !important;
+  width: 90vw !important;
+  max-width: calc(100vw - 1rem) !important;
+  height: 90dvh !important;
+  max-height: 90dvh !important;
+  overflow: hidden !important;
+  border: 1px solid #d8e0e8 !important;
+  border-radius: 8px !important;
+  background: #fff !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .ticket-action-head {
+  flex: 0 0 auto !important;
+  padding: 0.8rem 3.5rem 0.7rem 1rem !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .ticket-action-head-main {
+  align-items: center !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .ticket-action-identity-group,
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .ticket-action-title-copy {
+  min-width: 0 !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .ticket-id {
+  max-width: 34vw !important;
+  white-space: normal !important;
+  overflow: visible !important;
+  overflow-wrap: anywhere !important;
+  text-overflow: clip !important;
+  line-height: 1.3 !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .ticket-action-scroll-content {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  padding: 0.75rem 1rem 1rem !important;
+  background: #f5f7f9 !important;
+  scrollbar-gutter: stable;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-report-panel.burnout-dashboard {
+  display: grid !important;
+  gap: 0.65rem !important;
+  min-width: 0 !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-dashboard-section {
+  min-width: 0 !important;
+  padding: 0.65rem !important;
+  border: 1px solid #dce3ea !important;
+  border-radius: 6px !important;
+  background: #fff !important;
+  box-shadow: none !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-dashboard-heading {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 0.65rem !important;
+  min-width: 0 !important;
+  min-height: 29px !important;
+  margin: 0 0 0.45rem !important;
+  padding: 0 0 0.35rem !important;
+  border-bottom: 1px solid #e7ebef !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-dashboard-heading > div,
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-checklist-heading-actions {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.55rem !important;
+  min-width: 0 !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-dashboard-heading > div > svg {
+  flex: 0 0 auto !important;
+  width: 19px !important;
+  height: 19px !important;
+  color: #c92732 !important;
+  stroke-width: 2.4 !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-dashboard-heading h4 {
+  min-width: 0 !important;
+  margin: 0 !important;
+  color: #192537 !important;
+  font-size: 0.92rem !important;
+  font-weight: 750 !important;
+  line-height: 1.25 !important;
+  overflow-wrap: anywhere !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-dashboard-heading > span,
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-checklist-heading-actions > span {
+  flex: 0 0 auto !important;
+  color: #63748a !important;
+  font-size: 0.73rem !important;
+  font-weight: 700 !important;
+  line-height: 1.3 !important;
+  text-align: right !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-request-grid {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 0.4rem !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-request-cell,
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-test-cell {
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  gap: 0.12rem !important;
+  min-width: 0 !important;
+  min-height: 43px !important;
+  padding: 0.38rem 0.5rem !important;
+  border: 1px solid #e0e6ec !important;
+  border-radius: 5px !important;
+  background: #fff !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-request-cell > span,
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-test-cell > span {
+  color: #64748b !important;
+  font-size: 0.62rem !important;
+  font-weight: 800 !important;
+  line-height: 1.2 !important;
+  text-transform: uppercase !important;
+  overflow-wrap: anywhere !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-request-cell > strong,
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-test-cell > strong {
+  min-width: 0 !important;
+  color: #202c3e !important;
+  font-size: 0.78rem !important;
+  font-weight: 650 !important;
+  line-height: 1.3 !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+  word-break: normal !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-test-details {
+  padding-bottom: 0.55rem !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-status-control {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.4rem !important;
+  min-width: 0 !important;
+  color: #63748a !important;
+  font-size: 0.65rem !important;
+  font-weight: 800 !important;
+  text-transform: uppercase !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-status-control .ticket-field {
+  width: auto !important;
+  min-width: 142px !important;
+  min-height: 31px !important;
+  padding: 0.25rem 1.7rem 0.25rem 0.55rem !important;
+  border-color: #b9e5d1 !important;
+  background-color: #effaf4 !important;
+  color: #17683b !important;
+  font-size: 0.75rem !important;
+  font-weight: 700 !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-test-grid {
+  display: grid !important;
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  gap: 0.4rem !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-test-cell .ticket-field {
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 27px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: #202c3e !important;
+  font-size: 0.77rem !important;
+  font-weight: 650 !important;
+  box-shadow: none !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-period-note {
+  display: flex !important;
+  align-items: flex-start !important;
+  gap: 0.45rem !important;
+  margin: 0.4rem 0 0 !important;
+  padding: 0.35rem 0.45rem !important;
+  border: 1px solid #e3e9ef !important;
+  border-radius: 4px !important;
+  color: #61738a !important;
+  font-size: 0.7rem !important;
+  line-height: 1.4 !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-period-note svg {
+  flex: 0 0 auto !important;
+  width: 15px !important;
+  height: 15px !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-checklist-dashboard {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  align-items: stretch !important;
+  gap: 0.65rem !important;
+  min-width: 0 !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-checklist-card {
+  display: flex !important;
+  flex-direction: column !important;
+  align-self: stretch !important;
+  min-width: 0 !important;
+  height: 100% !important;
+  padding: 0.6rem !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-checklist-heading {
+  margin-bottom: 0.25rem !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-checklist-heading .modal-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.25rem !important;
+  min-height: 29px !important;
+  height: auto !important;
+  padding: 0.25rem 0.45rem !important;
+  font-size: 0.7rem !important;
+  white-space: nowrap !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-checklist-heading .modal-btn svg {
+  width: 14px !important;
+  height: 14px !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-checklist-guidance {
+  margin: 0 0 0.35rem !important;
+  color: #64748b !important;
+  font-size: 0.67rem !important;
+  line-height: 1.35 !important;
+  min-height: 2.7em !important;
+  overflow-wrap: anywhere !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-dashboard-list {
+  display: grid !important;
+  grid-template-rows: none !important;
+  grid-auto-rows: max-content !important;
+  align-content: start !important;
+  gap: 0.15rem !important;
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-dashboard-row {
+  min-width: 0 !important;
+  border-bottom: 1px solid #edf0f3 !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-hardware-row {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) 86px !important;
+  align-items: center !important;
+  gap: 0.25rem 0.35rem !important;
+  padding: 0.25rem 0 !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-row-copy {
+  display: grid !important;
+  grid-column: 1 / 2 !important;
+  min-width: 0 !important;
+  gap: 0.05rem !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-row-copy strong,
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-monitoring-row > strong,
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-evaluation-row > strong {
+  min-width: 0 !important;
+  color: #34445b !important;
+  font-size: 0.71rem !important;
+  line-height: 1.3 !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-row-copy > span {
+  color: #718096 !important;
+  font-size: 0.64rem !important;
+  line-height: 1.28 !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-dashboard-row .ticket-field {
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 29px !important;
+  padding: 0.25rem 0.4rem !important;
+  border-radius: 4px !important;
+  font-size: 0.68rem !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-hardware-row > select {
+  grid-column: 2 !important;
+  grid-row: 1 !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-hardware-row > input {
+  grid-column: 1 / -1 !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-software-row {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  align-items: start !important;
+  gap: 0.3rem 0.4rem !important;
+  padding: 0.35rem 0 !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-software-main {
+  display: grid !important;
+  gap: 0.2rem !important;
+  min-width: 0 !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-software-main .ticket-field {
+  min-height: 28px !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-software-main textarea {
+  height: auto !important;
+  min-height: 27px !important;
+  max-height: 120px !important;
+  overflow-y: auto !important;
+  resize: vertical !important;
+  white-space: pre-wrap !important;
+  overflow-wrap: anywhere !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-installed-toggle {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.25rem !important;
+  min-height: 27px !important;
+  color: #506179 !important;
+  font-size: 0.63rem !important;
+  font-weight: 700 !important;
+  white-space: nowrap !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-installed-toggle input {
+  width: 15px !important;
+  height: 15px !important;
+  margin: 0 !important;
+  accent-color: #16864a !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-software-row > .ticket-field {
+  grid-column: 1 / -1 !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-software-row > .burnout-row-icon-btn {
+  grid-column: 2 !important;
+  grid-row: 1 !important;
+  width: 27px !important;
+  height: 27px !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-monitoring-row {
+  display: grid !important;
+  grid-template-columns: minmax(72px, 0.75fr) minmax(76px, 0.7fr) minmax(0, 1.5fr) !important;
+  align-items: center !important;
+  gap: 0.35rem !important;
+  padding: 0.3rem 0 !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-evaluation-list {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 0.5rem !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-evaluation-row {
+  display: grid !important;
+  grid-template-columns: minmax(110px, 0.8fr) minmax(120px, 1fr) !important;
+  align-items: center !important;
+  gap: 0.35rem !important;
+  min-width: 0 !important;
+  padding: 0.35rem !important;
+  border: 1px solid #e4e9ef !important;
+  border-radius: 5px !important;
+  background: #fff !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-evaluation-row > .ticket-field:last-child {
+  grid-column: 1 / -1 !important;
+  min-height: 34px !important;
+  resize: vertical !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-completion-summary {
+  margin-top: 0.45rem !important;
+  padding: 0.4rem 0.5rem !important;
+  font-size: 0.7rem !important;
+  line-height: 1.35 !important;
+  overflow-wrap: anywhere !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-optional-details {
+  min-width: 0 !important;
+  border: 1px solid #dce3ea !important;
+  border-radius: 6px !important;
+  background: #fff !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-optional-details > summary {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 0.6rem !important;
+  min-height: 42px !important;
+  padding: 0.45rem 0.65rem !important;
+  color: #28374a !important;
+  cursor: pointer !important;
+  list-style: none !important;
+  font-size: 0.82rem !important;
+  font-weight: 750 !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-optional-details > summary::-webkit-details-marker {
+  display: none !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-optional-details > summary::after {
+  content: "+";
+  flex: 0 0 auto;
+  color: #607187;
+  font-size: 1.15rem;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-optional-details[open] > summary::after {
+  content: "-";
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-optional-details > summary > span:first-child {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.45rem !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-optional-details > summary svg {
+  width: 17px !important;
+  height: 17px !important;
+  color: #697b91 !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-optional-details[open] > summary {
+  border-bottom: 1px solid #e7ebef !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-optional-details .burnout-handling-notes {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 0.6rem !important;
+  padding: 0.65rem !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-optional-details .ticket-form-group {
+  min-width: 0 !important;
+  margin: 0 !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-reopen-section textarea {
+  width: 100% !important;
+  min-height: 66px !important;
+  resize: vertical !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-optional-details .ticket-form-group > label {
+  display: block !important;
+  margin-bottom: 0.25rem !important;
+  color: #43536a !important;
+  font-size: 0.73rem !important;
+  font-weight: 700 !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-optional-details textarea {
+  min-height: 76px !important;
+  resize: vertical !important;
+}
+
+@media (max-width: 1200px) {
+  .ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-checklist-dashboard {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-monitoring-card {
+    grid-column: 1 / -1 !important;
+  }
+
+  .ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-monitoring-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    column-gap: 0.7rem !important;
+  }
+
+  .ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-test-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 700px) {
+  .ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal {
+    width: calc(100vw - 0.75rem) !important;
+    max-width: calc(100vw - 0.75rem) !important;
+    height: 94dvh !important;
+    max-height: 94dvh !important;
+  }
+
+  .ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .ticket-action-head {
+    padding: 0.7rem 2.9rem 0.65rem 0.75rem !important;
+  }
+
+  .ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .ticket-action-scroll-content {
+    padding: 0.55rem !important;
+  }
+
+  .ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-request-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-test-grid,
+  .ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-checklist-dashboard,
+  .ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-evaluation-list,
+  .ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-optional-details .burnout-handling-notes {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-monitoring-card {
+    grid-column: auto !important;
+  }
+
+  .ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-monitoring-list {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-dashboard-heading {
+    align-items: flex-start !important;
+  }
+
+  .ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-dashboard-heading > span {
+    max-width: 42% !important;
+    white-space: normal !important;
+  }
+
+  .ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-status-control {
+    align-items: flex-end !important;
+    flex-direction: column !important;
+  }
+
+  .ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-status-control .ticket-field {
+    min-width: 120px !important;
+  }
+
+  .ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-monitoring-row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+  }
+
+  .ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-monitoring-row > strong {
+    grid-column: 1 / -1 !important;
+  }
+
+  .ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-evaluation-row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+  }
+}
+
+/* Shared checklist row treatment, after the legacy wizard rules. */
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-software-main {
+  display: contents !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-dashboard-row.burnout-software-row > .burnout-software-main > input {
+  grid-column: 1 !important;
+  grid-row: 1 !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-dashboard-row.burnout-software-row > .burnout-software-main > textarea {
+  grid-column: 1 / -1 !important;
+  grid-row: 2 !important;
+  width: 100% !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-dashboard-row.burnout-software-row > .burnout-row-remarks {
+  grid-column: 1 / -1 !important;
+  grid-row: 3 !important;
+  width: 100% !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-hardware-row,
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-software-row,
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-monitoring-row {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) 126px !important;
+  align-items: center !important;
+  gap: 0.3rem 0.45rem !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  padding: 0.4rem 0 !important;
+  border: 0 !important;
+  border-bottom: 1px solid #e9edf1 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-hardware-row > .burnout-row-copy,
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-software-row > .burnout-software-main,
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-monitoring-row > .burnout-row-copy {
+  grid-column: 1 !important;
+  grid-row: 1 !important;
+  min-width: 0 !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-hardware-row > select,
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-monitoring-row > .burnout-row-status {
+  grid-column: 2 !important;
+  grid-row: 1 !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-hardware-row > .burnout-row-remarks,
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-software-row > .burnout-row-remarks,
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-monitoring-row > .burnout-row-remarks {
+  grid-column: 1 / -1 !important;
+  grid-row: 2 !important;
+  width: 100% !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-software-main {
+  grid-template-columns: minmax(0, 1fr) !important;
+  align-items: stretch !important;
+  gap: 0.18rem !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-software-main > .ticket-field {
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 30px !important;
+  height: auto !important;
+  padding: 0.28rem 0.42rem !important;
+  border-radius: 4px !important;
+  font-size: 0.69rem !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-software-main textarea {
+  max-height: 120px !important;
+  overflow-y: auto !important;
+  resize: vertical !important;
+  white-space: pre-wrap !important;
+  overflow-wrap: anywhere !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-row-actions {
+  display: flex !important;
+  grid-column: 2 !important;
+  grid-row: 1 !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 0.25rem !important;
+  min-width: 0 !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-row-actions .burnout-installed-toggle {
+  justify-content: flex-end !important;
+  gap: 0.28rem !important;
+  min-width: 0 !important;
+  white-space: normal !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-row-actions .burnout-row-icon-btn {
+  flex: 0 0 27px !important;
+  width: 27px !important;
+  height: 27px !important;
+}
+
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-hardware-row .ticket-field,
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-software-row .ticket-field,
+.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .burnout-monitoring-row .ticket-field {
+  min-width: 0 !important;
+  min-height: 30px !important;
+  height: auto !important;
+  padding: 0.28rem 0.42rem !important;
+  border-radius: 4px !important;
+  font-size: 0.69rem !important;
+  line-height: 1.25 !important;
 }

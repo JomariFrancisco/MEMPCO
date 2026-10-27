@@ -824,3 +824,110 @@ button {
   }
 
 }
+
+/* Shared by every department login. Keep layout and controls independent of
+   dashboard CSS that may still be loaded after client-side navigation. */
+.portal-main.portal-auth-main {
+  --text: #0f172a;
+  --muted: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  min-height: 100dvh;
+  height: auto;
+  padding: clamp(24px, 5vw, 64px) clamp(16px, 4vw, 48px);
+  overflow: visible;
+  color-scheme: light;
+}
+
+.portal-auth-main .auth-section { height: auto; min-width: 0; }
+.portal-auth-main .auth-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(32px, 6vw, 96px);
+  width: 100%;
+  max-width: 1140px;
+  height: auto;
+  overflow: visible;
+}
+.portal-auth-main :is(.auth-showcase, .auth-panel) {
+  position: static;
+  inset: auto;
+  width: 100%;
+  min-width: 0;
+  height: auto;
+  padding: 0;
+  transform: none;
+}
+.portal-auth-main .auth-showcase-inner { width: 100%; max-width: 400px; }
+.portal-auth-main .auth-company-logo { display: block; width: 100%; height: auto; max-width: 400px; animation: none; }
+.portal-auth-main .auth-panel-inner { width: 100%; max-width: 430px; min-width: 0; height: auto; max-height: none; }
+.portal-auth-main .auth-forms { height: auto; overflow: visible; }
+.portal-auth-main .auth-form {
+  position: static;
+  inset: auto;
+  display: none;
+  width: 100%;
+  min-width: 0;
+  height: auto;
+  gap: 12px;
+  overflow: visible;
+  transform: none;
+}
+.portal-auth-main .auth-form.active { display: flex; }
+.portal-auth-main .auth-form-head { gap: 4px; }
+.portal-auth-main .auth-kicker { font-size: 0.84rem; line-height: 1.4; }
+.portal-auth-main .auth-form-head h2 { font-size: clamp(1.25rem, 2vw, 1.5rem); line-height: 1.25; overflow-wrap: anywhere; }
+.portal-auth-main .auth-form-head p { font-size: 0.96rem; line-height: 1.5; }
+.portal-auth-main .form-grid.single { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+.portal-auth-main .form-group { min-width: 0; gap: 6px; }
+.portal-auth-main .form-group label { font-size: 0.84rem; line-height: 1.4; }
+.portal-auth-main .form-group input {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  height: 44px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  font-size: 16px;
+  line-height: 1.4;
+  appearance: none;
+  -webkit-appearance: none;
+}
+.portal-auth-main .password-field input { padding-right: 48px; }
+.portal-auth-main .password-toggle { right: 4px; width: 36px; height: 36px; }
+.portal-auth-main .auth-form .auth-submit-btn {
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  min-height: 44px;
+  height: auto;
+  margin: 0;
+  padding: 11px 16px;
+  border: 1px solid #bd1e25;
+  border-radius: 8px;
+  background: #d8272e;
+  color: #fff;
+  -webkit-text-fill-color: #fff;
+  font-size: 0.96rem;
+  font-weight: 700;
+  line-height: 1.4;
+  letter-spacing: 0;
+  align-self: stretch;
+}
+.portal-auth-main .auth-form .auth-submit-btn:hover:not(:disabled) { background: #bd1e25; }
+.portal-auth-main .auth-form .auth-submit-btn:disabled { background: #d9989b; border-color: #d9989b; }
+
+@media (max-width: 760px) {
+  .portal-auth-main .auth-shell { grid-template-columns: minmax(0, 1fr); max-width: 430px; gap: 24px; }
+  .portal-auth-main .auth-showcase-inner { max-width: 180px; }
+  .portal-auth-main .auth-panel-inner { justify-content: flex-start; }
+}
+
+@media (max-width: 760px) and (max-height: 600px) {
+  .portal-auth-main .auth-showcase-inner { max-width: 110px; }
+  .portal-auth-main .auth-shell { gap: 16px; }
+}

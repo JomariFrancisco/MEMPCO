@@ -29,7 +29,7 @@ const PARTNERS = [
   { name: 'LANDBANK', image: '/Affiliates/LANDBANK.png', accent: '#15803d', ink: '#14532d' },
   { name: 'MASS-SPECC', image: '/Affiliates/MASS-SPECC.png', accent: '#7c3aed', ink: '#4c1d95' },
   { name: 'NAFE COOP', image: '/Affiliates/NAFE%20COOP.png', accent: '#2736a3', ink: '#172554' },
-  { name: 'NATCO', image: '/Affiliates/NATCO.png', accent: '#f28c28', ink: '#7c2d12' },
+  { name: 'NATCCO', image: '/Affiliates/NATCO.png', accent: '#f28c28', ink: '#7c2d12' },
   {
     name: 'Western Mindanao Federation of Cooperatives',
     image: '/Affiliates/WESTERN%20MINDANAO%20FEDERATION%20OF%20THE%20COOPERATIVE.png',

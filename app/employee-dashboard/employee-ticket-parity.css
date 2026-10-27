@@ -1,0 +1,438 @@
+.helpdesk-view .segmented-tabs.employee-helpdesk-tabs {
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+  margin: 0 0 16px;
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid #dfe6ef;
+  border-radius: 0;
+  background: transparent;
+}
+.helpdesk-view .segmented-tabs.employee-helpdesk-tabs > button {
+  position: relative;
+  display: inline-flex;
+  flex: 0 1 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 0;
+  min-height: 44px;
+  margin: 0;
+  padding: 10px 16px;
+  border: 1px solid transparent;
+  border-radius: 6px 6px 0 0;
+  background: transparent;
+  color: #607083;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: 0;
+  box-shadow: none;
+  cursor: pointer;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+.employee-helpdesk-tabs > button > svg { flex: 0 0 16px; width: 16px; height: 16px; }
+.employee-helpdesk-tabs .employee-helpdesk-tab-label { min-width: 0; font: inherit; letter-spacing: 0; white-space: normal; overflow-wrap: anywhere; }
+.helpdesk-view .segmented-tabs.employee-helpdesk-tabs > button::after {
+  content: '';
+  position: absolute;
+  right: 12px;
+  bottom: -1px;
+  left: 12px;
+  height: 2px;
+  border-radius: 2px;
+  background: currentColor;
+  opacity: 0;
+}
+.helpdesk-view .segmented-tabs.employee-helpdesk-tabs > button:hover { background: #f8fafc; color: #354458; }
+.helpdesk-view .segmented-tabs.employee-helpdesk-tabs > button.active { background: #fff5f5; color: #b91c1c; box-shadow: none; }
+.helpdesk-view .segmented-tabs.employee-helpdesk-tabs > button.active::after { opacity: 1; }
+.helpdesk-view .segmented-tabs.employee-helpdesk-tabs > button:focus-visible { outline: 2px solid #b91c1c; outline-offset: -3px; }
+
+body[data-portal-theme='dark'] .portal-app-main .helpdesk-view .segmented-tabs.employee-helpdesk-tabs { background: transparent !important; }
+body[data-portal-theme='dark'] .portal-app-main .helpdesk-view .segmented-tabs.employee-helpdesk-tabs > button {
+  border-color: transparent !important;
+  background: transparent !important;
+  color: #b4c0ce !important;
+}
+body[data-portal-theme='dark'] .portal-app-main .helpdesk-view .segmented-tabs.employee-helpdesk-tabs > button:hover { background: #202b39 !important; color: #edf2f7 !important; }
+body[data-portal-theme='dark'] .portal-app-main .helpdesk-view .segmented-tabs.employee-helpdesk-tabs > button.active { background: #32282d !important; color: #fda4af !important; }
+body[data-portal-theme='dark'] .portal-app-main .helpdesk-view .segmented-tabs.employee-helpdesk-tabs > button:focus-visible { outline-color: #fda4af; }
+
+@media (max-width: 600px) {
+  .helpdesk-view .segmented-tabs.employee-helpdesk-tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; }
+  .helpdesk-view .segmented-tabs.employee-helpdesk-tabs.has-burnout { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .helpdesk-view .segmented-tabs.employee-helpdesk-tabs > button { flex-direction: column; gap: 5px; min-height: 72px; padding: 9px 6px; font-size: 0.8rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .helpdesk-view .segmented-tabs.employee-helpdesk-tabs > button { transition: none; }
+}
+
+/* The shared status and timer components replace the legacy handling panels. */
+.employee-ticket-queue .employee-ticket-queue-grid {
+  grid-template-rows: none;
+  grid-auto-rows: 1fr;
+  gap: 16px;
+}
+
+.employee-ticket-queue .employee-admin-ticket-card {
+  height: auto;
+  min-height: 0;
+  max-height: none;
+  gap: 14px;
+  border-radius: 8px;
+  overflow: visible;
+}
+
+.employee-ticket-queue .employee-admin-ticket-card-head {
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.employee-ticket-queue .employee-admin-ticket-title {
+  flex: 1 1 100%;
+  gap: 5px;
+}
+
+.employee-ticket-queue .employee-admin-ticket-title :is(h4, p) {
+  min-width: 0;
+  max-width: 100%;
+  height: auto;
+  margin: 0;
+  white-space: normal;
+  overflow: visible;
+  overflow-wrap: anywhere;
+  text-overflow: clip;
+  letter-spacing: 0;
+}
+
+.employee-ticket-queue .employee-admin-inline-badges {
+  flex: 1 1 100% !important;
+  justify-content: flex-start !important;
+  gap: 6px !important;
+}
+
+.employee-ticket-queue .employee-admin-inline-badges :is(.status, .priority) {
+  max-width: 100%;
+  white-space: normal !important;
+  overflow-wrap: anywhere;
+  letter-spacing: 0;
+}
+
+.employee-ticket-handling-summary {
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  min-width: 0;
+}
+
+.employee-ticket-handling-summary > .ticket-handling-status { padding: 0; }
+
+.employee-ticket-queue-position {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #607083;
+  font-size: 0.73rem;
+  line-height: 1.4;
+}
+
+.employee-ticket-queue-position svg { flex: 0 0 14px; }
+
+.employee-ticket-queue .employee-admin-ticket-summary-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.employee-ticket-queue .employee-admin-ticket-summary-grid > div {
+  min-height: 0;
+  border-radius: 8px;
+  overflow: visible;
+}
+
+.employee-ticket-queue .employee-admin-ticket-summary-grid :is(span, strong, p) {
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  letter-spacing: 0;
+}
+
+.employee-ticket-queue .employee-admin-ticket-description {
+  flex: 1 1 auto;
+  min-height: 96px;
+  height: auto;
+  max-height: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  overflow: visible;
+}
+
+.employee-ticket-queue .ticket-handling-timer { margin-top: auto; }
+.employee-ticket-opening { margin: 0 0 12px; color: #607083; font-size: 0.8rem; }
+.employee-ticket-open-notice { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; padding: 10px 12px; border: 1px solid #f1c7ca; border-radius: 6px; color: #a12f38; background: #fff4f4; font-size: 0.8rem; line-height: 1.4; }
+.employee-ticket-open-notice span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.employee-ticket-open-notice button { display: grid; width: 32px; height: 32px; place-items: center; border: 0; border-radius: 4px; background: transparent; color: inherit; cursor: pointer; }
+body[data-portal-theme='dark'] .employee-ticket-open-notice { border-color: #78464d; color: #ffb0b8; background: #42262d; }
+
+.employee-ticket-action-overlay .employee-ticket-action-header-status {
+  display: block !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+.employee-ticket-action-overlay .employee-ticket-action-header-status .ticket-handling-status {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.employee-ticket-action-overlay .employee-admin-scroll-content > .ticket-handling-timer {
+  margin: 0 0 12px;
+}
+
+.latest-activity-card > .ticket-handling-status { margin: 10px 0; }
+.latest-activity-card,
+.latest-activity-card .dashboard-ticket-meta-cell,
+.latest-activity-card .dashboard-latest-description { border-radius: 8px; }
+.latest-activity-card .ticket-header-left h4 { letter-spacing: 0; }
+.latest-activity-card :is(.status, .priority) {
+  min-height: 21px;
+  max-width: 100%;
+  padding: 0.15rem 0.38rem;
+  border-radius: 3px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.latest-activity-card .ticket-id {
+  max-width: 100% !important;
+  padding: 0 !important;
+  min-height: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: #607087 !important;
+  font-size: 0.72rem !important;
+  letter-spacing: 0 !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+  box-shadow: none !important;
+}
+.latest-activity-card .ticket-id::before { display: none !important; }
+
+body[data-portal-theme='dark'] .employee-ticket-queue-position { color: #b4c0ce; }
+body[data-portal-theme='dark'] .latest-activity-card :is(.ticket-id, .ticket-date) { color: #b6c4d6 !important; }
+
+@media (max-width: 520px) {
+  .employee-ticket-queue .employee-admin-ticket-summary-grid { grid-template-columns: minmax(0, 1fr); }
+  .employee-ticket-queue .employee-admin-ticket-card { padding: 12px; }
+}
+
+/* Read-only ticket details keep the Admin hierarchy without edit-field sizing. */
+.employee-ticket-action-overlay article.employee-ticket-modal.ticket-action-modal.is-support-modal.ticket-modal-readable[data-employee-details] {
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: calc(100dvh - 24px) !important;
+  padding: 0 !important;
+}
+
+.employee-ticket-action-overlay article.employee-ticket-modal.ticket-action-modal.is-support-modal.ticket-modal-readable[data-employee-details] .employee-admin-ticket-head {
+  min-height: 0 !important;
+  padding: 16px 54px 12px 16px !important;
+}
+
+.employee-ticket-action-overlay article.employee-ticket-modal.ticket-action-modal.is-support-modal.ticket-modal-readable[data-employee-details] > .employee-admin-scroll-content {
+  display: block !important;
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  height: auto !important;
+  max-height: none !important;
+  padding-bottom: 20px !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  scrollbar-width: none !important;
+  scrollbar-gutter: auto !important;
+  scroll-padding-block: 12px;
+}
+
+.employee-ticket-action-overlay article[data-employee-details] * {
+  scrollbar-width: none !important;
+}
+.employee-ticket-action-overlay article[data-employee-details] *::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.employee-ticket-action-overlay article.employee-ticket-modal.ticket-action-modal.is-support-modal.ticket-modal-readable[data-employee-details] .ticket-meta-cell p {
+  font-weight: 600 !important;
+  line-height: 1.4 !important;
+  letter-spacing: 0 !important;
+}
+
+.employee-ticket-action-overlay article.employee-ticket-modal.ticket-action-modal.is-support-modal.ticket-modal-readable[data-employee-details] .employee-admin-control-stack {
+  margin: 0 !important;
+}
+
+.employee-ticket-action-overlay article.employee-ticket-modal.ticket-action-modal.is-support-modal.ticket-modal-readable[data-employee-details] .employee-admin-readonly-field {
+  min-height: 38px !important;
+  height: auto !important;
+  max-height: none !important;
+  margin: 0 !important;
+  padding: 8px 10px !important;
+  border: 1px solid #dfe6ef !important;
+  border-radius: 6px !important;
+  background: #fff !important;
+  font-size: 0.9rem !important;
+  line-height: 1.45 !important;
+  white-space: normal !important;
+  overflow: visible !important;
+  overflow-wrap: anywhere !important;
+  text-overflow: clip !important;
+}
+
+article[data-employee-details] :is(.employee-admin-control-stack, .employee-ticket-updates) dt {
+  margin: 0;
+  color: #354458;
+  font-size: 0.8rem;
+  font-weight: 650;
+  line-height: 1.4;
+  letter-spacing: 0;
+}
+
+.employee-ticket-action-overlay article.employee-ticket-modal.ticket-action-modal.is-support-modal.ticket-modal-readable[data-employee-details] .employee-ticket-updates {
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  gap: 12px !important;
+}
+
+.employee-ticket-update-value {
+  min-width: 0;
+  min-height: 40px;
+  margin: 0;
+  padding: 9px 10px;
+  border: 1px solid #dfe6ef;
+  border-radius: 6px;
+  background: #fff;
+  color: #334155;
+  font-size: 0.9rem;
+  font-weight: 400;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.employee-ticket-update-value.is-empty { background: #f8fafc; color: #64748b; }
+
+.employee-ticket-attachment-trigger {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 5px 9px;
+  border: 1px solid #dfe6ef;
+  border-radius: 6px;
+  background: #fff;
+  color: #42536a;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: 0;
+  cursor: pointer;
+}
+
+.employee-ticket-attachments { min-width: 0; margin: 0 0 12px; }
+.employee-ticket-attachments h4 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 8px;
+  color: #354458;
+  font-size: 0.8rem;
+  font-weight: 650;
+  line-height: 1.4;
+  letter-spacing: 0;
+}
+.employee-ticket-attachments h4 span { color: #64748b; font-weight: 400; }
+.employee-ticket-attachment-list { display: flex; flex-wrap: wrap; gap: 8px; }
+.employee-ticket-attachment {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: min(100%, 320px);
+  min-width: 0;
+  min-height: 64px;
+  padding: 8px;
+  border: 1px solid #dfe6ef;
+  border-radius: 6px;
+  background: #fff;
+  color: #334155;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  text-align: left;
+  cursor: pointer;
+}
+.employee-ticket-attachment img { flex: 0 0 64px; width: 64px; height: 48px; border-radius: 3px; object-fit: cover; }
+.employee-ticket-attachment span { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+.employee-ticket-attachment > svg { flex: 0 0 14px; }
+.employee-ticket-attachment-trigger:hover,
+.employee-ticket-attachment:hover { border-color: #94a3b8; }
+.employee-ticket-attachment-trigger:focus-visible,
+.employee-ticket-attachment:focus-visible { outline: 2px solid #b91c1c; outline-offset: 3px; }
+
+.employee-ticket-action-overlay article.employee-ticket-modal.ticket-action-modal.is-support-modal.ticket-modal-readable[data-employee-details] .employee-admin-modal-footer {
+  position: static !important;
+  flex: 0 0 auto !important;
+  width: 100% !important;
+  margin: 0 !important;
+  inset: auto !important;
+  transform: none !important;
+  gap: 10px !important;
+  min-height: 0 !important;
+  padding: 10px 16px !important;
+}
+.employee-ticket-action-overlay article.employee-ticket-modal.ticket-action-modal.is-support-modal.ticket-modal-readable[data-employee-details] .employee-admin-footer-btn {
+  min-width: 0 !important;
+  min-height: 40px !important;
+  height: auto !important;
+  padding: 9px 14px !important;
+  line-height: 1.4 !important;
+  white-space: normal !important;
+}
+
+body[data-portal-theme='dark'] article[data-employee-details] :is(.employee-ticket-update-value, .employee-ticket-attachment, .employee-ticket-attachment-trigger) {
+  border-color: #384456;
+  background: #202b39;
+  color: #e2e9f1;
+}
+body[data-portal-theme='dark'] article[data-employee-details] :is(dt, .employee-ticket-attachments h4) { color: #cbd5e1; }
+body[data-portal-theme='dark'] article[data-employee-details] .employee-ticket-update-value.is-empty { color: #b4c0ce; }
+body[data-portal-theme='dark'] .employee-ticket-action-overlay article.employee-ticket-modal.ticket-action-modal.is-support-modal.ticket-modal-readable[data-employee-details] .employee-admin-readonly-field {
+  border-color: #384456 !important;
+  background: #202b39 !important;
+  color: #e2e9f1 !important;
+}
+
+@media (max-width: 600px) {
+  .employee-ticket-action-overlay article.employee-ticket-modal.ticket-action-modal.is-support-modal.ticket-modal-readable[data-employee-details] {
+    max-height: calc(100dvh - 16px) !important;
+  }
+  .employee-ticket-action-overlay article.employee-ticket-modal.ticket-action-modal.is-support-modal.ticket-modal-readable[data-employee-details] .employee-admin-modal-footer {
+    flex-wrap: wrap !important;
+    padding: 10px !important;
+  }
+  .employee-ticket-action-overlay article.employee-ticket-modal.ticket-action-modal.is-support-modal.ticket-modal-readable[data-employee-details] .employee-admin-lock-pill {
+    max-width: 100% !important;
+  }
+}

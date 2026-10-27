@@ -56,7 +56,14 @@ const authorizePasswordRefresh = async () => {
 };
 
 const getActorName = (auth) =>
-  auth?.profile?.full_name || auth?.user?.email || 'Portal Admin';
+  auth?.isSuperadmin || isSuperadminRole(auth?.profile?.role)
+    ? 'Super Admin'
+    : auth?.profile?.full_name || auth?.user?.email || 'Portal Admin';
+
+const getProfileName = (profile = {}) =>
+  isSuperadminRole(profile.role)
+    ? 'Super Admin'
+    : profile.full_name || profile.email || 'portal account';
 
 const isMissingAuditTableError = (error) =>
   error?.code === '42P01' ||
@@ -170,7 +177,7 @@ export async function POST(request) {
 
     await writeAuditLog(supabaseAdmin, auth, {
       userId: id,
-      summary: `Temporary password refreshed for ${targetProfile.full_name || targetProfile.email}.`,
+      summary: `Temporary password refreshed for ${getProfileName(targetProfile)}.`,
     });
 
     return NextResponse.json({ temporaryPassword });

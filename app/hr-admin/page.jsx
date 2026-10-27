@@ -2,16 +2,17 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useConfirmDialog } from '@/components/ConfirmationDialog';
 import {
   BriefcaseBusiness,
   CalendarDays,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Download,
   Edit3,
   ExternalLink,
   FileText,
-  ImagePlus,
   LayoutDashboard,
   LogOut,
   Plus,
@@ -39,8 +40,12 @@ import {
   saveJobOpening,
   updateJobApplication,
 } from '@/lib/hr/hrContent';
+import PortalThemeToggle from '@/components/PortalThemeToggle';
+import PortalProfilePhotoControl from '@/components/PortalProfilePhotoControl';
 import '../admin-dashboard/admin-dashboard.css';
 import './hr-admin.css';
+import '@/components/PortalWorkspaceTheme.css';
+import '@/components/PortalAdminConsoleTheme.css';
 
 const ADMIN_DASHBOARD_ROUTE = '/admin-dashboard';
 const HRMAX_ROUTE = 'http://120.28.214.253/hrmax/';
@@ -64,7 +69,7 @@ const EMPLOYMENT_TYPES = ['Full-time', 'Part-time', 'Contract', 'Temporary', 'In
 const APPLICATION_STATUSES = ['new', 'reviewing', 'shortlisted', 'interview', 'hired', 'rejected', 'archived'];
 const ACTIONABLE_APPLICATION_STATUSES = new Set(['new', 'reviewing', 'shortlisted']);
 const FINAL_APPLICATION_STATUSES = new Set(['hired', 'rejected']);
-const JOB_POSTS_PER_PAGE = 5;
+const JOB_POSTS_PER_PAGE = 3;
 const HR_SELECTED_DAY_PAGE_SIZE = 2;
 const HR_REPORT_APPLICANTS_PAGE_SIZE = 3;
 const HR_ACTION_TYPES = [
@@ -544,18 +549,18 @@ const getPrintLetterhead = () => `
   </header>
 `;
 
-const getResumeFileName = (application = {}) =>
+const getApplicantDocumentTitle = (application = {}, documentType = 'document') =>
   `${String(application.applicantName || 'applicant')
     .trim()
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-') || 'applicant'}-resume`;
+    .replace(/[^a-z0-9]+/g, '-') || 'applicant'}-${documentType}`;
 
 const dataUrlToBlobUrl = (dataUrl = '') => {
   const [meta = '', encodedData = ''] = String(dataUrl).split(',');
   const mimeMatch = meta.match(/^data:([^;]+);base64$/i);
 
   if (!mimeMatch || !encodedData) {
-    throw new Error('This resume file cannot be previewed.');
+    throw new Error('This application document cannot be previewed.');
   }
 
   const byteCharacters = window.atob(encodedData);
@@ -670,6 +675,7 @@ const formatFileSize = (bytes = 0) => {
 
 export default function HrAdminPage() {
   const router = useRouter();
+  const confirmDialog = useConfirmDialog();
   const openingEditorRef = useRef(null);
   const openingTitleInputRef = useRef(null);
   const resumePreviewUrlsRef = useRef([]);
@@ -763,9 +769,9 @@ export default function HrAdminPage() {
   }, [router]);
 
   useEffect(() => {
-    if (!checked || !user) return;
+    if (!checked || !user?.id) return;
     loadHrData();
-  }, [checked, user]);
+  }, [checked, user?.id]);
 
   useEffect(
     () => () => {
@@ -876,6 +882,15 @@ export default function HrAdminPage() {
     return sortApplicationsByOption(searchedApplications, applicationSort);
   }, [applicationSearch, applicationSort, applicationStatus, applications]);
 
+  useEffect(() => {
+    if (activeTab !== 'applications') return;
+    if (selectedApplication && filteredApplications.some((application) => application.id === selectedApplication.id)) {
+      return;
+    }
+
+    setSelectedApplication(filteredApplications[0] || null);
+  }, [activeTab, filteredApplications, selectedApplication]);
+
   const reportApplicantsPageCount = Math.max(
     1,
     Math.ceil(filteredApplications.length / HR_REPORT_APPLICANTS_PAGE_SIZE),
@@ -977,9 +992,9 @@ export default function HrAdminPage() {
   const getApplicationStatusTimeline = (application = {}) => {
     const baseHistory = getBaseApplicationHistory(application);
     const currentStatus = application.status || 'new';
-    const alreadyHasCurrentStatus = baseHistory.some((entry) => entry.status === currentStatus);
+    const latestHistoryStatus = baseHistory.at(-1)?.status;
 
-    if (alreadyHasCurrentStatus) return baseHistory;
+    if (latestHistoryStatus === currentStatus) return baseHistory;
 
     return [
       ...baseHistory,
@@ -1052,6 +1067,15 @@ export default function HrAdminPage() {
       ? 'No applicants are marked for interview.'
       : 'No applications found.';
   const selectedApplicationLocked = isFinalApplicationStatus(selectedApplication?.status);
+  const selectedApplicationTimeline = selectedApplication
+    ? getApplicationStatusTimeline(selectedApplication)
+    : [];
+  const latestApplicationEvent = selectedApplicationTimeline.at(-1) || null;
+  const latestApplicationRemark = selectedApplicationLocked
+    ? getApplicationStatusRemarks(selectedApplication)
+        .filter((remark) => remark.status === selectedApplication.status)
+        .at(-1) || null
+    : null;
 
   const hrCommandCenter = useMemo(() => {
     const now = Date.now();
@@ -1159,6 +1183,11 @@ export default function HrAdminPage() {
       return;
     }
 
+    if (openingToSave.status === 'open' && !String(openingToSave.image || '').trim()) {
+      setNotice('A job poster is required before publishing.');
+      return;
+    }
+
     setIsSaving(true);
     try {
       const savedOpening = await saveJobOpening(openingToSave, user);
@@ -1183,6 +1212,16 @@ export default function HrAdminPage() {
   const handleOpeningQuickStatus = async (opening, status) => {
     if (!opening?.id || opening.status === status) return;
 
+    if (status === 'open' && !String(opening.image || '').trim()) {
+      setEditingOpening(opening);
+      setIsOpeningEditorVisible(true);
+      setNotice('Add a job poster before publishing this post.');
+      window.requestAnimationFrame(() => {
+        openingEditorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+      return;
+    }
+
     setIsSaving(true);
     setNotice('');
     try {
@@ -1203,7 +1242,13 @@ export default function HrAdminPage() {
 
   const handleDeleteOpening = async (opening) => {
     if (!opening?.id) return;
-    const confirmed = window.confirm(`Delete "${opening.title}" from job posts?`);
+    const confirmed = await confirmDialog({
+      title: 'Delete job opening?',
+      message: `Delete "${opening.title}" from job posts?`,
+      confirmLabel: 'Delete opening',
+      variant: 'danger',
+      warning: 'This action cannot be undone.',
+    });
     if (!confirmed) return;
 
     setIsSaving(true);
@@ -1446,17 +1491,24 @@ export default function HrAdminPage() {
     }
 
     const applicantName = selectedApplication.applicantName || 'this applicant';
-    const confirmed = window.confirm(
-      `Permanently delete ${applicantName}'s application record? This cannot be undone.`,
-    );
+    const confirmed = await confirmDialog({
+      title: 'Delete application record?',
+      message: `Permanently delete ${applicantName}'s application record?`,
+      confirmLabel: 'Delete record',
+      variant: 'danger',
+      warning: 'This action cannot be undone.',
+    });
     if (!confirmed) return;
 
     setIsSaving(true);
     setNotice('');
     try {
-      await deleteJobApplication(selectedApplication.id, selectedApplication.resumeUrl, {
-        requestedByRole: user?.role,
-      });
+      await deleteJobApplication(
+        selectedApplication.id,
+        selectedApplication.resumeUrl,
+        selectedApplication.coverLetterUrl,
+        { requestedByRole: user?.role },
+      );
       setApplications((current) =>
         current.filter((application) => application.id !== selectedApplication.id),
       );
@@ -1469,9 +1521,8 @@ export default function HrAdminPage() {
     }
   };
 
-  const handleViewResume = (application) => {
-    const resumeUrl = application?.resumeUrl || '';
-    if (!resumeUrl) return;
+  const handleViewApplicantDocument = (application, fileUrl, documentType) => {
+    if (!fileUrl) return;
 
     const previewWindow = window.open('', '_blank');
 
@@ -1481,15 +1532,15 @@ export default function HrAdminPage() {
     }
 
     try {
-      if (!resumeUrl.startsWith('data:')) {
+      if (!fileUrl.startsWith('data:')) {
         previewWindow.opener = null;
-        previewWindow.location.href = resumeUrl;
+        previewWindow.location.href = fileUrl;
         return;
       }
 
-      const blobUrl = dataUrlToBlobUrl(resumeUrl);
+      const blobUrl = dataUrlToBlobUrl(fileUrl);
       resumePreviewUrlsRef.current.push(blobUrl);
-      const title = `${getResumeFileName(application)}.pdf`;
+      const title = `${getApplicantDocumentTitle(application, documentType)}.pdf`;
 
       previewWindow.document.write(`
         <!doctype html>
@@ -1523,7 +1574,7 @@ export default function HrAdminPage() {
       previewWindow.opener = null;
     } catch (error) {
       previewWindow.close();
-      setNotice(error.message || 'Unable to open this resume.');
+      setNotice(error.message || `Unable to open the ${documentType}.`);
     }
   };
 
@@ -1765,24 +1816,17 @@ export default function HrAdminPage() {
           <div className="portal-topbar-copy">
             <span className="portal-eyebrow">HR Admin</span>
             <h1>Careers Admin Console</h1>
-            <p>Publish job posts, review applicants, and prepare HR recruitment reports.</p>
           </div>
 
           <div className="portal-topbar-actions">
-              <span className="portal-status-pill">
-                <span className="dot" />
-              {openingStats.open} Published Posts
-              </span>
-            <span className="portal-status-pill alert">
-              <span className="dot" />
-              {openingStats.newApplications} New
-            </span>
-            <span className="portal-status-pill">
-              <span className="dot" />
-              {openingStats.applications} Applicants
-            </span>
+            <PortalThemeToggle />
             <div className="profile-chip">
-              <span className="profile-chip-avatar">{user.initials || user.name?.slice(0, 2) || 'HR'}</span>
+              <PortalProfilePhotoControl
+                user={user}
+                fallback="HR"
+                onUserUpdated={setUser}
+                onStatus={(message) => setNotice(message)}
+              />
               <div className="profile-chip-copy">
                 <strong>{user.name}</strong>
                 <span>{user.designation || user.department || 'HR Admin'}</span>
@@ -1864,15 +1908,8 @@ export default function HrAdminPage() {
         {activeTab === 'dashboard' ? (
           <section className="hr-dashboard-view" aria-label="HR dashboard">
             <section className="panel-card glass hr-console-hero">
-              <img src="/Logos/Logo.png" alt="" className="admin-hero-logo" aria-hidden="true" />
               <div className="hero-copy">
-                <span className="section-kicker">HR Dashboard</span>
-                <h2>Today&apos;s recruitment overview.</h2>
-                <p>Track live job posts, applicant volume, and records that still need HR movement.</p>
-              </div>
-              <div className="hero-meta hr-hero-meta" aria-label="HR console status">
-                <span className="meta-pill">{openingStats.open} Published Posts</span>
-                <span className="meta-pill">{openingStats.newApplications} New Applicants</span>
+                <span className="section-kicker">Recruitment Center</span>
               </div>
             </section>
 
@@ -1907,9 +1944,8 @@ export default function HrAdminPage() {
               <div className="hr-panel-head">
                 <div>
                   <span className="hr-panel-kicker">Today&apos;s HR Focus</span>
-                  <h2>Applicants Needing Attention</h2>
                 </div>
-                <button className="hr-btn" type="button" onClick={loadHrData}>
+                <button className="hr-sync-button" type="button" onClick={loadHrData}>
                   <RefreshCw size={15} />
                   Sync
                 </button>
@@ -1999,7 +2035,7 @@ export default function HrAdminPage() {
                 ))}
               </div>
 
-              <div className="hr-list">
+              <div className={`hr-list hr-opening-list${!isLoading && paginatedOpenings.length ? ' has-posts' : ''}`}>
                 {isLoading ? (
                   <div className="hr-empty">Loading job posts...</div>
                 ) : filteredOpenings.length ? (
@@ -2057,18 +2093,20 @@ export default function HrAdminPage() {
                     onClick={() => setOpeningPage((current) => Math.max(1, current - 1))}
                     disabled={openingPage === 1}
                     aria-label="Previous job posts page"
+                    title="Previous page"
                   >
-                    &lt;
+                    <ChevronLeft size={17} aria-hidden="true" />
                   </button>
-                  <span>Page {openingPage} - {openingPageCount}</span>
+                  <span>Page {openingPage} of {openingPageCount}</span>
                   <button
                     className="hr-pagination-btn"
                     type="button"
                     onClick={() => setOpeningPage((current) => Math.min(openingPageCount, current + 1))}
                     disabled={openingPage === openingPageCount}
                     aria-label="Next job posts page"
+                    title="Next page"
                   >
-                    &gt;
+                    <ChevronRight size={17} aria-hidden="true" />
                   </button>
                 </div>
               ) : null}
@@ -2083,11 +2121,11 @@ export default function HrAdminPage() {
                   </div>
                   <div className="hr-editor-head-actions">
                     <button
-                      className="hr-icon-link"
+                      className="hr-editor-close"
                       type="button"
                       onClick={() => setIsOpeningEditorVisible(false)}
-                      title="Minimize form"
-                      aria-label="Minimize form"
+                      title="Close editor"
+                      aria-label="Close editor"
                     >
                       <X size={18} />
                     </button>
@@ -2108,11 +2146,7 @@ export default function HrAdminPage() {
                   <div className="hr-editor-main">
                     <section className="hr-editor-section">
                       <div className="hr-editor-section-head">
-                        <span className="hr-editor-step">01</span>
-                        <div>
-                          <strong>Role Details</strong>
-                          <small>Set the core information applicants will scan first.</small>
-                        </div>
+                        <strong>Role details</strong>
                       </div>
                       <div className="hr-form-grid">
                         <label className="hr-field hr-field-wide">
@@ -2158,28 +2192,13 @@ export default function HrAdminPage() {
 
                     <section className="hr-editor-section">
                       <div className="hr-editor-section-head">
-                        <span className="hr-editor-step">02</span>
-                        <div>
-                          <strong>Poster Artwork</strong>
-                          <small>Upload a full poster or paste an existing image URL.</small>
-                        </div>
+                        <strong>Job poster</strong>
+                        <small>Required to publish</small>
                       </div>
-                      <div className="hr-field hr-field-wide hr-poster-uploader">
-                        <span>Job Poster / Image</span>
-                        <div className="hr-poster-grid">
-                          <div className="hr-poster-preview">
-                            {editingOpening.image ? (
-                              <img src={editingOpening.image} alt={`${editingOpening.title || 'Job opening'} poster preview`} />
-                            ) : (
-                              <div className="hr-poster-placeholder">
-                                <ImagePlus size={26} aria-hidden="true" />
-                                <strong>No poster attached</strong>
-                                <small>Upload a hiring poster or role image.</small>
-                              </div>
-                            )}
-                          </div>
-
-                          <div className="hr-poster-controls">
+                      <div className="hr-poster-content">
+                        <div className="hr-poster-field">
+                          <span>Poster image</span>
+                          <div className="hr-poster-control-row">
                             <input
                               ref={imageInputRef}
                               className="sr-only"
@@ -2188,101 +2207,54 @@ export default function HrAdminPage() {
                               onChange={handlePosterUpload}
                             />
                             <button
-                              className="hr-poster-action"
+                              className="hr-btn hr-poster-upload-button"
                               type="button"
                               onClick={() => imageInputRef.current?.click()}
-                              title="Upload image"
-                              aria-label="Upload image"
                             >
-                              <UploadCloud size={16} />
+                              <UploadCloud size={16} aria-hidden="true" />
+                              {editingOpening.image ? 'Replace poster' : 'Upload poster'}
                             </button>
-                            <button
-                              className="hr-poster-action"
-                              type="button"
-                              onClick={() => {
-                                handleOpeningChange('image', '');
-                                setImageUploadMeta('');
-                              }}
-                              disabled={!editingOpening.image}
-                              title="Remove image"
-                              aria-label="Remove image"
-                            >
-                              <X size={16} />
-                            </button>
-                            <small>{imageUploadMeta || 'Images are optimized before saving.'}</small>
+                            {editingOpening.image ? (
+                              <div className="hr-poster-selection">
+                                <img src={editingOpening.image} alt="Selected job poster" />
+                                <span>{imageUploadMeta || 'Poster image selected'}</span>
+                                <button
+                                  className="hr-poster-remove"
+                                  type="button"
+                                  onClick={() => {
+                                    handleOpeningChange('image', '');
+                                    setImageUploadMeta('');
+                                  }}
+                                  title="Remove poster"
+                                  aria-label="Remove poster"
+                                >
+                                  <X size={17} aria-hidden="true" />
+                                </button>
+                              </div>
+                            ) : (
+                              <span className="hr-poster-empty">No poster selected</span>
+                            )}
                           </div>
                         </div>
                       </div>
-                      <label className="hr-field hr-field-wide">
-                        <span>Image URL</span>
-                        <input
-                          value={editingOpening.image}
-                          onChange={(event) => handleOpeningChange('image', event.target.value)}
-                          placeholder="https://..."
-                        />
-                      </label>
                     </section>
 
                     <section className="hr-editor-section">
                       <div className="hr-editor-section-head">
-                        <span className="hr-editor-step">03</span>
-                        <div>
-                          <strong>Candidate Message</strong>
-                          <small>Describe the role, qualifications, and application notes.</small>
-                        </div>
+                        <strong>Description</strong>
                       </div>
                       <label className="hr-field hr-field-wide">
-                        <span>Description</span>
+                        <span>Role description</span>
                         <textarea
                           value={editingOpening.description}
                           onChange={(event) => handleOpeningChange('description', event.target.value)}
-                          placeholder="Write the role summary, qualifications, and application notes."
+                          placeholder="Describe the role, qualifications, and application instructions."
                           rows={8}
                         />
                       </label>
                     </section>
                   </div>
 
-                  <aside className="hr-editor-preview-panel" aria-label="Job post live preview">
-                    <div className="hr-preview-panel-head">
-                      <span className="hr-panel-kicker">Live Preview</span>
-                      <span className={`hr-status-chip status-${editingOpening.status}`}>
-                        {statusLabel(editingOpening.status || 'draft')}
-                      </span>
-                    </div>
-                    <article className="hr-job-preview-card">
-                      <div className="hr-job-preview-media">
-                        {editingOpening.image ? (
-                          <img src={editingOpening.image} alt="" aria-hidden="true" />
-                        ) : (
-                          <div>
-                            <ImagePlus size={24} aria-hidden="true" />
-                            <span>Poster preview</span>
-                          </div>
-                        )}
-                      </div>
-                      <div className="hr-job-preview-copy">
-                        <span>{editingOpening.department || 'Department'}</span>
-                        <h3>{editingOpening.title || 'Job title preview'}</h3>
-                        <div className="hr-job-preview-meta">
-                          <small>{editingOpening.location || 'Location'}</small>
-                          <small>{editingOpening.type || 'Employment type'}</small>
-                        </div>
-                        <p>
-                          {editingOpening.description ||
-                            'Your job summary will appear here so HR can review the applicant-facing message before publishing.'}
-                        </p>
-                      </div>
-                    </article>
-                    <div className="hr-publish-checklist">
-                      <strong>Publish Readiness</strong>
-                      <span className={editingOpening.title.trim() ? 'is-ready' : ''}>Job title</span>
-                      <span className={editingOpening.department.trim() ? 'is-ready' : ''}>Department</span>
-                      <span className={editingOpening.location.trim() ? 'is-ready' : ''}>Location</span>
-                      <span className={editingOpening.description.trim() ? 'is-ready' : ''}>Description</span>
-                      <span className={editingOpening.image.trim() ? 'is-ready' : ''}>Image</span>
-                    </div>
-                  </aside>
                 </div>
 
                 <div className="hr-editor-actions">
@@ -2335,8 +2307,25 @@ export default function HrAdminPage() {
                   />
                 </label>
                 <label className="hr-sort-control">
-                  <span>Sort</span>
-                  <select value={applicationSort} onChange={(event) => setApplicationSort(event.target.value)}>
+                  <select
+                    aria-label="Filter applicants by status"
+                    value={applicationStatus}
+                    onChange={(event) => setApplicationStatus(event.target.value)}
+                  >
+                    <option value="all">All statuses</option>
+                    {APPLICATION_STATUSES.map((status) => (
+                      <option key={status} value={status}>
+                        {statusLabel(status)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="hr-sort-control">
+                  <select
+                    aria-label="Sort applicants"
+                    value={applicationSort}
+                    onChange={(event) => setApplicationSort(event.target.value)}
+                  >
                     <option value="newest">Newest first</option>
                     <option value="oldest">Oldest first</option>
                     <option value="name">Name A-Z</option>
@@ -2384,28 +2373,26 @@ export default function HrAdminPage() {
                       {(selectedApplication.applicantName || 'A').slice(0, 1).toUpperCase()}
                     </span>
                     <div className="hr-applicant-record-copy">
-                      <span className="hr-panel-kicker">Selected Applicant</span>
                       <h2>{selectedApplication.applicantName || 'Unnamed Applicant'}</h2>
                       <p>{selectedApplication.jobTitle || 'General Application'}</p>
                       <small>{getApplicantNumber(selectedApplication)}</small>
                     </div>
-                    <span className={`hr-status-chip status-${selectedApplication.status}`}>
-                      {statusLabel(selectedApplication.status)}
-                    </span>
-                  </div>
-
-                  {selectedApplicationLocked ? (
-                    <div className="hr-lock-notice" role="note">
-                      This applicant is finalized and locked for viewing only.
+                    <div className="hr-applicant-record-meta">
+                      <span className={`hr-status-chip status-${selectedApplication.status}`}>
+                        {statusLabel(selectedApplication.status)}
+                      </span>
+                      {selectedApplicationLocked ? <small>View only</small> : null}
                     </div>
-                  ) : null}
+                  </div>
 
                   <div className="hr-applicant-record-actions">
                     {selectedApplication.resumeUrl ? (
                       <button
                         className="hr-resume-link"
                         type="button"
-                        onClick={() => handleViewResume(selectedApplication)}
+                        onClick={() =>
+                          handleViewApplicantDocument(selectedApplication, selectedApplication.resumeUrl, 'resume')
+                        }
                       >
                         <ExternalLink size={16} />
                         View Resume
@@ -2413,6 +2400,22 @@ export default function HrAdminPage() {
                     ) : (
                       <span className="hr-muted-note">No resume attached</span>
                     )}
+                    {selectedApplication.coverLetterUrl ? (
+                      <button
+                        className="hr-resume-link"
+                        type="button"
+                        onClick={() =>
+                          handleViewApplicantDocument(
+                            selectedApplication,
+                            selectedApplication.coverLetterUrl,
+                            'cover-letter',
+                          )
+                        }
+                      >
+                        <FileText size={16} />
+                        View Cover Letter
+                      </button>
+                    ) : null}
                     {canDeleteApplications ? (
                       <button
                         className="hr-btn hr-btn-danger"
@@ -2426,170 +2429,194 @@ export default function HrAdminPage() {
                     ) : null}
                   </div>
 
-                  <div className="hr-record-section">
-                    <div className="hr-record-section-head">
-                      <span>Contact</span>
-                      <small>Applicant identity and reachable details</small>
-                    </div>
+                  {selectedApplication.coverLetter && !selectedApplication.coverLetterUrl ? (
+                    <details className="hr-record-section hr-review-disclosure hr-application-legacy-letter">
+                      <summary>Previous cover letter</summary>
+                      <p>{selectedApplication.coverLetter}</p>
+                    </details>
+                  ) : null}
+
+                  <details className="hr-record-section hr-review-disclosure">
+                    <summary>
+                      <span>Contact details</span>
+                      <ChevronDown size={17} aria-hidden="true" />
+                    </summary>
                     <div className="hr-detail-grid">
                       <div>
-                        <span>Applicant No.</span>
-                        <strong>{getApplicantNumber(selectedApplication)}</strong>
-                      </div>
-                      <div>
-                        <span>Name</span>
-                        <strong>{selectedApplication.applicantName || 'Unnamed Applicant'}</strong>
-                      </div>
-                      <div>
                         <span>Email</span>
-                        <strong>{selectedApplication.email || 'Not provided'}</strong>
+                        <strong title={selectedApplication.email || 'Not provided'}>
+                          {selectedApplication.email || 'Not provided'}
+                        </strong>
                       </div>
                       <div>
                         <span>Phone</span>
-                        <strong>{selectedApplication.phone || 'Not provided'}</strong>
+                        <strong title={selectedApplication.phone || 'Not provided'}>
+                          {selectedApplication.phone || 'Not provided'}
+                        </strong>
                       </div>
                       <div>
                         <span>Submitted</span>
-                        <strong>{formatDate(selectedApplication.createdAt)}</strong>
+                        <strong title={formatDate(selectedApplication.createdAt)}>
+                          {formatDate(selectedApplication.createdAt)}
+                        </strong>
                       </div>
                     </div>
-                  </div>
+                  </details>
 
-                  <div className="hr-record-section">
-                    <div className="hr-record-section-head">
-                      <span>HR Action</span>
-                      <small>Choose an action, add structured details, then save the movement</small>
-                    </div>
-                    <div className="hr-current-status-panel">
-                      <div>
-                        <span className="hr-panel-kicker">Current Status</span>
-                        <strong>{statusLabel(selectedApplication.status)}</strong>
+                  {selectedApplicationLocked ? (
+                    <section className="hr-record-section hr-final-decision">
+                      <div className="hr-record-section-head">
+                        <span>Decision summary</span>
+                        <small>
+                          {latestApplicationEvent?.timestamp
+                            ? formatDate(latestApplicationEvent.timestamp)
+                            : 'Finalized'}
+                        </small>
                       </div>
-                      <div>
-                        <span className="hr-panel-kicker">Applied For</span>
-                        <strong>{selectedApplication.jobTitle || 'General Application'}</strong>
+                      <strong className="hr-final-decision-action">
+                        {latestApplicationEvent
+                          ? getTimelineEntryLabel(latestApplicationEvent)
+                          : statusLabel(selectedApplication.status)}
+                      </strong>
+                      <p className="hr-final-decision-note">
+                        {latestApplicationRemark?.remarks || 'No decision note was recorded.'}
+                      </p>
+                      {latestApplicationEvent ? (
+                        <small className="hr-final-decision-meta">
+                          {getTimelineEntryMeta(latestApplicationEvent)}
+                        </small>
+                      ) : null}
+                    </section>
+                  ) : (
+                    <div className="hr-record-section">
+                      <div className="hr-record-section-head">
+                        <span>HR Action</span>
                       </div>
-                    </div>
 
-                    <div className="hr-action-grid">
-                      <label className="hr-field">
-                        <span>Action Type</span>
-                        <select
-                          value={applicationDraft.actionType}
-                          onChange={(event) => handleApplicationDraftChange('actionType', event.target.value)}
+                      <div className="hr-action-grid">
+                        <label className="hr-field">
+                          <span>Next step</span>
+                          <select
+                            value={applicationDraft.actionType}
+                            onChange={(event) => handleApplicationDraftChange('actionType', event.target.value)}
+                            disabled={isSaving || selectedApplicationLocked}
+                          >
+                            {HR_ACTION_TYPES.map((action) => (
+                              <option key={action.value} value={action.value}>
+                                {action.label}
+                              </option>
+                            ))}
+                          </select>
+                          <small className="hr-action-outcome" aria-live="polite">
+                            Moves applicant to {statusLabel(applicationDraft.status || selectedApplication.status)}
+                          </small>
+                        </label>
+                        {applicationDraft.status === 'interview' ? (
+                          <>
+                            <label className="hr-field">
+                              <span>Interview Date</span>
+                              <input
+                                type="datetime-local"
+                                value={applicationDraft.interviewAt}
+                                onChange={(event) => handleApplicationDraftChange('interviewAt', event.target.value)}
+                                disabled={isSaving || selectedApplicationLocked}
+                              />
+                            </label>
+                            <label className="hr-field">
+                              <span>Interview Type</span>
+                              <select
+                                value={applicationDraft.interviewType}
+                                onChange={(event) => handleApplicationDraftChange('interviewType', event.target.value)}
+                                disabled={isSaving || selectedApplicationLocked}
+                              >
+                                {INTERVIEW_TYPES.map((type) => (
+                                  <option key={type} value={type}>
+                                    {type}
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
+                            <label className="hr-field hr-field-wide">
+                              <span>Interviewer</span>
+                              <input
+                                value={applicationDraft.interviewer}
+                                onChange={(event) => handleApplicationDraftChange('interviewer', event.target.value)}
+                                placeholder="HR officer, panel, or department head"
+                                disabled={isSaving || selectedApplicationLocked}
+                              />
+                            </label>
+                          </>
+                        ) : null}
+                        <label className="hr-field hr-field-wide">
+                          <span>Action Remarks</span>
+                          <textarea
+                            value={applicationDraft.hrNotes}
+                            onChange={(event) => handleApplicationDraftChange('hrNotes', event.target.value)}
+                            placeholder="Add relevant notes or the reason for this decision."
+                            disabled={isSaving || selectedApplicationLocked}
+                            rows={4}
+                          />
+                        </label>
+                      </div>
+                      <div className="hr-detail-actions">
+                        <button
+                          className="hr-btn hr-btn-primary"
+                          type="button"
+                          onClick={handleSaveApplicationDetails}
                           disabled={isSaving || selectedApplicationLocked}
                         >
-                          {HR_ACTION_TYPES.map((action) => (
-                            <option key={action.value} value={action.value}>
-                              {action.label}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                      <div className="hr-field hr-action-status-field" aria-live="polite">
-                        <span>Status</span>
-                        <div className="hr-action-status-preview">
-                          <strong>{statusLabel(applicationDraft.status || selectedApplication.status)}</strong>
-                        </div>
+                          <FileText size={16} />
+                          {isSaving ? 'Saving...' : 'Save Action'}
+                        </button>
                       </div>
-                      {applicationDraft.status === 'interview' ? (
-                        <>
-                          <label className="hr-field">
-                            <span>Interview Date</span>
-                            <input
-                              type="datetime-local"
-                              value={applicationDraft.interviewAt}
-                              onChange={(event) => handleApplicationDraftChange('interviewAt', event.target.value)}
-                              disabled={isSaving || selectedApplicationLocked}
-                            />
-                          </label>
-                          <label className="hr-field">
-                            <span>Interview Type</span>
-                            <select
-                              value={applicationDraft.interviewType}
-                              onChange={(event) => handleApplicationDraftChange('interviewType', event.target.value)}
-                              disabled={isSaving || selectedApplicationLocked}
-                            >
-                              {INTERVIEW_TYPES.map((type) => (
-                                <option key={type} value={type}>
-                                  {type}
-                                </option>
-                              ))}
-                            </select>
-                          </label>
-                          <label className="hr-field hr-field-wide">
-                            <span>Interviewer</span>
-                            <input
-                              value={applicationDraft.interviewer}
-                              onChange={(event) => handleApplicationDraftChange('interviewer', event.target.value)}
-                              placeholder="HR officer, panel, or department head"
-                              disabled={isSaving || selectedApplicationLocked}
-                            />
-                          </label>
-                        </>
-                      ) : null}
-                      <label className="hr-field hr-field-wide">
-                        <span>Action Remarks</span>
-                        <textarea
-                          value={applicationDraft.hrNotes}
-                          onChange={(event) => handleApplicationDraftChange('hrNotes', event.target.value)}
-                          placeholder="Screening notes, requirements checked, decision reason, or follow-up details."
-                          disabled={selectedApplicationLocked}
-                          rows={5}
-                        />
-                      </label>
                     </div>
-                    <div className="hr-detail-actions">
-                      <button
-                        className="hr-btn hr-btn-primary"
-                        type="button"
-                        onClick={handleSaveApplicationDetails}
-                        disabled={isSaving || selectedApplicationLocked}
-                      >
-                        <FileText size={16} />
-                        {isSaving ? 'Saving...' : 'Save Action'}
-                      </button>
-                    </div>
-                  </div>
+                  )}
 
-                  <div className="hr-record-section hr-record-section-last">
-                    <div className="hr-record-section-head">
-                      <span>Timeline</span>
-                      <small>Status trail for this applicant</small>
-                    </div>
+                  <details className="hr-record-section hr-record-section-last hr-review-disclosure">
+                    <summary>
+                      <span>Activity history</span>
+                      <small>
+                        {selectedApplicationTimeline.length}{' '}
+                        {selectedApplicationTimeline.length === 1 ? 'update' : 'updates'}
+                        {latestApplicationEvent?.timestamp
+                          ? ` - Last updated ${formatDate(latestApplicationEvent.timestamp)}`
+                          : ''}
+                      </small>
+                      <ChevronDown size={17} aria-hidden="true" />
+                    </summary>
                     <div className="hr-history">
-                    {getApplicationStatusTimeline(selectedApplication).map((entry, index) => {
-                      const entryRemarks = getEntryRemarkHistory(entry);
+                      {selectedApplicationTimeline.slice().reverse().map((entry, index) => {
+                        const entryRemarks = getEntryRemarkHistory(entry);
 
-                      return (
-                        <div className="hr-history-item" key={`${entry.status}-${entry.timestamp || index}`}>
-                          <span className={`hr-status-chip status-${entry.status}`}>{statusLabel(entry.status)}</span>
-                          <div className="hr-history-body">
-                            <div className="hr-history-line">
-                              <strong>{getTimelineEntryLabel(entry)}</strong>
-                              <span>{formatDate(entry.timestamp)}</span>
-                            </div>
-                            <small className="hr-history-meta">
-                              {getTimelineEntryMeta(entry)}
-                            </small>
-                            {entry.interviewAt || entry.interviewType || entry.interviewer ? (
-                              <div className="hr-history-details">
-                                {entry.interviewAt ? <span>Interview: {formatDate(entry.interviewAt)}</span> : null}
-                                {entry.interviewType ? <span>Type: {entry.interviewType}</span> : null}
-                                {entry.interviewer ? <span>Interviewer: {entry.interviewer}</span> : null}
+                        return (
+                          <div className="hr-history-item" key={`${entry.status}-${entry.timestamp || index}`}>
+                            <span className={`hr-status-chip status-${entry.status}`}>{statusLabel(entry.status)}</span>
+                            <div className="hr-history-body">
+                              <div className="hr-history-line">
+                                <strong>{getTimelineEntryLabel(entry)}</strong>
+                                <span>{formatDate(entry.timestamp)}</span>
                               </div>
-                            ) : null}
-                            {entryRemarks.map((remark, remarkIndex) => (
-                              <p className="hr-history-remark" key={`${remark.timestamp || remarkIndex}-${remarkIndex}`}>
-                                <strong>Remarks:</strong> {remark.text}
-                              </p>
-                            ))}
+                              <small className="hr-history-meta">
+                                {getTimelineEntryMeta(entry)}
+                              </small>
+                              {entry.interviewAt || entry.interviewType || entry.interviewer ? (
+                                <div className="hr-history-details">
+                                  {entry.interviewAt ? <span>Interview: {formatDate(entry.interviewAt)}</span> : null}
+                                  {entry.interviewType ? <span>Type: {entry.interviewType}</span> : null}
+                                  {entry.interviewer ? <span>Interviewer: {entry.interviewer}</span> : null}
+                                </div>
+                              ) : null}
+                              {entryRemarks.map((remark, remarkIndex) => (
+                                <p className="hr-history-remark" key={`${remark.timestamp || remarkIndex}-${remarkIndex}`}>
+                                  <strong>Remarks:</strong> {remark.text}
+                                </p>
+                              ))}
+                            </div>
                           </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
                     </div>
-                  </div>
+                  </details>
 
                 </>
               ) : (
@@ -2901,8 +2928,11 @@ export default function HrAdminPage() {
                   </div>
                 </label>
                 <label className="hr-sort-control">
-                  <span>Sort</span>
-                  <select value={applicationSort} onChange={(event) => setApplicationSort(event.target.value)}>
+                  <select
+                    aria-label="Sort applicant records"
+                    value={applicationSort}
+                    onChange={(event) => setApplicationSort(event.target.value)}
+                  >
                     <option value="newest">Newest first</option>
                     <option value="oldest">Oldest first</option>
                     <option value="name">Name A-Z</option>
@@ -2912,73 +2942,66 @@ export default function HrAdminPage() {
                 </label>
               </div>
 
-              <div className="hr-report-table-wrap">
-                <table className="hr-report-table">
-                  <thead>
-                    <tr>
-                      <th>No.</th>
-                      <th>Name</th>
-                      <th>Email</th>
-                      <th>Phone</th>
-                      <th>Role</th>
-                      <th>Submitted</th>
-                      <th>Remarks</th>
-                      <th>Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredApplications.length ? (
-                      pagedReportApplications.map((application) => {
-                        const statusRemarks = getApplicationStatusRemarks(application);
+              <div className="hr-applicant-record-list">
+                {filteredApplications.length ? (
+                  pagedReportApplications.map((application) => {
+                    const statusRemarks = getApplicationStatusRemarks(application);
 
-                        return (
-                          <tr
-                            className={selectedReportApplicationId === application.id ? 'is-selected' : ''}
-                            key={application.id}
-                            onClick={() => setSelectedReportApplicationId(application.id)}
-                            onKeyDown={(event) => {
-                              if (event.key === 'Enter' || event.key === ' ') {
-                                event.preventDefault();
-                                setSelectedReportApplicationId(application.id);
-                              }
-                            }}
-                            role="button"
-                            tabIndex={0}
-                          >
-                            <td>{getApplicantNumber(application)}</td>
-                            <td>{application.applicantName || 'Unnamed Applicant'}</td>
-                            <td>{application.email || 'Not provided'}</td>
-                            <td>{application.phone || 'Not provided'}</td>
-                            <td>{application.jobTitle || 'General Application'}</td>
-                            <td>{formatDate(application.createdAt)}</td>
-                            <td>
-                              {statusRemarks.length ? (
-                                <div className="hr-report-remarks-list">
-                                  {statusRemarks.map((remark, index) => (
-                                    <small key={`${remark.status}-${remark.timestamp || index}`}>
-                                      <strong>{statusLabel(remark.status)}:</strong> {remark.remarks}
-                                    </small>
-                                  ))}
-                                </div>
-                              ) : (
-                                <span className="hr-report-no-remarks">No remarks</span>
-                              )}
-                            </td>
-                            <td>
-                              <span className={`hr-status-chip status-${application.status}`}>
-                                {statusLabel(application.status)}
+                    return (
+                      <button
+                        className={`hr-applicant-record-card${selectedReportApplicationId === application.id ? ' is-selected' : ''}`}
+                        key={application.id}
+                        type="button"
+                        aria-pressed={selectedReportApplicationId === application.id}
+                        onClick={() => setSelectedReportApplicationId(application.id)}
+                      >
+                        <span className="hr-applicant-record-card-head">
+                          <span className="hr-applicant-record-identity">
+                            <strong>{application.applicantName || 'Unnamed Applicant'}</strong>
+                            <small>{getApplicantNumber(application)}</small>
+                          </span>
+                          <span className={`hr-status-chip status-${application.status}`}>
+                            {statusLabel(application.status)}
+                          </span>
+                        </span>
+                        <span className="hr-applicant-record-fields">
+                          <span className="hr-applicant-record-field hr-applicant-record-email">
+                            <small>Email</small>
+                            <strong>{application.email || 'Not provided'}</strong>
+                          </span>
+                          <span className="hr-applicant-record-field">
+                            <small>Phone</small>
+                            <strong>{application.phone || 'Not provided'}</strong>
+                          </span>
+                          <span className="hr-applicant-record-field">
+                            <small>Role</small>
+                            <strong>{application.jobTitle || 'General Application'}</strong>
+                          </span>
+                          <span className="hr-applicant-record-field">
+                            <small>Submitted</small>
+                            <strong>{formatDate(application.createdAt)}</strong>
+                          </span>
+                          <span className="hr-applicant-record-field hr-applicant-record-remarks">
+                            <small>Remarks</small>
+                            {statusRemarks.length ? (
+                              <span className="hr-report-remarks-list">
+                                {statusRemarks.map((remark, index) => (
+                                  <small key={`${remark.status}-${remark.timestamp || index}`}>
+                                    <strong>{statusLabel(remark.status)}:</strong> {remark.remarks}
+                                  </small>
+                                ))}
                               </span>
-                            </td>
-                          </tr>
-                        );
-                      })
-                    ) : (
-                      <tr>
-                        <td colSpan={8}>No applicants found.</td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
+                            ) : (
+                              <strong className="hr-report-no-remarks">No remarks</strong>
+                            )}
+                          </span>
+                        </span>
+                      </button>
+                    );
+                  })
+                ) : (
+                  <p className="hr-applicant-record-empty">No applicants found.</p>
+                )}
               </div>
 
               {filteredApplications.length ? (

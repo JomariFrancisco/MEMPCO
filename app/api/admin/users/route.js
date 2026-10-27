@@ -16,7 +16,7 @@ import { checkRateLimit, rateLimitResponse } from '@/lib/server/rateLimit';
 
 const BASE_PROFILE_COLUMNS =
   'id, role, full_name, employee_id, department, branch, office, email, phone, status, created_at, updated_at';
-const PROFILE_COLUMNS = `${BASE_PROFILE_COLUMNS}, designation`;
+const PROFILE_COLUMNS = `${BASE_PROFILE_COLUMNS}, designation, area_id`;
 const AUDIT_COLUMNS = 'id, user_id, actor_id, actor_name, action, summary, changes, created_at';
 
 const normalizeCreateUserError = (error) => {
@@ -42,6 +42,11 @@ const isMissingDesignationColumnError = (error) =>
   error?.code === 'PGRST204' ||
   error?.message?.toLowerCase().includes('designation');
 
+const isMissingAreaIdColumnError = (error) =>
+  error?.code === '42703' ||
+  error?.code === 'PGRST204' ||
+  error?.message?.toLowerCase().includes('area_id');
+
 const isMissingAuditTableError = (error) =>
   error?.code === '42P01' ||
   error?.code === 'PGRST205' ||
@@ -55,21 +60,25 @@ const normalizePortalRole = (role = '') =>
 
 const isPrivilegedRole = (role = '') => {
   const normalizedRole = normalizePortalRole(role);
-  return normalizedRole === 'admin' || normalizedRole === 'superadmin';
+  return ['admin', 'mrdss_admin', 'branch_manager_admin', 'area_manager_admin', 'coo_admin', 'superadmin'].includes(normalizedRole);
 };
-
-const getActorName = (auth) =>
-  auth?.profile?.full_name || auth?.user?.email || 'Super Admin';
-
-const getProfileName = (profile = {}) =>
-  profile.full_name || profile.email || 'portal account';
 
 const isSuperadminRole = (role = '') => normalizePortalRole(role) === 'superadmin';
 
+const getActorName = (auth) =>
+  auth?.isSuperadmin || isSuperadminRole(auth?.profile?.role)
+    ? 'Super Admin'
+    : auth?.profile?.full_name || auth?.user?.email || 'Portal Admin';
+
+const getProfileName = (profile = {}) =>
+  isSuperadminRole(profile.role)
+    ? 'Super Admin'
+    : profile.full_name || profile.email || 'portal account';
+
 const isIctAdminRole = (role = '') => normalizePortalRole(role) === 'admin';
 
-const withoutDesignation = (profileRow) => {
-  const { designation, ...row } = profileRow;
+const withoutOptionalProfileColumns = (profileRow) => {
+  const { designation, area_id, ...row } = profileRow;
   return row;
 };
 
@@ -81,11 +90,11 @@ const saveProfileRow = async (supabaseAdmin, profileRow, { mode, userId }) => {
 
   const result = await query.select(PROFILE_COLUMNS).single();
 
-  if (!result.error || !isMissingDesignationColumnError(result.error)) {
+  if (!result.error || (!isMissingDesignationColumnError(result.error) && !isMissingAreaIdColumnError(result.error))) {
     return result;
   }
 
-  const fallbackRow = withoutDesignation(profileRow);
+  const fallbackRow = withoutOptionalProfileColumns(profileRow);
   const fallbackQuery =
     mode === 'upsert'
       ? supabaseAdmin.from('profiles').upsert(fallbackRow, { onConflict: 'id' })
@@ -143,7 +152,7 @@ const readProfileById = async (supabaseAdmin, id) => {
     .eq('id', id)
     .maybeSingle();
 
-  if (!result.error || !isMissingDesignationColumnError(result.error)) {
+  if (!result.error || (!isMissingDesignationColumnError(result.error) && !isMissingAreaIdColumnError(result.error))) {
     return result;
   }
 
@@ -197,6 +206,7 @@ const getProfileChanges = (before = {}, after = {}) => {
     ['employee_id', 'Employee ID'],
     ['department', 'Department'],
     ['branch', 'Branch'],
+    ['area_id', 'Area assignment'],
     ['designation', 'Job Title'],
     ['email', 'Email'],
     ['phone', 'Phone'],

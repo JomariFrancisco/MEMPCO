@@ -30,20 +30,19 @@ export const BRANCHES = [
 ];
 
 export const DEPARTMENTS = [
-  'Accounting',
-  'Admin',
-  'Allied Services Operation',
-  'CAS',
-  'Credit and Savings Operation',
-  'Finance',
-  'HR',
-  'ICT',
-  'Internal Audit',
-  'Legal Compliance',
-  'Marketing',
-  'MEDS',
-  'MRDSS',
-  'Treasury',
+  'Admin Department',
+  'Allied Services Department',
+  'Audit Department',
+  'Executive Department',
+  'Finance Department',
+  'HR Department',
+  'ICT Department',
+  'Legal and Compliance Department',
+  'Marketing Department',
+  'MEDS Department',
+  'MRDSS Department',
+  'Operation Department',
+  'Treasury Department',
 ];
 
 export const SLA_LEVELS = ['Low', 'Medium', 'High', 'Critical'];
@@ -54,6 +53,9 @@ export const TICKET_STATUSES = [
   'In Progress',
   'Escalated',
   'Moved Date',
+  'Waiting for Requester',
+  'Waiting for Vendor',
+  'Waiting for Approval',
   'Resolved',
   'Cancelled',
 ];

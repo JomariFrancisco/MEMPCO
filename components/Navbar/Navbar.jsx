@@ -366,31 +366,18 @@ export default function Navbar() {
               </button>
 
               <ul className="nav-dropdown-menu whats-new-dropdown-menu">
-                <li className="whats-new-mega__column">
-                  <h3 className="whats-new-mega__heading">
-                    News &amp; Events
-                  </h3>
-                  <ul className="whats-new-mega__links">
-                    <li><Link href="/news" onClick={handleNavigation}>Latest announcements</Link></li>
-                  </ul>
+                <li>
+                  <Link href="/news" onClick={handleNavigation} className={`dropdown-link ${isActive('/news') ? 'active' : ''}`}>
+                    Latest announcements
+                  </Link>
                 </li>
-
-                <li className="whats-new-mega__column">
-                  <h3 className="whats-new-mega__heading">
-                    Promos
-                  </h3>
-                  <ul className="whats-new-mega__links">
-                    <li><Link href="/promos" onClick={handleNavigation}>Current offers</Link></li>
-                  </ul>
+                <li>
+                  <span className="dropdown-link is-disabled" aria-disabled="true">Current offers</span>
                 </li>
-
-                <li className="whats-new-mega__column">
-                  <h3 className="whats-new-mega__heading">
-                    Career
-                  </h3>
-                  <ul className="whats-new-mega__links">
-                    <li><Link href={CAREER_PATH} onClick={handleNavigation}>Open positions</Link></li>
-                  </ul>
+                <li>
+                  <Link href={CAREER_PATH} onClick={handleNavigation} className={`dropdown-link ${isCareerActive ? 'active' : ''}`}>
+                    Open positions
+                  </Link>
                 </li>
               </ul>
             </li>
@@ -467,31 +454,18 @@ export default function Navbar() {
               </button>
 
               <ul className="nav-dropdown-menu membership-dropdown-menu">
-                <li className="membership-mega__column">
-                  <h3 className="membership-mega__heading">
-                    How to Apply?
-                  </h3>
-                  <ul className="membership-mega__links">
-                    <li><Link href="/membership" onClick={handleNavigation}>Application guide</Link></li>
-                  </ul>
+                <li>
+                  <Link href="/membership" onClick={handleNavigation} className={`dropdown-link ${isActive('/membership', true) ? 'active' : ''}`}>
+                    Application guide
+                  </Link>
                 </li>
-
-                <li className="membership-mega__column">
-                  <h3 className="membership-mega__heading">
-                    PMES
-                  </h3>
-                  <ul className="membership-mega__links">
-                    <li><Link href="/membership/pmes" onClick={handleNavigation}>Pre-membership seminar</Link></li>
-                  </ul>
+                <li>
+                  <span className="dropdown-link is-disabled" aria-disabled="true">Pre-membership seminar</span>
                 </li>
-
-                <li className="membership-mega__column">
-                  <h3 className="membership-mega__heading">
-                    Membership Package
-                  </h3>
-                  <ul className="membership-mega__links">
-                    <li><Link href="/membership/package" onClick={handleNavigation}>Fees and inclusions</Link></li>
-                  </ul>
+                <li>
+                  <Link href="/membership/package" onClick={handleNavigation} className={`dropdown-link ${isActive('/membership/package') ? 'active' : ''}`}>
+                    Fees and inclusions
+                  </Link>
                 </li>
               </ul>
             </li>
@@ -508,16 +482,21 @@ export default function Navbar() {
               </button>
 
               <ul className="nav-dropdown-menu contact-dropdown-menu">
-                <li className="contact-mega__column">
-                  <h3 className="contact-mega__heading">
-                    Visit MEMPCO
-                  </h3>
-                  <ul className="contact-mega__links">
-                    <li><Link href="/branches" onClick={handleNavigation}>Branches and ATMs</Link></li>
-                    <li><Link href="/contact-details" onClick={handleNavigation}>Contact Details</Link></li>
-                  </ul>
+                <li>
+                  <Link href="/member-concerns" onClick={handleNavigation} className={`dropdown-link ${isActive('/member-concerns') ? 'active' : ''}`}>
+                    Member Concerns &amp; Feedback
+                  </Link>
                 </li>
-
+                <li>
+                  <Link href="/branches" onClick={handleNavigation} className={`dropdown-link ${isActive('/branches') ? 'active' : ''}`}>
+                    Branches and ATMs
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/contact-details" onClick={handleNavigation} className={`dropdown-link ${isActive('/contact-details') ? 'active' : ''}`}>
+                    Contact Details
+                  </Link>
+                </li>
               </ul>
             </li>
 

@@ -3,7 +3,8 @@ import { createAdminClient, hasSupabaseAdminConfig } from '@/lib/supabase/admin'
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { IMPACT_TEXT_BY_SLA, deriveTicketImpact, normalizeSlaLevel } from '@/lib/tickets/sla';
 import { checkRateLimit, rateLimitResponse } from '@/lib/server/rateLimit';
-import { sanitizeStoredAttachment, uploadDataUrlToStorage } from '@/lib/server/storageUploads';
+import { storeHelpdeskAttachment, removeHelpdeskFiles, drainHelpdeskCleanup } from '@/lib/server/helpdesk';
+import { isActiveAccount, validateTransition } from '@/lib/tickets/workflow.mjs';
 
 const TICKET_RETURN_COLUMNS = `
   id,
@@ -27,7 +28,9 @@ const TICKET_RETURN_COLUMNS = `
   sla,
   priority,
   status,
+  action_reason,
   technician,
+  technician_id,
   action_taken,
   admin_remarks,
   resolution,
@@ -35,6 +38,16 @@ const TICKET_RETURN_COLUMNS = `
   saar_required,
   saar_attachment,
   photo_attachments,
+  burnout_report,
+  version,
+  handling_seconds,
+  burnout_started_at,
+  next_action_at,
+  escalation_partner,
+  response_due_at,
+  resolution_due_at,
+  first_response_at,
+  resolved_at,
   date_label,
   last_employee_update,
   admin_updated_at,
@@ -66,13 +79,7 @@ const isMissingOptionalTicketColumnError = (error) => {
 };
 
 const selectTicketColumns = async (buildQuery) => {
-  const result = await buildQuery(TICKET_RETURN_COLUMNS);
-
-  if (!result.error || !isMissingOptionalTicketColumnError(result.error)) {
-    return result;
-  }
-
-  return buildQuery(FALLBACK_TICKET_RETURN_COLUMNS);
+  return buildQuery(TICKET_RETURN_COLUMNS);
 };
 
 const formatDateTime = (value = new Date()) => {
@@ -127,58 +134,33 @@ const PHOTO_ATTACHMENT_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/
 const SAAR_ATTACHMENT_TYPES = ['application/pdf'];
 const TICKET_ATTACHMENT_BUCKET = 'ticket-attachments';
 
-const processAttachment = async (supabase, attachment, { folder, allowedTypes, maxBytes }) => {
-  if (!attachment) return null;
+const processAttachment = storeHelpdeskAttachment;
 
-  const dataUrl = attachment.dataUrl || '';
-
-  if (!dataUrl || !String(dataUrl).startsWith('data:')) {
-    return sanitizeStoredAttachment(attachment);
-  }
-
-  const uploaded = await uploadDataUrlToStorage(supabase, {
-    bucket: TICKET_ATTACHMENT_BUCKET,
-    folder,
-    dataUrl,
-    fileName: attachment.name || attachment.fileName || 'attachment',
-    allowedTypes,
-    maxBytes,
-  });
-
-  if (!uploaded) {
-    return sanitizeStoredAttachment(attachment);
-  }
-
-  return {
-    ...sanitizeStoredAttachment(attachment),
-    ...uploaded,
-    id: uploaded.path,
-    uploadedAt: new Date().toISOString(),
-  };
-};
-
-const processPhotoAttachments = async (supabase, attachments, ownerId) => {
+const processPhotoAttachments = async (supabase, attachments, ownerId, uploadedPaths) => {
   const normalized = normalizeAttachments(attachments);
+  if (normalized.length > 5) throw new Error('Attach no more than five photos.');
   const folder = `${ownerId || 'unknown'}/photos`;
 
-  return Promise.all(
-    normalized.map((attachment) =>
-      processAttachment(supabase, attachment, {
+  const results = [];
+  for (const attachment of normalized) {
+    results.push(await processAttachment(supabase, attachment, {
         folder,
         allowedTypes: PHOTO_ATTACHMENT_TYPES,
-        maxBytes: 8 * 1024 * 1024,
-      })
-    )
-  );
+        maxBytes: 4 * 1024 * 1024,
+        uploadedPaths,
+      }));
+  }
+  return results;
 };
 
-const processSaarAttachment = async (supabase, attachment, ownerId) => {
+const processSaarAttachment = async (supabase, attachment, ownerId, uploadedPaths) => {
   if (!attachment) return null;
 
   return processAttachment(supabase, attachment, {
     folder: `${ownerId || 'unknown'}/saar`,
     allowedTypes: SAAR_ATTACHMENT_TYPES,
     maxBytes: 4 * 1024 * 1024,
+    uploadedPaths,
   });
 };
 
@@ -234,6 +216,25 @@ const normalizeComparable = (value = '') =>
 const isBurnoutTicket = (form = {}) =>
   normalizeComparable(form.supportCategory) === 'burnout';
 
+const isClosedTicketForReopen = (ticket = {}) => {
+  const status = normalizeStatus(ticket.status);
+  if (isBurnoutTicket({ supportCategory: ticket.support_category })) {
+    return [
+      'passed burnout',
+      'ready for deployment',
+      'deployed',
+      'failed burnout',
+      'damaged',
+      'for repair',
+      'for replacement',
+      'resolved',
+      'canceled',
+      'cancelled',
+    ].includes(status);
+  }
+  return ['resolved', 'cancelled', 'canceled'].includes(status);
+};
+
 const isOtherIctRequest = (supportCategory = '') =>
   normalizeComparable(supportCategory) === 'otherictrequest';
 
@@ -265,7 +266,7 @@ const hasStoredSaarAttachment = (attachment) =>
   Boolean(
     attachment &&
       typeof attachment === 'object' &&
-      (attachment.dataUrl || attachment.url || attachment.publicUrl || attachment.path)
+      attachment.path && attachment.type === 'application/pdf'
   );
 
 const getNextBurnoutTicketCode = async (supabase, { branch, brand, deviceType }) => {
@@ -273,23 +274,13 @@ const getNextBurnoutTicketCode = async (supabase, { branch, brand, deviceType })
   const brandCode = normalizeCodePart(brand, 'BRAND');
   const deviceCode = normalizeDeviceCode(deviceType);
 
-  const { data, error } = await supabase
-    .from('tickets')
-    .select('ticket_code')
-    .eq('support_category', 'Burnout')
-    .like('ticket_code', `${branchCode}-%`);
+  const { data, error } = await supabase.rpc('allocate_burnout_code', {branch_code:branchCode,brand_code:brandCode,device_code:deviceCode});
 
   if (error) {
     throw new Error(error.message || 'Unable to read existing Burnout ticket codes.');
   }
 
-  const latestNumber = (data || []).reduce((latest, row) => {
-    const match = String(row.ticket_code || '').match(new RegExp(`^${branchCode}-(\\d{5})-`));
-    const number = match ? Number.parseInt(match[1], 10) : 0;
-    return Number.isFinite(number) && number > latest ? number : latest;
-  }, 0);
-
-  return `${branchCode}-${String(latestNumber + 1).padStart(5, '0')}-${brandCode}-${deviceCode}`;
+  return data;
 };
 
 const getBearerToken = (request) => {
@@ -323,6 +314,10 @@ const getRequestUser = async (request, supabase) => {
 };
 
 const getActiveProfile = async (supabaseAdmin, user) => {
+  const {data:validSession,error:sessionError}=await supabaseAdmin.rpc('has_valid_portal_session');
+  if (sessionError || validSession !== true) {
+    throw Object.assign(new Error('Your portal session is no longer active. Please sign in again.'),{status:403});
+  }
   const { data, error } = await supabaseAdmin
     .from('profiles')
     .select('id, role, full_name, employee_id, department, branch, office, email, phone, status')
@@ -335,8 +330,8 @@ const getActiveProfile = async (supabaseAdmin, user) => {
     );
   }
 
-  if (String(data.status || 'Active').trim().toLowerCase() === 'inactive') {
-    throw new Error('Inactive accounts cannot submit tickets.');
+  if (!isActiveAccount(data)) {
+    throw Object.assign(new Error('Only active accounts can access the helpdesk.'), {status:403});
   }
 
   return data;
@@ -353,7 +348,7 @@ const getProfileById = async (supabaseAdmin, profileId) => {
     throw new Error('Selected requester profile was not found.');
   }
 
-  if (String(data.status || 'Active').trim().toLowerCase() === 'inactive') {
+  if (!isActiveAccount(data)) {
     throw new Error('Inactive accounts cannot be used as ticket requesters.');
   }
 
@@ -362,6 +357,11 @@ const getProfileById = async (supabaseAdmin, profileId) => {
 
 const isSuperAdminProfile = (profile = {}) =>
   String(profile.role || '').trim().toLowerCase().replace(/[-\s]+/g, '_') === 'superadmin';
+
+const getProfileDisplayName = (profile = {}, fallback = '') =>
+  isSuperAdminProfile(profile)
+    ? 'Super Admin'
+    : profile.full_name || profile.email || fallback;
 
 const normalizeRole = (role = '') =>
   String(role || '').trim().toLowerCase().replace(/[-\s]+/g, '_');
@@ -383,6 +383,9 @@ const isEmployeeTicketLocked = (ticket = {}) => {
     'in progress',
     'moved date',
     'escalated',
+    'waiting for requester',
+    'waiting for vendor',
+    'waiting for approval',
     'resolved',
     'canceled',
     'cancelled',
@@ -447,6 +450,7 @@ const updateFieldMap = {
   priority: 'priority',
   status: 'status',
   technician: 'technician',
+  technicianId: 'technician_id',
   actionTaken: 'action_taken',
   adminRemarks: 'admin_remarks',
   resolution: 'resolution',
@@ -465,6 +469,9 @@ const updateFieldMap = {
   lockedAt: 'locked_at',
   lockExpiresAt: 'lock_expires_at',
   burnoutReport: 'burnout_report',
+  nextActionAt: 'next_action_at',
+  escalationPartner: 'escalation_partner',
+  actionReason: 'action_reason',
 };
 
 const mapUpdatesToColumns = (updates = {}) =>
@@ -499,6 +506,7 @@ const applyServerTicketStateRules = (payload, currentTicket) => {
   if (status === 'in progress') {
     payload.work_started_at = currentTicket.work_started_at || now;
     payload.work_ended_at = null;
+    payload.next_action_at = null;
   }
 
   if (['under burnout', 'for inspection'].includes(status)) {
@@ -510,10 +518,12 @@ const applyServerTicketStateRules = (payload, currentTicket) => {
     payload.work_started_at = currentTicket.work_started_at || currentTicket.created_at || now;
     payload.work_ended_at = now;
     payload.admin_updated_at = payload.admin_updated_at || now;
+    payload.next_action_at = null;
   }
 
   if (status === 'canceled' || status === 'cancelled') {
     payload.work_ended_at = now;
+    payload.next_action_at = null;
     payload.admin_updated_at = payload.admin_updated_at || now;
   }
 
@@ -537,22 +547,23 @@ const applyServerTicketStateRules = (payload, currentTicket) => {
 };
 
 export async function POST(request) {
+  const uploadedPaths = [];
+  let dbClient;
+  let persisted = false;
   try {
-    const rateLimit = checkRateLimit(request, {
-      key: 'tickets:create',
-      limit: 10,
-      windowMs: 60_000,
-    });
-
-    if (!rateLimit.allowed) return rateLimitResponse(rateLimit);
-
     const body = await request.json().catch(() => ({}));
     const form = body.form || {};
 
     const authClient = await createServerClient();
     const authUser = await getRequestUser(request, authClient);
     const profile = await getActiveProfile(authClient, authUser);
-    const dbClient = hasSupabaseAdminConfig() ? createAdminClient() : authClient;
+    if (!hasSupabaseAdminConfig()) throw Object.assign(new Error('The secure helpdesk server is not configured.'),{status:503});
+    dbClient = createAdminClient();
+    await drainHelpdeskCleanup(dbClient);
+    const rateLimit = checkRateLimit(request,{key:'tickets:create',identity:profile.id,limit:10,windowMs:60_000});
+    if (!rateLimit.allowed) return rateLimitResponse(rateLimit);
+    const creationKey = String(body.requestId || '');
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(creationKey)) throw new Error('A valid submission request ID is required.');
     const submittedForUserId = String(form.submittedForUserId || '').trim();
 
     if (submittedForUserId && submittedForUserId !== authUser.id && !isSuperAdminProfile(profile)) {
@@ -563,6 +574,12 @@ export async function POST(request) {
       submittedForUserId && submittedForUserId !== authUser.id
         ? await getProfileById(dbClient, submittedForUserId)
         : profile;
+
+    const {data:existing,error:existingError} = await dbClient.from('tickets').select(TICKET_RETURN_COLUMNS).eq('owner_id',requesterProfile.id).eq('creation_key',creationKey).maybeSingle();
+    if (existingError) throw new Error(existingError.message);
+    if (existing) return NextResponse.json({ticket:existing});
+    if (!String(form.description || form.remarks || '').trim()) throw new Error('Issue Description is required.');
+    if (!String(form.branch || '').trim() || !String(form.department || '').trim()) throw new Error('Branch and department are required.');
 
     const supportCategory = String(form.supportCategory || '').trim();
 
@@ -581,7 +598,7 @@ export async function POST(request) {
     }
 
     const saarRequired = isMbwinTellerRoleModificationRequest(form);
-    const saarAttachment = await processSaarAttachment(dbClient, form.saarAttachment, requesterProfile.id);
+    const saarAttachment = await processSaarAttachment(dbClient, form.saarAttachment, requesterProfile.id, uploadedPaths);
 
     if (saarRequired && !hasStoredSaarAttachment(saarAttachment)) {
       throw new Error('SAAR PDF attachment is required when modifying an MBWin / Sky360 teller role.');
@@ -629,10 +646,12 @@ export async function POST(request) {
       : '';
 
     const ticketPayload = {
+      creation_key: creationKey,
+      last_actor_id: profile.id,
       owner_id: requesterProfile.id,
       owner_email: requesterProfile.email || authUser.email,
       ticket_code: ticketCode || null,
-      requester: requesterProfile.full_name || requesterProfile.email || 'Employee',
+      requester: getProfileDisplayName(requesterProfile, 'Employee'),
       employee_id: requesterProfile.employee_id || '',
       branch: affectedBranch,
       department: affectedDepartment,
@@ -650,13 +669,14 @@ export async function POST(request) {
       priority: finalSla,
       status: 'Created',
       technician: 'Unassigned',
+      technician_id: null,
       action_taken: '',
       admin_remarks: '',
       resolution: '',
       recommendation: '',
       saar_required: saarRequired,
       saar_attachment: saarAttachment,
-      photo_attachments: await processPhotoAttachments(dbClient, form.photoAttachments, requesterProfile.id),
+      photo_attachments: await processPhotoAttachments(dbClient, form.photoAttachments, requesterProfile.id, uploadedPaths),
       date_label: formatDateOnly(now),
       last_employee_update: form.lastEmployeeUpdate || formatDateTime(now),
       status_history: [
@@ -666,9 +686,9 @@ export async function POST(request) {
           timestamp: now.toISOString(),
           label: 'Submitted',
           submittedBy: profile.id,
-          submittedByName: profile.full_name || authUser.email || 'Portal user',
+          submittedByName: getProfileDisplayName(profile, authUser.email || 'Portal user'),
           submittedFor: requesterProfile.id,
-          submittedForName: requesterProfile.full_name || requesterProfile.email || 'Requester',
+          submittedForName: getProfileDisplayName(requesterProfile, 'Requester'),
         },
       ],
     };
@@ -689,20 +709,12 @@ export async function POST(request) {
     let insertPayload = ticketPayload;
     let insertResult = await insertTicketPayload(insertPayload);
 
-    if (insertResult.error && isMissingOptionalTicketColumnError(insertResult.error)) {
-      insertPayload = { ...ticketPayload };
-      delete insertPayload.recommendation;
-      insertResult = await insertTicketPayload(insertPayload);
-    }
-
-    if (insertResult.error?.code === '23505' && burnoutTicket) {
-      insertPayload.ticket_code = await getNextBurnoutTicketCode(dbClient, {
-        branch: insertPayload.branch,
-        brand: insertPayload.brand,
-        deviceType: insertPayload.device_type,
-      });
-
-      insertResult = await insertTicketPayload(insertPayload);
+    if (insertResult.error?.code === '23505') {
+      const duplicate = await dbClient.from('tickets').select(TICKET_RETURN_COLUMNS).eq('owner_id',requesterProfile.id).eq('creation_key',creationKey).maybeSingle();
+      if (duplicate.data) {
+        await removeHelpdeskFiles(dbClient,uploadedPaths);
+        return NextResponse.json({ticket:duplicate.data});
+      }
     }
 
     const { data, error } = insertResult;
@@ -711,25 +723,22 @@ export async function POST(request) {
       throw new Error(error.message || 'Unable to create ticket in Supabase.');
     }
 
+    persisted = true;
     return NextResponse.json({ ticket: data });
   } catch (error) {
+    if (!persisted && dbClient) await removeHelpdeskFiles(dbClient,uploadedPaths);
     return NextResponse.json(
       { error: error.message || 'Unable to submit ticket.' },
-      { status: 400 }
+      { status: error.status || 400 }
     );
   }
 }
 
 export async function PATCH(request) {
+  const uploadedPaths = [];
+  let dbClient;
+  let persisted = false;
   try {
-    const rateLimit = checkRateLimit(request, {
-      key: 'tickets:update',
-      limit: 40,
-      windowMs: 60_000,
-    });
-
-    if (!rateLimit.allowed) return rateLimitResponse(rateLimit);
-
     const body = await request.json().catch(() => ({}));
     const ticketId = String(body.id || body.ticketId || '').trim();
     const updates = body.updates || {};
@@ -741,12 +750,33 @@ export async function PATCH(request) {
     const authClient = await createServerClient();
     const authUser = await getRequestUser(request, authClient);
     const profile = await getActiveProfile(authClient, authUser);
-    const dbClient = hasSupabaseAdminConfig() ? createAdminClient() : authClient;
+    if (!hasSupabaseAdminConfig()) throw Object.assign(new Error('The secure helpdesk server is not configured.'),{status:503});
+    dbClient = createAdminClient();
+    await drainHelpdeskCleanup(dbClient);
+    const rateLimit = checkRateLimit(request,{key:'tickets:update',identity:profile.id,limit:120,windowMs:60_000});
+    if (!rateLimit.allowed) return rateLimitResponse(rateLimit);
     const currentTicket = await getTicketById(dbClient, ticketId);
     const adminProfile = isAdminProfile(profile);
+    const expectedVersion = Number(body.options?.expectedVersion);
+    if (!Number.isSafeInteger(expectedVersion) || expectedVersion !== Number(currentTicket.version)) throw Object.assign(new Error('This ticket changed. Refresh it before saving again.'),{status:409});
+    if (adminProfile) validateTransition(currentTicket,updates,profile);
 
     if (!adminProfile && currentTicket.owner_id !== authUser.id) {
       return NextResponse.json({ error: 'You can only update your own ticket.' }, { status: 403 });
+    }
+
+    const requestedStatus = normalizeStatus(updates.status);
+    if (
+      adminProfile &&
+      isClosedTicketForReopen(currentTicket) &&
+      requestedStatus &&
+      requestedStatus !== normalizeStatus(currentTicket.status) &&
+      !isSuperAdminProfile(profile)
+    ) {
+      return NextResponse.json(
+        { error: 'Only the super admin can reopen closed tickets.' },
+        { status: 403 }
+      );
     }
 
     if (!adminProfile) {
@@ -821,7 +851,8 @@ export async function PATCH(request) {
       nextUpdates.photoAttachments = await processPhotoAttachments(
         dbClient,
         nextUpdates.photoAttachments,
-        currentTicket.owner_id
+        currentTicket.owner_id,
+        uploadedPaths
       );
     }
 
@@ -829,7 +860,8 @@ export async function PATCH(request) {
       nextUpdates.saarAttachment = await processSaarAttachment(
         dbClient,
         nextUpdates.saarAttachment,
-        currentTicket.owner_id
+        currentTicket.owner_id,
+        uploadedPaths
       );
     }
 
@@ -854,8 +886,14 @@ export async function PATCH(request) {
           ? nextUpdates.saarAttachment
           : currentTicket.saar_attachment;
 
-      if (saarRequired && !hasStoredSaarAttachment(saarAttachment)) {
-        throw new Error('SAAR PDF attachment is required when modifying an MBWin / Sky360 teller role.');
+      if (saarRequired) {
+        const verifiedAttachment = nextUpdates.saarAttachment !== undefined
+          ? saarAttachment
+          : await processSaarAttachment(dbClient,saarAttachment,currentTicket.owner_id,uploadedPaths);
+        if (!hasStoredSaarAttachment(verifiedAttachment)) {
+          throw new Error('A verified SAAR PDF in private storage is required when modifying an MBWin / Sky360 teller role.');
+        }
+        nextUpdates.saarAttachment = verifiedAttachment;
       }
 
       nextUpdates.saarRequired = saarRequired;
@@ -868,6 +906,14 @@ export async function PATCH(request) {
     }
 
     payload = applyServerTicketStateRules(payload, currentTicket);
+    delete payload.status_history;
+    delete payload.locked_by; delete payload.locked_by_name; delete payload.locked_at; delete payload.lock_expires_at;
+    payload.last_actor_id = profile.id;
+    payload.action_reason = String(updates.reopenReason || updates.actionReason || updates.exceptionReason || '').trim();
+    if (Object.hasOwn(payload,'admin_remarks')) {
+      payload.private_note_update = {body:payload.admin_remarks};
+      delete payload.admin_remarks;
+    }
 
     const updateTicketPayload = (nextPayload) =>
       selectTicketColumns((columns) =>
@@ -875,32 +921,30 @@ export async function PATCH(request) {
           .from('tickets')
           .update(nextPayload)
           .eq('id', ticketId)
+          .eq('version',expectedVersion)
           .select(columns)
-          .single()
+          .maybeSingle()
       );
 
     let updateResult = await updateTicketPayload(payload);
-
-    if (updateResult.error && isMissingOptionalTicketColumnError(updateResult.error) && payload.recommendation !== undefined) {
-      const fallbackPayload = { ...payload };
-      delete fallbackPayload.recommendation;
-
-      if (Object.keys(fallbackPayload).length) {
-        updateResult = await updateTicketPayload(fallbackPayload);
-      }
-    }
 
     const { data, error } = updateResult;
 
     if (error) {
       throw new Error(error.message || 'Unable to update ticket.');
     }
-
+    if (!data) throw Object.assign(new Error('Another save changed this ticket. Refresh before retrying.'),{status:409});
+    persisted = true;
+    if (adminProfile) {
+      const {data:note} = await dbClient.from('ticket_internal_notes').select('body').eq('ticket_id',ticketId).maybeSingle();
+      data.admin_remarks = note?.body || '';
+    }
     return NextResponse.json({ ticket: data });
   } catch (error) {
+    if (!persisted && dbClient) await removeHelpdeskFiles(dbClient,uploadedPaths);
     return NextResponse.json(
       { error: error.message || 'Unable to update ticket.' },
-      { status: 400 }
+      { status: error.status || 400 }
     );
   }
 }
