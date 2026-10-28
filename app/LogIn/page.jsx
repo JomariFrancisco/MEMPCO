@@ -182,6 +182,14 @@ export default function LoginPage({ portal = 'superadmin' }) {
       return;
     }
 
+    if (params.get('reason') === 'browser-closed') {
+      setMessage({
+        type: 'error',
+        text: 'Your admin browser session ended. Please sign in again to continue.',
+      });
+      return;
+    }
+
     if (params.get('auth_error') === 'setup') {
       setMessage({
         type: 'error',

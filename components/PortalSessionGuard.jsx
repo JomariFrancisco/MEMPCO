@@ -3,6 +3,8 @@
 import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import {
+  getCurrentPortalUser,
+  hasAdminBrowserSession,
   isPortalSessionActive,
   PORTAL_SESSION_IDLE_TIMEOUT_MS,
   signOutPortal,
@@ -14,11 +16,22 @@ const PORTAL_ROUTE_PREFIXES = [
   '/admin-dashboard',
   '/marketing-admin',
   '/hr-admin',
+  '/mrdss-admin',
 ];
 const ACTIVITY_EVENTS = ['pointerdown', 'pointermove', 'keydown', 'scroll', 'touchstart'];
 const ACTIVITY_EVENT_THROTTLE_MS = 1000;
 const SESSION_HEARTBEAT_MS = 30_000;
 const SESSION_VERIFY_MS = 30_000;
+const ADMIN_ROLES = new Set([
+  'admin',
+  'superadmin',
+  'marketing_admin',
+  'hr_admin',
+  'mrdss_admin',
+  'branch_manager_admin',
+  'area_manager_admin',
+  'coo_admin',
+]);
 
 const isPortalRoute = (pathname = '') =>
   PORTAL_ROUTE_PREFIXES.some(
@@ -28,6 +41,7 @@ const isPortalRoute = (pathname = '') =>
 const getLoginRoute = (pathname = '') => {
   if (pathname.startsWith('/marketing-admin')) return '/marketing';
   if (pathname.startsWith('/hr-admin')) return '/hr';
+  if (pathname.startsWith('/mrdss-admin')) return '/mrdss-login';
   return '/helpdesk';
 };
 
@@ -40,6 +54,7 @@ export default function PortalSessionGuard() {
     let cancelled = false;
     let isEndingSession = false;
     let hasVerifiedSession = false;
+    let isAdminSession = false;
     let lastActivityAt = 0;
     let lastHeartbeatAt = 0;
     let idleTimer = null;
@@ -88,6 +103,8 @@ export default function PortalSessionGuard() {
 
         if (!isActive) {
           await endSession('session-ended');
+        } else if (isAdminSession) {
+          scheduleActivityRefresh();
         }
       } catch (error) {
         console.warn('[Portal Session Refresh]', error);
@@ -112,7 +129,7 @@ export default function PortalSessionGuard() {
       if (now - lastActivityAt < ACTIVITY_EVENT_THROTTLE_MS) return;
 
       lastActivityAt = now;
-      scheduleIdleSignOut();
+      if (!isAdminSession) scheduleIdleSignOut();
       scheduleActivityRefresh();
     };
 
@@ -135,7 +152,7 @@ export default function PortalSessionGuard() {
       if (document.visibilityState !== 'visible') return;
       if (!hasVerifiedSession) return;
 
-      if (Date.now() - lastActivityAt >= PORTAL_SESSION_IDLE_TIMEOUT_MS) {
+      if (!isAdminSession && Date.now() - lastActivityAt >= PORTAL_SESSION_IDLE_TIMEOUT_MS) {
         void endSession('inactive');
         return;
       }
@@ -147,6 +164,21 @@ export default function PortalSessionGuard() {
     const initialize = async () => {
       const isActive = await verifySession();
       hasVerifiedSession = true;
+
+      if (isActive && !cancelled) {
+        try {
+          const user = await getCurrentPortalUser();
+          isAdminSession = ADMIN_ROLES.has(String(user?.role || '').trim().toLowerCase());
+          if (isAdminSession && !hasAdminBrowserSession()) {
+            await endSession('browser-closed');
+            return;
+          }
+        } catch (error) {
+          console.warn('[Portal Session Profile]', error);
+          await endSession('session-ended');
+          return;
+        }
+      }
 
       if (isActive && !cancelled) {
         recordActivity();
