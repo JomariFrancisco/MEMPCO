@@ -1419,18 +1419,12 @@ button {
 }
 
 .admin-alert {
-  padding: 0.78rem 0.9rem;
-  border-radius: var(--radius-md);
-  font-size: 0.984rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: 12px;
+  font-size: 0.9rem;
   line-height: 1.45;
-  font-weight: 750;
+  font-weight: 650;
   border: 1px solid transparent;
-}
-
-.admin-alert.error {
-  background: rgba(220, 38, 38, 0.1);
-  color: #b91c1c;
-  border-color: rgba(220, 38, 38, 0.16);
 }
 
 .admin-alert.success {
@@ -1777,6 +1771,14 @@ button {
   .password-refresh-card .modal-btn {
     width: 100%;
   }
+}
+
+.floating-ticket-chat.ticket-modal-floating-chat {
+  background: #fff !important;
+  opacity: 1 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border-color: #e2e8f0 !important;
 }
 
 /* Burnout reports can exceed one viewport; keep the modal genuinely scrollable. */
@@ -3728,17 +3730,6 @@ button {
   white-space: pre-wrap;
 }
 
-.form-error {
-  width: 100%;
-  padding: 0.85rem 0.95rem;
-  border-radius: var(--radius-md);
-  background: rgba(220, 38, 38, 0.08);
-  border: 1px solid rgba(220, 38, 38, 0.16);
-  color: #b91c1c;
-  font-size: 1.032rem;
-  font-weight: 750;
-}
-
 .admin-attachment-box {
   display: flex;
   align-items: center;
@@ -5130,6 +5121,48 @@ button {
   .ticket-action-status-tools {
     min-width: 0;
   }
+}
+
+/* Uniform branch overview cards without decorative icon blocks. */
+.branch-monitor-view .branch-monitor-overview {
+  gap: 0.75rem;
+  align-items: stretch;
+}
+
+.branch-monitor-view .branch-overview-card,
+.branch-monitor-view .branch-overview-card--primary {
+  min-width: 0;
+  min-height: 96px;
+  display: flex;
+  align-items: center;
+  padding: 0.9rem 1rem;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+}
+
+.branch-monitor-view .branch-overview-card > div {
+  min-width: 0;
+  width: 100%;
+}
+
+.branch-monitor-view .branch-overview-card span:not(.branch-overview-icon) {
+  font-size: 0.72rem;
+  line-height: 1.2;
+  letter-spacing: 0.07em;
+}
+
+.branch-monitor-view .branch-overview-card strong {
+  margin-top: 0.3rem;
+  font-size: clamp(1.3rem, 1.8vw, 1.6rem);
+  line-height: 1;
+}
+
+.branch-monitor-view .branch-overview-card p {
+  margin-top: 0.28rem;
+  font-size: 0.8rem;
+  line-height: 1.3;
 }
 
 /* =========================
@@ -7710,20 +7743,16 @@ button {
 }
 
 .ticket-chat-title-id {
-  display: inline-flex;
-  align-items: center;
-  min-height: 30px;
-  padding: 0.24rem 0.65rem;
-  border-radius: var(--radius-pill);
-  border: 1px solid rgba(220, 38, 38, 0.18);
-  background:
-    radial-gradient(circle at top right, rgba(220, 38, 38, 0.12), transparent 42%),
-    rgba(255, 255, 255, 0.92);
+  display: inline;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   color: var(--red-600);
   font-size: 0.82rem;
   font-weight: 950;
   letter-spacing: 0.02em;
-  box-shadow: 0 10px 22px rgba(220, 38, 38, 0.1);
+  box-shadow: none;
 }
 
 .ticket-message-item {
@@ -9331,7 +9360,7 @@ button {
   align-items: center;
   justify-content: center;
   pointer-events: none;
-  transform: none !important;
+  transform: translateX(10%) !important;
 }
 
 .burnout-filter-grid .search-field-group .field-leading-icon .admin-mono-icon {
@@ -10159,7 +10188,7 @@ button {
   position: fixed;
   inset: 0;
   z-index: 12000;
-  padding: 1rem;
+  padding: 0;
   display: grid;
   place-items: center;
   background: rgba(15, 23, 42, 0.72);
@@ -10168,31 +10197,32 @@ button {
 }
 
 .attachment-preview-panel {
-  width: min(960px, calc(100vw - 2rem));
-  max-height: calc(100dvh - 2rem);
+  position: relative;
+  width: fit-content;
+  max-width: 100vw;
+  max-height: 100dvh;
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
-  overflow: hidden;
-  border-radius: var(--radius-lg);
-  background: #fff;
-  border: 1px solid rgba(226, 232, 240, 0.88);
-  box-shadow: 0 28px 70px rgba(15, 23, 42, 0.32);
+  grid-template-rows: auto;
+  overflow: visible;
+  border-radius: 0;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
 }
 
 .attachment-preview-head {
+  position: absolute;
+  top: 0.65rem;
+  right: 0.65rem;
+  z-index: 1;
   min-width: 0;
-  padding: 0.72rem 0.85rem;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.8rem;
-  border-bottom: 1px solid rgba(226, 232, 240, 0.78);
+  justify-content: flex-end;
 }
 
 .attachment-preview-head div {
-  min-width: 0;
-  display: grid;
-  gap: 0.12rem;
+  display: none;
 }
 
 .attachment-preview-head strong,
@@ -10216,10 +10246,13 @@ button {
 }
 
 .attachment-preview-panel img {
-  width: 100%;
-  max-height: calc(100dvh - 6.5rem);
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 100vw;
+  max-height: 100dvh;
   object-fit: contain;
-  background: #f8fafc;
+  background: transparent;
 }
 
 @media (max-width: 980px), (max-height: 720px) {
@@ -10334,7 +10367,7 @@ button {
 
 .ticket-action-modal .ticket-action-attachments-row .attached-photo-grid {
   grid-template-columns: repeat(auto-fit, minmax(132px, 170px)) !important;
-  justify-content: start !important;
+  justify-content: stretch !important;
   align-items: start !important;
   max-height: 112px !important;
   overflow: hidden !important;
@@ -11507,6 +11540,39 @@ button {
   box-shadow: 0 10px 20px rgba(220, 38, 38, 0.16);
 }
 
+.admin-workload-avatar img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  object-fit: cover;
+}
+
+.escalation-partner-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.escalation-partner-label-row > label {
+  margin: 0;
+}
+
+.escalation-partner-change {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #64748b;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.escalation-partner-change:hover { color: #b91c1c; }
+.escalation-partner-change:disabled { cursor: not-allowed; opacity: 0.5; }
+
 .admin-workload-person strong {
   display: block;
   color: var(--text);
@@ -11664,59 +11730,95 @@ button {
 }
 
 .ticket-action-modal.is-support-modal .ticket-action-attachments-row {
-  max-height: clamp(118px, 16dvh, 150px) !important;
+  max-height: clamp(220px, 28dvh, 250px) !important;
   overflow: hidden !important;
 }
 
 .ticket-action-modal.is-support-modal .admin-photo-attachment-box {
-  grid-template-columns: minmax(220px, 0.42fr) minmax(0, 1fr) !important;
+  display: inline-grid !important;
+  grid-template-columns: 280px 275px !important;
+  grid-template-rows: auto !important;
+  width: fit-content !important;
+  max-width: calc(100% - 2.2rem) !important;
+  align-items: start !important;
+  justify-content: start !important;
   gap: 0.7rem !important;
+  padding: 0.55rem 0.7rem !important;
+  margin-right: 1.1rem !important;
+  margin-left: 1.1rem !important;
 }
 
 .ticket-action-modal.is-support-modal .ticket-action-attachments-row .attached-photo-grid {
-  grid-template-columns: repeat(auto-fit, minmax(150px, 180px)) !important;
+  display: grid !important;
+  grid-template-columns: 275px !important;
+  width: 275px !important;
+  max-width: 100% !important;
+  margin: 0 !important;
   justify-content: start !important;
   align-items: start !important;
-  max-height: 116px !important;
+  max-height: 190px !important;
   overflow: hidden !important;
 }
 
 .ticket-action-modal.is-support-modal .attached-photo-card-wrap {
   position: relative !important;
-  max-width: 180px !important;
+  width: fit-content !important;
+  max-width: 275px !important;
+  justify-self: start !important;
 }
 
 .ticket-action-modal.is-support-modal .attached-photo-card {
-  padding: 0.38rem !important;
+  width: fit-content !important;
+  min-width: 0 !important;
+  padding: 0 !important;
+  overflow: visible !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.ticket-action-modal.is-support-modal .attached-photo-card > span,
+.ticket-action-modal.is-support-modal .attached-photo-card > em {
+  display: none !important;
 }
 
 .ticket-action-modal.is-support-modal .attached-photo-card img,
 .ticket-action-modal.is-support-modal .attached-photo-placeholder {
-  aspect-ratio: 16 / 9 !important;
-  max-height: 74px !important;
-  object-fit: contain !important;
-  margin-bottom: 0.26rem !important;
+  display: block !important;
+  width: 275px !important;
+  max-width: 275px !important;
+  height: 184px !important;
+  max-height: 184px !important;
+  aspect-ratio: 275 / 184 !important;
+  object-fit: cover !important;
+  margin: 0 !important;
 }
 
 .ticket-action-modal.is-support-modal .attached-photo-save {
   position: absolute !important;
-  top: 0.42rem !important;
-  right: 0.42rem !important;
-  width: 28px !important;
-  min-width: 28px !important;
-  height: 28px !important;
-  min-height: 28px !important;
+  top: auto !important;
+  right: 4px !important;
+  bottom: 4px !important;
+  width: 24px !important;
+  min-width: 24px !important;
+  height: 24px !important;
+  min-height: 24px !important;
   padding: 0 !important;
-  border-radius: 9px !important;
+  border-radius: 0 !important;
   font-size: 0 !important;
   gap: 0 !important;
-  background: rgba(255, 255, 255, 0.94) !important;
-  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12) !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: #fff !important;
+  z-index: 2 !important;
 }
 
 .ticket-action-modal.is-support-modal .attached-photo-save svg {
-  width: 14px !important;
-  height: 14px !important;
+  width: 20px !important;
+  height: 20px !important;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.9));
 }
 
 .ticket-action-modal.is-support-modal .modal-footer {
@@ -11738,12 +11840,12 @@ button {
   }
 
   .ticket-action-modal.is-support-modal .ticket-action-attachments-row {
-    max-height: 116px !important;
+    max-height: 220px !important;
   }
 
   .ticket-action-modal.is-support-modal .attached-photo-card img,
   .ticket-action-modal.is-support-modal .attached-photo-placeholder {
-    max-height: 58px !important;
+    max-height: 184px !important;
   }
 }
 
@@ -16111,8 +16213,6 @@ button:not(:disabled),
 .burnout-wizard-error {
   flex: 0 0 auto;
   margin: 0 !important;
-  padding: 0.34rem 0.55rem !important;
-  font-size: 0.72rem !important;
 }
 
 .burnout-step-stage {
@@ -16724,6 +16824,205 @@ button:not(:disabled),
 
   .burnout-heading-actions > p {
     display: none;
+  }
+}
+
+/* Keep the ticket launcher outside the clipped modal overlay. */
+.ticket-chat-launcher.ticket-modal-floating-launcher {
+  position: fixed !important;
+  top: auto !important;
+  right: 0.75rem !important;
+  bottom: 2.2rem !important;
+  left: auto !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0.6rem !important;
+  width: auto !important;
+  min-width: 0 !important;
+  height: 48px !important;
+  min-height: 48px !important;
+  padding: 0 1rem !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 999px !important;
+  background: #fff !important;
+  color: #243247 !important;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.14) !important;
+  z-index: 13000 !important;
+  transform: none !important;
+}
+
+.ticket-chat-launcher.ticket-modal-floating-launcher .admin-mono-icon {
+  width: 19px !important;
+  height: 19px !important;
+  color: #dc2626 !important;
+  stroke: #dc2626 !important;
+}
+
+.ticket-chat-launcher.ticket-modal-floating-launcher .ticket-chat-launcher-label {
+  position: static !important;
+  min-width: 0 !important;
+  height: auto !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: #334155 !important;
+  font-size: 0.875rem !important;
+  font-weight: 750 !important;
+  line-height: 1 !important;
+}
+
+.ticket-chat-launcher.ticket-modal-floating-launcher .ticket-chat-unread-count {
+  position: absolute !important;
+  top: -6px !important;
+  right: -6px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-width: 20px !important;
+  width: auto !important;
+  height: 20px !important;
+  padding: 0 5px !important;
+  border: 2px solid #fff !important;
+  border-radius: 999px !important;
+  background: #dc2626 !important;
+  color: #fff !important;
+  font-size: 0.68rem !important;
+  font-weight: 800 !important;
+  line-height: 1 !important;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.18) !important;
+}
+
+.ticket-chat-launcher.ticket-modal-floating-launcher:hover {
+  background: #fff5f5 !important;
+  border-color: rgba(220, 38, 38, 0.4) !important;
+  box-shadow: 0 6px 15px rgba(15, 23, 42, 0.16) !important;
+}
+
+.ticket-chat-launcher.ticket-modal-floating-launcher:hover {
+  transform: translateY(-2px) !important;
+}
+
+@media (max-width: 520px) {
+  .ticket-chat-launcher.ticket-modal-floating-launcher {
+    width: 48px !important;
+    min-width: 48px !important;
+    padding: 0 !important;
+  }
+
+  .ticket-chat-launcher.ticket-modal-floating-launcher .ticket-chat-launcher-label {
+    display: none !important;
+  }
+}
+
+.floating-ticket-chat.ticket-modal-floating-chat {
+  background: #fff !important;
+  color: #243247 !important;
+  opacity: 1 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 18px 44px rgba(15, 23, 42, 0.2) !important;
+  isolation: isolate;
+}
+
+.ticket-chat-requester {
+  margin: 0.42rem 0 0.08rem !important;
+  color: #64748b !important;
+  font-size: 0.8rem !important;
+  font-weight: 750 !important;
+  line-height: 1.25 !important;
+}
+
+.ticket-message-icon-btn {
+  position: relative;
+  width: 42px !important;
+  min-width: 42px !important;
+  height: 42px !important;
+  min-height: 42px !important;
+  padding: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: #64748b !important;
+  box-shadow: none !important;
+  cursor: pointer;
+}
+
+.ticket-message-icon-btn .admin-mono-icon {
+  width: 18px !important;
+  height: 18px !important;
+}
+
+.ticket-message-send-btn {
+  border-color: transparent !important;
+  background: transparent !important;
+  color: #dc2626 !important;
+  box-shadow: none !important;
+}
+
+.ticket-message-send-btn .admin-mono-icon {
+  color: #dc2626 !important;
+  stroke: #dc2626 !important;
+}
+
+.ticket-message-icon-btn:hover:not(:disabled) {
+  border-color: transparent !important;
+  background: transparent !important;
+  color: #b4232f !important;
+}
+
+.ticket-message-send-btn:hover:not(:disabled) {
+  background: transparent !important;
+  color: #b4232f !important;
+}
+
+.ticket-message-icon-btn:focus-visible {
+  outline: 2px solid rgba(220, 38, 38, 0.45);
+  outline-offset: 2px;
+}
+
+.ticket-message-icon-btn.disabled,
+.ticket-message-icon-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.floating-ticket-chat.ticket-modal-floating-chat {
+  position: fixed !important;
+  top: auto !important;
+  right: 0.75rem !important;
+  bottom: 2.2rem !important;
+  left: auto !important;
+  z-index: 13010 !important;
+  width: min(420px, calc(100vw - 1.5rem)) !important;
+  height: min(440px, calc(100dvh - 4.4rem)) !important;
+  max-height: calc(100dvh - 4.4rem) !important;
+}
+
+@media (min-width: 1180px) {
+  .ticket-action-overlay.chat-open {
+    align-items: flex-start !important;
+    justify-content: flex-start !important;
+    padding-left: clamp(1rem, 4vw, 4rem) !important;
+    padding-right: calc(420px + clamp(1.5rem, 3vw, 3rem)) !important;
+  }
+
+  .ticket-action-overlay.chat-open .ticket-action-modal {
+    width: min(1320px, calc(100vw - 420px - clamp(4rem, 7vw, 7rem))) !important;
+    max-width: min(1320px, calc(100vw - 420px - clamp(4rem, 7vw, 7rem))) !important;
+    margin: 0 !important;
+  }
+}
+
+@media (max-width: 700px) {
+  .ticket-chat-launcher.ticket-modal-floating-launcher {
+    right: 0.75rem !important;
+    bottom: 1.25rem !important;
   }
 }
 
@@ -17818,14 +18117,6 @@ button:not(:disabled),
   font-size: 0.82rem !important;
 }
 
-.ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .ticket-id {
-  border: 0 !important;
-  border-radius: 4px !important;
-  background: #f1f4f7 !important;
-  color: #536276 !important;
-  font-weight: 700 !important;
-}
-
 .ticket-action-overlay.burnout-modal-open form.ticket-action-modal.is-burnout-modal .ticket-action-scroll-content {
   padding: 0.9rem 1.1rem !important;
   background: #f5f7f9 !important;
@@ -18827,4 +19118,1267 @@ button:not(:disabled),
   border-radius: 4px !important;
   font-size: 0.69rem !important;
   line-height: 1.25 !important;
+}
+.ticket-action-head {
+  position: relative;
+}
+
+.ticket-action-header-actions {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ticket-action-head-main {
+  padding-right: 178px;
+}
+
+.ticket-action-header-actions > .admin-modal-close {
+  position: static !important;
+  inset: auto !important;
+  flex: 0 0 auto;
+}
+
+.ticket-action-header-actions .ticket-chat-header-toggle {
+  position: relative !important;
+  inset: auto !important;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  width: auto !important;
+  min-width: 40px !important;
+  height: 38px !important;
+  min-height: 38px !important;
+  padding: 0 11px !important;
+  border: 1px solid rgba(220, 38, 38, 0.18) !important;
+  border-radius: 9px !important;
+  background: rgba(255, 255, 255, 0.92) !important;
+  color: #b4232f !important;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06) !important;
+  cursor: pointer;
+  font-size: 0.78rem !important;
+  font-weight: 750 !important;
+}
+
+.ticket-action-header-actions .ticket-chat-header-toggle:hover {
+  background: #fff5f5 !important;
+  border-color: rgba(220, 38, 38, 0.35) !important;
+}
+
+.ticket-action-header-actions .ticket-chat-header-toggle:focus-visible {
+  outline: 2px solid #b4232f;
+  outline-offset: 2px;
+}
+
+.ticket-action-header-actions .ticket-chat-header-toggle .admin-mono-icon {
+  width: 18px !important;
+  height: 18px !important;
+}
+
+.ticket-action-header-actions .ticket-chat-header-toggle .ticket-chat-header-label {
+  position: static !important;
+  display: inline !important;
+  min-width: 0 !important;
+  width: auto !important;
+  height: auto !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: inherit !important;
+  font-size: inherit !important;
+  font-weight: inherit !important;
+  line-height: inherit !important;
+}
+
+.ticket-action-header-actions .ticket-chat-header-toggle .ticket-chat-unread-count {
+  position: absolute !important;
+  top: -7px !important;
+  right: -7px !important;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px !important;
+  width: auto !important;
+  height: 18px !important;
+  padding: 0 4px !important;
+  border: 1px solid #fff !important;
+  border-radius: 999px !important;
+  background: #dc2626 !important;
+  color: #fff !important;
+  font-size: 0.65rem !important;
+  font-weight: 800 !important;
+  line-height: 1 !important;
+}
+
+@media (max-width: 520px) {
+  .ticket-action-head-main {
+    padding-right: 92px;
+  }
+
+  .ticket-action-header-actions .ticket-chat-header-toggle {
+    width: 40px !important;
+    padding: 0 !important;
+  }
+
+  .ticket-action-header-actions .ticket-chat-header-label {
+    display: none !important;
+  }
+}
+
+/* Keep the Admin support header aligned with the Employee ticket modal. */
+.ticket-action-overlay form.ticket-action-modal.is-support-modal .ticket-action-head {
+  z-index: 6 !important;
+  width: 100% !important;
+  border-radius: 18px 18px 0 0 !important;
+  box-shadow: none !important;
+}
+
+.ticket-action-overlay form.ticket-action-modal.is-support-modal .ticket-action-head-main {
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
+.ticket-action-overlay form.ticket-action-modal.is-support-modal .ticket-action-identity-group {
+  gap: 0.78rem !important;
+}
+
+@media (min-width: 1051px) {
+  .ticket-action-overlay form.ticket-action-modal.is-support-modal .ticket-action-head-main {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) max-content !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 1rem !important;
+  }
+
+  .ticket-action-overlay form.ticket-action-modal.is-support-modal .ticket-action-header-status {
+    width: auto !important;
+    min-width: 0 !important;
+    justify-self: end !important;
+    transform: none !important;
+  }
+}
+
+.ticket-action-overlay form.ticket-action-modal:is(.is-support-modal, .is-burnout-modal) .ticket-handling-status.is-detailed {
+  display: grid !important;
+  justify-items: start !important;
+  align-content: start !important;
+  gap: 4px !important;
+  width: min(310px, 100%) !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  padding: 0 !important;
+  color: #233042 !important;
+  text-align: left !important;
+}
+
+.ticket-action-overlay form.ticket-action-modal:is(.is-support-modal, .is-burnout-modal) .ticket-handling-status.is-detailed .ticket-handling-topline {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  gap: 5px 12px !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+.ticket-action-overlay form.ticket-action-modal:is(.is-support-modal, .is-burnout-modal) .ticket-handling-status.is-detailed :is(
+  .ticket-handling-assignee,
+  .ticket-handling-timestamp,
+  .ticket-handling-editor,
+  .ticket-handling-follow-up
+) {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  color: #607083 !important;
+  font-size: 0.73rem !important;
+  font-weight: 400 !important;
+  line-height: 1.4 !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+}
+
+.ticket-action-overlay form.ticket-action-modal:is(.is-support-modal, .is-burnout-modal) .ticket-handling-status.is-detailed .ticket-handling-assignee {
+  color: #354458 !important;
+  font-weight: 550 !important;
+}
+
+.ticket-action-overlay form.ticket-action-modal:is(.is-support-modal, .is-burnout-modal) .ticket-handling-status.is-detailed .ticket-handling-editor {
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  margin-top: 0 !important;
+  color: #738092 !important;
+  font-size: 0.69rem !important;
+}
+
+.ticket-action-overlay form.ticket-action-modal:is(.is-support-modal, .is-burnout-modal) .ticket-handling-status.is-detailed .ticket-handling-editor svg {
+  flex: 0 0 12px !important;
+}
+
+@media (max-width: 1050px) {
+  .ticket-action-overlay form.ticket-action-modal.is-support-modal .ticket-action-head-main {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .ticket-action-overlay form.ticket-action-modal.is-support-modal .ticket-action-header-status {
+    width: fit-content !important;
+    max-width: 100% !important;
+    justify-self: start !important;
+  }
+}
+
+
+/* Shared ticket conversation panel treatment */
+:is(.ticket-action-overlay, .employee-ticket-action-overlay) .ticket-action-attachment-chat-row {
+  position: relative !important;
+  display: grid !important;
+  grid-template-columns: max-content minmax(320px, 420px) !important;
+  align-items: start !important;
+  justify-content: start !important;
+  gap: 1rem !important;
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
+:is(.ticket-action-overlay, .employee-ticket-action-overlay) .ticket-action-attachment-chat-row > .floating-ticket-chat {
+  position: fixed !important;
+  top: auto !important;
+  right: -4.5rem !important;
+  bottom: 1.25rem !important;
+  left: auto !important;
+  z-index: 10110 !important;
+  width: min(420px, calc(100vw - 1.7rem)) !important;
+  height: min(390px, 42dvh) !important;
+  min-height: 280px !important;
+  max-height: min(640px, calc(100dvh - 1.7rem)) !important;
+  margin: 0 !important;
+}
+
+:is(.ticket-action-overlay, .employee-ticket-action-overlay) .ticket-chat-launcher {
+  position: fixed !important;
+  top: auto !important;
+  right: -4.5rem !important;
+  bottom: 1.25rem !important;
+  left: auto !important;
+  z-index: 10120 !important;
+  transform: none !important;
+}
+
+:is(.ticket-action-overlay, .employee-ticket-action-overlay) .ticket-chat-launcher:hover {
+  transform: translateY(-1px) !important;
+}
+
+:is(.ticket-action-overlay, .employee-ticket-action-overlay) .ticket-action-attachment-chat-row > .ticket-action-attachments-row {
+  width: max-content !important;
+  max-width: 100% !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+:is(.ticket-action-overlay, .employee-ticket-action-overlay) .ticket-action-attachment-chat-row > .employee-ticket-attachments {
+  width: fit-content !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+}
+
+@media (max-width: 1100px) {
+  :is(.ticket-action-overlay, .employee-ticket-action-overlay) .ticket-action-attachment-chat-row {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+}
+
+:is(.ticket-action-overlay, .employee-ticket-action-overlay) .floating-ticket-chat {
+  position: fixed !important;
+  right: clamp(0.85rem, 2vw, 1.5rem) !important;
+  bottom: clamp(0.85rem, 2vw, 1.5rem) !important;
+  z-index: 10080 !important;
+  display: grid !important;
+  grid-template-rows: auto minmax(0, 1fr) auto !important;
+  width: min(420px, calc(100vw - 1.7rem)) !important;
+  max-height: min(640px, calc(100dvh - 1.7rem)) !important;
+  min-height: 280px;
+  margin: 0 !important;
+  overflow: hidden !important;
+  border: 1px solid var(--border, rgba(226, 232, 240, 0.85)) !important;
+  border-radius: var(--radius-lg, 14px) !important;
+  background: var(--surface, #fff) !important;
+  color: var(--text, #172033);
+  box-shadow: 0 24px 56px rgba(15, 23, 42, 0.22) !important;
+  font: inherit;
+}
+
+:is(.ticket-action-overlay, .employee-ticket-action-overlay) .floating-ticket-chat .ticket-message-list {
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+}
+
+:is(.ticket-action-overlay, .employee-ticket-action-overlay) .floating-ticket-chat .ticket-message-composer {
+  flex: 0 0 auto;
+  position: relative;
+  z-index: 1;
+}
+
+@media (max-width: 700px) {
+  :is(.ticket-action-overlay, .employee-ticket-action-overlay) .floating-ticket-chat {
+    right: 0.5rem !important;
+    bottom: 0.5rem !important;
+    width: calc(100vw - 1rem) !important;
+    max-height: calc(100dvh - 1rem) !important;
+    min-height: min(360px, calc(100dvh - 1rem));
+    border-radius: 14px !important;
+  }
+
+  :is(.ticket-action-overlay, .employee-ticket-action-overlay) .ticket-chat-launcher {
+    right: 0.5rem !important;
+    bottom: 0.5rem !important;
+  }
+
+  .floating-ticket-chat.ticket-modal-floating-chat {
+    right: 0.5rem !important;
+    bottom: 1.25rem !important;
+    width: calc(100vw - 1rem) !important;
+    height: min(520px, calc(100dvh - 2.5rem)) !important;
+    max-height: calc(100dvh - 2.5rem) !important;
+  }
+}
+
+/* Match the Employee ticket footer treatment in the Admin support modal. */
+.ticket-action-overlay form.ticket-action-modal.is-support-modal .modal-footer {
+  border-radius: 0 0 18px 18px !important;
+}
+
+.ticket-action-overlay form.ticket-action-modal.is-support-modal .ticket-action-footer-tools {
+  gap: 0.5rem !important;
+}
+
+.ticket-action-overlay form.ticket-action-modal.is-support-modal .modal-footer .modal-btn {
+  box-sizing: border-box !important;
+  min-height: 42px !important;
+  height: 42px !important;
+  padding: 0 1rem !important;
+  border-radius: 8px !important;
+  font-size: 0.88rem !important;
+  font-weight: 750 !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+  box-shadow: none !important;
+}
+
+.ticket-action-overlay form.ticket-action-modal.is-support-modal .modal-footer .modal-btn.danger,
+.ticket-action-overlay form.ticket-action-modal.is-support-modal .modal-footer .modal-btn.print {
+  min-width: 132px !important;
+  border: 1px solid #f5b8b8 !important;
+  background: #fff5f5 !important;
+  color: #dc2626 !important;
+}
+
+.ticket-action-overlay form.ticket-action-modal.is-support-modal .modal-footer .modal-btn.confirm {
+  min-width: 148px !important;
+  border: 1px solid #dc2626 !important;
+  background: linear-gradient(180deg, #ef3030, #d71920) !important;
+  color: #fff !important;
+}
+
+.ticket-action-overlay form.ticket-action-modal.is-support-modal .modal-footer .modal-btn.danger:hover:not(:disabled),
+.ticket-action-overlay form.ticket-action-modal.is-support-modal .modal-footer .modal-btn.print:hover:not(:disabled) {
+  transform: translateY(-1px) !important;
+  border-color: rgba(220, 38, 38, 0.4) !important;
+  background: rgba(254, 226, 226, 0.82) !important;
+}
+
+.ticket-action-overlay form.ticket-action-modal.is-support-modal .modal-footer .modal-btn.confirm:hover:not(:disabled) {
+  transform: translateY(-1px) !important;
+  border-color: #b91c1c !important;
+  background: linear-gradient(180deg, #e62929, #c9151c) !important;
+}
+
+.ticket-action-overlay form.ticket-action-modal.is-support-modal .modal-footer .modal-btn .admin-mono-icon {
+  width: 16px !important;
+  height: 16px !important;
+  flex: 0 0 16px !important;
+}
+
+@media (max-width: 520px) {
+  .ticket-action-overlay form.ticket-action-modal.is-support-modal .modal-footer {
+    align-items: stretch !important;
+    flex-direction: column !important;
+  }
+
+  .ticket-action-overlay form.ticket-action-modal.is-support-modal .modal-footer > .modal-btn,
+  .ticket-action-overlay form.ticket-action-modal.is-support-modal .ticket-action-footer-tools {
+    width: 100% !important;
+  }
+
+  .ticket-action-overlay form.ticket-action-modal.is-support-modal .ticket-action-footer-tools {
+    flex-direction: column !important;
+    margin-left: 0 !important;
+  }
+}
+
+
+/* Calendar report: keep both desktop panels compact and stable. */
+.report-calendar-layout {
+  align-items: stretch;
+}
+
+.report-calendar-card,
+.report-calendar-insights {
+  height: 630px;
+  min-height: 0;
+  min-width: 0;
+}
+
+.report-calendar-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.report-calendar-head {
+  flex: 0 0 auto;
+}
+
+.report-calendar-grid {
+  flex: 1 1 auto;
+  min-height: 0;
+  grid-template-rows: auto repeat(6, minmax(0, 1fr));
+}
+
+.report-calendar-day {
+  min-height: 0;
+  overflow: visible;
+}
+
+.report-calendar-insights {
+  overflow: hidden;
+}
+
+.report-insight-list {
+  flex: 0 0 auto;
+  grid-template-columns: 1fr;
+}
+
+.report-insight-item {
+  min-height: 0;
+  padding: 0.4rem 0.55rem;
+}
+
+.report-insight-item span,
+.report-insight-item em {
+  font-size: 0.72rem;
+}
+
+.report-insight-item strong {
+  font-size: 1.02rem;
+}
+
+.report-month-pulse-note {
+  margin: -0.45rem 0 0.65rem;
+  color: var(--muted, #64748b);
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+
+.report-insight-item span,
+.report-insight-item em,
+.report-insight-item strong,
+.report-selected-ticket span,
+.report-selected-ticket strong,
+.report-selected-ticket em {
+  overflow-wrap: anywhere;
+  word-break: normal;
+  white-space: normal;
+}
+
+.report-selected-day {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.report-selected-day-head {
+  flex: 0 0 auto;
+}
+
+.report-selected-ticket-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: visible;
+  align-content: start;
+  padding: 1px 2px 2px 0;
+}
+
+.report-selected-ticket {
+  min-width: 0;
+  height: auto;
+  padding: 0.48rem 0.58rem;
+  overflow: visible;
+}
+
+.report-selected-ticket-pager,
+.report-selected-empty {
+  flex: 0 0 auto;
+}
+
+/* Keep the selected-day card fully visible without an inner scrollbar. */
+.report-calendar-insights {
+  overflow: visible !important;
+}
+
+.report-selected-day {
+  overflow: visible !important;
+}
+
+.report-selected-ticket-list {
+  flex: 0 0 auto;
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+  padding-right: 0;
+}
+
+.report-selected-ticket {
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+.report-selected-day-head {
+  flex-wrap: nowrap !important;
+  align-items: baseline !important;
+  justify-content: space-between !important;
+}
+
+.report-selected-day-head span {
+  flex: 0 0 auto !important;
+}
+
+.report-selected-day-head strong {
+  flex: 0 1 auto !important;
+  text-align: right !important;
+}
+
+@media (max-width: 1080px) {
+  .report-calendar-card,
+  .report-calendar-insights {
+    height: auto;
+    min-height: 0;
+  }
+
+  .report-calendar-grid {
+    flex: initial;
+    grid-template-rows: auto;
+  }
+
+  .report-calendar-day {
+    min-height: 76px;
+  }
+
+  .report-selected-day {
+    flex: initial;
+    min-height: 0;
+    overflow: visible;
+  }
+
+  .report-selected-ticket-list {
+    flex: initial;
+    overflow: visible;
+  }
+}
+
+@media (max-width: 640px) {
+  .report-calendar-day {
+    min-height: 52px;
+  }
+
+  .report-selected-day-head strong {
+    text-align: right !important;
+  }
+}
+
+/* Reports refresh: a compact summary band and a cleaner submissions grid. */
+.reports-compact-view {
+  gap: 0.7rem;
+}
+
+.reports-compact-view .report-toolbar {
+  grid-template-columns: minmax(280px, 1fr) minmax(560px, 1.04fr);
+  gap: 1.25rem;
+  padding: 0.78rem 0.9rem;
+  border-color: rgba(203, 213, 225, 0.72);
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.035);
+}
+
+.reports-compact-view .report-toolbar-copy h2 {
+  margin: 0.16rem 0 0.12rem;
+  font-size: clamp(1.3rem, 1.7vw, 1.65rem);
+  letter-spacing: -0.045em;
+}
+
+.reports-compact-view .report-toolbar-copy p {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.35;
+}
+
+.reports-compact-view .report-toolbar-metrics {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0;
+  padding: 0.3rem;
+  border: 1px solid rgba(226, 232, 240, 0.86);
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.reports-compact-view .report-metric {
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: auto auto auto;
+  align-content: center;
+  gap: 0.02rem;
+  min-height: 74px;
+  padding: 0.38rem 0.65rem;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.reports-compact-view .report-metric + .report-metric {
+  border-left: 1px solid rgba(203, 213, 225, 0.82);
+}
+
+.reports-compact-view .report-metric strong {
+  grid-row: 1;
+  margin: 0 0 0.08rem;
+  font-size: 1.55rem;
+  line-height: 1;
+  letter-spacing: -0.045em;
+}
+
+.reports-compact-view .report-metric-label {
+  grid-row: 2;
+  font-size: 0.72rem;
+  line-height: 1.15;
+}
+
+.reports-compact-view .report-metric-meta {
+  grid-row: 3;
+  margin-top: 0.12rem;
+  font-size: 0.62rem;
+  line-height: 1.1;
+}
+
+.reports-compact-view .report-period-card {
+  padding: 0.78rem 0.9rem 0.58rem;
+  border-color: rgba(203, 213, 225, 0.72);
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.035);
+}
+
+.reports-compact-view .report-period-head {
+  align-items: center;
+  margin-bottom: 0.55rem;
+}
+
+.reports-compact-view .report-period-head h3 {
+  margin-top: 0.08rem;
+  font-size: 1rem;
+}
+
+.reports-compact-view .report-period-actions {
+  gap: 0.45rem;
+}
+
+.reports-compact-view .report-print-btn {
+  min-height: 34px;
+  padding: 0.3rem 0.62rem;
+  border-color: rgba(203, 213, 225, 0.9);
+  border-radius: 9px;
+  background: #fff;
+  color: var(--text-soft);
+  font-size: 0.84rem;
+  font-weight: 750;
+}
+
+.reports-compact-view .report-print-btn:hover {
+  border-color: rgba(220, 38, 38, 0.28);
+  background: #fffafa;
+  color: var(--red-600);
+}
+
+.reports-compact-view .report-period-tabs {
+  padding: 0.12rem;
+  border: 1px solid rgba(226, 232, 240, 0.92);
+  border-radius: 9px;
+  background: #f8fafc;
+}
+
+.reports-compact-view .report-period-tabs button {
+  min-width: 56px;
+  min-height: 30px;
+  padding: 0.25rem 0.55rem;
+  border-radius: 7px;
+  font-size: 0.84rem;
+}
+
+.reports-compact-view .report-period-tabs button.active {
+  background: #fff;
+  color: var(--red-600);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08), inset 0 0 0 1px rgba(220, 38, 38, 0.16);
+}
+
+.reports-compact-view .report-period-card .admin-breakdown-list {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.42rem;
+}
+
+.reports-compact-view .report-period-card .admin-breakdown-item {
+  min-height: 42px;
+  padding: 0.4rem 0.58rem;
+  border: 0;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.92);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  transition: border-color 140ms ease, background 140ms ease;
+}
+
+.reports-compact-view .report-period-card .admin-breakdown-copy {
+  margin: 0;
+  gap: 0.4rem;
+}
+
+.reports-compact-view .report-period-card .admin-breakdown-copy strong {
+  font-size: 0.88rem;
+  font-weight: 750;
+  line-height: 1.2;
+}
+
+.reports-compact-view .report-period-card .admin-breakdown-copy span {
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.reports-compact-view .report-period-card .admin-breakdown-list.selectable .admin-breakdown-item:hover {
+  transform: none;
+  border-bottom-color: rgba(220, 38, 38, 0.35);
+  background: #fffafa;
+  box-shadow: none;
+}
+
+.reports-compact-view .report-period-card .admin-breakdown-list.selectable .admin-breakdown-item.selected {
+  border-bottom-color: rgba(220, 38, 38, 0.48);
+  background: #fff5f5;
+  box-shadow: inset 3px 0 0 var(--red-500);
+}
+
+.reports-compact-view .report-period-pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  margin-top: 0.24rem;
+}
+
+.reports-compact-view .report-period-pager button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-soft);
+  cursor: pointer;
+}
+
+.reports-compact-view .report-period-pager button:hover:not(:disabled) {
+  background: #f1f5f9;
+}
+
+.reports-compact-view .report-period-pager button:disabled {
+  color: #b5bfcc;
+  cursor: default;
+}
+
+.reports-compact-view .report-period-pager button svg {
+  width: 16px;
+  height: 16px;
+}
+
+.reports-compact-view .report-period-pager span {
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+@media (max-width: 1280px) {
+  .reports-compact-view .report-toolbar {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.65rem;
+  }
+}
+
+@media (max-width: 900px) {
+  .reports-compact-view .report-period-card .admin-breakdown-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .reports-compact-view .report-toolbar-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .reports-compact-view .report-metric:nth-child(3) {
+    border-left: 0;
+  }
+
+  .reports-compact-view .report-metric:nth-child(n + 3) {
+    border-top: 1px solid rgba(203, 213, 225, 0.82);
+  }
+
+  .reports-compact-view .report-period-head {
+    align-items: stretch;
+  }
+
+  .reports-compact-view .report-period-actions {
+    justify-content: space-between;
+  }
+}
+
+/* Actionable report panels: compact, aligned, and content-sized. */
+.reports-compact-view .report-toolbar {
+  grid-template-columns: minmax(220px, 0.9fr) minmax(0, 1.35fr);
+  gap: 1rem;
+}
+
+.reports-compact-view .report-toolbar-copy p {
+  max-width: 56ch;
+  overflow-wrap: anywhere;
+}
+
+.reports-compact-view .report-metric {
+  min-width: 0;
+  padding-inline: 0.5rem;
+}
+
+.reports-compact-view .report-metric-label,
+.reports-compact-view .report-metric-meta {
+  overflow-wrap: anywhere;
+}
+
+.reports-compact-view .admin-report-grid.compact {
+  align-items: stretch;
+  gap: 0.7rem;
+}
+
+.reports-compact-view .admin-report-grid.compact > .panel-card {
+  min-width: 0;
+  min-height: 0;
+  padding: 0.8rem;
+}
+
+.reports-compact-view .admin-report-grid.compact .section-head {
+  gap: 0.5rem;
+}
+
+.reports-compact-view .admin-report-grid.compact .section-head h3 {
+  overflow-wrap: anywhere;
+}
+
+.reports-compact-view .admin-workload-list {
+  gap: 0.35rem;
+}
+
+.reports-compact-view .admin-workload-card {
+  grid-template-columns: minmax(0, 1.1fr) minmax(155px, 0.9fr);
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.45rem 0.5rem;
+  border-radius: 9px;
+}
+
+.reports-compact-view .admin-workload-person {
+  gap: 0.45rem;
+}
+
+.reports-compact-view .admin-workload-avatar {
+  width: 29px;
+  height: 29px;
+  border-radius: 8px;
+}
+
+.reports-compact-view .admin-workload-person strong {
+  font-size: 0.82rem;
+  line-height: 1.22;
+}
+
+.reports-compact-view .admin-workload-person p {
+  font-size: 0.69rem;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.reports-compact-view .admin-workload-stats {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.25rem;
+}
+
+.reports-compact-view .admin-workload-stats div {
+  padding: 0.32rem;
+  border: 0;
+  background: #f8fafc;
+}
+
+.reports-compact-view .admin-workload-stats em {
+  font-size: 0.58rem;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.reports-compact-view .admin-workload-stats b {
+  font-size: 0.92rem;
+}
+
+.report-breakdown-rows {
+  display: grid;
+  align-content: start;
+  gap: 0.35rem;
+}
+
+.report-breakdown-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  min-height: 38px;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #1e293b;
+  text-align: left;
+  cursor: pointer;
+}
+
+.report-breakdown-row:hover,
+.report-breakdown-row.selected {
+  border-color: rgba(220, 38, 38, 0.35);
+  background: #fff7f7;
+}
+
+.report-breakdown-row:focus-visible,
+.report-ticket-scope button:focus-visible {
+  outline: 3px solid rgba(220, 38, 38, 0.24);
+  outline-offset: 2px;
+}
+
+.report-breakdown-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 0.82rem;
+  font-weight: 750;
+}
+
+.report-breakdown-value {
+  font-size: 0.84rem;
+  font-weight: 850;
+  font-variant-numeric: tabular-nums;
+}
+
+.report-breakdown-percent {
+  min-width: 2.5rem;
+  color: #64748b;
+  text-align: right;
+  font-size: 0.74rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.report-empty-inline {
+  margin: 0;
+  padding: 0.65rem 0.4rem;
+  color: #64748b;
+  font-size: 0.82rem;
+}
+
+.report-ticket-table-card {
+  min-width: 0;
+  padding: 0.9rem;
+}
+
+.report-ticket-table-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  margin-bottom: 0.75rem;
+}
+
+.report-ticket-table-head h3 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0.15rem 0 0;
+  color: #1e293b;
+  font-size: 1rem;
+}
+
+.report-ticket-table-head h3 span {
+  display: inline-flex;
+  min-width: 1.6rem;
+  justify-content: center;
+  padding: 0.12rem 0.35rem;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 0.72rem;
+}
+
+.report-ticket-table-head p {
+  margin: 0.18rem 0 0;
+  color: #64748b;
+  font-size: 0.76rem;
+  line-height: 1.35;
+}
+
+.report-ticket-scope {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.report-ticket-scope button {
+  min-height: 32px;
+  padding: 0.35rem 0.62rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  color: #475569;
+  font-size: 0.76rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.report-ticket-scope button.active {
+  border-color: rgba(220, 38, 38, 0.25);
+  background: #fff5f5;
+  color: #b91c1c;
+}
+
+.report-ticket-scope .report-clear-filters {
+  border-color: transparent;
+  background: transparent;
+  color: #64748b;
+}
+
+.report-ticket-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+}
+
+.report-ticket-table {
+  width: 100%;
+  min-width: 780px;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.report-ticket-table th,
+.report-ticket-table td {
+  padding: 0.55rem 0.65rem;
+  border-bottom: 1px solid #edf1f5;
+  color: #475569;
+  font-size: 0.76rem;
+  line-height: 1.35;
+  vertical-align: middle;
+}
+
+.report-ticket-table th {
+  position: sticky;
+  top: 0;
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 0.67rem;
+  font-weight: 850;
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
+}
+
+.report-ticket-table td:first-child strong {
+  color: #1e293b;
+  white-space: nowrap;
+}
+
+.report-ticket-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.report-ticket-table tbody tr[tabindex] {
+  cursor: pointer;
+}
+
+.report-ticket-table tbody tr[tabindex]:hover {
+  background: #fffafa;
+}
+
+.report-ticket-table tbody tr[tabindex]:focus-visible {
+  outline: 2px solid rgba(220, 38, 38, 0.35);
+  outline-offset: -2px;
+}
+
+.report-table-empty {
+  padding: 1.2rem !important;
+  color: #64748b !important;
+  text-align: center;
+}
+
+.report-priority-pill,
+.report-deadline-pill {
+  display: inline-flex;
+  max-width: 100%;
+  padding: 0.18rem 0.42rem;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 0.69rem;
+  font-weight: 800;
+  line-height: 1.35;
+  white-space: normal;
+}
+
+.report-priority-pill.critical,
+.report-deadline-pill.overdue {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.report-priority-pill.high,
+.report-deadline-pill.due-soon {
+  background: #fff7ed;
+  color: #c2410c;
+}
+
+.report-priority-pill.medium { background: #eff6ff; color: #1d4ed8; }
+.report-priority-pill.low { background: #f1f5f9; color: #475569; }
+
+.report-table-footnote {
+  margin: 0.5rem 0 0;
+  color: #64748b;
+  font-size: 0.75rem;
+}
+
+@media (max-width: 900px) {
+  .reports-compact-view .admin-workload-card {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Keep workload labels readable at narrow report widths. */
+.reports-compact-view .admin-workload-card {
+  grid-template-columns: minmax(0, 1fr);
+  align-items: stretch;
+  gap: 0.45rem;
+}
+
+.reports-compact-view .admin-workload-person strong,
+.reports-compact-view .admin-workload-person p {
+  overflow-wrap: break-word;
+  word-break: normal;
+}
+
+.reports-compact-view .admin-workload-stats {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.35rem;
+}
+
+.reports-compact-view .admin-workload-stats div {
+  padding: 0.38rem 0.45rem;
+}
+
+.reports-compact-view .admin-workload-stats em {
+  font-size: 0.64rem;
+  line-height: 1.2;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
+/* Give report cards only the height their content needs and use the wide
+   workload panel for a two-column staff list. */
+.reports-compact-view .admin-report-grid.compact {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 0.7rem;
+}
+
+.reports-compact-view .admin-report-grid.compact > .panel-card {
+  min-height: 0;
+  align-self: start;
+}
+
+.reports-compact-view .admin-report-grid.compact > .admin-workload-panel {
+  grid-column: 1 / -1;
+}
+
+.reports-compact-view .admin-workload-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+}
+
+.reports-compact-view .admin-workload-card {
+  grid-template-columns: minmax(0, 1fr) minmax(190px, 0.9fr);
+  align-items: center;
+}
+
+@media (max-width: 760px) {
+  .reports-compact-view .admin-report-grid.compact {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .reports-compact-view .admin-report-grid.compact > .admin-workload-panel {
+    grid-column: auto;
+  }
+
+  .reports-compact-view .admin-workload-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .reports-compact-view .admin-workload-card {
+    grid-template-columns: minmax(0, 1fr) minmax(165px, 0.9fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .reports-compact-view .report-toolbar {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .reports-compact-view .report-toolbar-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .reports-compact-view .report-metric:nth-child(3) {
+    border-left: 0;
+  }
+
+  .reports-compact-view .report-metric:nth-child(n + 3) {
+    border-top: 1px solid rgba(203, 213, 225, 0.82);
+  }
 }

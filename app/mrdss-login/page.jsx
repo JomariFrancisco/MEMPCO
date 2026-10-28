@@ -1,5 +1,5 @@
-import LoginPage from '@/app/LogIn/page';
+import { permanentRedirect } from 'next/navigation';
 
 export default function MrdssLoginPage() {
-  return <LoginPage portal="mrdss" />;
+  permanentRedirect('/mrdss');
 }

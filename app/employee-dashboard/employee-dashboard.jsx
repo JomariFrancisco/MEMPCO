@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import {
   BadgeCheck,
@@ -12,6 +13,7 @@ import {
   ChevronRight,
   CheckCircle2,
   Clock3,
+  Download,
   ExternalLink,
   Eye,
   FileText,
@@ -75,7 +77,9 @@ import '@/components/PortalWorkspaceTheme.css';
 import '@/components/TicketHandlingStatus.css';
 import '@/components/TicketModalLayout.css';
 import './employee-ticket-parity.css';
+import '@/components/TicketChat.css';
 import { mergeMessages } from '@/lib/tickets/workflow.mjs';
+import { createRequestId } from '@/lib/tickets/requestIdentity.mjs';
 
 /* =========================
    ROUTES
@@ -83,7 +87,6 @@ import { mergeMessages } from '@/lib/tickets/workflow.mjs';
 
 const LOGIN_ROUTE = '/helpdesk';
 const HRMAX_ROUTE = 'http://120.28.214.253/hrmax/';
-const TRANSITION_DURATION = 560;
 
 /* =========================
    STATIC DATA
@@ -223,19 +226,18 @@ const getSupportCategoriesForDevice = (deviceName = '') =>
 const getConcernOptionsForSelection = (category = '', deviceName = '') =>
   DEVICE_CONCERN_TYPE_MAP[deviceName]?.[category] || HELPDESK_CATEGORY_CONCERNS[category] || [];
 
-const BURNOUT_REQUESTS_STORAGE_KEY = 'mempcop-employee-burnout-requests';
 
 const isAdminDepartment = (department = '') =>
   String(department || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '') === 'admin';
 
-const getNewBurnoutRequestForm = (user = {}) => ({
-  branch: user.branch || user.office || '',
+const getNewBurnoutRequestForm = () => ({
+  branch: '',
   custodian: '',
   brand: '',
   model: '',
   serialNumber: '',
   deviceName: '',
-  department: user.department || '',
+  department: '',
   supportCategory: 'Burnout',
   remarks: '',
 });
@@ -1173,7 +1175,9 @@ const printEmployeeTicket = (ticket = {}, user = {}) => {
     ['Moved Date', formatPrintDateTime(ticket.movedDateAt || ticket.movedDate || ticket.movedAt)],
     ['Resolved Date', formatPrintDateTime(ticket.workEndedAt || ticket.work_ended_at || ticket.resolvedAt || ticket.resolved_at)],
     ['Assigned ICT Staff', ticket.technician || ticket.assignedTo || 'Unassigned'],
-    ['Escalation Partner', normalizedStatus === 'escalated' ? ticket.escalationPartner : ''],
+    ['Escalation Partner', normalizedStatus === 'escalated'
+      ? [ticket.escalationPartner, ticket.escalationPartner === 'Third Party Company' ? ticket.escalationPartnerCompany : ''].filter(Boolean).join(' — ')
+      : ''],
     ['Device / System', ticket.deviceName || ticket.deviceType],
     ['Contact', ticket.contactNumber],
     ['Work Started', formatPrintDateTime(startedAt)],
@@ -1315,22 +1319,6 @@ const Icon = {
   Bell: () => <Bell className="icon-bell" aria-hidden="true" />,
 };
 
-const employeeTransitionLabels = {
-  dashboard: 'Opening employee dashboard...',
-  profile: 'Loading employee profile...',
-  helpdesk: 'Preparing helpdesk workspace...',
-  logout: 'Signing out...',
-};
-
-function PortalTransitionLoader({ label }) {
-  return (
-    <div className="portal-transition-loader" role="status" aria-live="polite" aria-label={label}>
-      <div className="portal-transition-card">
-        <img src="/Logos/Logo.png" alt="" aria-hidden="true" />
-      </div>
-    </div>
-  );
-}
 
 function InactiveAccountNotice() {
   return (
@@ -1413,7 +1401,7 @@ function Sidebar({ active, onNav, onLogout, open }) {
    SHARED COMPONENTS
 ========================= */
 
-function PhotoAttachmentGallery({ photos = [], emptyText = 'No photo attachments.', onRemove }) {
+function PhotoAttachmentGallery({ photos = [], emptyText = 'No photo attachments.', onRemove, className = '' }) {
   const validPhotos = Array.isArray(photos)
     ? photos.filter((photo) => photo?.dataUrl || photo?.url || photo?.publicUrl || photo?.path || photo?.name)
     : [];
@@ -1423,7 +1411,7 @@ function PhotoAttachmentGallery({ photos = [], emptyText = 'No photo attachments
   }
 
   return (
-    <div className="attached-photo-grid">
+    <div className={`attached-photo-grid ${className}`.trim()}>
       {validPhotos.map((photo, index) => {
         const source = photo.dataUrl || photo.url || photo.publicUrl || '';
         const fileName = photo.name || `Photo ${index + 1}`;
@@ -1466,7 +1454,6 @@ function PhotoAttachmentGallery({ photos = [], emptyText = 'No photo attachments
 function IssueDescriptionBuilder({ form, onChange }) {
   const labels = getTemplateLabels(getIssueDescriptionTemplate(form));
   const values = parseDescriptionValues(form.description, form);
-  const totalLength = normalizeTextareaValue(form.description).length;
 
   return (
     <div className="issue-description-composer" id="ticket-desc-builder" aria-label="Issue description fields">
@@ -1507,7 +1494,6 @@ function IssueDescriptionBuilder({ form, onChange }) {
         })}
       </div>
 
-      <div className="char-count">{totalLength}/1200 characters</div>
     </div>
   );
 }
@@ -1571,15 +1557,17 @@ function TicketConversationPanel({
   messageError,
   isSending,
   floating = false,
+  className = '',
   canSend = true,
-  unreadCount = 0,
   onClose,
   onMessageChange,
   onPhotoChange,
+  onPastePhotos,
   onRemovePhoto,
   onSend,
 }) {
   const messageListRef = useRef(null);
+  const [isPastingImages, setIsPastingImages] = useState(false);
   const disabledMessage =
     'Conversation is closed. Replies are available only while ICT is actively handling an unresolved ticket.';
 
@@ -1605,8 +1593,23 @@ function TicketConversationPanel({
     onSend();
   };
 
+  const handleMessagePaste = async (event) => {
+    const pastedImages = Array.from(event.clipboardData?.items || [])
+      .filter((item) => item.kind === 'file' && item.type?.startsWith('image/'))
+      .map((item) => item.getAsFile())
+      .filter(Boolean);
+    if (!pastedImages.length) return;
+    event.preventDefault();
+    setIsPastingImages(true);
+    try {
+      await onPastePhotos?.(pastedImages);
+    } finally {
+      setIsPastingImages(false);
+    }
+  };
+
   return (
-    <section className={`ticket-conversation-section${floating ? ' floating-ticket-chat' : ''}`}>
+    <section className={`ticket-conversation-section${floating ? ' floating-ticket-chat' : ''}${className ? ` ${className}` : ''}`}>
       <div className="ticket-conversation-head">
         <div>
           <span className="section-kicker"><MonoIcon icon={MessageCircle} /> Conversation</span>
@@ -1620,10 +1623,8 @@ function TicketConversationPanel({
               'Employee and ICT communication'
             )}
           </h4>
+          <p className="ticket-chat-requester">{ticket?.technician || ticket?.assignedTo || 'Unassigned'}</p>
         </div>
-        <span className="ticket-conversation-count">
-          {unreadCount > 0 ? `${unreadCount} unread` : 'No unread'}
-        </span>
         {onClose && (
           <button type="button" className="ticket-chat-close" onClick={onClose} aria-label="Minimize conversation">
             &times;
@@ -1640,7 +1641,8 @@ function TicketConversationPanel({
               <article key={item.id} className={`ticket-message-item${isMine ? ' mine' : ''}`}>
                 <div className="ticket-message-meta">
                   <strong>{item.senderName}</strong>
-                  <span>{item.senderRole} · {item.createdAt}</span>
+                  <span className="ticket-message-sender-role">{item.senderRole}</span>
+                  <span className="ticket-message-sent-at">{item.createdAt}</span>
                 </div>
                 <div className="ticket-message-bubble">
                   {item.message && <p>{item.message}</p>}
@@ -1663,9 +1665,10 @@ function TicketConversationPanel({
           value={messageDraft}
           onChange={(e) => onMessageChange(e.target.value)}
           onKeyDown={handleMessageKeyDown}
+          onPaste={handleMessagePaste}
           placeholder={canSend ? 'Write a reply or update for ICT...' : disabledMessage}
           maxLength={800}
-          disabled={!canSend}
+          disabled={!canSend || isSending || isPastingImages}
         />
 
         {messagePhotos.length > 0 && (
@@ -1676,6 +1679,7 @@ function TicketConversationPanel({
                 type="button"
                 className="message-photo-preview"
                 onClick={() => onRemovePhoto(photo.id)}
+                disabled={isSending || isPastingImages}
                 title="Remove photo"
               >
                 <img src={photo.dataUrl} alt={photo.name} />
@@ -1686,19 +1690,17 @@ function TicketConversationPanel({
         )}
 
         <div className="ticket-message-actions">
-          <label className={`message-attach-btn${canSend ? '' : ' disabled'}`}>
+          <label className={`message-attach-btn ticket-message-icon-btn${canSend && !isSending && !isPastingImages ? '' : ' disabled'}`} title="Attach photos" aria-label="Attach photos">
             <MonoIcon icon={Paperclip} />
-            Attach photos
-            <input type="file" accept={PHOTO_ACCEPT} multiple onChange={onPhotoChange} disabled={!canSend} />
+            <input type="file" accept={PHOTO_ACCEPT} multiple onChange={onPhotoChange} disabled={!canSend || isSending || isPastingImages} />
           </label>
-          <button type="button" className="modal-btn confirm" onClick={onSend} disabled={isSending || !canSend}>
+          <button type="button" className="modal-btn confirm ticket-message-icon-btn ticket-message-send-btn" onClick={onSend} disabled={isSending || !canSend} title={isSending ? 'Sending reply' : 'Send reply'} aria-label={isSending ? 'Sending reply' : 'Send reply'}>
             <MonoIcon icon={Send} />
-            {isSending ? 'Sending...' : 'Send Reply'}
           </button>
         </div>
 
         {!canSend && <div className="ticket-chat-locked-note">{disabledMessage}</div>}
-        {messageError && <div className="form-error">{messageError}</div>}
+        {messageError && <div className="form-error app-error-alert" role="alert">{messageError}</div>}
       </div>
     </section>
   );
@@ -1728,6 +1730,7 @@ function EmployeeTicketDetailModal({
   onChatClose,
   onMessageChange,
   onPhotoChange,
+  onPastePhotos,
   onRemovePhoto,
   onSend,
 }) {
@@ -1788,7 +1791,6 @@ function EmployeeTicketDetailModal({
         'modal-overlay',
         'employee-ticket-action-overlay',
         'ticket-action-overlay',
-        isChatOpen ? 'chat-open' : '',
       ].filter(Boolean).join(' ')}
       role="dialog"
       aria-modal="true"
@@ -1820,14 +1822,16 @@ function EmployeeTicketDetailModal({
             {' | '}Calendar hours; continues while waiting
           </p>
 
-          <button
-            type="button"
-            className="admin-modal-close"
-            onClick={onClose}
-            aria-label="Close modal"
-          >
-            <X aria-hidden="true" />
-          </button>
+          <div className="ticket-action-header-actions">
+            <button
+              type="button"
+              className="admin-modal-close"
+              onClick={onClose}
+              aria-label="Close modal"
+            >
+              <X aria-hidden="true" />
+            </button>
+          </div>
         </div>
 
         <div className="ticket-action-scroll-content employee-admin-scroll-content">
@@ -1945,7 +1949,11 @@ function EmployeeTicketDetailModal({
 
             {isEscalated && <div className="ticket-form-group">
               <dt>Escalation Partner</dt>
-              <dd className="employee-admin-readonly-field">{ticket.escalationPartner || 'Not recorded'}</dd>
+              <dd className="employee-admin-readonly-field">
+                {ticket.escalationPartner === 'Third Party Company' && ticket.escalationPartnerCompany
+                  ? `${ticket.escalationPartner} — ${ticket.escalationPartnerCompany}`
+                  : ticket.escalationPartner || 'Not recorded'}
+              </dd>
             </div>}
 
             {hasNextAction && <div className="ticket-form-group">
@@ -1967,19 +1975,69 @@ function EmployeeTicketDetailModal({
           ))}
         </dl>
 
+        <div className="ticket-action-attachment-chat-row employee-ticket-attachment-chat-row">
         {previewPhotos.length > 0 && <section className="employee-ticket-attachments" aria-label="Ticket attachments">
-          <h4><Paperclip size={16} aria-hidden="true" />Attachments <span>{previewPhotos.length}</span></h4>
-          <div className="employee-ticket-attachment-list">
-            {previewPhotos.map((photo, index) => (
-              <button type="button" key={photo.id || photo.path || index} className="employee-ticket-attachment"
-                onClick={() => setPreviewPhotoIndex(index)} aria-label={`Preview ${photo.name || `image ${index + 1}`}`}>
-                <img src={photo.dataUrl || photo.url || photo.publicUrl} alt="" />
-                <span>{photo.name || `Image ${index + 1}`}</span>
-                <ExternalLink size={14} aria-hidden="true" />
-              </button>
-            ))}
+          <div className="employee-ticket-attachment-summary">
+            <h4>PHOTO / SCREENSHOT ATTACHMENTS</h4>
+            <p>{previewPhotos.length} photo{previewPhotos.length === 1 ? '' : 's'} attached to this ticket</p>
+          </div>
+          <div className="employee-ticket-attachment-previews">
+            {previewPhotos.map((photo, index) => {
+              const source = photo.dataUrl || photo.url || photo.publicUrl;
+              const fileName = photo.name || `Image ${index + 1}`;
+              return (
+                <div className="employee-ticket-attachment-preview" key={photo.id || photo.path || index}>
+                  <button
+                    type="button"
+                    className="employee-ticket-attachment-image"
+                    onClick={() => setPreviewPhotoIndex(index)}
+                    aria-label={`Preview ${fileName}`}
+                  >
+                    <img src={source} alt={`Ticket attachment ${index + 1}`} />
+                  </button>
+                  <a href={source} download={fileName} className="employee-ticket-attachment-download"
+                    aria-label={`Download ${fileName}`} title="Download image">
+                    <Download size={18} aria-hidden="true" />
+                  </a>
+                </div>
+              );
+            })}
           </div>
         </section>}
+        {isChatOpen && (
+          typeof document !== 'undefined' && createPortal(
+            <TicketConversationPanel
+              ticket={ticket}
+              currentUser={user}
+              messages={messages}
+              messageDraft={messageDraft}
+              messagePhotos={messagePhotos}
+              messageError={messageError}
+              isSending={isSendingMessage}
+              floating
+              className="ticket-modal-floating-chat employee-floating-ticket-chat"
+              canSend={canSendConversationMessage || Boolean(pendingMessageIdRef.current)}
+              onClose={onChatClose}
+              onMessageChange={onMessageChange}
+              onPhotoChange={onPhotoChange}
+              onPastePhotos={onPastePhotos}
+              onRemovePhoto={onRemovePhoto}
+              onSend={onSend}
+            />,
+            document.body,
+          )
+        )}
+        {shouldShowConversation && isChatMinimized && (
+          typeof document !== 'undefined' && createPortal(
+            <TicketChatLauncher
+              className="ticket-modal-floating-launcher"
+              onClick={onChatOpen}
+              unreadCount={unreadCount}
+            />,
+            document.body,
+          )
+        )}
+        </div>
 
         <TicketWorkTimer ticket={ticket} now={now} />
         <TicketHandlingActivity ticket={ticket} now={now} />
@@ -2043,30 +2101,6 @@ function EmployeeTicketDetailModal({
         </div>
       )}
 
-      {/* Existing Employee conversation behavior is unchanged. */}
-      {isChatOpen && (
-        <TicketConversationPanel
-          ticket={ticket}
-          currentUser={user}
-          messages={messages}
-          messageDraft={messageDraft}
-          messagePhotos={messagePhotos}
-          messageError={messageError}
-          isSending={isSendingMessage}
-          floating
-          canSend={canSendConversationMessage}
-          unreadCount={unreadCount}
-          onClose={onChatClose}
-          onMessageChange={onMessageChange}
-          onPhotoChange={onPhotoChange}
-          onRemovePhoto={onRemovePhoto}
-          onSend={onSend}
-        />
-      )}
-
-      {shouldShowConversation && isChatMinimized && (
-        <TicketChatLauncher onClick={onChatOpen} unreadCount={unreadCount} />
-      )}
     </div>
   );
 }
@@ -2497,12 +2531,20 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab, now, notificat
   const [ticketPage, setTicketPage] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  useEffect(() => {
+    if (!successNotice) return undefined;
+
+    const timeoutId = window.setTimeout(() => setSuccessNotice(null), 5000);
+    return () => window.clearTimeout(timeoutId);
+  }, [successNotice]);
+
   // Conversation state — matches admin pattern exactly
   const [ticketMessages, setTicketMessages] = useState([]);
   const [messageDraft, setMessageDraft] = useState('');
   const [messagePhotos, setMessagePhotos] = useState([]);
   const [messageError, setMessageError] = useState('');
   const [isSendingMessage, setIsSendingMessage] = useState(false);
+  const pendingMessageIdRef = useRef('');
   const [isChatMinimized, setIsChatMinimized] = useState(true);
   const [unreadConversationCount, setUnreadConversationCount] = useState(0);
   const [isLoadingTicketDetails, setIsLoadingTicketDetails] = useState(false);
@@ -2553,7 +2595,7 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab, now, notificat
 
   const shouldShowConversation = Boolean(viewTicket);
 
-  useBodyScrollLock(showConfirm || Boolean(successNotice) || Boolean(viewTicket));
+  useBodyScrollLock(Boolean(viewTicket));
 
   useEffect(() => {
     if (!canSubmitBurnout && tab === 'burnout') {
@@ -2562,14 +2604,14 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab, now, notificat
   }, [canSubmitBurnout, tab]);
 
   useEffect(() => {
-    if (viewTicket || showConfirm || successNotice || typeof document === 'undefined') return undefined;
+    if (viewTicket || typeof document === 'undefined') return undefined;
 
     document.body.style.overflow = '';
     document.documentElement.style.overflow = '';
     document.body.style.paddingRight = '';
 
     return undefined;
-  }, [viewTicket, showConfirm, successNotice]);
+  }, [viewTicket]);
 
   // Keep refs in sync — same as admin
   useEffect(() => {
@@ -2607,6 +2649,7 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab, now, notificat
   // Subscribe to messages and ticket updates — same pattern as admin
   useEffect(() => {
     if (!viewTicket?.id) {
+      pendingMessageIdRef.current = '';
       setTicketMessages([]);
       setMessageDraft('');
       setMessagePhotos([]);
@@ -2673,6 +2716,7 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab, now, notificat
     setIsChatMinimized(conversationOnOpenRef.current !== viewTicket?.id);
     conversationOnOpenRef.current = '';
     setUnreadConversationCount(0);
+    pendingMessageIdRef.current = '';
   }, [viewTicket?.id]);
 
   useEffect(() => {
@@ -2892,7 +2936,7 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab, now, notificat
   };
 
   useEffect(() => {
-    if (tab !== 'submit' || showConfirm || successNotice || typeof window === 'undefined') {
+    if (tab !== 'submit' || typeof window === 'undefined') {
       return undefined;
     }
 
@@ -2906,7 +2950,7 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab, now, notificat
     return () => {
       window.removeEventListener('paste', handleWindowPaste);
     };
-  }, [tab, showConfirm, successNotice, form.photoAttachments.length]);
+  }, [tab, form.photoAttachments.length]);
 
   const removePhotoAttachment = (photoId) => {
     setForm((prev) => ({
@@ -2922,6 +2966,7 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab, now, notificat
 
     try {
       const nextPhotos = await filesToPhotoAttachments(files, messagePhotos.length);
+      if (nextPhotos.length) pendingMessageIdRef.current = '';
       setMessagePhotos((current) => [...current, ...nextPhotos]);
     } catch (error) {
       setMessageError(error.message || 'Unable to attach selected photos.');
@@ -2930,12 +2975,23 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab, now, notificat
     }
   };
 
+  const handleConversationImagePaste = async (files) => {
+    setMessageError('');
+    try {
+      const nextPhotos = await filesToPhotoAttachments(files, messagePhotos.length);
+      if (nextPhotos.length) pendingMessageIdRef.current = '';
+      setMessagePhotos((current) => [...current, ...nextPhotos]);
+    } catch (error) {
+      setMessageError(error.message || 'Unable to attach pasted image.');
+    }
+  };
+
   const sendTicketMessage = async () => {
     if (!viewTicket?.id) return;
 
     const cleanMessage = messageDraft.trim();
 
-    if (!canSendConversationMessage) {
+    if (!canSendConversationMessage && !pendingMessageIdRef.current) {
       setMessageError('Conversation is closed for tickets that are not actively being handled or are already resolved.');
       return;
     }
@@ -2945,6 +3001,7 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab, now, notificat
       return;
     }
 
+    if (!pendingMessageIdRef.current) pendingMessageIdRef.current = createRequestId();
     setIsSendingMessage(true);
     setMessageError('');
 
@@ -2953,6 +3010,7 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab, now, notificat
         sender: user,
         message: cleanMessage,
         attachments: messagePhotos,
+        clientMessageId: pendingMessageIdRef.current,
       });
 
       ticketMessageIdsRef.current.add(sentMessage.id);
@@ -2962,11 +3020,22 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab, now, notificat
       });
       setMessageDraft('');
       setMessagePhotos([]);
+      pendingMessageIdRef.current = '';
     } catch (error) {
       setMessageError(error.message || 'Unable to send reply.');
     } finally {
       setIsSendingMessage(false);
     }
+  };
+
+  const updateConversationDraft = (value) => {
+    pendingMessageIdRef.current = '';
+    setMessageDraft(value);
+  };
+
+  const removeConversationPhoto = (photoId) => {
+    pendingMessageIdRef.current = '';
+    setMessagePhotos((current) => current.filter((photo) => photo.id !== photoId));
   };
 
   const validateForm = () => {
@@ -3013,14 +3082,23 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab, now, notificat
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    if (isSubmitting || showConfirm || ticketSubmissionInFlightRef.current) return;
+    if (isSubmitting || ticketSubmissionInFlightRef.current) return;
 
     if (!validateForm()) return;
 
     setShowConfirm(true);
   };
 
-  const confirmSubmit = async () => {
+  const confirmTicketSubmit = () => {
+    if (!validateForm()) {
+      setShowConfirm(false);
+      return;
+    }
+
+    void submitTicket();
+  };
+
+  const submitTicket = async () => {
     if (ticketSubmissionInFlightRef.current) return;
 
     ticketSubmissionInFlightRef.current = true;
@@ -3214,7 +3292,15 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab, now, notificat
           )}
         </div>
 
-        {ticketOpenError && <div className="employee-ticket-open-notice" role="alert"><span>{ticketOpenError}</span>
+        {successNotice && (
+          <div className="employee-ticket-submit-success" role="status">
+            <span><strong>{successNotice.title}.</strong> {successNotice.message}</span>
+            <button type="button" onClick={() => setSuccessNotice(null)} aria-label="Dismiss ticket confirmation">
+              <X size={16} aria-hidden="true" />
+            </button>
+          </div>
+        )}
+        {ticketOpenError && <div className="employee-ticket-open-notice app-error-alert" role="alert"><span>{ticketOpenError}</span>
           <button type="button" onClick={() => setTicketOpenError('')} aria-label="Dismiss ticket error"><X size={16} aria-hidden="true" /></button>
         </div>}
         {isLoadingTicketDetails && <p className="employee-ticket-opening" role="status">Opening ticket...</p>}
@@ -3269,7 +3355,10 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab, now, notificat
                         </div>
 
                         <div className="employee-ticket-handling-summary">
-                          <TicketHandlingIndicator ticket={ticket} now={now} currentUserId={user?.id} />
+                          <div className="employee-ticket-status-row">
+                            <TicketHandlingIndicator ticket={ticket} now={now} compact currentUserId={user?.id} />
+                            <TicketWorkTimer ticket={ticket} now={now} compact />
+                          </div>
                           {queueLabel && <span className="employee-ticket-queue-position"
                             title="Priority-based ICT review position. Urgent tickets may move ahead.">
                             <Clock3 size={14} aria-hidden="true" />{queueLabel}
@@ -3293,7 +3382,6 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab, now, notificat
                           {ticket.description || 'No description provided.'}
                         </p>
 
-                        <TicketWorkTimer ticket={ticket} now={now} />
                       </article>
                     );
                   })}
@@ -3449,7 +3537,10 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab, now, notificat
               )}
 
               <div className="ticket-form-group full">
-                <label htmlFor="ticket-desc-builder">Issue Description</label>
+                <div className="issue-description-heading">
+                  <label htmlFor="ticket-desc-builder">Issue Description</label>
+                  <span className="char-count">{normalizeTextareaValue(form.description).length}/1200 characters</span>
+                </div>
                 <IssueDescriptionBuilder
                   form={form}
                   onChange={handleDescriptionDetailChange}
@@ -3514,23 +3605,58 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab, now, notificat
 
                 {form.photoAttachments.length > 0 && (
                   <div className="photo-preview-shell">
-                    <PhotoAttachmentGallery photos={form.photoAttachments} onRemove={removePhotoAttachment} />
+                    <PhotoAttachmentGallery
+                      photos={form.photoAttachments}
+                      onRemove={removePhotoAttachment}
+                      className="ticket-form-photo-gallery"
+                    />
                   </div>
                 )}
               </div>
             </div>
 
-            {formError && <div className="form-error">{formError}</div>}
+            {formError && <div className="form-error app-error-alert" role="alert">{formError}</div>}
 
-            <button
-              type="submit"
-              className="auth-submit-btn"
-              disabled={isSubmitting || showConfirm}
-              aria-busy={isSubmitting}
-            >
-              <MonoIcon icon={editingId ? PenLine : Send} />
-              {isSubmitting ? (editingId ? 'Saving Ticket...' : 'Submitting Ticket...') : (editingId ? 'Save Ticket Changes' : 'Submit Ticket')}
-            </button>
+            {showConfirm ? (
+              <div className="ticket-submit-confirmation-inline" role="group" aria-labelledby="ticket-submit-confirmation-title">
+                <p id="ticket-submit-confirmation-title" className="ticket-submit-confirmation-question">
+                  {editingId ? 'Save these ticket changes?' : 'Submit this helpdesk request to ICT?'}
+                </p>
+                <p className="ticket-submit-confirmation-summary">
+                  Priority: {derivedImpact.sla} - {derivedImpact.impact} - {form.concernType}
+                </p>
+                <div className="ticket-submit-confirmation-actions">
+                  <button
+                    type="button"
+                    className="ticket-submit-confirmation-cancel"
+                    onClick={() => setShowConfirm(false)}
+                    disabled={isSubmitting}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    className="ticket-submit-confirmation-confirm"
+                    onClick={confirmTicketSubmit}
+                    disabled={isSubmitting}
+                    aria-busy={isSubmitting}
+                  >
+                    <MonoIcon icon={editingId ? PenLine : Send} />
+                    {isSubmitting ? (editingId ? 'Saving...' : 'Submitting...') : (editingId ? 'Save Changes' : 'Confirm Submission')}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                type="submit"
+                className="auth-submit-btn"
+                disabled={isSubmitting}
+                aria-busy={isSubmitting}
+              >
+                <MonoIcon icon={editingId ? PenLine : Send} />
+                {isSubmitting ? (editingId ? 'Saving Ticket...' : 'Submitting Ticket...') : (editingId ? 'Save Ticket Changes' : 'Submit Ticket')}
+              </button>
+            )}
           </form>
         )}
 
@@ -3538,63 +3664,6 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab, now, notificat
           <BurnoutRequestView user={user} reloadTickets={reloadTickets} />
         )}
       </section>
-
-      {/* Confirm submission modal */}
-      {showConfirm && (
-        <div className="modal-overlay" role="dialog" aria-modal="true" aria-label="Confirm ticket submission">
-          <div className="modal-box glass">
-            <h3>{editingId ? 'Save Ticket Changes?' : 'Submit Ticket?'}</h3>
-            <div className="modal-divider" />
-            <p>
-              {editingId
-                ? 'Your updated ticket details will be sent for ICT review.'
-                : 'Your helpdesk request will be submitted to ICT with the calculated impact level.'}
-            </p>
-
-            <div className="modal-ticket-summary">
-              <span className={`priority ${slugify(derivedImpact.sla)}`}>{derivedImpact.sla}</span>
-              <span>{derivedImpact.impact}</span>
-              <span>{form.concernType}</span>
-            </div>
-
-            <div className="modal-footer">
-              <button
-                type="button"
-                className="modal-btn cancel"
-                onClick={() => setShowConfirm(false)}
-                disabled={isSubmitting}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                className="modal-btn confirm"
-                onClick={confirmSubmit}
-                disabled={isSubmitting}
-                aria-busy={isSubmitting}
-              >
-                <MonoIcon icon={editingId ? PenLine : Send} />
-                {isSubmitting ? (editingId ? 'Saving...' : 'Submitting...') : (editingId ? 'Save Changes' : 'Confirm Submission')}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {successNotice && (
-        <div className="modal-overlay" role="dialog" aria-modal="true" aria-label="Ticket submission successful">
-          <div className="modal-box glass success-modal">
-            <div className="success-icon"><MonoIcon icon={CheckCircle2} /></div>
-            <h3>{successNotice.title}</h3>
-            <p>{successNotice.message}</p>
-            <div className="modal-footer">
-              <button type="button" className="modal-btn confirm" onClick={() => setSuccessNotice(null)}>
-                Okay
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Ticket detail modal — uses new admin-matching component */}
       {viewTicket && (
@@ -3624,9 +3693,10 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab, now, notificat
             setUnreadConversationCount(0);
           }}
           onChatClose={() => setIsChatMinimized(true)}
-          onMessageChange={setMessageDraft}
+          onMessageChange={updateConversationDraft}
           onPhotoChange={handleConversationPhotoChange}
-          onRemovePhoto={(photoId) => setMessagePhotos((current) => current.filter((p) => p.id !== photoId))}
+          onPastePhotos={handleConversationImagePaste}
+          onRemovePhoto={removeConversationPhoto}
           onSend={sendTicketMessage}
         />
       )}
@@ -3640,45 +3710,18 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab, now, notificat
 ========================= */
 
 function BurnoutRequestView({ user, reloadTickets }) {
-  const [form, setForm] = useState(() => getNewBurnoutRequestForm(user));
-  const [requests, setRequests] = useState([]);
+  const [form, setForm] = useState(() => getNewBurnoutRequestForm());
   const [formError, setFormError] = useState('');
   const [successNotice, setSuccessNotice] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showRemarks, setShowRemarks] = useState(false);
   useBodyScrollLock(Boolean(successNotice));
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    try {
-      const savedRequests = JSON.parse(window.localStorage.getItem(BURNOUT_REQUESTS_STORAGE_KEY) || '[]');
-      setRequests(Array.isArray(savedRequests) ? savedRequests : []);
-    } catch {
-      setRequests([]);
-    }
-  }, []);
-
-  useEffect(() => {
-    setForm((current) => ({
-      ...current,
-      branch: current.branch || user.branch || user.office || '',
-      department: current.department || user.department || '',
-    }));
-  }, [user.branch, user.department, user.office]);
 
   const handleChange = (field, value) => {
     setFormError('');
     setForm((current) => {
       return { ...current, [field]: value };
     });
-  };
-
-  const saveRequests = (nextRequests) => {
-    setRequests(nextRequests);
-
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem(BURNOUT_REQUESTS_STORAGE_KEY, JSON.stringify(nextRequests));
-    }
   };
 
   const handleSubmit = async (e) => {
@@ -3751,25 +3794,15 @@ function BurnoutRequestView({ user, reloadTickets }) {
         },
       });
 
-      const savedRequest = {
-        id: ticket.ticketCode || ticket.id,
-        ticketId: ticket.id,
-        ticketCode: ticket.ticketCode,
-        ...form,
-        brand: brandModel,
-        deviceName: 'Unit',
-        status: 'Submitted',
-        date: submittedAt,
-      };
+      const submittedTicketCode = ticket.ticketCode || ticket.id;
 
       await reloadTickets?.();
-
-      saveRequests([savedRequest, ...requests]);
-      setForm(getNewBurnoutRequestForm(user));
+      setForm(getNewBurnoutRequestForm());
+      setShowRemarks(false);
       setFormError('');
       setSuccessNotice({
         title: 'Helpdesk Burnout Submitted',
-        message: `Your Helpdesk Burnout ticket ${savedRequest.id} was submitted successfully.`,
+        message: `Your Helpdesk Burnout ticket ${submittedTicketCode} was submitted successfully.`,
       });
     } catch (error) {
       setFormError(error.message || 'Unable to submit request. Please try again.');
@@ -3827,7 +3860,7 @@ function BurnoutRequestView({ user, reloadTickets }) {
                 type="text"
                 value={form.brand}
                 onChange={(e) => handleChange('brand', e.target.value)}
-                placeholder="ASUS, HP, LENOVO, EPSON"
+                placeholder="Enter brand"
                 required
               />
             </div>
@@ -3840,7 +3873,7 @@ function BurnoutRequestView({ user, reloadTickets }) {
                 type="text"
                 value={form.model}
                 onChange={(e) => handleChange('model', e.target.value)}
-                placeholder="ThinkPad T14, LaserJet M404, etc."
+                placeholder="Enter model"
                 required
               />
             </div>
@@ -3874,94 +3907,37 @@ function BurnoutRequestView({ user, reloadTickets }) {
               </select>
             </div>
 
-            <div className="ticket-form-group full">
-              <label htmlFor="other-remarks">Notes / Remarks</label>
-              <textarea
-                id="other-remarks"
-                className="ticket-field ticket-textarea"
-                value={form.remarks}
-                onChange={(e) => handleChange('remarks', e.target.value)}
-                placeholder={getBurnoutRemarksPlaceholder()}
-                maxLength={800}
-              />
+            <div className="ticket-form-group full burnout-optional-remarks">
+              <button
+                type="button"
+                className="burnout-remarks-toggle"
+                aria-expanded={showRemarks}
+                aria-controls="other-remarks"
+                onClick={() => setShowRemarks((visible) => !visible)}
+              >
+                {showRemarks ? 'Hide Notes / Remarks (Optional)' : 'Add Notes / Remarks (Optional)'}
+              </button>
+              {showRemarks && (
+                <textarea
+                  id="other-remarks"
+                  className="ticket-field ticket-textarea"
+                  rows={2}
+                  value={form.remarks}
+                  onChange={(e) => handleChange('remarks', e.target.value)}
+                  placeholder={getBurnoutRemarksPlaceholder()}
+                  maxLength={800}
+                />
+              )}
             </div>
           </div>
 
-          {formError && <div className="form-error">{formError}</div>}
+          {formError && <div className="form-error app-error-alert" role="alert">{formError}</div>}
 
           <button type="submit" className="auth-submit-btn" disabled={isSubmitting} aria-busy={isSubmitting}>
             <MonoIcon icon={Send} />
             {isSubmitting ? 'Submitting...' : 'Submit Burnout Request'}
           </button>
         </form>
-      </section>
-
-      <section className="embedded-request-section">
-        <div className="section-head">
-          <div>
-            <span className="section-kicker">Request History</span>
-            <h3>Recent Burnout Requests</h3>
-          </div>
-        </div>
-
-        <div className="ticket-list">
-          {requests.length ? (
-            requests.slice(0, 5).map((request) => (
-              <article key={request.id} className="ticket-card other-service-card">
-                <div className="ticket-header">
-                  <div className="ticket-header-left">
-                    <h4>{request.supportCategory}</h4>
-                    <span className="ticket-id">{request.ticketCode || request.id}</span>
-                  </div>
-                  <span className="ticket-date">{request.date}</span>
-                </div>
-
-                <div className="ticket-meta-grid">
-                  <div className="ticket-meta-cell">
-                    <span>Assigned Location</span>
-                    <p>{request.branch}</p>
-                  </div>
-                  {request.custodian && (
-                    <div className="ticket-meta-cell">
-                      <span>Custodian</span>
-                      <p>{request.custodian}</p>
-                    </div>
-                  )}
-                  {request.deviceName && (
-                    <div className="ticket-meta-cell">
-                      <span>Asset Type / Device</span>
-                      <p>{request.deviceName}</p>
-                    </div>
-                  )}
-                  {request.brand && (
-                    <div className="ticket-meta-cell">
-                      <span>Brand & Model</span>
-                      <p>{request.brand}</p>
-                    </div>
-                  )}
-                  {request.serialNumber && (
-                    <div className="ticket-meta-cell">
-                      <span>Serial Number</span>
-                      <p>{request.serialNumber}</p>
-                    </div>
-                  )}
-                  <div className="ticket-meta-cell">
-                    <span>Department</span>
-                    <p>{request.department}</p>
-                  </div>
-                </div>
-
-                {request.remarks && <p className="ticket-description">{request.remarks}</p>}
-              </article>
-            ))
-          ) : (
-            <div className="empty-state compact">
-              <div className="empty-icon"><MonoIcon icon={Wrench} /></div>
-              <h4>No Burnout request yet</h4>
-              <p>Submitted Burnout requests will appear here.</p>
-            </div>
-          )}
-        </div>
       </section>
 
       {successNotice && (
@@ -3997,8 +3973,6 @@ export default function EmployeeDashboardPage() {
   const [notificationTicket, setNotificationTicket] = useState(null);
   const notificationOpened = useCallback(() => setNotificationTicket(null), []);
   const [isInactiveBlocked, setIsInactiveBlocked] = useState(false);
-  const [isPageTransitioning, setIsPageTransitioning] = useState(false);
-  const [transitionLabel, setTransitionLabel] = useState(employeeTransitionLabels.dashboard);
   const router = useRouter();
 
   const loadTickets = async (currentUser = user) => {
@@ -4087,15 +4061,6 @@ export default function EmployeeDashboardPage() {
     return () => window.clearInterval(intervalId);
   }, [authChecked, tickets, activeSection]);
 
-  useEffect(() => {
-    if (!isPageTransitioning) return undefined;
-
-    const timer = window.setTimeout(() => {
-      setIsPageTransitioning(false);
-    }, TRANSITION_DURATION);
-
-    return () => window.clearTimeout(timer);
-  }, [isPageTransitioning, transitionLabel]);
 
   const openTickets = useMemo(
     () => tickets.filter((ticket) => isUnresolved(ticket.status)).length,
@@ -4103,12 +4068,6 @@ export default function EmployeeDashboardPage() {
   );
 
   const goTo = (section, tab) => {
-    const isSameView = section === activeSection && (!tab || tab === helpdeskTab);
-
-    if (!isSameView) {
-      setTransitionLabel(employeeTransitionLabels[section] || employeeTransitionLabels.dashboard);
-      setIsPageTransitioning(true);
-    }
 
     setActiveSection(section);
 
@@ -4124,8 +4083,6 @@ export default function EmployeeDashboardPage() {
   };
 
   const handleLogout = async () => {
-    setTransitionLabel(employeeTransitionLabels.logout);
-    setIsPageTransitioning(true);
     await signOutPortal().catch(() => {});
     router.replace(LOGIN_ROUTE);
   };
@@ -4140,7 +4097,6 @@ export default function EmployeeDashboardPage() {
         <main className="portal-main portal-app-main">
           <div className="portal-shell" />
         </main>
-        <PortalTransitionLoader label="Verifying employee access..." />
       </>
     );
   }
@@ -4235,7 +4191,6 @@ export default function EmployeeDashboardPage() {
         </div>
       </main>
 
-      {isPageTransitioning && <PortalTransitionLoader label={transitionLabel} />}
     </>
   );
 }

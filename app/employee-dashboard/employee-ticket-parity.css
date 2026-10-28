@@ -71,18 +71,18 @@ body[data-portal-theme='dark'] .portal-app-main .helpdesk-view .segmented-tabs.e
 
 /* The shared status and timer components replace the legacy handling panels. */
 .employee-ticket-queue .employee-ticket-queue-grid {
-  grid-template-rows: none;
-  grid-auto-rows: 1fr;
+  grid-template-rows: 600px;
+  grid-auto-rows: 600px;
   gap: 16px;
 }
 
 .employee-ticket-queue .employee-admin-ticket-card {
-  height: auto;
-  min-height: 0;
-  max-height: none;
+  height: 600px;
+  min-height: 600px;
+  max-height: 600px;
   gap: 14px;
   border-radius: 8px;
-  overflow: visible;
+  overflow: hidden;
 }
 
 .employee-ticket-queue .employee-admin-ticket-card-head {
@@ -129,6 +129,47 @@ body[data-portal-theme='dark'] .portal-app-main .helpdesk-view .segmented-tabs.e
 
 .employee-ticket-handling-summary > .ticket-handling-status { padding: 0; }
 
+.employee-ticket-status-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  min-width: 0;
+}
+
+.employee-ticket-status-row > .ticket-handling-status {
+  flex: 1 1 170px;
+  min-width: 0;
+  padding: 0;
+}
+
+.employee-ticket-status-row > .ticket-work-timer.ticket-handling-timer {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 7px;
+  min-height: 30px;
+  margin: 0;
+  padding: 5px 8px;
+  border-radius: 6px;
+  box-shadow: none;
+}
+
+.employee-ticket-status-row > .ticket-work-timer.ticket-handling-timer > span {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.employee-ticket-status-row > .ticket-work-timer.ticket-handling-timer > strong {
+  font-size: 0.82rem;
+  line-height: 1.2;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
 .employee-ticket-queue-position {
   display: flex;
   align-items: center;
@@ -158,22 +199,46 @@ body[data-portal-theme='dark'] .portal-app-main .helpdesk-view .segmented-tabs.e
 }
 
 .employee-ticket-queue .employee-admin-ticket-description {
-  flex: 1 1 auto;
-  min-height: 96px;
+  flex: 1 1 0;
+  min-height: 120px;
   height: auto;
   max-height: none;
   border-radius: 8px;
   font-size: 0.9rem;
   line-height: 1.55;
-  overflow: visible;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-width: none;
 }
 
-.employee-ticket-queue .ticket-handling-timer { margin-top: auto; }
+.employee-ticket-queue .ticket-handling-timer { margin-top: 0; }
 .employee-ticket-opening { margin: 0 0 12px; color: #607083; font-size: 0.8rem; }
-.employee-ticket-open-notice { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; padding: 10px 12px; border: 1px solid #f1c7ca; border-radius: 6px; color: #a12f38; background: #fff4f4; font-size: 0.8rem; line-height: 1.4; }
-.employee-ticket-open-notice span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
-.employee-ticket-open-notice button { display: grid; width: 32px; height: 32px; place-items: center; border: 0; border-radius: 4px; background: transparent; color: inherit; cursor: pointer; }
-body[data-portal-theme='dark'] .employee-ticket-open-notice { border-color: #78464d; color: #ffb0b8; background: #42262d; }
+.ticket-submit-confirmation-inline { display: grid; gap: 7px; margin-top: 2px; padding-top: 12px; border-top: 1px solid rgba(148, 163, 184, 0.28); }
+.ticket-submit-confirmation-question { margin: 0; color: var(--text, #172033); font-size: 0.95rem; font-weight: 750; line-height: 1.35; }
+.ticket-submit-confirmation-summary { margin: 0; color: var(--muted, #64748b); font-size: 0.84rem; line-height: 1.4; }
+.ticket-submit-confirmation-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+.ticket-submit-confirmation-actions button { display: inline-flex; min-height: 42px; align-items: center; justify-content: center; gap: 8px; padding: 0 16px; border-radius: var(--radius-md, 10px); font-size: 0.9rem; font-weight: 700; line-height: 1; cursor: pointer; transition: background 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease; }
+.ticket-submit-confirmation-cancel { min-width: 98px; border: 1px solid #d9e0e9; background: #fff; color: #475569; }
+.ticket-submit-confirmation-cancel:hover:not(:disabled) { border-color: #cbd5e1; background: #f8fafc; }
+.ticket-submit-confirmation-confirm { min-width: 184px; border: 1px solid #b42323; background: var(--grad-red, #c62828); color: #fff; box-shadow: 0 8px 18px rgba(198, 40, 40, 0.14); }
+.ticket-submit-confirmation-confirm:hover:not(:disabled) { box-shadow: 0 10px 20px rgba(198, 40, 40, 0.2); transform: translateY(-1px); }
+.ticket-submit-confirmation-actions button:disabled { cursor: not-allowed; opacity: 0.68; }
+.employee-ticket-submit-success { display: flex; align-items: flex-start; gap: 6px; margin: 0 0 12px; color: #15803d; font-size: 0.84rem; font-weight: 600; line-height: 1.4; }
+.employee-ticket-submit-success span { flex: 1; min-width: 0; }
+.employee-ticket-submit-success button { display: grid; flex: 0 0 20px; width: 20px; height: 20px; place-items: center; padding: 0; border: 0; background: transparent; color: inherit; cursor: pointer; }
+.employee-ticket-open-notice { display: flex; align-items: flex-start; gap: 6px; margin-bottom: 12px; }
+.employee-ticket-open-notice span { flex: 1; min-width: 0; overflow-wrap: normal; }
+.employee-ticket-open-notice button { display: grid; flex: 0 0 20px; width: 20px; height: 20px; place-items: center; padding: 0; border: 0; border-radius: 0; background: transparent; color: inherit; cursor: pointer; }
+
+body[data-portal-theme='dark'] .employee-ticket-submit-success { color: #86efac; }
+body[data-portal-theme='dark'] .ticket-submit-confirmation-inline { border-top-color: rgba(148, 163, 184, 0.22); }
+body[data-portal-theme='dark'] .ticket-submit-confirmation-cancel { border-color: #39475a; background: #1f2937; color: #e2e8f0; }
+body[data-portal-theme='dark'] .ticket-submit-confirmation-cancel:hover:not(:disabled) { background: #273447; }
+
+@media (max-width: 520px) {
+  .ticket-submit-confirmation-actions { justify-content: stretch; }
+  .ticket-submit-confirmation-actions button { flex: 1 1 150px; }
+}
 
 .employee-ticket-action-overlay .employee-ticket-action-header-status {
   display: block !important;
@@ -435,4 +500,257 @@ body[data-portal-theme='dark'] .employee-ticket-action-overlay article.employee-
   .employee-ticket-action-overlay article.employee-ticket-modal.ticket-action-modal.is-support-modal.ticket-modal-readable[data-employee-details] .employee-admin-lock-pill {
     max-width: 100% !important;
   }
+}
+
+/* Keep the ticket form surfaces consistent with the portal's compact controls. */
+.helpdesk-view .auto-impact-card.sla-only {
+  --sla-accent: #64748b;
+  --sla-tint: #f1f5f9;
+  --sla-text: #334155;
+  display: flex;
+  width: 180px;
+  max-width: 100%;
+  min-height: 52px;
+  align-self: flex-start;
+  align-items: center;
+  padding: 8px 14px;
+  border: 1px solid #d9e0e9;
+  border-left: 3px solid var(--sla-accent);
+  border-radius: 10px;
+  background: #f8fafc;
+  box-shadow: none;
+}
+
+.helpdesk-view .auto-impact-card.sla-only.low {
+  --sla-accent: #22a05a;
+  --sla-tint: #eaf7ef;
+  --sla-text: #17633a;
+}
+
+.helpdesk-view .auto-impact-card.sla-only.medium {
+  --sla-accent: #c58a16;
+  --sla-tint: #fff5dc;
+  --sla-text: #805a12;
+}
+
+.helpdesk-view .auto-impact-card.sla-only.high {
+  --sla-accent: #dc6b28;
+  --sla-tint: #fff0e5;
+  --sla-text: #974515;
+}
+
+.helpdesk-view .auto-impact-card.sla-only.critical {
+  --sla-accent: #c62828;
+  --sla-tint: #fdebec;
+  --sla-text: #a51f27;
+}
+
+.helpdesk-view .auto-impact-card.sla-only div {
+  width: 100%;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0;
+  border: 0;
+}
+
+.helpdesk-view .auto-impact-card.sla-only span {
+  color: #64748b;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.helpdesk-view .auto-impact-card.sla-only strong {
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: var(--sla-tint);
+  color: var(--sla-text);
+  font-size: 0.88rem;
+  font-weight: 750;
+}
+
+.helpdesk-view .issue-description-paper {
+  border-color: #d9e0e9;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.helpdesk-view .issue-description-line {
+  min-height: 52px;
+  border-color: #e5eaf0;
+  background: #fff;
+}
+
+.helpdesk-view .issue-description-label {
+  padding: 0.75rem 0.85rem;
+  border-color: #e5eaf0;
+  background: #f8fafc;
+  color: #344256;
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.helpdesk-view .issue-description-answer {
+  min-height: 52px;
+  padding: 0.7rem 0.8rem;
+  color: #172033;
+  font-size: 0.94rem;
+  font-weight: 500;
+}
+
+.helpdesk-view .issue-description-answer:focus {
+  background: #fffafa;
+  box-shadow: inset 3px 0 0 #c62828;
+}
+
+.helpdesk-view .photo-upload-card {
+  padding: 0.9rem 1rem;
+  border-color: #d9e0e9;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.helpdesk-view .photo-upload-card .ticket-file {
+  min-height: 44px;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid #d9e0e9;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 0.9rem;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .helpdesk-view .auto-impact-card.sla-only {
+  border-color: #354252 !important;
+  border-left-color: var(--sla-accent) !important;
+  background: #1b2531 !important;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .helpdesk-view .auto-impact-card.sla-only span {
+  color: #b4c0ce;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .helpdesk-view .auto-impact-card.sla-only.low { --sla-tint: #214332; --sla-text: #b8e0c2; }
+body[data-portal-theme='dark'] .portal-app-main .helpdesk-view .auto-impact-card.sla-only.medium { --sla-tint: #453a24; --sla-text: #ead29c; }
+body[data-portal-theme='dark'] .portal-app-main .helpdesk-view .auto-impact-card.sla-only.high { --sla-tint: #4b3327; --sla-text: #f1c0a2; }
+body[data-portal-theme='dark'] .portal-app-main .helpdesk-view .auto-impact-card.sla-only.critical { --sla-tint: #4a2b30; --sla-text: #f0b8bd; }
+body[data-portal-theme='dark'] .portal-app-main .helpdesk-view .auto-impact-card.sla-only strong {
+  background: var(--sla-tint) !important;
+  color: var(--sla-text) !important;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .helpdesk-view .issue-description-paper,
+body[data-portal-theme='dark'] .portal-app-main .helpdesk-view .issue-description-line {
+  border-color: #354252;
+  background: #1b2531;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .helpdesk-view .issue-description-label {
+  border-color: #354252;
+  background: #202b39;
+  color: #cbd5e1;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .helpdesk-view .issue-description-answer {
+  background: #141c26;
+  color: #edf2f7;
+  -webkit-text-fill-color: #edf2f7;
+  color-scheme: dark;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .helpdesk-view .photo-upload-card {
+  border-color: #354252;
+  background: #1b2531;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .helpdesk-view .photo-upload-card .ticket-file {
+  border-color: #384456;
+  background: #141c26;
+  color: #edf2f7;
+}
+
+@media (max-width: 1180px) and (min-width: 901px) {
+  .employee-ticket-queue .employee-ticket-queue-grid { grid-template-rows: 600px; grid-auto-rows: 600px; }
+  .employee-ticket-queue .employee-admin-ticket-card { height: 600px; min-height: 600px; max-height: 600px; }
+}
+
+@media (max-width: 900px) {
+  .employee-ticket-queue .employee-ticket-queue-grid { grid-template-columns: minmax(0, 1fr); grid-template-rows: 620px; grid-auto-rows: 620px; }
+  .employee-ticket-queue .employee-admin-ticket-card { height: 620px; min-height: 620px; max-height: 620px; }
+}
+
+@media (max-width: 640px) {
+  .employee-ticket-queue .employee-ticket-queue-grid { grid-template-rows: 640px; grid-auto-rows: 640px; }
+  .employee-ticket-queue .employee-admin-ticket-card { height: 640px; min-height: 640px; max-height: 640px; }
+}
+
+@media (max-width: 420px) {
+  .employee-ticket-queue .employee-ticket-queue-grid { grid-template-rows: 660px; grid-auto-rows: 660px; }
+  .employee-ticket-queue .employee-admin-ticket-card { height: 660px; min-height: 660px; max-height: 660px; padding: 0.82rem; gap: 0.72rem; }
+}
+
+/* Burnout intake uses the same compact field treatment as the helpdesk. */
+.portal-app-main .burnout-request-view .ticket-form-grid {
+  gap: 12px;
+}
+.portal-app-main .burnout-request-view .ticket-form-group {
+  gap: 5px;
+}
+.portal-app-main .burnout-request-view .ticket-form-group > label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+.portal-app-main .burnout-request-view .ticket-field {
+  border-radius: 8px;
+  box-shadow: none;
+  font-size: 0.875rem;
+}
+.portal-app-main .burnout-request-view :is(.ticket-input, .ticket-select) {
+  min-height: 40px;
+  height: 40px;
+  padding: 8px 12px;
+}
+.portal-app-main .burnout-request-view textarea#other-remarks {
+  min-height: 64px !important;
+  height: 64px !important;
+  padding: 10px 12px;
+  line-height: 1.45;
+  resize: vertical;
+}
+.portal-app-main .burnout-request-view .auth-submit-btn {
+  width: fit-content;
+  min-height: 42px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  box-shadow: none;
+}
+
+.portal-app-main .burnout-request-view .burnout-optional-remarks {
+  gap: 8px;
+}
+.portal-app-main .burnout-request-view .burnout-remarks-toggle {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  min-height: 32px;
+  padding: 4px 0;
+  border: 0;
+  background: transparent;
+  color: #64748b;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.portal-app-main .burnout-request-view .burnout-remarks-toggle:hover { color: #b91c1c; }
+.portal-app-main .burnout-request-view .burnout-remarks-toggle:focus-visible {
+  outline: 2px solid #c62828;
+  outline-offset: 2px;
+  border-radius: 4px;
 }

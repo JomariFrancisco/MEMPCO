@@ -7,8 +7,11 @@ import {
   Archive,
   BriefcaseBusiness,
   CalendarDays,
+  ChevronLeft,
+  ChevronRight,
   Clock3,
   ExternalLink,
+  Eye,
   FileText,
   ImagePlus,
   LayoutDashboard,
@@ -38,11 +41,17 @@ import {
   MARKETING_PLACEMENTS,
   MARKETING_PLACEMENT_LABELS,
   deleteMarketingPost,
-  ensureCurrentStaticAwardPosts,
   listMarketingPosts,
   saveMarketingPost,
+  uploadMarketingImage,
   sortMarketingPosts,
 } from '@/lib/marketing/marketingPosts';
+import {
+  createMarketingPreviewToken,
+  getMarketingPreviewUrl,
+  isMarketingPreviewReadyMessage,
+  sendMarketingPreviewPost,
+} from '@/lib/marketing/marketingPreview';
 import PortalThemeToggle from '@/components/PortalThemeToggle';
 import PortalProfilePhotoControl from '@/components/PortalProfilePhotoControl';
 import '../admin-dashboard/admin-dashboard.css';
@@ -53,7 +62,7 @@ import '@/components/PortalAdminConsoleTheme.css';
 const EDITOR_CATEGORIES = ['News', 'Events', 'Announcement', 'Awards', 'Member Stories'];
 const ADMIN_DASHBOARD_ROUTE = '/admin-dashboard';
 const HRMAX_ROUTE = 'http://120.28.214.253/hrmax/';
-const POSTS_PER_PAGE = 2;
+const POSTS_PER_PAGE = 3;
 const SORT_OPTIONS = [
   { value: 'website_order', label: 'Website Order' },
   { value: 'updated_desc', label: 'Recent Updates' },
@@ -110,10 +119,12 @@ const blankPost = {
   organization: '',
   awardYear: '',
   eventDate: '',
+  eventEndDate: '',
   eventLocation: '',
   registrationUrl: '',
   announcementPriority: 'standard',
   expiresAt: '',
+  scheduledAt: '',
   imageAlt: '',
   storyRole: '',
   storyLocation: '',
@@ -132,9 +143,12 @@ const blankPost = {
 const statusLabels = {
   all: 'All Posts',
   draft: 'Draft',
+  in_review: 'In Review',
+  scheduled: 'Scheduled',
   published: 'Published',
   archived: 'Archived',
 };
+const isSuperAdmin = (user) => String(user?.role || '').toLowerCase() === 'superadmin';
 
 const toBodyText = (post) => (post.fullArticle || post.body || []).join('\n\n');
 
@@ -167,6 +181,7 @@ const toSavePayload = (post, status = post.status, options = {}) => {
         : post.publishedAt || null,
     republishedAt: activityTimestamp || post.republishedAt || '',
     editedAt: editedTimestamp || post.editedAt || '',
+    scheduledAt: status === 'scheduled' ? post.scheduledAt : '',
   };
 };
 
@@ -184,13 +199,17 @@ const compressImageFile = async (file) => {
     throw new Error('Choose an image file.');
   }
 
-  const source = await fileToDataUrl(file);
-
-  if (file.type === 'image/svg+xml') {
-    return source;
+  if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+    throw new Error('Use a JPG, PNG, or WEBP image.');
   }
 
-  return new Promise((resolve) => {
+  if (file.size > 8 * 1024 * 1024) {
+    throw new Error('Images must be 8 MB or smaller.');
+  }
+
+  const source = await fileToDataUrl(file);
+
+  return new Promise((resolve, reject) => {
     const image = new Image();
 
     image.onload = () => {
@@ -202,17 +221,20 @@ const compressImageFile = async (file) => {
       const context = canvas.getContext('2d');
 
       if (!context) {
-        resolve(source);
+        reject(new Error('Unable to process this image. Please choose another file.'));
         return;
       }
 
       canvas.width = width;
       canvas.height = height;
       context.drawImage(image, 0, 0, width, height);
-      resolve(canvas.toDataURL('image/jpeg', 0.86));
+      canvas.toBlob((blob) => {
+        if (blob) resolve(blob);
+        else reject(new Error('Unable to compress the image. Please choose another file.'));
+      }, 'image/jpeg', 0.86);
     };
 
-    image.onerror = () => resolve(source);
+    image.onerror = () => reject(new Error('Unable to read this image. Please choose another file.'));
     image.src = source;
   });
 };
@@ -236,6 +258,24 @@ const formatUpdatedAt = (value) => {
 };
 
 const getPostActivity = (post) => {
+  if (post.status === 'scheduled') {
+    return {
+      className: 'scheduled',
+      label: 'Scheduled',
+      date: formatUpdatedAt(post.scheduledAt),
+      meta: 'Publication time',
+    };
+  }
+
+  if (post.status === 'in_review') {
+    return {
+      className: 'in-review',
+      label: 'In Review',
+      date: formatUpdatedAt(post.updatedAt || post.createdAt),
+      meta: '',
+    };
+  }
+
   const editedTime = getTime(post.editedAt);
   const publishedTime = getTime(post.publishedAt);
   const republishedTime = getTime(post.republishedAt);
@@ -343,6 +383,14 @@ const getTime = (value) => {
   return Number.isNaN(time) ? 0 : time;
 };
 
+const toLocalDateTimeInput = (value) => {
+  if (!value) return '';
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return '';
+  date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+  return date.toISOString().slice(0, 16);
+};
+
 const compareText = (a = '', b = '') => String(a).localeCompare(String(b), undefined, { sensitivity: 'base' });
 
 const sortConsolePosts = (posts = [], sortMode = 'website_order') => {
@@ -378,10 +426,14 @@ const getLibraryTitle = (statusFilter, activeCategory) => {
   if (statusFilter === 'published') return 'Published Posts';
   if (statusFilter === 'draft') return 'Draft Posts';
   if (statusFilter === 'archived') return 'Archived Posts';
+  if (statusFilter === 'in_review') return 'Posts in Review';
+  if (statusFilter === 'scheduled') return 'Scheduled Posts';
   return 'Website Publishing';
 };
 
 const getSaveSuccessMessage = ({ nextStatus, wasExisting, shouldRepublish }) => {
+  if (nextStatus === 'in_review') return 'Submitted for Super Admin review.';
+  if (nextStatus === 'scheduled') return 'Post scheduled for publication.';
   if (shouldRepublish) return 'Post republished.';
   if (nextStatus === 'published') return 'Post published.';
   if (nextStatus === 'archived') return 'Post archived.';
@@ -392,10 +444,12 @@ const getSaveSuccessMessage = ({ nextStatus, wasExisting, shouldRepublish }) => 
 function StatCard({ icon: IconComponent, label, value, meta }) {
   return (
     <article className="stat-card glass">
-      <div className="stat-icon">
-        <IconComponent className="admin-mono-icon" aria-hidden="true" />
+      <div className="stat-card-head">
+        <div className="stat-icon">
+          <IconComponent className="admin-mono-icon" aria-hidden="true" />
+        </div>
+        <span className="stat-label">{label}</span>
       </div>
-      <span className="stat-label">{label}</span>
       <p className="stat-value">{value}</p>
       <span className="stat-meta">{meta}</span>
     </article>
@@ -406,11 +460,16 @@ export default function MarketingAdminPage() {
   const router = useRouter();
   const confirmDialog = useConfirmDialog();
   const fileInputRef = useRef(null);
+  const previewFrameRef = useRef(null);
+  const previewTokenRef = useRef('');
   const autosaveInFlightRef = useRef(false);
   const autosaveTimerRef = useRef(null);
   const editRevisionRef = useRef(0);
   const savedRevisionRef = useRef(-1);
   const [editorOpen, setEditorOpen] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewReady, setPreviewReady] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState('');
   const [user, setUser] = useState(null);
   const [checked, setChecked] = useState(false);
   const [posts, setPosts] = useState([]);
@@ -430,6 +489,37 @@ export default function MarketingAdminPage() {
   const [autosavePulse, setAutosavePulse] = useState(0);
   const isContentView = activeCategory !== 'All';
   const libraryTitle = getLibraryTitle(statusFilter, activeCategory);
+  const previewPath = activePost.category === 'Awards'
+    ? '/about/awards'
+    : activePost.category === 'Member Stories'
+      ? '/'
+      : '/news';
+
+  const openPublicPreview = () => {
+    const token = createMarketingPreviewToken();
+    previewTokenRef.current = token;
+    setPreviewReady(false);
+    setPreviewUrl(getMarketingPreviewUrl(previewPath, token));
+    setPreviewOpen(true);
+  };
+
+  useEffect(() => {
+    if (!previewOpen) return undefined;
+    const onMessage = (event) => {
+      if (!isMarketingPreviewReadyMessage(event, previewFrameRef.current, previewTokenRef.current)) return;
+      setPreviewReady(true);
+    };
+    window.addEventListener('message', onMessage);
+    return () => window.removeEventListener('message', onMessage);
+  }, [previewOpen]);
+
+  useEffect(() => {
+    if (!previewOpen || !previewReady) return;
+    sendMarketingPreviewPost(previewFrameRef.current, previewTokenRef.current, {
+      ...toSavePayload(activePost, 'published'),
+      id: activePost.id || `preview-${previewTokenRef.current}`,
+    });
+  }, [activePost, previewOpen, previewReady]);
 
   const statusFilteredPosts = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -475,15 +565,7 @@ export default function MarketingAdminPage() {
     setIsLoading(true);
 
     try {
-      let nextPosts = await listMarketingPosts();
-      const hasAwardPosts = nextPosts.some((post) => post.type === 'award' || post.category === 'Awards');
-
-      if (!hasAwardPosts) {
-        await ensureCurrentStaticAwardPosts(user);
-        nextPosts = await listMarketingPosts();
-      }
-
-      setPosts(nextPosts);
+      setPosts(await listMarketingPosts());
     } catch (error) {
       setMessage({ type: 'error', text: error.message || 'Unable to load posts.' });
     } finally {
@@ -622,10 +704,11 @@ export default function MarketingAdminPage() {
     setIsUploadingImage(true);
 
     try {
-      const imageData = await compressImageFile(file);
+      const processedImage = await compressImageFile(file);
+      const imageUrl = await uploadMarketingImage(processedImage, user);
       editRevisionRef.current += 1;
       setAutosaveState('waiting');
-      setActivePost((current) => ({ ...current, image: imageData }));
+      setActivePost((current) => ({ ...current, image: imageUrl }));
       setImageFileLabel(`${file.name} (${formatFileSize(file.size)})`);
       setMessage({ type: 'success', text: 'Image added to the post.' });
     } catch (error) {
@@ -663,24 +746,70 @@ export default function MarketingAdminPage() {
       return;
     }
 
-    if (!postToSave.title.trim()) {
+    const requiresPublicationContent = ['in_review', 'published', 'scheduled'].includes(nextStatus);
+    if (requiresPublicationContent && !postToSave.title.trim()) {
       setMessage({ type: 'error', text: 'Title is required.' });
       return;
     }
 
-    if (nextStatus === 'published' && !postToSave.excerpt.trim()) {
+    if (['published', 'scheduled'].includes(nextStatus) && !isSuperAdmin(user)) {
+      setMessage({ type: 'error', text: 'Only a Super Admin can approve, publish, or schedule a post. Submit it for review instead.' });
+      return;
+    }
+
+    if (requiresPublicationContent && !postToSave.excerpt.trim()) {
       setMessage({ type: 'error', text: 'Excerpt is required.' });
       return;
     }
 
-    if (nextStatus === 'published' && postToSave.type === 'award' && !postToSave.organization.trim()) {
+    if (requiresPublicationContent && !postToSave.bodyText.trim()) {
+      setMessage({ type: 'error', text: 'Add the article or story details before publishing.' });
+      return;
+    }
+
+    if (requiresPublicationContent && postToSave.image && !postToSave.imageAlt.trim()) {
+      setMessage({ type: 'error', text: 'Add a short image description (alt text) before publishing.' });
+      return;
+    }
+
+    if (requiresPublicationContent && postToSave.type === 'award' && !postToSave.organization.trim()) {
       setMessage({ type: 'error', text: 'Add the awarding organization before publishing this award.' });
       return;
     }
 
-    if (nextStatus === 'published' && postToSave.type === 'event' && !postToSave.eventDate) {
-      setMessage({ type: 'error', text: 'Add the event date before publishing.' });
+    if (requiresPublicationContent && postToSave.type === 'event' && !postToSave.eventDate) {
+      setMessage({ type: 'error', text: 'Add the event start date before publishing.' });
       return;
+    }
+
+    if (postToSave.type === 'event' && postToSave.eventEndDate && postToSave.eventEndDate < postToSave.eventDate) {
+      setMessage({ type: 'error', text: 'The event end date must be on or after the start date.' });
+      return;
+    }
+
+    if (nextStatus === 'scheduled' && (!postToSave.scheduledAt || new Date(postToSave.scheduledAt).getTime() <= Date.now())) {
+      setMessage({ type: 'error', text: 'Choose a future publication date and time.' });
+      return;
+    }
+
+    if (nextStatus === 'in_review' && activePost.status === 'published') {
+      const confirmed = await confirmDialog({
+        title: 'Unpublish and submit for review?',
+        message: 'The current public post will be removed while this revision is reviewed.',
+        confirmLabel: 'Unpublish and submit',
+        variant: 'danger',
+      });
+      if (!confirmed) return;
+    }
+
+    if (nextStatus === 'draft' && activePost.status === 'published') {
+      const confirmed = await confirmDialog({
+        title: 'Unpublish and save as draft?',
+        message: 'This post will be removed from public pages until it is approved and published again.',
+        confirmLabel: 'Unpublish post',
+        variant: 'danger',
+      });
+      if (!confirmed) return;
     }
 
     if (autosaveTimerRef.current) {
@@ -701,22 +830,7 @@ export default function MarketingAdminPage() {
         }),
         user
       );
-      setPosts((current) => {
-        const exists = current.some((post) => post.id === savedPost.id);
-        let nextPosts = exists
-          ? current.map((post) => (post.id === savedPost.id ? savedPost : post))
-          : [savedPost, ...current];
-
-        if (savedPost.placement === 'featured' && savedPost.type !== 'member_story') {
-          nextPosts = nextPosts.map((post) =>
-            post.id !== savedPost.id && post.type !== 'member_story' && post.placement === 'featured'
-              ? { ...post, featured: false, placement: 'more' }
-              : post
-          );
-        }
-
-        return sortMarketingPosts(nextPosts);
-      });
+      setPosts(await listMarketingPosts());
       setActivePost(toEditablePost(savedPost));
       editRevisionRef.current += 1;
       savedRevisionRef.current = editRevisionRef.current;
@@ -739,7 +853,6 @@ export default function MarketingAdminPage() {
       !editorOpen ||
       !user ||
       activePost.status !== 'draft' ||
-      !activePost.title.trim() ||
       isSaving ||
       isUploadingImage ||
       autosaveInFlightRef.current ||
@@ -911,6 +1024,14 @@ export default function MarketingAdminPage() {
                   <FileText className="sidebar-nav-icon" aria-hidden="true" />
                   Drafts
                 </button>
+                <button type="button" className={`sidebar-nav-btn ${!isContentView && statusFilter === 'in_review' ? 'active' : ''}`} onClick={() => changeStatusFilter('in_review')}>
+                  <ShieldCheck className="sidebar-nav-icon" aria-hidden="true" />
+                  In Review
+                </button>
+                <button type="button" className={`sidebar-nav-btn ${!isContentView && statusFilter === 'scheduled' ? 'active' : ''}`} onClick={() => changeStatusFilter('scheduled')}>
+                  <Clock3 className="sidebar-nav-icon" aria-hidden="true" />
+                  Scheduled
+                </button>
                 <button type="button" className={`sidebar-nav-btn ${!isContentView && statusFilter === 'archived' ? 'active' : ''}`} onClick={() => changeStatusFilter('archived')}>
                   <Archive className="sidebar-nav-icon" aria-hidden="true" />
                   Archived
@@ -965,7 +1086,7 @@ export default function MarketingAdminPage() {
               </section>
 
               {message.text && (
-                <div className={`admin-alert ${message.type}`} role="status">
+                <div className={`admin-alert ${message.type}${message.type === 'error' ? ' app-error-alert' : ''}`} role={message.type === 'error' ? 'alert' : 'status'}>
                   {message.text}
                 </div>
               )}
@@ -983,16 +1104,14 @@ export default function MarketingAdminPage() {
                     <span className="section-kicker">Content Library</span>
                     <h3>{libraryTitle}</h3>
                   </div>
-                  {isContentView && (
-                    <button
+                  <button
                       type="button"
                       className="quick-action-btn primary marketing-new-btn"
-                      onClick={() => startNewPost(activeCategory)}
+                      onClick={() => startNewPost(isContentView ? activeCategory : 'News')}
                     >
                       <Plus aria-hidden="true" />
                       New Post
-                    </button>
-                  )}
+                  </button>
                 </div>
 
                 <div className="marketing-library-tools">
@@ -1120,7 +1239,7 @@ export default function MarketingAdminPage() {
                       disabled={currentPage === 1}
                       aria-label="Previous page"
                     >
-                      &lt;
+                      <ChevronLeft className="admin-mono-icon" aria-hidden="true" />
                     </button>
                     <span>
                       Page {currentPage} of {totalPages}
@@ -1131,7 +1250,7 @@ export default function MarketingAdminPage() {
                       disabled={currentPage === totalPages}
                       aria-label="Next page"
                     >
-                      &gt;
+                      <ChevronRight className="admin-mono-icon" aria-hidden="true" />
                     </button>
                   </div>
                 )}
@@ -1151,6 +1270,7 @@ export default function MarketingAdminPage() {
                 {activePost.status === 'draft' && (
                   <span className={`ma-autosave-state ${autosaveState}`} role="status" aria-live="polite">
                     {autosaveState === 'saving' ? 'Saving draft...' : autosaveState === 'saved' ? 'Draft saved' : autosaveState === 'error' ? 'Autosave paused' : autosaveState === 'waiting' ? 'Unsaved changes' : ''}
+                    {autosaveState === 'error' && <button type="button" className="ma-autosave-retry" onClick={() => setAutosavePulse((pulse) => pulse + 1)}>Retry</button>}
                   </span>
                 )}
                 <span className={`ma-editor-status status ${toStatusClass(activePost.status)}`}>
@@ -1194,8 +1314,12 @@ export default function MarketingAdminPage() {
                   {isEditingEvent && (
                     <div className="ma-editor-row ma-event-fields ma-type-fields">
                       <label className="ma-field">
-                        <span>Event Date</span>
+                        <span>Event Start Date</span>
                         <input type="date" value={activePost.eventDate} onChange={(event) => updatePost('eventDate', event.target.value)} />
+                      </label>
+                      <label className="ma-field">
+                        <span>Event End Date (Optional)</span>
+                        <input type="date" min={activePost.eventDate || undefined} value={activePost.eventEndDate} onChange={(event) => updatePost('eventEndDate', event.target.value)} />
                       </label>
                       <label className="ma-field">
                         <span>Venue / Location</span>
@@ -1243,6 +1367,14 @@ export default function MarketingAdminPage() {
                         <input value={activePost.tagsText} onChange={(event) => updatePost('tagsText', event.target.value)} placeholder="Community, livelihood, member story" />
                       </label>
                     </div>
+                  )}
+
+                  {isSuperAdmin(user) && (
+                    <label className="ma-field full">
+                      <span>Schedule publication (optional)</span>
+                      <input type="datetime-local" value={toLocalDateTimeInput(activePost.scheduledAt)} onChange={(event) => updatePost('scheduledAt', event.target.value ? new Date(event.target.value).toISOString() : '')} />
+                      <small>Scheduled posts appear publicly at the selected time in your device’s local timezone.</small>
+                    </label>
                   )}
 
                   <label className="ma-field full ma-excerpt-field">
@@ -1296,7 +1428,7 @@ export default function MarketingAdminPage() {
                   <section className="ma-settings-card compact ma-image-card">
                     <div className="ma-field ma-post-image-field">
                       <span>Post Image</span>
-                      <input ref={fileInputRef} className="ma-file-input" type="file" accept="image/*" onChange={handleImageInputChange} />
+                      <input ref={fileInputRef} className="ma-file-input" type="file" accept="image/jpeg,image/png,image/webp" onChange={handleImageInputChange} />
                       <div className="ma-upload-box" onDragOver={(event) => event.preventDefault()} onDrop={handleImageDrop}>
                         {activePost.image ? (
                           <div className="ma-inline-preview">
@@ -1310,7 +1442,7 @@ export default function MarketingAdminPage() {
                         )}
                         <div>
                           <strong>{isUploadingImage ? 'Adding image...' : activePost.image ? 'Image selected' : 'Upload image'}</strong>
-                          <span>{imageFileLabel || 'JPG, PNG, WEBP, GIF, or SVG'}</span>
+                          <span>{imageFileLabel || 'JPG, PNG, or WEBP · up to 8 MB'}</span>
                         </div>
                         <button type="button" className="ma-mini-btn" onClick={() => fileInputRef.current?.click()} disabled={isUploadingImage}>
                           <ImagePlus aria-hidden="true" />
@@ -1318,9 +1450,15 @@ export default function MarketingAdminPage() {
                       </div>
                     </div>
                     {activePost.image && (
-                      <div className="ma-full-image-preview">
-                        <img src={activePost.image} alt="" />
-                      </div>
+                      <>
+                        <div className="ma-full-image-preview">
+                          <img src={activePost.image} alt={activePost.imageAlt || ''} />
+                        </div>
+                        <label className="ma-field full">
+                          <span>Image description (alt text)</span>
+                          <input value={activePost.imageAlt} onChange={(event) => updatePost('imageAlt', event.target.value)} placeholder="Describe the image for screen reader users" />
+                        </label>
+                      </>
                     )}
                   </section>
                 </aside>
@@ -1331,14 +1469,33 @@ export default function MarketingAdminPage() {
                       {message.text}
                     </div>
                   )}
+                  <button type="button" className="ma-command preview" onClick={openPublicPreview} disabled={!activePost.title.trim()}>
+                    <Eye aria-hidden="true" />
+                    Preview Public Page
+                  </button>
                   <button type="submit" className="ma-command save" disabled={isSaving || isUploadingImage || autosaveState === 'saving'}>
                     <Save aria-hidden="true" />
-                    {isSaving ? 'Saving...' : 'Save Draft'}
+                    {isSaving ? 'Saving...' : activePost.status === 'published' ? 'Unpublish & Save Draft' : 'Save Draft'}
                   </button>
-                  <button type="button" className="ma-command publish" onClick={() => handleSave('published')} disabled={isSaving || isUploadingImage || autosaveState === 'saving'}>
-                    <Send aria-hidden="true" />
-                    Publish
-                  </button>
+                  {isSuperAdmin(user) ? (
+                    <>
+                      {activePost.scheduledAt && (
+                        <button type="button" className="ma-command publish" onClick={() => handleSave('scheduled')} disabled={isSaving || isUploadingImage || autosaveState === 'saving'}>
+                          <Clock3 aria-hidden="true" />
+                          Schedule
+                        </button>
+                      )}
+                      <button type="button" className="ma-command publish" onClick={() => handleSave('published')} disabled={isSaving || isUploadingImage || autosaveState === 'saving'}>
+                        <Send aria-hidden="true" />
+                        {activePost.status === 'in_review' ? 'Approve & Publish' : 'Publish Now'}
+                      </button>
+                    </>
+                  ) : (
+                    <button type="button" className="ma-command publish" onClick={() => handleSave('in_review')} disabled={isSaving || isUploadingImage || autosaveState === 'saving'}>
+                      <Send aria-hidden="true" />
+                      Submit for Review
+                    </button>
+                  )}
                   {activePost.id && (
                     <>
                       <button type="button" className="ma-command archive" onClick={() => handleSave('archived')} disabled={isSaving || isUploadingImage || autosaveState === 'saving'}>
@@ -1354,6 +1511,21 @@ export default function MarketingAdminPage() {
                 </div>
               </form>
             </aside>
+          </div>
+        )}
+
+        {previewOpen && (
+          <div className="ma-public-preview-overlay" role="dialog" aria-modal="true" aria-label="Public page preview">
+            <section className="ma-public-preview-panel">
+              <header>
+                <div>
+                  <strong>Public page preview</strong>
+                  <span>Preview only. Your changes are not published.</span>
+                </div>
+                <button type="button" onClick={() => setPreviewOpen(false)} aria-label="Close public preview"><X aria-hidden="true" /></button>
+              </header>
+              <iframe ref={previewFrameRef} title="Marketing content public preview" src={previewUrl} />
+            </section>
           </div>
         )}
       </main>

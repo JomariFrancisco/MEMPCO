@@ -26,19 +26,19 @@ export default function HelpdeskInbox({ userId, tickets = [], onTicket, audience
   const panelRef = useRef(null);
   const requestId = useRef(0);
   const audioRef = useRef(null);
-  const pendingSoundRef = useRef(false);
+  const audioUnlockedRef = useRef(false);
+  const audioUnlockingRef = useRef(false);
   const knownNotificationsRef = useRef({ userId: null, ids: new Set() });
   const panelId = useId();
   const supabase = useMemo(() => createClient(), []);
 
   const playNotificationSound = useCallback(() => {
     const audio = audioRef.current;
-    if (!audio) return;
-    pendingSoundRef.current = false;
+    if (!audio || !audioUnlockedRef.current) return;
     audio.currentTime = 0;
-    void audio.play().catch((failure) => {
-      // Browsers may require a user interaction before allowing audio.
-      if (audioRef.current === audio && failure.name === 'NotAllowedError') pendingSoundRef.current = true;
+    void audio.play().catch(() => {
+      // Don't replay a notification sound later as a side effect of opening the inbox.
+      audioUnlockedRef.current = false;
     });
   }, []);
 
@@ -47,15 +47,38 @@ export default function HelpdeskInbox({ userId, tickets = [], onTicket, audience
     audio.preload = 'auto';
     audio.volume = 0.65;
     audioRef.current = audio;
-    pendingSoundRef.current = false;
-    const resumeSound = () => { if (pendingSoundRef.current) playNotificationSound(); };
-    window.addEventListener('pointerdown', resumeSound);
-    window.addEventListener('keydown', resumeSound);
+    audioUnlockedRef.current = false;
+    audioUnlockingRef.current = false;
+
+    const unlockAudio = () => {
+      if (audioRef.current !== audio || audioUnlockedRef.current || audioUnlockingRef.current) return;
+
+      const originalVolume = audio.volume;
+      audioUnlockingRef.current = true;
+      audio.volume = 0;
+      void audio.play().then(() => {
+        if (audioRef.current !== audio) return;
+        audio.pause();
+        audio.currentTime = 0;
+        audio.volume = originalVolume;
+        audioUnlockedRef.current = true;
+        audioUnlockingRef.current = false;
+      }).catch(() => {
+        if (audioRef.current === audio) {
+          audio.volume = originalVolume;
+          audioUnlockingRef.current = false;
+        }
+      });
+    };
+
+    window.addEventListener('pointerdown', unlockAudio, { passive: true });
+    window.addEventListener('keydown', unlockAudio);
     return () => {
-      window.removeEventListener('pointerdown', resumeSound);
-      window.removeEventListener('keydown', resumeSound);
+      window.removeEventListener('pointerdown', unlockAudio);
+      window.removeEventListener('keydown', unlockAudio);
       audioRef.current = null;
-      pendingSoundRef.current = false;
+      audioUnlockedRef.current = false;
+      audioUnlockingRef.current = false;
       audio.pause();
       audio.removeAttribute('src');
       audio.load();
@@ -228,7 +251,7 @@ export default function HelpdeskInbox({ userId, tickets = [], onTicket, audience
         <header className="helpdesk-inbox-header">
           <h2>{employee ? 'Notifications' : 'Helpdesk Inbox'}</h2>
         </header>
-        {error && <div className="helpdesk-inbox-error" role="alert"><span>{error}</span>
+        {error && <div className="helpdesk-inbox-error app-error-alert" role="alert"><span>{error}</span>
           <button type="button" onClick={refresh} aria-label="Retry notifications" title="Retry notifications"><RefreshCw size={16} aria-hidden="true" /></button>
         </div>}
         <div className="helpdesk-inbox-list" aria-busy={loading}>

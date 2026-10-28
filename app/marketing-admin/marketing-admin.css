@@ -394,6 +394,22 @@
 
 .ma-autosave-state.saved { color: #15803d; }
 .ma-autosave-state.error { color: #b91c1c; }
+.marketing-post-table .status.in-review,
+.marketing-post-table .status.scheduled {
+  border-color: #f5d0a8;
+  background: #fff7ed;
+  color: #9a3412;
+}
+.ma-autosave-retry {
+  margin-left: 0.35rem;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
 
 .ma-drawer-close {
   display: flex;
@@ -1162,6 +1178,68 @@ body.ma-editor-open {
 
 .ma-editor-feedback {
   line-height: 1.4;
+}
+
+.ma-public-preview-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: grid;
+  place-items: center;
+  padding: clamp(0.5rem, 2vw, 1.5rem);
+  background: rgb(8 15 27 / 72%);
+  backdrop-filter: blur(8px);
+}
+
+.ma-public-preview-panel {
+  display: flex;
+  flex-direction: column;
+  width: min(1440px, 96vw);
+  height: min(900px, 94vh);
+  overflow: hidden;
+  border: 1px solid var(--border, #dbe2ec);
+  border-radius: 16px;
+  background: var(--surface, #fff);
+  box-shadow: 0 24px 80px rgb(0 0 0 / 30%);
+}
+
+.ma-public-preview-panel > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--border, #dbe2ec);
+  color: var(--text, #172033);
+}
+
+.ma-public-preview-panel > header div {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.ma-public-preview-panel > header span {
+  color: var(--muted, #64748b);
+  font-size: 0.82rem;
+}
+
+.ma-public-preview-panel > header button {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.ma-public-preview-panel iframe {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  border: 0;
+  background: #fff;
 }
 
 @media (max-width: 900px) {

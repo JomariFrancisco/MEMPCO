@@ -414,7 +414,7 @@ export default function MemberConcernsPage() {
                       <span>I acknowledge that MEMPCO may use these details to review this submission and contact me about it.</span>
                     </label>
                     <FieldError>{errors.privacy}</FieldError>
-                    {submitError && <p className="concern-submit-error" role="alert">{submitError}</p>}
+                    {submitError && <p className="concern-submit-error app-error-alert" role="alert">{submitError}</p>}
                   </section>
                 )}
 

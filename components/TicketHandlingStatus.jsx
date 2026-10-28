@@ -80,14 +80,20 @@ export function TicketHandlingActivity({ ticket, now = Date.now() }) {
   const activity = useMemo(() => getTicketHandlingActivity(ticket, now), [ticket, now]);
   const status = getTicketHandlingState(ticket, now);
   const facts = [
-    ['First response', formatHandlingDuration(metrics.firstResponseMs)],
-    ['Response SLA', metrics.responseSla],
-    ['Resolution SLA', metrics.resolutionSla],
-    ['Work stage time', formatHandlingDuration(metrics.workMs)],
-    ['Waiting / scheduled', formatHandlingDuration(metrics.waitingMs)],
-    ...(metrics.testingMs !== null ? [['Burnout testing', formatHandlingDuration(metrics.testingMs)]] : []),
-    ['Reopened', metrics.hasHistory ? String(metrics.reopenCount) : 'Not recorded'],
+    ['First response', formatHandlingDuration(metrics.firstResponseMs), metrics.firstResponseAt !== null ? `Recorded ${formatTime(metrics.firstResponseAt)}` : 'No response recorded yet'],
+    ['Response SLA', metrics.responseSla, metrics.responseDueAt !== null ? `Due ${formatTime(metrics.responseDueAt)}` : 'Target not recorded'],
+    ['Resolution SLA', metrics.resolutionSla, metrics.resolutionDueAt !== null ? `Due ${formatTime(metrics.resolutionDueAt)}` : 'Target not recorded'],
+    ['Work stage time', formatHandlingDuration(metrics.workMs), 'Elapsed time in active work states; not a measure of technician effort'],
+    ['Waiting / scheduled', formatHandlingDuration(metrics.waitingMs), 'Time recorded in requester, vendor, approval, or scheduled states'],
+    ...(metrics.testingMs !== null ? [['Burnout testing', formatHandlingDuration(metrics.testingMs), 'Recorded time in Burnout monitoring']] : []),
+    ['Reopened', metrics.hasHistory ? String(metrics.reopenCount) : 'Not recorded', 'Number of recorded reopen events'],
   ];
+  const roleLabels = {
+    employee: 'Employee',
+    admin: 'ICT Admin',
+    superadmin: 'Super Admin',
+    service_role: 'System',
+  };
 
   return (
     <details className="ticket-handling-activity">
@@ -98,10 +104,11 @@ export function TicketHandlingActivity({ ticket, now = Date.now() }) {
         <ChevronDown size={16} className="ticket-handling-disclosure" aria-hidden="true" />
       </summary>
       <dl className="ticket-handling-metrics">
-        {facts.map(([label, value]) => (
+        {facts.map(([label, value, detail]) => (
           <div key={label}>
             <dt title={label === 'Work stage time' ? 'Elapsed time in recorded work stages; this is not a measure of technician effort.' : undefined}>{label}</dt>
             <dd className={['Overdue', 'Late'].includes(value) ? 'is-overdue' : ''}>{value}</dd>
+            {detail && <small>{detail}</small>}
           </div>
         ))}
       </dl>
@@ -118,9 +125,17 @@ export function TicketHandlingActivity({ ticket, now = Date.now() }) {
                 <strong>{event.title}</strong>
                 <time dateTime={new Date(event.time).toISOString()}>{formatTime(event.time)}</time>
               </div>
-              <p>{event.actor} <span aria-hidden="true">/</span> {event.status}</p>
-              {event.assignment && <p>{event.assignment}</p>}
-              {event.reason && <p className="ticket-handling-event-reason">{event.reason}</p>}
+              <p className="ticket-handling-event-meta">
+                <span>{event.actor}{roleLabels[event.actorRole] ? ` · ${roleLabels[event.actorRole]}` : ''}</span>
+                {event.statusTransition && <span>{event.statusTransition}</span>}
+              </p>
+              {event.details.length > 0 && (
+                <ul className="ticket-handling-event-details">
+                  {event.details.map((detail, detailIndex) => <li key={`${event.key}-detail-${detailIndex}`}>{detail}</li>)}
+                </ul>
+              )}
+              {event.reason && <p className="ticket-handling-event-reason"><strong>Reason:</strong> {event.reason}</p>}
+              {!event.details.length && !event.reason && <p className="ticket-handling-event-unavailable">No additional detail was saved for this older activity record.</p>}
             </li>
           ))}
         </ol>

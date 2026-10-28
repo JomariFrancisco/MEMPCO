@@ -447,7 +447,7 @@ function AccessMessage() {
         <ShieldCheck size={30} aria-hidden="true" />
         <h1>MRDSS access is restricted</h1>
         <p>Sign in with an MRDSS Admin account or Super Admin account to open the support desk.</p>
-        <Link href="/mrdss-login" className="mrdss-button mrdss-button--primary">Go to MRDSS sign in</Link>
+        <Link href="/mrdss" className="mrdss-button mrdss-button--primary">Go to MRDSS sign in</Link>
         <Link href="/" className="mrdss-access-home">Return to MEMPCO</Link>
       </div>
     </main>
@@ -1413,7 +1413,7 @@ function MrdssAdminWorkspace() {
 
   const handleSignOut = async () => {
     await signOutPortal();
-    window.location.replace('/mrdss-login');
+    window.location.replace('/mrdss');
   };
   const caseNavigation = isBranchManager
     ? [
@@ -1520,7 +1520,7 @@ function MrdssAdminWorkspace() {
             </button>
 
             <div className="mrdss-workspace">
-        {dataError && <p className="mrdss-data-error" role="alert">{dataError}</p>}
+        {dataError && <p className="mrdss-data-error app-error-alert" role="alert">{dataError}</p>}
         {dataNotice && <p className="mrdss-data-notice" role="status">{dataNotice}</p>}
         <section className="panel-card glass hero-panel admin-hero-panel mrdss-page-heading">
           <div className="hero-copy">
@@ -1567,7 +1567,7 @@ function MrdssAdminWorkspace() {
             </section>
 
             <section className="panel-card glass mrdss-report-filter-panel" aria-label="Report filters">
-              <div className="mrdss-report-filter-heading"><span className="section-kicker">Filter report</span><button type="button" className="mrdss-report-reset" onClick={clearReportFilters}>Clear filters</button></div>
+              <div className="mrdss-report-filter-heading"><span className="section-kicker">Filter report</span><button type="button" className="mrdss-report-reset filter-reset-icon" onClick={clearReportFilters} aria-label="Clear filters" title="Clear filters"><RotateCcw size={17} aria-hidden="true" /></button></div>
               <div className="mrdss-report-filters">
                 <label className="mrdss-field"><span>From</span><input type="date" value={reportFilters.from} onChange={(event) => setReportFilters((current) => ({ ...current, from: event.target.value }))} /></label>
                 <label className="mrdss-field"><span>To</span><input type="date" value={reportFilters.to} onChange={(event) => setReportFilters((current) => ({ ...current, to: event.target.value }))} /></label>

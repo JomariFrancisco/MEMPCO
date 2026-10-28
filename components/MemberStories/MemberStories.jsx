@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { listPublishedMemberStories } from '@/lib/marketing/marketingPosts';
+import { createClient } from '@/lib/supabase/client';
 import { useMarketingPreview } from '@/lib/marketing/marketingPreview';
 import './MemberStories.css';
 
@@ -407,8 +408,25 @@ export default function MemberStories() {
 
     void loadStories();
 
+    const reload = () => void loadStories();
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') reload();
+    };
+    window.addEventListener('focus', reload);
+    window.addEventListener('pageshow', reload);
+    document.addEventListener('visibilitychange', onVisibility);
+    const supabase = createClient();
+    const channel = supabase
+      .channel('homepage-member-stories-marketing-posts-sync')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'marketing_posts' }, reload)
+      .subscribe();
+
     return () => {
       cancelled = true;
+      window.removeEventListener('focus', reload);
+      window.removeEventListener('pageshow', reload);
+      document.removeEventListener('visibilitychange', onVisibility);
+      supabase.removeChannel(channel);
     };
   }, []);
 

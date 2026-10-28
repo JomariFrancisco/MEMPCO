@@ -23,13 +23,6 @@ import {
 } from '@/lib/auth/portalAuth';
 import './login.css';
 
-const authLoadingCopy = {
-  signin: 'Securing portal access...',
-  forgot: 'Sending password reset email...',
-  reset: 'Updating secure password...',
-  redirect: 'Redirecting to portal...',
-};
-
 const REMEMBERED_EMAIL_KEY = 'mempco.portal.rememberedEmail';
 const SESSION_TIMEOUT_MESSAGE = 'You were signed out after 15 minutes of inactivity.';
 const INVALID_LOGIN_MESSAGE = 'Invalid email or password. Please check your login details.';
@@ -60,7 +53,7 @@ const PORTAL_CONFIG = {
     allows: isHrAdminRole,
   },
   mrdss: {
-    name: 'MRDSS Member Support',
+    name: 'MRDSS',
     kicker: 'MEMPCO MRDSS',
     description: 'Sign in to review and follow up on member concerns.',
     allows: (role) => isMrdssAdminRole(role)
@@ -77,16 +70,6 @@ const AuthButtonIcon = ({ icon: IconComponent }) => (
   <IconComponent className="auth-button-icon" aria-hidden="true" />
 );
 
-function AuthLoadingOverlay({ label }) {
-  return (
-    <div className="auth-loading-overlay" role="status" aria-live="polite" aria-label={label}>
-      <div className="auth-loading-logo-wrap" aria-hidden="true">
-        <img src="/Logos/Logo.png" alt="" />
-      </div>
-    </div>
-  );
-}
-
 export default function LoginPage({ portal = 'superadmin' }) {
   const portalConfig = PORTAL_CONFIG[portal] || null;
   const [authMode, setAuthMode] = useState('signin');
@@ -100,7 +83,6 @@ export default function LoginPage({ portal = 'superadmin' }) {
   const [shouldDismissSessionTimeout, setShouldDismissSessionTimeout] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isRedirecting, setIsRedirecting] = useState(false);
-  const [loadingLabel, setLoadingLabel] = useState(authLoadingCopy.signin);
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [showForcedPassword, setShowForcedPassword] = useState(false);
   const normalizedLoginEmail = loginForm.email.trim().toLowerCase();
@@ -125,7 +107,6 @@ export default function LoginPage({ portal = 'superadmin' }) {
     const destination = String(route || '/').startsWith('/') ? route : '/';
 
     setIsRedirecting(true);
-    setLoadingLabel(authLoadingCopy.redirect);
 
     window.setTimeout(() => {
       window.location.replace(destination);
@@ -232,7 +213,6 @@ export default function LoginPage({ portal = 'superadmin' }) {
     if (isSubmitting || isRedirecting) return;
 
     setIsSubmitting(true);
-    setLoadingLabel(authLoadingCopy.signin);
     setShouldDismissSessionTimeout(false);
     setMessage({ type: '', text: '' });
 
@@ -279,7 +259,7 @@ export default function LoginPage({ portal = 'superadmin' }) {
 
       setMessage({
         type: 'success',
-        text: 'Login successful. Redirecting...',
+        text: 'Login successful.',
       });
 
       redirectToRoute(destination);
@@ -315,7 +295,6 @@ export default function LoginPage({ portal = 'superadmin' }) {
     }
 
     setIsSubmitting(true);
-    setLoadingLabel(authLoadingCopy.reset);
     setMessage({ type: '', text: '' });
 
     try {
@@ -344,7 +323,7 @@ export default function LoginPage({ portal = 'superadmin' }) {
       setShowForcedPassword(false);
       setMessage({
         type: 'success',
-        text: 'Password updated. Redirecting...',
+        text: 'Password updated.',
       });
 
       redirectToRoute(getLoginDestination(user));
@@ -365,7 +344,6 @@ export default function LoginPage({ portal = 'superadmin' }) {
     if (isSubmitting || isRedirecting) return;
 
     setIsSubmitting(true);
-    setLoadingLabel(authLoadingCopy.forgot);
     setMessage({ type: '', text: '' });
 
     try {
@@ -398,7 +376,6 @@ export default function LoginPage({ portal = 'superadmin' }) {
     }
 
     setIsSubmitting(true);
-    setLoadingLabel(authLoadingCopy.reset);
     setMessage({ type: '', text: '' });
 
     try {
@@ -423,7 +400,7 @@ export default function LoginPage({ portal = 'superadmin' }) {
 
       setMessage({
         type: 'success',
-        text: 'Password updated. Redirecting...',
+        text: 'Password updated.',
       });
 
       redirectToRoute(destination);
@@ -452,7 +429,7 @@ export default function LoginPage({ portal = 'superadmin' }) {
 
   return (
     <>
-      <main className="portal-main portal-auth-main">
+      <main className="portal-main portal-auth-main portal-flat-auth">
         <section className="auth-section">
           <div className={`auth-shell ${authMode === 'reset' ? 'reset-mode' : ''}`}>
             <div className="auth-showcase" aria-hidden="true">
@@ -468,7 +445,10 @@ export default function LoginPage({ portal = 'superadmin' }) {
             <div className="auth-panel">
               <div className="auth-panel-inner">
                 {message.text && (
-                  <div className={`auth-alert ${message.type}`}>
+                  <div
+                    className={`auth-alert ${message.type}${message.type === 'error' ? ' app-error-alert' : ''}`}
+                    role={message.type === 'error' ? 'alert' : 'status'}
+                  >
                     {message.text}
                   </div>
                 )}
@@ -752,7 +732,6 @@ export default function LoginPage({ portal = 'superadmin' }) {
         </div>
       )}
 
-      {isBusy && <AuthLoadingOverlay label={loadingLabel} />}
     </>
   );
 }

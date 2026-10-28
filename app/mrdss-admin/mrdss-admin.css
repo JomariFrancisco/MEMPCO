@@ -199,12 +199,6 @@
 
 .mrdss-data-error {
   margin: 0 0 1rem;
-  padding: 0.7rem 0.85rem;
-  border: 1px solid #e8b8ba;
-  border-radius: 4px;
-  background: #fff5f5;
-  color: #8c1d23;
-  font-size: 0.85rem;
 }
 
 .mrdss-queue__heading h2,

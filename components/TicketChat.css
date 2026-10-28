@@ -1,0 +1,320 @@
+/* Shared floating conversation design for the employee and ICT dashboards. */
+.ticket-chat-launcher.ticket-modal-floating-launcher {
+  position: fixed !important;
+  inset: auto 1rem 1rem auto !important;
+  z-index: 13000 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0.55rem !important;
+  width: 48px !important;
+  min-width: 48px !important;
+  height: 48px !important;
+  min-height: 48px !important;
+  padding: 0 !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 999px !important;
+  background: #fff !important;
+  color: #243247 !important;
+  box-shadow: 0 8px 24px rgb(15 23 42 / 16%) !important;
+  transform: none !important;
+}
+
+.ticket-chat-launcher.ticket-modal-floating-launcher .admin-mono-icon {
+  width: 22px !important;
+  height: 22px !important;
+  color: #dc2626 !important;
+  stroke: #dc2626 !important;
+  transform: none !important;
+}
+
+.ticket-chat-launcher.ticket-modal-floating-launcher .ticket-chat-launcher-label {
+  display: none !important;
+}
+
+.ticket-chat-launcher.ticket-modal-floating-launcher .ticket-chat-unread-count {
+  position: absolute !important;
+  top: -6px !important;
+  right: -6px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-width: 20px !important;
+  width: auto !important;
+  height: 20px !important;
+  padding: 0 5px !important;
+  border: 2px solid #fff !important;
+  border-radius: 999px !important;
+  background: #dc2626 !important;
+  color: #fff !important;
+  font-size: 0.68rem !important;
+  font-weight: 800 !important;
+  line-height: 1 !important;
+}
+
+.ticket-chat-launcher.ticket-modal-floating-launcher:hover {
+  border-color: #fca5a5 !important;
+  background: #fff5f5 !important;
+  transform: translateY(-2px) !important;
+}
+
+.floating-ticket-chat.ticket-modal-floating-chat {
+  position: fixed !important;
+  inset: auto 1rem 1rem auto !important;
+  z-index: 13010 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  width: min(420px, calc(100vw - 2rem)) !important;
+  height: min(500px, calc(100dvh - 2rem)) !important;
+  max-height: calc(100dvh - 2rem) !important;
+  min-height: 320px !important;
+  overflow: hidden !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 16px !important;
+  background: #fff !important;
+  color: #243247 !important;
+  box-shadow: 0 20px 56px rgb(15 23 42 / 24%) !important;
+  opacity: 1 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  isolation: isolate;
+}
+
+.floating-ticket-chat .ticket-conversation-head {
+  flex: 0 0 auto !important;
+  padding: 1rem 1rem 0.8rem !important;
+  border-bottom: 1px solid #e8edf3 !important;
+  background: #fff !important;
+}
+
+.floating-ticket-chat .ticket-conversation-head .section-kicker {
+  color: #b4232f !important;
+}
+
+.floating-ticket-chat .ticket-chat-requester {
+  margin: 0.35rem 0 0.1rem !important;
+  color: #64748b !important;
+  font-size: 0.9rem !important;
+  font-weight: 700 !important;
+}
+
+.floating-ticket-chat .ticket-conversation-head .ticket-chat-title-label {
+  font-size: 0.9rem !important;
+}
+
+.floating-ticket-chat .ticket-conversation-head .ticket-chat-title-id {
+  font-size: 0.78rem !important;
+}
+
+.floating-ticket-chat .ticket-conversation-head h4 {
+  margin: 0 !important;
+  color: #1e293b !important;
+}
+
+.floating-ticket-chat .ticket-conversation-count {
+  color: #64748b !important;
+}
+
+.floating-ticket-chat .ticket-chat-close {
+  color: #64748b !important;
+}
+
+.floating-ticket-chat .ticket-message-list {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  padding: 1rem !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  scrollbar-width: none !important;
+  background: #f8fafc !important;
+  overscroll-behavior: contain;
+}
+
+.floating-ticket-chat .ticket-message-list::-webkit-scrollbar {
+  display: none;
+  width: 0;
+}
+
+.floating-ticket-chat .ticket-message-list::-webkit-scrollbar-track {
+  border-radius: 999px;
+  background: #e2e8f0;
+}
+
+.floating-ticket-chat .ticket-message-list::-webkit-scrollbar-thumb {
+  border: 2px solid #e2e8f0;
+  border-radius: 999px;
+  background: #94a3b8;
+}
+
+.employee-floating-ticket-chat .ticket-message-list {
+  scrollbar-width: none !important;
+}
+
+.employee-floating-ticket-chat .ticket-message-list::-webkit-scrollbar {
+  display: none;
+  width: 0;
+}
+
+.floating-ticket-chat .ticket-message-item {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  max-width: 88% !important;
+  min-width: 0 !important;
+  margin-bottom: 0.85rem !important;
+}
+
+.floating-ticket-chat .ticket-message-bubble {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.floating-ticket-chat .ticket-message-item.mine {
+  align-items: flex-end !important;
+  margin-left: auto !important;
+}
+
+.floating-ticket-chat .ticket-message-meta {
+  color: #64748b !important;
+}
+
+.admin-floating-ticket-chat .ticket-message-meta {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  width: 100% !important;
+  gap: 0.15rem !important;
+  margin-bottom: 0.35rem !important;
+  text-align: left !important;
+}
+
+.admin-floating-ticket-chat .ticket-message-item.mine .ticket-message-meta {
+  align-items: flex-end !important;
+  text-align: right !important;
+}
+
+.admin-floating-ticket-chat .ticket-message-meta span {
+  position: static !important;
+  display: block !important;
+  inset: auto !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  transform: none !important;
+}
+
+.admin-floating-ticket-chat .ticket-message-meta span.ticket-message-sent-at {
+  width: auto !important;
+  max-width: 100% !important;
+  margin-top: 0.2rem !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: #94a3b8 !important;
+  font-size: 0.78rem !important;
+  font-weight: 600 !important;
+  line-height: 1.35 !important;
+  text-transform: none !important;
+  pointer-events: none !important;
+  transition: none !important;
+}
+
+.admin-floating-ticket-chat .ticket-message-sender-role {
+  display: none !important;
+}
+
+.floating-ticket-chat .ticket-message-sent-at {
+  display: block;
+  margin-top: 0.2rem;
+  color: #94a3b8;
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.employee-floating-ticket-chat .ticket-message-sender-role {
+  display: none !important;
+}
+
+.employee-floating-ticket-chat .ticket-message-meta span.ticket-message-sent-at {
+  position: static !important;
+  display: block !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  transform: none !important;
+}
+
+.floating-ticket-chat.ticket-modal-floating-chat .ticket-message-composer {
+  position: relative !important;
+  z-index: 1 !important;
+  flex: 0 0 auto !important;
+  gap: 0.4rem !important;
+  padding: 0.5rem 0.65rem 0.4rem !important;
+  border-top: 1px solid #e8edf3 !important;
+  background: #fff !important;
+}
+
+.floating-ticket-chat.ticket-modal-floating-chat .ticket-message-textarea {
+  min-height: 58px !important;
+  max-height: 88px !important;
+  padding: 0.55rem 0.75rem !important;
+  border-color: #dbe3ec !important;
+  border-radius: 10px !important;
+  background: #fff !important;
+  color: #1e293b !important;
+  font-size: 0.95rem !important;
+  line-height: 1.4 !important;
+}
+
+.floating-ticket-chat.ticket-modal-floating-chat .ticket-message-actions {
+  gap: 0.4rem !important;
+  flex-wrap: nowrap !important;
+}
+
+.floating-ticket-chat.ticket-modal-floating-chat .ticket-message-icon-btn {
+  width: 36px !important;
+  min-width: 36px !important;
+  height: 36px !important;
+  min-height: 36px !important;
+  border-radius: 8px !important;
+}
+
+.floating-ticket-chat.ticket-modal-floating-chat .ticket-message-send-btn {
+  background: #dc2626 !important;
+  color: #fff !important;
+}
+
+.floating-ticket-chat.ticket-modal-floating-chat .ticket-message-send-btn .admin-mono-icon {
+  color: #fff !important;
+  stroke: #fff !important;
+}
+
+.floating-ticket-chat.ticket-modal-floating-chat .ticket-message-send-btn:hover:not(:disabled) {
+  background: #b91c1c !important;
+}
+
+@media (max-width: 700px) {
+  .ticket-chat-launcher.ticket-modal-floating-launcher {
+    right: 0.75rem !important;
+    bottom: 0.75rem !important;
+  }
+
+  .floating-ticket-chat.ticket-modal-floating-chat {
+    right: 0.5rem !important;
+    bottom: 0.5rem !important;
+    width: calc(100vw - 1rem) !important;
+    height: min(520px, calc(100dvh - 1rem)) !important;
+    max-height: calc(100dvh - 1rem) !important;
+    min-height: min(360px, calc(100dvh - 1rem)) !important;
+    border-radius: 14px !important;
+  }
+}
+
+@media (max-width: 520px) {
+  .ticket-chat-launcher.ticket-modal-floating-launcher {
+    width: 48px !important;
+    min-width: 48px !important;
+    padding: 0 !important;
+  }
+}

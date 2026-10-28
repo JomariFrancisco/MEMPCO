@@ -1,0 +1,191 @@
+/* Shared, compact list filters. Entry forms deliberately retain their sizing. */
+body :is(.admin-filter-grid, .admin-users-toolbar, .mrdss-report-filters,
+  .hr-application-tools, .hr-list-controls, .marketing-filter-pills) {
+  gap: 12px !important;
+  align-items: end;
+}
+
+body .hr-search {
+  box-sizing: border-box;
+  min-height: 40px !important;
+  height: 40px !important;
+  padding: 8px 12px !important;
+  border-radius: 8px !important;
+  box-shadow: none !important;
+}
+body .hr-search input {
+  padding: 0 !important;
+  min-height: 0 !important;
+  height: auto !important;
+  font-size: 14px !important;
+}
+
+body .admin-filter-grid,
+body .admin-filter-grid.burnout-filter-grid,
+body .mrdss-report-filters {
+  display: flex !important;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+}
+
+body .admin-filter-grid > .ticket-form-group,
+body .mrdss-report-filters > .mrdss-field {
+  flex: 0 0 auto;
+  width: max-content;
+  max-width: 100%;
+}
+
+body .admin-filter-grid > .ticket-form-group.full {
+  flex: 0 0 100%;
+  width: 100%;
+}
+
+body :is(.admin-users-toolbar, .hr-list-controls) {
+  grid-template-columns: minmax(0, 1fr) max-content !important;
+}
+body .hr-application-tools {
+  grid-template-columns: minmax(0, 1fr) repeat(2, max-content) !important;
+}
+body .marketing-filter-pills { flex-wrap: wrap; }
+body :is(.marketing-filter-pills, .locator-toolbar-controls) select {
+  flex: 0 0 auto !important;
+  width: auto !important;
+  inline-size: auto !important;
+  max-width: 100%;
+}
+
+body :is(.admin-filter-grid, .admin-users-toolbar, .mrdss-report-filters) :is(.ticket-form-group, .mrdss-field),
+body .hr-sort-control {
+  min-width: 0;
+  gap: 5px !important;
+  margin-bottom: 0;
+}
+
+body :is(.admin-filter-grid, .admin-users-toolbar) .ticket-form-group > :is(label, span),
+body .mrdss-report-filters .mrdss-field > span,
+body .hr-sort-control > span {
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  line-height: 1.4;
+  letter-spacing: 0 !important;
+  text-transform: none;
+}
+
+body :is(.admin-filter-grid, .admin-users-toolbar, .mrdss-report-filters, .hr-sort-control, .marketing-filter-pills, .locator-toolbar-controls) select,
+body :is(.admin-filter-grid, .admin-users-toolbar, .mrdss-report-filters) input {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0 !important;
+  height: 40px !important;
+  min-height: 40px !important;
+  padding: 8px 12px !important;
+  border: 1px solid #d9e0e9 !important;
+  border-radius: 8px !important;
+  background-color: #fff !important;
+  color: #334155 !important;
+  font-size: 14px !important;
+  font-weight: 400 !important;
+  line-height: 1.4 !important;
+  box-shadow: none !important;
+}
+
+body :is(.admin-filter-grid, .admin-users-toolbar, .mrdss-report-filters, .hr-sort-control, .marketing-filter-pills, .locator-toolbar-controls) select {
+  /* Native intrinsic sizing reserves room for the longest option, not just
+     the selected label, so changing filters never truncates text. */
+  width: auto !important;
+  inline-size: auto !important;
+  min-width: 180px !important;
+  max-width: none !important;
+  padding-right: 32px !important;
+}
+
+body :is(.admin-filter-grid, .admin-users-toolbar) .search-field-group input { padding-left: 38px !important; }
+body :is(.admin-filter-grid, .admin-users-toolbar) .search-field-group .field-leading-icon {
+  top: auto !important;
+  bottom: 12px !important;
+  left: 12px !important;
+  width: 16px;
+  height: 16px;
+  transform: none !important;
+}
+
+body :is(.admin-filter-grid, .admin-users-toolbar) .field-leading-icon svg { width: 16px; height: 16px; }
+
+body :is(.filter-clear-btn, .mrdss-report-reset) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: end;
+  gap: 6px;
+  width: auto !important;
+  min-height: 40px !important;
+  padding: 8px 10px !important;
+  border: 0 !important;
+  border-radius: 8px !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: #64748b !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+body :is(.filter-clear-btn, .mrdss-report-reset):hover { background: #f1f5f9 !important; color: #b91c1c !important; }
+body .filter-clear-btn svg { width: 16px; height: 16px; }
+
+/* Icon-only reset aligns with the control row, including legacy button styles. */
+body :is(.admin-filter-grid, .mrdss-report-filter-heading) button.filter-reset-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: end !important;
+  justify-self: end;
+  width: 40px !important;
+  min-width: 40px !important;
+  height: 40px !important;
+  min-height: 40px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 8px !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: #64748b !important;
+}
+
+body :is(.admin-filter-grid, .mrdss-report-filter-heading) button.filter-reset-icon:hover {
+  background: #f1f5f9 !important;
+  box-shadow: none !important;
+}
+
+body :is(.admin-filter-grid, .mrdss-report-filter-heading) button.filter-reset-icon:focus-visible {
+  outline: 2px solid #c62828 !important;
+  outline-offset: 2px;
+}
+
+body[data-portal-theme='dark'] :is(.admin-filter-grid, .mrdss-report-filter-heading) button.filter-reset-icon { color: #b6c4d6 !important; }
+body[data-portal-theme='dark'] :is(.admin-filter-grid, .mrdss-report-filter-heading) button.filter-reset-icon:hover { background: #293647 !important; }
+
+body :is(.admin-filter-grid, .admin-users-toolbar, .mrdss-report-filters, .hr-sort-control, .marketing-filter-pills, .locator-toolbar-controls) :is(input, select, button):focus-visible {
+  outline: 2px solid #c62828 !important;
+  outline-offset: 2px;
+}
+
+body[data-portal-theme='dark'] :is(.admin-filter-grid, .admin-users-toolbar, .mrdss-report-filters, .hr-sort-control, .marketing-filter-pills) :is(input, select) {
+  background-color: #1c2633 !important;
+  border-color: #435166 !important;
+  color: #edf2f7 !important;
+  color-scheme: dark;
+}
+body[data-portal-theme='dark'] :is(.filter-clear-btn, .mrdss-report-reset) { color: #b6c4d6 !important; }
+body[data-portal-theme='dark'] :is(.filter-clear-btn, .mrdss-report-reset):hover { background: #293647 !important; }
+
+@media (max-width: 640px) {
+  body :is(.admin-users-toolbar, .hr-list-controls, .hr-application-tools) {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+  body :is(.admin-users-toolbar, .hr-list-controls, .hr-application-tools) > :is(.admin-user-search, .hr-search) {
+    grid-column: 1 / -1;
+  }
+}
+

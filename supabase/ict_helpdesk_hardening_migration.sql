@@ -250,6 +250,7 @@ declare
   changed_key text;
   event jsonb;
   reason text;
+  activity_changes jsonb := '{}'::jsonb;
 begin
   -- SQL-editor maintenance has no caller JWT. Browser writes are revoked above.
   if auth.uid() is null and coalesce(auth.role(), '') <> 'service_role' then return new; end if;
@@ -278,8 +279,27 @@ begin
     new.resolution_due_at := new.created_at + make_interval(hours => case lower(coalesce(new.priority,new.sla,'low'))
       when 'critical' then 8 when 'high' then 24 when 'medium' then 72 else 120 end);
     new.status := 'Created';
-    new.status_history := jsonb_build_array(jsonb_build_object('status','Submitted','type','submitted','timestamp',now(),
-      'label','Submitted','updatedBy',actor.id,'updatedByName',actor.full_name,'technician','Unassigned','technicianId',null));
+    activity_changes := jsonb_build_object(
+      'status', jsonb_build_object('from', null, 'to', new.status),
+      'priority', jsonb_build_object('from', null, 'to', new.priority),
+      'sla', jsonb_build_object('from', null, 'to', new.sla),
+      'supportCategory', jsonb_build_object('from', null, 'to', new.support_category),
+      'concernType', jsonb_build_object('from', null, 'to', new.concern_type),
+      'branch', jsonb_build_object('from', null, 'to', new.branch),
+      'department', jsonb_build_object('from', null, 'to', new.department),
+      'deviceName', jsonb_build_object('from', null, 'to', new.device_name),
+      'impact', jsonb_build_object('to', left(coalesce(new.impact, ''), 4000))
+    );
+    new.status_history := jsonb_build_array(jsonb_build_object(
+      'status','Submitted','previousStatus',null,'type','submitted','timestamp',now(),'label','Submitted',
+      'updatedBy',actor.id,'updatedByName',actor.full_name,'actorRole',actor.role::text,
+      'submittedForName',nullif(trim(new.requester),''),'technician',new.technician,'technicianId',new.technician_id,
+      'priority',new.priority,'sla',new.sla,'reason','',
+      'changes',activity_changes,
+      'snapshot',jsonb_build_object('supportCategory',new.support_category,'concernType',new.concern_type,
+        'branch',new.branch,'department',new.department,'deviceName',new.device_name,'technician',new.technician,
+        'technicianId',new.technician_id,'priority',new.priority,'sla',new.sla,'nextActionAt',new.next_action_at,
+        'escalationPartner',new.escalation_partner,'responseDueAt',new.response_due_at,'resolutionDueAt',new.resolution_due_at)));
     return new;
   end if;
   if coalesce(auth.role(),'') <> 'service_role' then raise exception 'Use the authorized ticket API.'; end if;
@@ -364,15 +384,82 @@ begin
     if not is_ict then raise exception 'Internal notes are restricted to ICT.'; end if;
     insert into public.ticket_internal_notes(ticket_id,body) values(new.id,left(coalesce(new.private_note_update->>'body',''),10000))
       on conflict(ticket_id) do update set body=excluded.body,updated_at=now();
+    activity_changes := activity_changes || jsonb_build_object('internalNoteUpdated',true);
   end if;
   new.private_note_update := null; new.admin_remarks := '';
   new.version := old.version + 1;
+  if new.status is distinct from old.status then
+    activity_changes := activity_changes || jsonb_build_object('status',jsonb_build_object('from',old.status,'to',new.status));
+  end if;
+  if new.technician is distinct from old.technician or new.technician_id is distinct from old.technician_id then
+    activity_changes := activity_changes || jsonb_build_object('technician',jsonb_build_object(
+      'from',coalesce(nullif(old.technician,''),'Unassigned'),'to',coalesce(nullif(new.technician,''),'Unassigned'),
+      'fromId',old.technician_id,'toId',new.technician_id));
+  end if;
+  if new.priority is distinct from old.priority then
+    activity_changes := activity_changes || jsonb_build_object('priority',jsonb_build_object('from',old.priority,'to',new.priority));
+  end if;
+  if new.sla is distinct from old.sla then
+    activity_changes := activity_changes || jsonb_build_object('sla',jsonb_build_object('from',old.sla,'to',new.sla));
+  end if;
+  if new.next_action_at is distinct from old.next_action_at then
+    activity_changes := activity_changes || jsonb_build_object('nextActionAt',jsonb_build_object('from',old.next_action_at,'to',new.next_action_at));
+  end if;
+  if new.escalation_partner is distinct from old.escalation_partner then
+    activity_changes := activity_changes || jsonb_build_object('escalationPartner',jsonb_build_object('from',old.escalation_partner,'to',new.escalation_partner));
+  end if;
+  if new.first_response_at is distinct from old.first_response_at then
+    activity_changes := activity_changes || jsonb_build_object('firstResponseAt',jsonb_build_object('from',old.first_response_at,'to',new.first_response_at));
+  end if;
+  if new.response_due_at is distinct from old.response_due_at then
+    activity_changes := activity_changes || jsonb_build_object('responseDueAt',jsonb_build_object('from',old.response_due_at,'to',new.response_due_at));
+  end if;
+  if new.resolution_due_at is distinct from old.resolution_due_at then
+    activity_changes := activity_changes || jsonb_build_object('resolutionDueAt',jsonb_build_object('from',old.resolution_due_at,'to',new.resolution_due_at));
+  end if;
+  if new.action_taken is distinct from old.action_taken then
+    activity_changes := activity_changes || jsonb_build_object('actionTaken',jsonb_build_object('to',left(coalesce(new.action_taken,''),4000)));
+  end if;
+  if new.resolution is distinct from old.resolution then
+    activity_changes := activity_changes || jsonb_build_object('resolution',jsonb_build_object('to',left(coalesce(new.resolution,''),4000)));
+  end if;
+  if new.recommendation is distinct from old.recommendation then
+    activity_changes := activity_changes || jsonb_build_object('recommendation',jsonb_build_object('to',left(coalesce(new.recommendation,''),4000)));
+  end if;
+  if new.support_category is distinct from old.support_category then
+    activity_changes := activity_changes || jsonb_build_object('supportCategory',jsonb_build_object('from',old.support_category,'to',new.support_category));
+  end if;
+  if new.concern_type is distinct from old.concern_type then
+    activity_changes := activity_changes || jsonb_build_object('concernType',jsonb_build_object('from',old.concern_type,'to',new.concern_type));
+  end if;
+  if new.branch is distinct from old.branch then
+    activity_changes := activity_changes || jsonb_build_object('branch',jsonb_build_object('from',old.branch,'to',new.branch));
+  end if;
+  if new.department is distinct from old.department then
+    activity_changes := activity_changes || jsonb_build_object('department',jsonb_build_object('from',old.department,'to',new.department));
+  end if;
+  if new.device_name is distinct from old.device_name then
+    activity_changes := activity_changes || jsonb_build_object('deviceName',jsonb_build_object('from',old.device_name,'to',new.device_name));
+  end if;
+  if new.contact_number is distinct from old.contact_number then
+    activity_changes := activity_changes || jsonb_build_object('contactNumber',jsonb_build_object('from',old.contact_number,'to',new.contact_number));
+  end if;
+  if new.impact is distinct from old.impact then
+    activity_changes := activity_changes || jsonb_build_object('impact',jsonb_build_object('to',left(coalesce(new.impact,''),4000)));
+  end if;
+  if new.description is distinct from old.description then
+    activity_changes := activity_changes || jsonb_build_object('descriptionUpdated',true);
+  end if;
   event := jsonb_build_object('status',new.status,'label',case when closed then 'Reopened to ' || new.status else new.status end,
-    'type',case when closed then 'reopened' when before_status <> after_status then case after_status when 'resolved' then 'resolved' when 'moved date' then 'moved-date' else 'status' end else 'updated' end,
-    'timestamp',now(),'updatedBy',actor.id,'updatedByName',actor.full_name,'technician',new.technician,'technicianId',new.technician_id,'reason',reason,
+    'previousStatus',old.status,'type',case when closed then 'reopened' when before_status <> after_status then case after_status when 'resolved' then 'resolved' when 'moved date' then 'moved-date' else 'status' end else 'updated' end,
+    'timestamp',now(),'updatedBy',actor.id,'updatedByName',actor.full_name,'actorRole',actor.role::text,
+    'technician',new.technician,'technicianId',new.technician_id,'reason',reason,
     'priority',new.priority,'sla',new.sla,
+    'changes',activity_changes,
     'snapshot',jsonb_build_object('supportCategory',new.support_category,'concernType',new.concern_type,'branch',new.branch,
-      'department',new.department,'technician',new.technician,'technicianId',new.technician_id,'priority',new.priority,'sla',new.sla));
+      'department',new.department,'deviceName',new.device_name,'technician',new.technician,'technicianId',new.technician_id,
+      'priority',new.priority,'sla',new.sla,'nextActionAt',new.next_action_at,'escalationPartner',new.escalation_partner,
+      'responseDueAt',new.response_due_at,'resolutionDueAt',new.resolution_due_at));
   new.status_history := coalesce(old.status_history,'[]') || jsonb_build_array(event);
   return new;
 end;

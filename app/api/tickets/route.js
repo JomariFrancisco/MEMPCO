@@ -44,6 +44,7 @@ const TICKET_RETURN_COLUMNS = `
   burnout_started_at,
   next_action_at,
   escalation_partner,
+  escalation_partner_company,
   response_due_at,
   resolution_due_at,
   first_response_at,
@@ -61,7 +62,7 @@ const TICKET_RETURN_COLUMNS = `
   created_at,
   updated_at
 `;
-const OPTIONAL_TICKET_RETURN_COLUMNS = ['recommendation'];
+const OPTIONAL_TICKET_RETURN_COLUMNS = ['recommendation', 'escalation_partner_company'];
 const stripTicketReturnColumns = (columns, columnNames = OPTIONAL_TICKET_RETURN_COLUMNS) =>
   columnNames.reduce(
     (nextColumns, column) => nextColumns.replace(new RegExp(`\\s*${column},\\s*`, 'm'), ''),
@@ -471,6 +472,7 @@ const updateFieldMap = {
   burnoutReport: 'burnout_report',
   nextActionAt: 'next_action_at',
   escalationPartner: 'escalation_partner',
+  escalationPartnerCompany: 'escalation_partner_company',
   actionReason: 'action_reason',
 };
 
@@ -499,7 +501,28 @@ const getTicketById = async (supabase, ticketId) => {
 
 const applyServerTicketStateRules = (payload, currentTicket) => {
   const status = normalizeStatus(payload.status);
+  const resultingStatus = normalizeStatus(payload.status ?? currentTicket.status);
   const now = new Date().toISOString();
+
+  if (resultingStatus === 'escalated') {
+    const escalationPartner = String(payload.escalation_partner ?? currentTicket.escalation_partner ?? '').trim();
+    const companyName = String(payload.escalation_partner_company ?? currentTicket.escalation_partner_company ?? '').trim();
+    if (!escalationPartner) throw new Error('Choose an escalation partner before escalating this ticket.');
+    if (escalationPartner === 'Third Party Company' && !companyName) {
+      throw new Error('Enter the third-party company name before saving.');
+    }
+    if (escalationPartner !== 'Third Party Company') {
+      payload.escalation_partner = escalationPartner;
+      payload.escalation_partner_company = '';
+    }
+  } else if (
+    Object.hasOwn(payload, 'status')
+    || Object.hasOwn(payload, 'escalation_partner')
+    || Object.hasOwn(payload, 'escalation_partner_company')
+  ) {
+    payload.escalation_partner = '';
+    payload.escalation_partner_company = '';
+  }
 
   if (!status) return payload;
 
