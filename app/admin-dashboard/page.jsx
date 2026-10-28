@@ -30,7 +30,6 @@ import {
   Search,
   Send,
   ShieldCheck,
-  SlidersHorizontal,
   Trash2,
   UserRound,
   Wrench,
@@ -92,6 +91,7 @@ import '@/components/PortalWorkspaceTheme.css';
 import '@/components/TicketHandlingStatus.css';
 import '@/components/TicketModalLayout.css';
 import '@/components/TicketChat.css';
+import './admin-ticket-parity.css';
 import { createRequestId } from '@/lib/tickets/requestIdentity.mjs';
 
 /* =========================
@@ -102,7 +102,6 @@ const LOGIN_ROUTE = '/helpdesk';
 const HRMAX_ROUTE = 'http://120.28.214.253/hrmax/';
 const MARKETING_ADMIN_ROUTE = '/marketing-admin';
 const HR_ADMIN_ROUTE = '/hr-admin';
-const TRANSITION_DURATION = 560;
 const REPORT_PERIOD_OPTIONS = [
   { key: 'day', label: 'Day', title: 'Tickets by Day', meta: 'Daily submissions' },
   { key: 'week', label: 'Week', title: 'Tickets by Week', meta: 'Weekly volume' },
@@ -110,7 +109,7 @@ const REPORT_PERIOD_OPTIONS = [
 ];
 const REPORT_PERIOD_PAGE_SIZE = 8;
 const DASHBOARD_QUEUE_PAGE_SIZE = 5;
-const SELECTED_DAY_TICKET_PAGE_SIZE = 2;
+const SELECTED_DAY_TICKET_PAGE_SIZE = 1;
 const PHOTO_MAX_SIZE = 4 * 1024 * 1024;
 const PHOTO_MAX_COUNT = 5;
 const PHOTO_ACCEPT = 'image/jpeg,image/jpg,image/png,image/webp';
@@ -259,29 +258,6 @@ const MonoIcon = ({ icon: IconComponent }) => (
   <IconComponent className="admin-mono-icon" aria-hidden="true" />
 );
 
-const adminTransitionLabels = {
-  dashboard: 'Opening admin dashboard...',
-  profile: 'Opening admin profile...',
-  tickets: 'Loading ticket queue...',
-  'support-tickets': 'Loading support tickets...',
-  'burnout-tickets': 'Loading burnout tickets...',
-  branches: 'Loading branch monitor...',
-  reports: 'Preparing reports...',
-  users: 'Loading user management...',
-  'create-user': 'Preparing account form...',
-  'create-ict-ticket': 'Preparing ticket form...',
-  logout: 'Signing out...',
-};
-
-function PortalTransitionLoader({ label }) {
-  return (
-    <div className="portal-transition-loader" role="status" aria-live="polite" aria-label={label}>
-      <div className="portal-transition-card">
-        <img src="/Logos/Logo.png" alt="" aria-hidden="true" />
-      </div>
-    </div>
-  );
-}
 
 function InactiveAccountNotice() {
   return (
@@ -830,16 +806,60 @@ const getTicketFinalReportStatus = (ticket = {}) => {
 };
 
 const buildReportStatusSummary = (tickets = []) => {
-  const submittedCount = tickets.filter(ticket=>ticket.periodSubmitted !== false).length;
   const finalStatusRows = tickets.map((ticket) => ({
     reportStatus: getTicketFinalReportStatus(ticket),
   }));
-  const finalStatusItems = breakdown(finalStatusRows, 'reportStatus', TICKET_STATUSES);
+  const statusOrder = new Map([...TICKET_STATUSES, ...BURNOUT_TICKET_STATUSES].map((status, index) => [status, index]));
+  return breakdown(finalStatusRows, 'reportStatus', TICKET_STATUSES)
+    .sort((a, b) => (statusOrder.get(a.name) ?? 999) - (statusOrder.get(b.name) ?? 999) || a.name.localeCompare(b.name));
+};
 
-  return [
-    ...(submittedCount ? [{ name: 'Submitted', count: submittedCount }] : []),
-    ...finalStatusItems,
+const getReportDeadline = (ticket, kind) => {
+  const value = kind === 'response'
+    ? ticket.responseDueAt || ticket.response_due_at
+    : ticket.resolutionDueAt || ticket.resolution_due_at;
+  const time = new Date(value || '').getTime();
+  return Number.isFinite(time) ? time : 0;
+};
+
+const getReportSlaState = (ticket, now = Date.now()) => {
+  if (!isUnresolved(ticket.status)) return 'clear';
+  const responseDue = getReportDeadline(ticket, 'response');
+  const resolutionDue = getReportDeadline(ticket, 'resolution');
+  const responseComplete = Boolean(ticket.firstResponseAt || ticket.first_response_at);
+  const relevantDeadlines = [
+    ...(!responseComplete && responseDue ? [responseDue] : []),
+    ...(resolutionDue ? [resolutionDue] : []),
   ];
+  if (relevantDeadlines.some((deadline) => deadline <= now)) return 'overdue';
+  if (relevantDeadlines.some((deadline) => deadline - now <= 24 * 60 * 60 * 1000)) return 'due-soon';
+  return 'clear';
+};
+
+const getReportNextDeadlineInfo = (ticket) => {
+  if (!isUnresolved(ticket.status)) return 0;
+  const responseComplete = Boolean(ticket.firstResponseAt || ticket.first_response_at);
+  const candidates = [
+    ...(!responseComplete && getReportDeadline(ticket, 'response') ? [{ kind: 'Response', at: getReportDeadline(ticket, 'response') }] : []),
+    ...(getReportDeadline(ticket, 'resolution') ? [{ kind: 'Resolution', at: getReportDeadline(ticket, 'resolution') }] : []),
+  ];
+  return candidates.sort((a, b) => a.at - b.at)[0] || null;
+};
+
+const getReportNextDeadline = (ticket) => getReportNextDeadlineInfo(ticket)?.at || 0;
+
+const compareReportActionability = (a, b, now = Date.now()) => {
+  const stateOrder = { overdue: 0, 'due-soon': 1, clear: 2 };
+  const priorityOrder = { critical: 0, high: 1, medium: 2, low: 3 };
+  const aState = getReportSlaState(a, now);
+  const bState = getReportSlaState(b, now);
+  const aDeadline = getReportNextDeadline(a) || Number.MAX_SAFE_INTEGER;
+  const bDeadline = getReportNextDeadline(b) || Number.MAX_SAFE_INTEGER;
+  return (stateOrder[aState] - stateOrder[bState])
+    || (aDeadline - bDeadline)
+    || ((priorityOrder[String(a.sla || '').toLowerCase()] ?? 4) - (priorityOrder[String(b.sla || '').toLowerCase()] ?? 4))
+    || (getSubmittedTime(a) - getSubmittedTime(b))
+    || String(a.id || '').localeCompare(String(b.id || ''));
 };
 
 const getSubmittedTime = (ticket = {}) => {
@@ -1245,13 +1265,10 @@ const getTicketReportEvents = (ticket) => {
 };
 
 const getTicketCalendarMonth = (tickets) => {
-  const latestTicketTime = tickets.reduce((latest, ticket) => {
-    const latestEventTime = getTicketReportEvents(ticket).reduce(
-      (eventLatest, event) => Math.max(eventLatest, event.timestamp),
-      0
-    );
-    return latestEventTime > latest ? latestEventTime : latest;
-  }, 0);
+  const latestTicketTime = tickets.reduce(
+    (latest, ticket) => Math.max(latest, getSubmittedTime(ticket)),
+    0
+  );
 
   const date = latestTicketTime ? new Date(latestTicketTime) : new Date();
   date.setDate(1);
@@ -1267,7 +1284,7 @@ const buildCalendarMonth = (tickets, monthDate) => {
   const monthStart = new Date(year, month, 1);
   const gridStart = new Date(monthStart);
   const counts = new Map();
-  const monthlyTicketEvents = getMonthlyTicketAnchorEvents(tickets, monthStart);
+  const monthlyTicketEvents = getMonthlyTicketSubmissionEvents(tickets, monthStart);
 
   gridStart.setDate(monthStart.getDate() - monthStart.getDay());
 
@@ -1574,6 +1591,15 @@ const formatPrintWorkDuration = (startedAt, endedAt, previousSeconds = 0) => {
   return isOngoing ? `${duration} (ongoing)` : duration;
 };
 
+const getEscalationPartnerLabel = (ticket = {}) => {
+  const partner = String(ticket.escalationPartner || '').trim();
+  if (!partner) return '';
+  const company = partner === 'Third Party Company'
+    ? String(ticket.escalationPartnerCompany || '').trim()
+    : '';
+  return company ? `${partner} — ${company}` : partner;
+};
+
 const printResolvedTicket = (ticket) => {
   const burnoutReport = isBurnoutTicket(ticket) ? normalizeBurnoutReport(ticket) : null;
   const startedAt = ticket.workStartedAt || ticket.work_started_at || '';
@@ -1672,6 +1698,7 @@ const printResolvedTicket = (ticket) => {
     ['Moved Date', getTicketMovedDateTime(ticket) ? formatPrintDateTime(getTicketMovedDateTime(ticket)) : ''],
     ['Resolved Date', getTicketResolvedTime(ticket) ? formatPrintDateTime(getTicketResolvedTime(ticket)) : ''],
     ['Assigned ICT Staff', ticket.technician || 'Unassigned'],
+    ['Escalation Partner', normalizeTicketStatus(ticket.status) === 'escalated' ? getEscalationPartnerLabel(ticket) : ''],
     ['Device / System', ticket.deviceName || ticket.deviceType],
     ['Contact', ticket.contactNumber],
     ['Work Started', startedAt ? formatPrintDateTime(startedAt) : ''],
@@ -1840,6 +1867,24 @@ const getMonthlyTicketAnchorEvents = (tickets = [], monthDate) => {
   );
 };
 
+const getMonthlyTicketSubmissionEvents = (tickets = [], monthDate) => {
+  const target = new Date(monthDate);
+  const year = target.getFullYear();
+  const month = target.getMonth();
+
+  return tickets
+    .map((ticket) => createTicketReportEvent(ticket, {
+      timestamp: getSubmittedTime(ticket),
+      label: 'Submitted',
+      type: 'submitted',
+      status: 'Submitted',
+    }))
+    .filter((event) => event
+      && event.reportDate.getFullYear() === year
+      && event.reportDate.getMonth() === month)
+    .sort((a, b) => a.timestamp - b.timestamp || String(a.ticket?.id || '').localeCompare(String(b.ticket?.id || '')));
+};
+
 const getUniqueTicketsFromPeriodEvents = (events = []) => {
   const ticketMap = new Map();
 
@@ -1983,6 +2028,7 @@ const printReportSummary = ({
     ['Status', (event) => getTicketField(event.reportStatus, 'Submitted')],
     ['SLA', (event) => getTicketField(event.ticket.sla, 'Low')],
     ['Technician', (event) => getTicketField(event.technician, 'Unassigned')],
+    ['Escalation Partner', (event) => normalizeTicketStatus(event.ticket.status) === 'escalated' ? getEscalationPartnerLabel(event.ticket) : ''],
   ];
   const body = `
     <main class="print-page">
@@ -2074,6 +2120,7 @@ const monthlyTicketSummaryColumns = [
   ['Status', (ticket) => getTicketField(ticket.status, 'Created')],
   ['SLA', (ticket) => getTicketField(ticket.sla, 'Low')],
   ['Technician', (ticket) => getTicketField(ticket.technician, 'Unassigned')],
+  ['Escalation Partner', (ticket) => normalizeTicketStatus(ticket.status) === 'escalated' ? getEscalationPartnerLabel(ticket) : ''],
 ];
 
 const buildMonthlyTicketSummaryRows = (tickets, columns) =>
@@ -3514,7 +3561,7 @@ function BurnoutReportEditor({
 
     return (
       <section className="burnout-report-panel burnout-dashboard">
-        {formError && <div className="form-error burnout-dashboard-error" role="alert">{formError}</div>}
+        {formError && <div className="form-error app-error-alert burnout-dashboard-error" role="alert">{formError}</div>}
 
         <section className="burnout-dashboard-section burnout-ticket-information" aria-labelledby="burnout-ticket-information-title">
           <header className="burnout-dashboard-heading">
@@ -3742,7 +3789,7 @@ function BurnoutReportEditor({
         </nav>
 
         <div className="burnout-workspace-main">
-          {formError && <div className="form-error burnout-wizard-error" role="alert">{formError}</div>}
+          {formError && <div className="form-error app-error-alert burnout-wizard-error" role="alert">{formError}</div>}
 
           <div className="burnout-step-stage" key={activeStepId}>
         {activeStepId === 'request' && (
@@ -4114,7 +4161,7 @@ function TicketConversationPanel({
         </div>
 
         {!canSend && <div className="ticket-chat-locked-note">{disabledMessage}</div>}
-        {messageError && <div className="form-error">{messageError}</div>}
+        {messageError && <div className="form-error app-error-alert" role="alert">{messageError}</div>}
       </div>
     </section>
   );
@@ -4265,11 +4312,10 @@ function TicketTable({
                   <TicketBadges ticket={ticket} />
                 </div>
 
-                <TicketHandlingIndicator
-                  ticket={ticket}
-                  now={now}
-                  compact={compact}
-                />
+                <div className="admin-ticket-status-row">
+                  <TicketHandlingIndicator ticket={ticket} now={now} compact />
+                  <TicketWorkTimer ticket={ticket} now={now} compact />
+                </div>
 
                 <div className="admin-ticket-summary-grid">
                   <div>
@@ -4292,8 +4338,6 @@ function TicketTable({
                     value={getVisibleTicketDescription(ticket.description) || 'No description provided.'}
                   />
                 )}
-
-                <TicketWorkTimer ticket={ticket} now={now} compact={compact} />
 
                 {renderExtraActions && (
                   <div
@@ -4365,7 +4409,8 @@ function BreakdownItems({
   );
 }
 
-function BreakdownList({ title, kicker, items, className = '' }) {
+function BreakdownList({ title, kicker, items, className = '', onSelect, selectedValue = '' }) {
+  const total = items.reduce((sum, item) => sum + item.count, 0);
   return (
     <section className={`panel-card glass equal-panel ${className}`.trim()}>
       <div className="section-head">
@@ -4375,23 +4420,47 @@ function BreakdownList({ title, kicker, items, className = '' }) {
         </div>
       </div>
 
-      <BreakdownItems items={items} />
+      {onSelect ? (
+        <div className="report-breakdown-rows">
+          {items.length ? items.map((item) => (
+            <button
+              type="button"
+              key={item.name}
+              className={`report-breakdown-row${selectedValue === item.name ? ' selected' : ''}`}
+              onClick={() => onSelect(selectedValue === item.name ? '' : item.name)}
+              aria-pressed={selectedValue === item.name}
+              title={`Show ${item.count} tickets with ${item.name} ${title.toLowerCase()}`}
+            >
+              <span className="report-breakdown-name">{item.name}</span>
+              <span className="report-breakdown-value">{item.count}</span>
+              <span className="report-breakdown-percent">{total ? `${Math.round((item.count / total) * 100)}%` : '0%'}</span>
+            </button>
+          )) : <p className="report-empty-inline">No matching tickets.</p>}
+        </div>
+      ) : <BreakdownItems items={items} />}
     </section>
   );
 }
 
 function WorkloadAvatar({ name, profilePhoto }) {
   const [failedPhoto, setFailedPhoto] = useState('');
+  const normalizedName = normalizeComparable(name);
+  const avatarPhoto = profilePhoto || (
+    ['unassigned', 'third party company'].includes(normalizedName)
+      ? '/images/unassigned-avatar.jpg'
+      : ''
+  );
   return (
     <span className="admin-workload-avatar" aria-hidden="true">
-      {profilePhoto && failedPhoto !== profilePhoto ? (
-        <img src={profilePhoto} alt="" onError={() => setFailedPhoto(profilePhoto)} />
+      {avatarPhoto && failedPhoto !== avatarPhoto ? (
+        <img src={avatarPhoto} alt="" onError={() => setFailedPhoto(avatarPhoto)} />
       ) : getInitials(name)}
     </span>
   );
 }
 
 function AdminWorkloadPanel({ tickets, users = [] }) {
+  const activeStaffCount = users.filter((user) => isAdminRole(user.role) && !isInactivePortalUser(user)).length;
   const workloadItems = useMemo(() => {
     const activeIctUsers = users.filter((user) => isAdminRole(user.role) && !isInactivePortalUser(user));
     const usersById = new Map(activeIctUsers.map((user) => [user.id, user]));
@@ -4428,26 +4497,25 @@ function AdminWorkloadPanel({ tickets, users = [] }) {
       })
       .sort((a, b) =>
         b.active - a.active ||
+        (normalizeComparable(a.name) === 'unassigned' ? (a.active > 0 ? -1 : 1) : 0) -
+          (normalizeComparable(b.name) === 'unassigned' ? (b.active > 0 ? -1 : 1) : 0) ||
         b.urgent - a.urgent ||
         b.total - a.total ||
         a.name.localeCompare(b.name)
       );
   }, [tickets, users]);
-  const maxActive = Math.max(1, ...workloadItems.map((item) => item.active));
-
   return (
     <section className="panel-card glass equal-panel admin-workload-panel">
       <div className="section-head admin-workload-head">
         <div>
           <span className="section-kicker">Reports</span>
-          <h3>Admin Workload</h3>
+          <h3>Technician workload</h3>
         </div>
-        <span className="admin-workload-count">{workloadItems.length} staff</span>
+        <span className="admin-workload-count">{activeStaffCount} active staff</span>
       </div>
 
       <div className="admin-workload-list">
         {workloadItems.map((item) => {
-          const loadPercent = Math.max(6, Math.round((item.active / maxActive) * 100));
           const isClear = item.active === 0;
           const hasUrgent = item.urgent > 0;
 
@@ -4458,32 +4526,24 @@ function AdminWorkloadPanel({ tickets, users = [] }) {
             >
               <div className="admin-workload-person">
                 <WorkloadAvatar name={item.name} profilePhoto={item.profilePhoto} />
-                <div>
-                  <strong>{item.name}</strong>
-                  <p>{hasUrgent ? `${item.urgent} urgent item${item.urgent === 1 ? '' : 's'}` : isClear ? 'No active load' : `${item.active} active item${item.active === 1 ? '' : 's'}`}</p>
+                <div className="admin-workload-person-copy">
+                  <strong title={item.name}>{item.name}</strong>
+                  <p>{hasUrgent ? `${item.urgent} high / critical open` : isClear ? 'No open tickets' : `${item.active} open tickets`}</p>
                 </div>
-              </div>
-
-              <div className="admin-workload-meter" aria-label={`${item.name} active workload`}>
-                <span style={{ width: `${loadPercent}%` }} />
               </div>
 
               <div className="admin-workload-stats">
                 <div>
-                  <em>Active</em>
+                  <em>Open</em>
                   <b>{item.active}</b>
                 </div>
                 <div>
-                  <em>Urgent</em>
+                  <em>High / Critical</em>
                   <b>{item.urgent}</b>
                 </div>
                 <div>
                   <em>Resolved</em>
                   <b>{item.resolved}</b>
-                </div>
-                <div>
-                  <em>Total</em>
-                  <b>{item.total}</b>
                 </div>
               </div>
             </article>
@@ -4497,9 +4557,9 @@ function AdminWorkloadPanel({ tickets, users = [] }) {
 function ReportMetric({ label, value, meta }) {
   return (
     <div className="report-metric">
-      <span>{label}</span>
+      <span className="report-metric-label">{label}</span>
       <strong>{value}</strong>
-      <em>{meta}</em>
+      <em className="report-metric-meta">{meta}</em>
     </div>
   );
 }
@@ -4526,7 +4586,7 @@ function ReportCalendar({
   );
   const busiestLabel = calendar.busiestDay?.count
     ? formatReportDate(new Date(`${calendar.busiestDay.key}T00:00:00`), { month: 'short', day: 'numeric' })
-    : 'No activity';
+    : 'No submissions';
   const selectedDateLabel = selectedDateKey
     ? formatReportDate(new Date(`${selectedDateKey}T00:00:00`), { month: 'long', day: 'numeric', year: 'numeric' })
     : 'Select a date';
@@ -4552,7 +4612,7 @@ function ReportCalendar({
       <div className="panel-card glass report-calendar-card">
         <div className="report-calendar-head">
           <div>
-            <span className="section-kicker"><MonoIcon icon={CalendarDays} /> Calendar Report</span>
+            <span className="section-kicker"><MonoIcon icon={CalendarDays} /> Ticket Submission Calendar</span>
             <h3>{calendar.title}</h3>
           </div>
 
@@ -4600,7 +4660,7 @@ function ReportCalendar({
                 if (!cell.isFuture) onDateSelect(cell);
               }}
               disabled={cell.isFuture}
-              aria-label={`${cell.key}: ${cell.count} ticket${cell.count === 1 ? '' : 's'}`}
+              aria-label={`${cell.key}: ${cell.count} ticket${cell.count === 1 ? '' : 's'} submitted`}
             >
               <span>{cell.day}</span>
               {cell.count > 0 && <strong>{cell.count}</strong>}
@@ -4611,28 +4671,24 @@ function ReportCalendar({
 
       <aside className="panel-card glass report-calendar-insights">
         <span className="section-kicker">Month Pulse</span>
-        <h3>{calendar.monthTotal} tickets in report</h3>
+        <h3>{calendar.monthTotal} tickets submitted</h3>
+        <p className="report-month-pulse-note">Counts are based on each ticket’s submission date.</p>
 
         <div className="report-insight-list">
           <div className="report-insight-item primary">
-            <span>Busiest Day</span>
+            <span>Busiest Submission Day</span>
             <strong>{busiestLabel}</strong>
-            <em>{calendar.busiestDay.count} ticket{calendar.busiestDay.count === 1 ? '' : 's'}</em>
+            <em>{calendar.busiestDay.count} ticket{calendar.busiestDay.count === 1 ? '' : 's'} submitted</em>
           </div>
           <div className="report-insight-item">
-            <span>Active Days</span>
+            <span>Days with Submissions</span>
             <strong>{calendar.activeDays}</strong>
-            <em>days with report tickets</em>
+            <em>days with at least one ticket</em>
           </div>
           <div className="report-insight-item">
-            <span>Daily Average</span>
+            <span>Average per Submission Day</span>
             <strong>{calendar.averagePerActiveDay}</strong>
-            <em>tickets per active day</em>
-          </div>
-          <div className="report-insight-item">
-            <span>Peak Volume</span>
-            <strong>{calendar.maxCount}</strong>
-            <em>tickets in one day</em>
+            <em>tickets submitted on those days</em>
           </div>
         </div>
 
@@ -5031,9 +5087,8 @@ function TicketsView({
             </select>
           </div>
 
-          <button type="button" className="quick-action-btn filter-clear-btn" onClick={clearFilters}>
-            <MonoIcon icon={SlidersHorizontal} />
-            Clear Filters
+          <button type="button" className="quick-action-btn filter-clear-btn filter-reset-icon" onClick={clearFilters} aria-label="Clear filters" title="Clear filters">
+            <RotateCcw size={17} aria-hidden="true" />
           </button>
         </div>
 
@@ -5238,9 +5293,8 @@ function BurnoutReportView({ tickets, onOpenTicket, now }) {
             </select>
           </div>
 
-          <button type="button" className="quick-action-btn filter-clear-btn" onClick={clearFilters}>
-            <MonoIcon icon={SlidersHorizontal} />
-            Clear Filters
+          <button type="button" className="quick-action-btn filter-clear-btn filter-reset-icon" onClick={clearFilters} aria-label="Clear filters" title="Clear filters">
+            <RotateCcw size={17} aria-hidden="true" />
           </button>
         </div>
 
@@ -5344,8 +5398,7 @@ function BranchesView({ branchSummary, tickets, onOpenTicket, now }) {
   return (
     <div className="dashboard-view branch-monitor-view">
       <section className="branch-monitor-overview" aria-label="Branch monitoring overview">
-        <article className="glass branch-overview-card branch-overview-card--primary">
-          <span className="branch-overview-icon"><MonoIcon icon={Building2} /></span>
+        <article className="glass branch-overview-card">
           <div>
             <span>Branch Coverage</span>
             <strong>{activeBranchCount}/{BRANCHES.length}</strong>
@@ -5354,7 +5407,6 @@ function BranchesView({ branchSummary, tickets, onOpenTicket, now }) {
         </article>
 
         <article className="glass branch-overview-card">
-          <span className="branch-overview-icon"><MonoIcon icon={FileText} /></span>
           <div>
             <span>Unresolved</span>
             <strong>{activeTickets.length}</strong>
@@ -5363,7 +5415,6 @@ function BranchesView({ branchSummary, tickets, onOpenTicket, now }) {
         </article>
 
         <article className="glass branch-overview-card">
-          <span className="branch-overview-icon"><MonoIcon icon={Clock3} /></span>
           <div>
             <span>Urgent Watch</span>
             <strong>{urgentCount}</strong>
@@ -5372,7 +5423,6 @@ function BranchesView({ branchSummary, tickets, onOpenTicket, now }) {
         </article>
 
         <article className="glass branch-overview-card">
-          <span className="branch-overview-icon"><MonoIcon icon={ShieldCheck} /></span>
           <div>
             <span>Clear Branches</span>
             <strong>{clearBranchCount}</strong>
@@ -5423,7 +5473,10 @@ function BranchesView({ branchSummary, tickets, onOpenTicket, now }) {
                     <TicketBadges ticket={ticket} />
                   </div>
 
-                  <TicketHandlingIndicator ticket={ticket} now={now} compact />
+                  <div className="admin-ticket-status-row">
+                    <TicketHandlingIndicator ticket={ticket} now={now} compact />
+                    <TicketWorkTimer ticket={ticket} now={now} compact />
+                  </div>
 
                   <div className="admin-ticket-summary-grid">
                     <div>
@@ -5443,7 +5496,6 @@ function BranchesView({ branchSummary, tickets, onOpenTicket, now }) {
                     value={getVisibleTicketDescription(ticket.description) || 'No description provided.'}
                   />
 
-                  <TicketWorkTimer ticket={ticket} now={now} />
                 </article>
               ))}
             </div>
@@ -5568,13 +5620,15 @@ function BranchesView({ branchSummary, tickets, onOpenTicket, now }) {
 
 function ReportsView({ tickets, users = [], summary, categorySummary, statusSummary, branchSummary, onOpenTicket }) {
   const [periodMode, setPeriodMode] = useState('day');
+  const [reportTicketScope, setReportTicketScope] = useState('open');
+  const [reportStatusFilter, setReportStatusFilter] = useState('');
+  const [reportPriorityFilter, setReportPriorityFilter] = useState('');
   const [calendarMonth, setCalendarMonth] = useState(null);
   const [selectedCalendarDate, setSelectedCalendarDate] = useState('');
   const [selectedPrintDayKey, setSelectedPrintDayKey] = useState('');
   const [selectedPrintWeekKey, setSelectedPrintWeekKey] = useState('');
   const [periodPageByMode, setPeriodPageByMode] = useState({ day: 1, week: 1, month: 1 });
   const concernSummary = breakdown(tickets, 'concernType').slice(0, 10);
-  const slaSummary = breakdown(tickets, 'sla', SLA_LEVELS);
   const statusActivitySummary = useMemo(
     () => buildReportStatusSummary(tickets),
     [tickets]
@@ -5612,13 +5666,24 @@ function ReportsView({ tickets, users = [], summary, categorySummary, statusSumm
     : 0;
   const periodRangeEnd = Math.min(safeSelectedPeriodPage * REPORT_PERIOD_PAGE_SIZE, selectedPeriodItems.length);
   const activeCalendarMonth = calendarMonth || getTicketCalendarMonth(tickets);
+  const reportNow = Date.now();
+  const reportOverdueCount = tickets.filter((ticket) => getReportSlaState(ticket, reportNow) === 'overdue').length;
+  const reportDueSoonCount = tickets.filter((ticket) => getReportSlaState(ticket, reportNow) === 'due-soon').length;
+  const submittedThisMonthCount = getMonthlyTicketSubmissionEvents(tickets, activeCalendarMonth).length;
+  const reportPriorityOrder = { Critical: 0, High: 1, Medium: 2, Low: 3 };
+  const reportPriorityItems = breakdown(tickets, 'sla', SLA_LEVELS).sort((a, b) => (reportPriorityOrder[a.name] ?? 4) - (reportPriorityOrder[b.name] ?? 4));
+  const reportTicketRows = [...tickets]
+    .filter((ticket) => reportTicketScope === 'all' || isUnresolved(ticket.status))
+    .filter((ticket) => !reportStatusFilter || getTicketFinalReportStatus(ticket) === reportStatusFilter)
+    .filter((ticket) => !reportPriorityFilter || String(ticket.sla || '').toLowerCase() === reportPriorityFilter.toLowerCase())
+    .sort((a, b) => compareReportActionability(a, b, reportNow));
   const activeCalendarMonthKey = new Date(
     activeCalendarMonth.getFullYear(),
     activeCalendarMonth.getMonth(),
     1
   ).toISOString();
   const selectedDateTickets = selectedCalendarDate
-    ? getMonthlyTicketAnchorEvents(tickets, activeCalendarMonth)
+    ? getMonthlyTicketSubmissionEvents(tickets, activeCalendarMonth)
         .filter((event) => event.key === selectedCalendarDate)
         .map((event) => ({
           ...event.ticket,
@@ -5753,14 +5818,14 @@ function ReportsView({ tickets, users = [], summary, categorySummary, statusSumm
         <div className="report-toolbar-copy">
           <span className="section-kicker">Reports</span>
           <h2>Support Summary</h2>
-          <p>Scan volume, SLA, branches, and ticket trends without crowding the dashboard.</p>
+          <p>Live queue and SLA risk · submissions for {formatReportDate(activeCalendarMonth, { month: 'long', year: 'numeric' })} · updated {new Date(reportNow).toLocaleString()}</p>
         </div>
 
         <div className="report-toolbar-metrics" aria-label="Report summary">
-          <ReportMetric label="Total" value={summary.total} meta="tickets" />
-          <ReportMetric label="Active" value={summary.active} meta="open" />
-          <ReportMetric label="Resolved" value={summary.resolved} meta="closed" />
-          <ReportMetric label="Urgent" value={summary.critical} meta="high / critical" />
+          <ReportMetric label="Open" value={summary.active} meta="current queue" />
+          <ReportMetric label="Overdue" value={reportOverdueCount} meta="response / resolution" />
+          <ReportMetric label="Due soon" value={reportDueSoonCount} meta="next 24 hours" />
+          <ReportMetric label="Submitted" value={submittedThisMonthCount} meta="selected month" />
         </div>
       </section>
 
@@ -5828,7 +5893,8 @@ function ReportsView({ tickets, users = [], summary, categorySummary, statusSumm
               <ChevronLeft aria-hidden="true" />
             </button>
             <span aria-live="polite">
-              {periodRangeStart}-{periodRangeEnd} of {selectedPeriodItems.length}
+              <strong>{periodRangeStart}-{periodRangeEnd}</strong>
+              <em>of {selectedPeriodItems.length}</em>
             </span>
             <button
               type="button"
@@ -5854,12 +5920,66 @@ function ReportsView({ tickets, users = [], summary, categorySummary, statusSumm
 
       <div className="admin-report-grid compact">
         <AdminWorkloadPanel tickets={tickets} users={users} />
-        <BreakdownList title="Status" kicker="Report" items={statusActivitySummary} />
-        <BreakdownList title="SLA" kicker="Report" items={slaSummary} />
+        <BreakdownList
+          title="Current status"
+          kicker="Exclusive totals"
+          items={statusActivitySummary}
+          onSelect={(status) => { setReportStatusFilter(status); if (status) setReportTicketScope('all'); }}
+          selectedValue={reportStatusFilter}
+        />
+        <BreakdownList
+          title="Priority"
+          kicker="Severity"
+          items={reportPriorityItems}
+          onSelect={setReportPriorityFilter}
+          selectedValue={reportPriorityFilter}
+        />
         <BreakdownList title="Support Category" kicker="Report" items={categorySummary.slice(0, 6)} />
         <BreakdownList title="Branch" kicker="Report" items={branchSummary.slice(0, 6)} />
         <BreakdownList title="Concern Type" kicker="Report" items={concernSummary.slice(0, 6)} />
       </div>
+
+      <section className="panel-card glass report-ticket-table-card">
+        <div className="report-ticket-table-head">
+          <div>
+            <span className="section-kicker">Action queue</span>
+            <h3>Tickets to review <span>{reportTicketRows.length}</span></h3>
+            <p>Overdue first, then nearest deadline, priority, and oldest submission.</p>
+          </div>
+          <div className="report-ticket-scope" role="group" aria-label="Ticket list scope">
+            <button type="button" className={reportTicketScope === 'open' ? 'active' : ''} onClick={() => setReportTicketScope('open')}>Open</button>
+            <button type="button" className={reportTicketScope === 'all' ? 'active' : ''} onClick={() => setReportTicketScope('all')}>All tickets</button>
+            {(reportStatusFilter || reportPriorityFilter) && (
+              <button type="button" className="report-clear-filters" onClick={() => { setReportStatusFilter(''); setReportPriorityFilter(''); }}>Clear filters</button>
+            )}
+          </div>
+        </div>
+        <div className="report-ticket-table-wrap">
+          <table className="report-ticket-table">
+            <thead><tr><th>Ticket</th><th>Requester</th><th>Status</th><th>Priority</th><th>Technician</th><th>Age</th><th>SLA deadline</th></tr></thead>
+            <tbody>
+              {reportTicketRows.length ? reportTicketRows.slice(0, 100).map((ticket) => {
+                const deadline = getReportNextDeadline(ticket) || Number.MAX_SAFE_INTEGER;
+                const submittedAt = getSubmittedTime(ticket);
+                const ageDays = submittedAt ? Math.max(0, Math.floor((reportNow - submittedAt) / (24 * 60 * 60 * 1000))) : null;
+                const slaState = getReportSlaState(ticket, reportNow);
+                return (
+                  <tr key={ticket.id} onClick={() => onOpenTicket?.(ticket)} tabIndex={onOpenTicket ? 0 : undefined} onKeyDown={(event) => { if (onOpenTicket && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); onOpenTicket(ticket); } }}>
+                    <td><strong>{getTicketDisplayCode(ticket)}</strong></td>
+                    <td>{ticket.requester || ticket.ownerEmail || 'Employee'}</td>
+                    <td>{getTicketFinalReportStatus(ticket)}</td>
+                    <td><span className={`report-priority-pill ${slugify(ticket.sla || 'low')}`}>{ticket.sla || 'Low'}</span></td>
+                    <td>{getReportTechnicianName(ticket.technician) || 'Unassigned'}</td>
+                    <td>{ageDays === null ? '—' : `${ageDays}d`}</td>
+                    <td><span className={`report-deadline-pill ${slaState}`}>{deadline === Number.MAX_SAFE_INTEGER ? 'Not set' : `${slaState === 'overdue' ? 'Overdue · ' : ''}${getReportNextDeadlineInfo(ticket)?.kind} · ${new Date(deadline).toLocaleString()}`}</span></td>
+                  </tr>
+                );
+              }) : <tr><td colSpan="7" className="report-table-empty">No tickets match these filters.</td></tr>}
+            </tbody>
+          </table>
+        </div>
+        {reportTicketRows.length > 100 && <p className="report-table-footnote">Showing first 100 of {reportTicketRows.length}. Use the dashboard ticket search for the full queue.</p>}
+      </section>
     </div>
   );
 }
@@ -6122,7 +6242,7 @@ function UsersView({ users, canEditUsers, canDeleteUsers, canEditRoles, currentU
 
       <section className="panel-card glass users-panel">
         {message.text && (
-          <div className={`admin-alert users-alert ${message.type}`}>
+          <div className={`admin-alert users-alert ${message.type}${message.type === 'error' ? ' app-error-alert' : ''}`} role={message.type === 'error' ? 'alert' : 'status'}>
             {message.text}
           </div>
         )}
@@ -6643,7 +6763,7 @@ function CreateUserView({ users = [], onCreated }) {
           </div>
 
           {message.text && (
-            <div className={`admin-alert ${message.type}`}>
+            <div className={`admin-alert ${message.type}${message.type === 'error' ? ' app-error-alert' : ''}`} role={message.type === 'error' ? 'alert' : 'status'}>
               {message.text}
             </div>
           )}
@@ -6940,7 +7060,7 @@ function CreateIctTicketView({ admin, users = [], onCreated }) {
           </div>
 
           {message.text && (
-            <div className={`admin-alert ${message.type}`}>
+            <div className={`admin-alert ${message.type}${message.type === 'error' ? ' app-error-alert' : ''}`} role={message.type === 'error' ? 'alert' : 'status'}>
               {message.text}
             </div>
           )}
@@ -7161,6 +7281,7 @@ function TicketActionModal({ ticket, currentUser, users = [], onClose, onSave, o
     burnoutReport: isBurnout ? normalizeBurnoutReport(ticket, currentUser) : null,
     nextActionAt: ticket.nextActionAt ? new Date(new Date(ticket.nextActionAt).getTime()-new Date(ticket.nextActionAt).getTimezoneOffset()*60000).toISOString().slice(0,16) : '',
     escalationPartner: ticket.escalationPartner || '',
+    escalationPartnerCompany: ticket.escalationPartnerCompany || '',
     actionReason: ticket.actionReason || '',
     reopenReason: '',
   });
@@ -7370,6 +7491,16 @@ function TicketActionModal({ ticket, currentUser, users = [], onClose, onSave, o
         };
       }
 
+      if (field === 'escalationPartner') {
+        return {
+          ...prev,
+          escalationPartner: value,
+          escalationPartnerCompany: value === 'Third Party Company' && prev.escalationPartner === value
+            ? prev.escalationPartnerCompany
+            : '',
+        };
+      }
+
       return { ...prev, [field]: value };
     });
   };
@@ -7530,6 +7661,8 @@ function TicketActionModal({ ticket, currentUser, users = [], onClose, onSave, o
     status: draft.status || ticket.status,
     sla: draft.sla || ticket.sla,
     technician: draft.technician || ticket.technician,
+    escalationPartner: draft.escalationPartner,
+    escalationPartnerCompany: draft.escalationPartnerCompany,
     ...getAutosaveNotes(draft),
   });
 
@@ -7555,6 +7688,20 @@ function TicketActionModal({ ticket, currentUser, users = [], onClose, onSave, o
     }
 
     const sanitizedDraft = { ...draft, technicianId: draft.technicianId || null };
+
+    if (draftStatus === 'escalated') {
+      if (!String(draft.escalationPartner || '').trim()) {
+        setFormError('Choose an escalation partner before escalating this ticket.');
+        return;
+      }
+      if (draft.escalationPartner === 'Third Party Company' && !String(draft.escalationPartnerCompany || '').trim()) {
+        setFormError('Enter the third-party company name before saving.');
+        return;
+      }
+    } else {
+      sanitizedDraft.escalationPartner = '';
+      sanitizedDraft.escalationPartnerCompany = '';
+    }
 
     const timestamp = new Date().toLocaleString();
     const existingMovedDateValue = hasTimeInDateLabel(ticket.dateLabel) ? ticket.dateLabel : '';
@@ -7780,11 +7927,37 @@ function TicketActionModal({ ticket, currentUser, users = [], onClose, onSave, o
             </select>
           </div>
           {isEscalationStatus && <div className="ticket-form-group">
-            <label>Escalation Partner</label>
-            <select className="ticket-field ticket-select" value={draft.escalationPartner} onChange={event=>updateDraft('escalationPartner',event.target.value)} required disabled={isResolvedLocked}>
-              <option value="">Select partner</option>
-              {ESCALATION_PARTNERS.map(partner=><option key={partner} value={partner}>{partner}</option>)}
-            </select>
+            <div className="escalation-partner-label-row">
+              <label>Escalation Partner</label>
+              {draft.escalationPartner === 'Third Party Company' && (
+                <button
+                  type="button"
+                  className="escalation-partner-change"
+                  onClick={() => updateDraft('escalationPartner', '')}
+                  disabled={isResolvedLocked}
+                >
+                  Change
+                </button>
+              )}
+            </div>
+            {draft.escalationPartner === 'Third Party Company' ? (
+              <input
+                className="ticket-field ticket-input"
+                type="text"
+                value={draft.escalationPartnerCompany}
+                onChange={event => updateDraft('escalationPartnerCompany', event.target.value)}
+                placeholder="Enter company name"
+                aria-label="Third-party company name"
+                maxLength={120}
+                required
+                disabled={isResolvedLocked}
+              />
+            ) : (
+              <select className="ticket-field ticket-select" value={draft.escalationPartner} onChange={event=>updateDraft('escalationPartner',event.target.value)} required disabled={isResolvedLocked}>
+                <option value="">Select partner</option>
+                {ESCALATION_PARTNERS.map(partner=><option key={partner} value={partner}>{partner}</option>)}
+              </select>
+            )}
           </div>}
           {['moved date','waiting for requester','waiting for vendor','waiting for approval'].includes(normalizedDraftStatus) && <div className="ticket-form-group">
             <label>Next Action</label>
@@ -7915,7 +8088,7 @@ function TicketActionModal({ ticket, currentUser, users = [], onClose, onSave, o
           <label>Reopen Reason</label>
           <textarea className="ticket-field ticket-textarea" value={draft.reopenReason} onChange={event=>updateDraft('reopenReason',event.target.value)} minLength={8}/>
         </div>}
-        {formError && <div className="form-error">{formError}</div>}
+        {formError && <div className="form-error app-error-alert" role="alert">{formError}</div>}
           </>
         )}
         <TicketHandlingActivity ticket={ticket} now={now} />
@@ -8011,8 +8184,6 @@ export default function AdminDashboardPage() {
   const [authChecked, setAuthChecked] = useState(false);
   const [isInactiveBlocked, setIsInactiveBlocked] = useState(false);
   const [, setLastSynced] = useState('');
-  const [isPageTransitioning, setIsPageTransitioning] = useState(false);
-  const [transitionLabel, setTransitionLabel] = useState(adminTransitionLabels.dashboard);
   const [timerNow, setTimerNow] = useState(Date.now());
   const [ticketLockNotice, setTicketLockNotice] = useState(null);
   const [filters, setFilters] = useState({
@@ -8192,15 +8363,6 @@ Current role: ${activeUser.role || 'No role found'}`
     return unsubscribe;
   }, [authChecked, admin]);
 
-  useEffect(() => {
-    if (!isPageTransitioning) return undefined;
-
-    const timer = window.setTimeout(() => {
-      setIsPageTransitioning(false);
-    }, TRANSITION_DURATION);
-
-    return () => window.clearTimeout(timer);
-  }, [isPageTransitioning, transitionLabel]);
 
   useEffect(() => {
     const hasRunningWorkTimer = tickets.some((ticket) => {
@@ -8259,10 +8421,6 @@ Current role: ${activeUser.role || 'No role found'}`
   const canDeleteTickets = isSuperAdmin;
 
   const goTo = (section) => {
-    if (section !== activeSection) {
-      setTransitionLabel(adminTransitionLabels[section] || adminTransitionLabels.dashboard);
-      setIsPageTransitioning(true);
-    }
 
     setActiveSection(section);
     setSidebarOpen(false);
@@ -8276,8 +8434,6 @@ Current role: ${activeUser.role || 'No role found'}`
       await releaseTicketLock(selectedTicket.id, admin.id).catch(() => {});
     }
 
-    setTransitionLabel(adminTransitionLabels.logout);
-    setIsPageTransitioning(true);
     await signOutPortal().catch(() => {});
     router.replace(LOGIN_ROUTE);
   };
@@ -8577,7 +8733,6 @@ Current role: ${activeUser.role || 'No role found'}`
         <main className="portal-main portal-app-main">
           <div className="portal-shell" />
         </main>
-        <PortalTransitionLoader label="Verifying admin access..." />
       </>
     );
   }
@@ -8764,7 +8919,6 @@ Current role: ${activeUser.role || 'No role found'}`
 
       <TicketLockNoticeModal notice={ticketLockNotice} onClose={() => setTicketLockNotice(null)} />
 
-      {isPageTransitioning && <PortalTransitionLoader label={transitionLabel} />}
     </>
   );
 }

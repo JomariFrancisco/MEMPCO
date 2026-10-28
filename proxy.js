@@ -8,7 +8,7 @@ import {
 } from './lib/supabase/config';
 
 const LOGIN_ROUTE = '/helpdesk';
-const PORTAL_LOGIN_ROUTES = ['/superadmin', '/mrdss-login'];
+const PORTAL_LOGIN_ROUTES = ['/superadmin', '/mrdss'];
 const SUPABASE_PROXY_TIMEOUT_MS = 12000;
 
 const normalizePortalRole = (role = '') =>
@@ -45,7 +45,7 @@ const getPortalHomeRoute = (role) => {
 const getLoginRoute = (requiredRole) => {
   if (requiredRole === 'marketing_admin') return '/marketing';
   if (requiredRole === 'hr_admin') return '/hr';
-  if (requiredRole === 'mrdss_admin') return '/mrdss-login';
+  if (requiredRole === 'mrdss_admin') return '/mrdss';
   return LOGIN_ROUTE;
 };
 
@@ -157,7 +157,7 @@ export async function proxy(request) {
   }
 
   if (isLoginPage && profile?.role && request.nextUrl.searchParams.get('mode') !== 'reset') {
-    const loginDestination = pathname === '/mrdss-login' && profile.role === 'superadmin'
+    const loginDestination = pathname === '/mrdss' && profile.role === 'superadmin'
       ? '/mrdss-admin'
       : getPortalHomeRoute(profile.role);
     return redirectWithCookies(
@@ -179,5 +179,5 @@ export async function proxy(request) {
 }
 
 export const config = {
-  matcher: ['/superadmin', '/mrdss-login', '/mrdss-admin/:path*', '/employee-dashboard/:path*', '/admin-dashboard/:path*', '/marketing-admin/:path*', '/hr-admin/:path*'],
+  matcher: ['/superadmin', '/mrdss', '/mrdss-admin/:path*', '/employee-dashboard/:path*', '/admin-dashboard/:path*', '/marketing-admin/:path*', '/hr-admin/:path*'],
 };

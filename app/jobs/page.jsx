@@ -598,7 +598,7 @@ export default function Career() {
             </div>
 
             {applicationStatus.text ? (
-              <div className={`cp-application-alert cp-application-alert--${applicationStatus.type}`}>
+              <div className={`cp-application-alert cp-application-alert--${applicationStatus.type}${applicationStatus.type === 'error' ? ' app-error-alert' : ''}`} role={applicationStatus.type === 'error' ? 'alert' : 'status'}>
                 {applicationStatus.text}
               </div>
             ) : null}

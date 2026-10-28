@@ -16,6 +16,8 @@
   display: block !important;
   flex: 1 1 auto !important;
   width: 100% !important;
+  box-sizing: border-box !important;
+  margin-inline: 0 !important;
   min-width: 0 !important;
   min-height: 0 !important;
   height: auto !important;
@@ -24,7 +26,26 @@
   overflow-x: hidden !important;
   overflow-y: auto !important;
   overscroll-behavior: contain !important;
-  scrollbar-gutter: stable !important;
+  scrollbar-gutter: auto !important;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none;
+}
+
+:is(.ticket-action-overlay, .employee-ticket-action-overlay) .ticket-action-modal.ticket-modal-readable > .ticket-action-scroll-content::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+body :is(.ticket-action-overlay, .employee-ticket-action-overlay) :is(form, article).ticket-action-modal.ticket-modal-readable:is(.is-support-modal, .is-burnout-modal) .admin-modal-close {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+body :is(.ticket-action-overlay, .employee-ticket-action-overlay) .ticket-action-modal.ticket-modal-readable .admin-modal-close:focus-visible {
+  outline: 2px solid #c62828;
+  outline-offset: 2px;
 }
 
 :is(.ticket-action-overlay, .employee-ticket-action-overlay) :is(form, article).ticket-action-modal.ticket-modal-readable:is(.is-support-modal, .is-burnout-modal) .ticket-action-scroll-content > :is(.ticket-action-info-grid, .ticket-action-details-row, .ticket-action-notes-grid, .ticket-action-attachments-row, .ticket-handling-activity) {
@@ -330,15 +351,14 @@ body[data-portal-theme='dark'] :is(.ticket-action-overlay, .employee-ticket-acti
   -webkit-text-fill-color: #b6c4d6 !important;
 }
 
-body[data-portal-theme='dark'] :is(.ticket-action-overlay, .employee-ticket-action-overlay) :is(form, article).ticket-action-modal.ticket-modal-readable:is(.is-support-modal, .is-burnout-modal) .modal-footer :is(.ticket-locked-pill, .modal-btn.print),
-body[data-portal-theme='dark'] :is(.ticket-action-overlay, .employee-ticket-action-overlay) :is(form, article).ticket-action-modal.ticket-modal-readable:is(.is-support-modal, .is-burnout-modal) .admin-modal-close {
+body[data-portal-theme='dark'] :is(.ticket-action-overlay, .employee-ticket-action-overlay) :is(form, article).ticket-action-modal.ticket-modal-readable:is(.is-support-modal, .is-burnout-modal) .modal-footer :is(.ticket-locked-pill, .modal-btn.print) {
   background: #283545 !important;
   border-color: #49576a !important;
   color: #edf2f7 !important;
   -webkit-text-fill-color: #edf2f7 !important;
 }
 
-body[data-portal-theme='dark'] :is(.ticket-action-overlay, .employee-ticket-action-overlay) :is(form, article).ticket-action-modal.ticket-modal-readable:is(.is-support-modal, .is-burnout-modal) :is(.modal-btn.print, .admin-modal-close):hover {
+body[data-portal-theme='dark'] :is(.ticket-action-overlay, .employee-ticket-action-overlay) :is(form, article).ticket-action-modal.ticket-modal-readable:is(.is-support-modal, .is-burnout-modal) .modal-btn.print:hover {
   background: #354456 !important;
 }
 

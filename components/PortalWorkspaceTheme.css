@@ -68,6 +68,27 @@
   border-radius: 7px;
   background: #fff;
   box-shadow: none;
+  height: auto;
+  max-height: none;
+  flex: 0 0 auto;
+  width: max-content;
+  min-width: max-content;
+  max-width: none;
+}
+
+.portal-app-main .profile-chip .profile-chip-copy {
+  min-width: max-content;
+  height: auto;
+  gap: 2px;
+}
+
+.portal-app-main .profile-chip .profile-chip-copy :is(strong, span) {
+  white-space: nowrap;
+  overflow: visible;
+  text-overflow: clip;
+  overflow-wrap: normal;
+  max-height: none;
+  line-height: 1.3;
 }
 
 .portal-app-main .profile-chip-avatar {

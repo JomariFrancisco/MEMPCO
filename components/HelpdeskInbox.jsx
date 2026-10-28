@@ -251,7 +251,7 @@ export default function HelpdeskInbox({ userId, tickets = [], onTicket, audience
         <header className="helpdesk-inbox-header">
           <h2>{employee ? 'Notifications' : 'Helpdesk Inbox'}</h2>
         </header>
-        {error && <div className="helpdesk-inbox-error" role="alert"><span>{error}</span>
+        {error && <div className="helpdesk-inbox-error app-error-alert" role="alert"><span>{error}</span>
           <button type="button" onClick={refresh} aria-label="Retry notifications" title="Retry notifications"><RefreshCw size={16} aria-hidden="true" /></button>
         </div>}
         <div className="helpdesk-inbox-list" aria-busy={loading}>

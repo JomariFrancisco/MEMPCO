@@ -1,0 +1,122 @@
+/* Keep full admin ticket cards aligned with the employee queue layout. */
+.portal-app-main :is(.admin-ticket-queue:not(.compact), .branch-monitor-view) {
+  --ticket-card-height: 600px;
+}
+
+.portal-app-main :is(.admin-ticket-queue:not(.compact), .branch-monitor-view) :is(.admin-ticket-queue-grid:not(.mrdss-case-grid), .branch-monitor-ticket-grid) {
+  grid-template-rows: var(--ticket-card-height);
+  grid-auto-rows: var(--ticket-card-height);
+  gap: 16px;
+}
+
+.portal-app-main :is(.admin-ticket-queue:not(.compact), .branch-monitor-view) :is(.admin-ticket-queue-grid, .branch-monitor-ticket-grid) > .admin-ticket-card {
+  height: var(--ticket-card-height);
+  min-height: var(--ticket-card-height);
+  max-height: var(--ticket-card-height);
+  padding: 16px;
+  gap: 14px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.portal-app-main :is(.admin-ticket-queue:not(.compact), .branch-monitor-view) .admin-ticket-card .admin-ticket-card-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.portal-app-main :is(.admin-ticket-queue:not(.compact), .branch-monitor-view) .admin-ticket-card .admin-ticket-title {
+  flex: 1 1 100%;
+  gap: 5px;
+}
+
+.portal-app-main :is(.admin-ticket-queue:not(.compact), .branch-monitor-view) .admin-ticket-card .admin-ticket-summary-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.portal-app-main :is(.admin-ticket-queue:not(.compact), .branch-monitor-view) .admin-ticket-card .admin-ticket-summary-grid > div {
+  min-height: 0;
+  border-radius: 8px;
+}
+
+.portal-app-main :is(.admin-ticket-queue:not(.compact), .branch-monitor-view) .admin-ticket-card .admin-ticket-summary-grid span {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+}
+
+.portal-app-main :is(.admin-ticket-queue:not(.compact), .branch-monitor-view) .admin-ticket-card .admin-ticket-card-description {
+  flex: 1 1 0;
+  min-height: 120px;
+  height: auto;
+  max-height: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.admin-ticket-card-description::-webkit-scrollbar { display: none; }
+
+.portal-app-main .admin-ticket-card .admin-ticket-status-row {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  min-width: 0;
+}
+
+.portal-app-main .admin-ticket-card .admin-ticket-status-row > .ticket-handling-status {
+  flex: 1 1 170px;
+  min-width: 0;
+  padding: 0;
+}
+
+.portal-app-main .admin-ticket-card .admin-ticket-status-row > .ticket-work-timer.ticket-handling-timer {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 7px;
+  /* Override the legacy full-size queue timer's important minimum height. */
+  min-height: 30px !important;
+  margin: 0;
+  padding: 5px 8px;
+  border-radius: 6px;
+  box-shadow: none;
+}
+
+.portal-app-main .admin-ticket-card .admin-ticket-status-row > .ticket-work-timer.ticket-handling-timer > span {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap !important;
+}
+
+.portal-app-main .admin-ticket-card .admin-ticket-status-row > .ticket-work-timer.ticket-handling-timer > strong {
+  font-size: 0.82rem !important;
+  line-height: 1.2;
+  letter-spacing: 0;
+  white-space: nowrap !important;
+}
+
+@media (max-width: 900px) {
+  .portal-app-main :is(.admin-ticket-queue:not(.compact), .branch-monitor-view) { --ticket-card-height: 620px; }
+  .portal-app-main :is(.admin-ticket-queue:not(.compact), .branch-monitor-view) :is(.admin-ticket-queue-grid:not(.mrdss-case-grid), .branch-monitor-ticket-grid) { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 640px) {
+  .portal-app-main :is(.admin-ticket-queue:not(.compact), .branch-monitor-view) { --ticket-card-height: 640px; }
+}
+
+@media (max-width: 520px) {
+  .portal-app-main :is(.admin-ticket-queue:not(.compact), .branch-monitor-view) .admin-ticket-card .admin-ticket-summary-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 420px) {
+  .portal-app-main :is(.admin-ticket-queue:not(.compact), .branch-monitor-view) { --ticket-card-height: 660px; }
+}

@@ -704,8 +704,14 @@ export default function HrAdminPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [imageUploadMeta, setImageUploadMeta] = useState('');
   const [notice, setNotice] = useState('');
+  const [noticeType, setNoticeType] = useState('success');
   const imageInputRef = useRef(null);
   const canDeleteApplications = isSuperAdminRole(user?.role);
+
+  const showNotice = (text, type = 'success') => {
+    setNoticeType(type);
+    setNotice(text);
+  };
 
   const loadHrData = async () => {
     setIsLoading(true);
@@ -722,7 +728,7 @@ export default function HrAdminPage() {
         return applicationRows.find((application) => application.id === current.id) || null;
       });
     } catch (error) {
-      setNotice(error.message || 'Unable to load HR records.');
+      showNotice(error.message || 'Unable to load HR records.', 'error');
     } finally {
       setIsLoading(false);
     }
@@ -1164,7 +1170,7 @@ export default function HrAdminPage() {
       handleOpeningChange('image', imageData);
       setImageUploadMeta(`${file.name} - ${formatFileSize(file.size)}`);
     } catch (error) {
-      setNotice(error.message || 'Unable to attach job poster image.');
+      showNotice(error.message || 'Unable to attach job poster image.', 'error');
     } finally {
       event.target.value = '';
     }
@@ -1179,12 +1185,12 @@ export default function HrAdminPage() {
       : editingOpening;
 
     if (!openingToSave.title.trim() || !openingToSave.department.trim() || !openingToSave.location.trim()) {
-      setNotice('Title, department, and location are required.');
+      showNotice('Title, department, and location are required.', 'error');
       return;
     }
 
     if (openingToSave.status === 'open' && !String(openingToSave.image || '').trim()) {
-      setNotice('A job poster is required before publishing.');
+      showNotice('A job poster is required before publishing.', 'error');
       return;
     }
 
@@ -1199,9 +1205,9 @@ export default function HrAdminPage() {
         return sortNewestFirst([savedOpening, ...current]);
       });
       setEditingOpening(savedOpening);
-      setNotice(`${savedOpening.title} has been saved.`);
+      showNotice(`${savedOpening.title} has been saved.`);
     } catch (error) {
-      setNotice(error.message || 'Unable to save this opening.');
+      showNotice(error.message || 'Unable to save this opening.', 'error');
     } finally {
       setIsSaving(false);
     }
@@ -1215,7 +1221,7 @@ export default function HrAdminPage() {
     if (status === 'open' && !String(opening.image || '').trim()) {
       setEditingOpening(opening);
       setIsOpeningEditorVisible(true);
-      setNotice('Add a job poster before publishing this post.');
+      showNotice('Add a job poster before publishing this post.', 'error');
       window.requestAnimationFrame(() => {
         openingEditorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       });
@@ -1232,9 +1238,9 @@ export default function HrAdminPage() {
       if (editingOpening.id === savedOpening.id) {
         setEditingOpening(savedOpening);
       }
-      setNotice(`${savedOpening.title} is now ${statusLabel(savedOpening.status)}.`);
+      showNotice(`${savedOpening.title} is now ${statusLabel(savedOpening.status)}.`);
     } catch (error) {
-      setNotice(error.message || 'Unable to update this job post.');
+      showNotice(error.message || 'Unable to update this job post.', 'error');
     } finally {
       setIsSaving(false);
     }
@@ -1260,9 +1266,9 @@ export default function HrAdminPage() {
         setEditingOpening(EMPTY_OPENING);
         setIsOpeningEditorVisible(false);
       }
-      setNotice(`${opening.title} has been deleted.`);
+      showNotice(`${opening.title} has been deleted.`);
     } catch (error) {
-      setNotice(error.message || 'Unable to delete this opening.');
+      showNotice(error.message || 'Unable to delete this opening.', 'error');
     } finally {
       setIsSaving(false);
     }
@@ -1272,7 +1278,7 @@ export default function HrAdminPage() {
     if (!selectedApplication?.id) return;
 
     if (isFinalApplicationStatus(selectedApplication.status)) {
-      setNotice(`${selectedApplication.applicantName || 'This applicant'} is finalized and locked for viewing only.`);
+      showNotice(`${selectedApplication.applicantName || 'This applicant'} is finalized and locked for viewing only.`);
       return;
     }
 
@@ -1345,9 +1351,9 @@ export default function HrAdminPage() {
           },
         });
       }
-      setNotice(`${nextApplication.applicantName || 'Application'} has been updated.`);
+      showNotice(`${nextApplication.applicantName || 'Application'} has been updated.`);
     } catch (error) {
-      setNotice(error.message || 'Unable to update this application.');
+      showNotice(error.message || 'Unable to update this application.', 'error');
     } finally {
       setIsSaving(false);
     }
@@ -1388,7 +1394,7 @@ export default function HrAdminPage() {
 
   const handleSaveApplicationDetails = async () => {
     if (isFinalApplicationStatus(selectedApplication?.status)) {
-      setNotice(`${selectedApplication.applicantName || 'This applicant'} is finalized and locked for viewing only.`);
+      showNotice(`${selectedApplication.applicantName || 'This applicant'} is finalized and locked for viewing only.`);
       return;
     }
 
@@ -1486,7 +1492,7 @@ export default function HrAdminPage() {
   const handleDeleteApplication = async () => {
     if (!selectedApplication?.id) return;
     if (!canDeleteApplications) {
-      setNotice('Only the super admin can delete applicant records.');
+      showNotice('Only the super admin can delete applicant records.', 'error');
       return;
     }
 
@@ -1513,9 +1519,9 @@ export default function HrAdminPage() {
         current.filter((application) => application.id !== selectedApplication.id),
       );
       setSelectedApplication(null);
-      setNotice(`${applicantName}'s application record has been deleted.`);
+      showNotice(`${applicantName}'s application record has been deleted.`);
     } catch (error) {
-      setNotice(error.message || 'Unable to delete this application.');
+      showNotice(error.message || 'Unable to delete this application.', 'error');
     } finally {
       setIsSaving(false);
     }
@@ -1527,7 +1533,7 @@ export default function HrAdminPage() {
     const previewWindow = window.open('', '_blank');
 
     if (!previewWindow) {
-      setNotice('Please allow pop-ups to view the resume.');
+      showNotice('Please allow pop-ups to view the resume.', 'error');
       return;
     }
 
@@ -1574,7 +1580,7 @@ export default function HrAdminPage() {
       previewWindow.opener = null;
     } catch (error) {
       previewWindow.close();
-      setNotice(error.message || `Unable to open the ${documentType}.`);
+      showNotice(error.message || `Unable to open the ${documentType}.`, 'error');
     }
   };
 
@@ -1825,7 +1831,7 @@ export default function HrAdminPage() {
                 user={user}
                 fallback="HR"
                 onUserUpdated={setUser}
-                onStatus={(message) => setNotice(message)}
+                onStatus={(message) => showNotice(message)}
               />
               <div className="profile-chip-copy">
                 <strong>{user.name}</strong>
@@ -1903,7 +1909,14 @@ export default function HrAdminPage() {
           </aside>
 
           <section className="portal-view hr-admin-view">
-            {notice ? <div className="admin-alert success" role="status">{notice}</div> : null}
+            {notice ? (
+              <div
+                className={`admin-alert ${noticeType}${noticeType === 'error' ? ' app-error-alert' : ''}`}
+                role={noticeType === 'error' ? 'alert' : 'status'}
+              >
+                {notice}
+              </div>
+            ) : null}
 
         {activeTab === 'dashboard' ? (
           <section className="hr-dashboard-view" aria-label="HR dashboard">

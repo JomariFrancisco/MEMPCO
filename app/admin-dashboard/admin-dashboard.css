@@ -1419,18 +1419,12 @@ button {
 }
 
 .admin-alert {
-  padding: 0.78rem 0.9rem;
-  border-radius: var(--radius-md);
-  font-size: 0.984rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: 12px;
+  font-size: 0.9rem;
   line-height: 1.45;
-  font-weight: 750;
+  font-weight: 650;
   border: 1px solid transparent;
-}
-
-.admin-alert.error {
-  background: rgba(220, 38, 38, 0.1);
-  color: #b91c1c;
-  border-color: rgba(220, 38, 38, 0.16);
 }
 
 .admin-alert.success {
@@ -3736,17 +3730,6 @@ button {
   white-space: pre-wrap;
 }
 
-.form-error {
-  width: 100%;
-  padding: 0.85rem 0.95rem;
-  border-radius: var(--radius-md);
-  background: rgba(220, 38, 38, 0.08);
-  border: 1px solid rgba(220, 38, 38, 0.16);
-  color: #b91c1c;
-  font-size: 1.032rem;
-  font-weight: 750;
-}
-
 .admin-attachment-box {
   display: flex;
   align-items: center;
@@ -5138,6 +5121,48 @@ button {
   .ticket-action-status-tools {
     min-width: 0;
   }
+}
+
+/* Uniform branch overview cards without decorative icon blocks. */
+.branch-monitor-view .branch-monitor-overview {
+  gap: 0.75rem;
+  align-items: stretch;
+}
+
+.branch-monitor-view .branch-overview-card,
+.branch-monitor-view .branch-overview-card--primary {
+  min-width: 0;
+  min-height: 96px;
+  display: flex;
+  align-items: center;
+  padding: 0.9rem 1rem;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+}
+
+.branch-monitor-view .branch-overview-card > div {
+  min-width: 0;
+  width: 100%;
+}
+
+.branch-monitor-view .branch-overview-card span:not(.branch-overview-icon) {
+  font-size: 0.72rem;
+  line-height: 1.2;
+  letter-spacing: 0.07em;
+}
+
+.branch-monitor-view .branch-overview-card strong {
+  margin-top: 0.3rem;
+  font-size: clamp(1.3rem, 1.8vw, 1.6rem);
+  line-height: 1;
+}
+
+.branch-monitor-view .branch-overview-card p {
+  margin-top: 0.28rem;
+  font-size: 0.8rem;
+  line-height: 1.3;
 }
 
 /* =========================
@@ -11515,6 +11540,39 @@ button {
   box-shadow: 0 10px 20px rgba(220, 38, 38, 0.16);
 }
 
+.admin-workload-avatar img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  object-fit: cover;
+}
+
+.escalation-partner-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.escalation-partner-label-row > label {
+  margin: 0;
+}
+
+.escalation-partner-change {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #64748b;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.escalation-partner-change:hover { color: #b91c1c; }
+.escalation-partner-change:disabled { cursor: not-allowed; opacity: 0.5; }
+
 .admin-workload-person strong {
   display: block;
   color: var(--text);
@@ -16155,8 +16213,6 @@ button:not(:disabled),
 .burnout-wizard-error {
   flex: 0 0 auto;
   margin: 0 !important;
-  padding: 0.34rem 0.55rem !important;
-  font-size: 0.72rem !important;
 }
 
 .burnout-step-stage {
@@ -19209,7 +19265,7 @@ button:not(:disabled),
   }
 }
 
-.ticket-action-overlay form.ticket-action-modal.is-support-modal .ticket-handling-status.is-detailed {
+.ticket-action-overlay form.ticket-action-modal:is(.is-support-modal, .is-burnout-modal) .ticket-handling-status.is-detailed {
   display: grid !important;
   justify-items: start !important;
   align-content: start !important;
@@ -19222,7 +19278,7 @@ button:not(:disabled),
   text-align: left !important;
 }
 
-.ticket-action-overlay form.ticket-action-modal.is-support-modal .ticket-handling-status.is-detailed .ticket-handling-topline {
+.ticket-action-overlay form.ticket-action-modal:is(.is-support-modal, .is-burnout-modal) .ticket-handling-status.is-detailed .ticket-handling-topline {
   display: flex !important;
   flex-wrap: wrap !important;
   align-items: center !important;
@@ -19231,7 +19287,7 @@ button:not(:disabled),
   max-width: 100% !important;
 }
 
-.ticket-action-overlay form.ticket-action-modal.is-support-modal .ticket-handling-status.is-detailed :is(
+.ticket-action-overlay form.ticket-action-modal:is(.is-support-modal, .is-burnout-modal) .ticket-handling-status.is-detailed :is(
   .ticket-handling-assignee,
   .ticket-handling-timestamp,
   .ticket-handling-editor,
@@ -19249,12 +19305,12 @@ button:not(:disabled),
   overflow-wrap: anywhere !important;
 }
 
-.ticket-action-overlay form.ticket-action-modal.is-support-modal .ticket-handling-status.is-detailed .ticket-handling-assignee {
+.ticket-action-overlay form.ticket-action-modal:is(.is-support-modal, .is-burnout-modal) .ticket-handling-status.is-detailed .ticket-handling-assignee {
   color: #354458 !important;
   font-weight: 550 !important;
 }
 
-.ticket-action-overlay form.ticket-action-modal.is-support-modal .ticket-handling-status.is-detailed .ticket-handling-editor {
+.ticket-action-overlay form.ticket-action-modal:is(.is-support-modal, .is-burnout-modal) .ticket-handling-status.is-detailed .ticket-handling-editor {
   display: flex !important;
   align-items: center !important;
   gap: 4px !important;
@@ -19263,7 +19319,7 @@ button:not(:disabled),
   font-size: 0.69rem !important;
 }
 
-.ticket-action-overlay form.ticket-action-modal.is-support-modal .ticket-handling-status.is-detailed .ticket-handling-editor svg {
+.ticket-action-overlay form.ticket-action-modal:is(.is-support-modal, .is-burnout-modal) .ticket-handling-status.is-detailed .ticket-handling-editor svg {
   flex: 0 0 12px !important;
 }
 
@@ -19471,3 +19527,858 @@ button:not(:disabled),
 }
 
 
+/* Calendar report: keep both desktop panels compact and stable. */
+.report-calendar-layout {
+  align-items: stretch;
+}
+
+.report-calendar-card,
+.report-calendar-insights {
+  height: 630px;
+  min-height: 0;
+  min-width: 0;
+}
+
+.report-calendar-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.report-calendar-head {
+  flex: 0 0 auto;
+}
+
+.report-calendar-grid {
+  flex: 1 1 auto;
+  min-height: 0;
+  grid-template-rows: auto repeat(6, minmax(0, 1fr));
+}
+
+.report-calendar-day {
+  min-height: 0;
+  overflow: visible;
+}
+
+.report-calendar-insights {
+  overflow: hidden;
+}
+
+.report-insight-list {
+  flex: 0 0 auto;
+  grid-template-columns: 1fr;
+}
+
+.report-insight-item {
+  min-height: 0;
+  padding: 0.4rem 0.55rem;
+}
+
+.report-insight-item span,
+.report-insight-item em {
+  font-size: 0.72rem;
+}
+
+.report-insight-item strong {
+  font-size: 1.02rem;
+}
+
+.report-month-pulse-note {
+  margin: -0.45rem 0 0.65rem;
+  color: var(--muted, #64748b);
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+
+.report-insight-item span,
+.report-insight-item em,
+.report-insight-item strong,
+.report-selected-ticket span,
+.report-selected-ticket strong,
+.report-selected-ticket em {
+  overflow-wrap: anywhere;
+  word-break: normal;
+  white-space: normal;
+}
+
+.report-selected-day {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.report-selected-day-head {
+  flex: 0 0 auto;
+}
+
+.report-selected-ticket-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: visible;
+  align-content: start;
+  padding: 1px 2px 2px 0;
+}
+
+.report-selected-ticket {
+  min-width: 0;
+  height: auto;
+  padding: 0.48rem 0.58rem;
+  overflow: visible;
+}
+
+.report-selected-ticket-pager,
+.report-selected-empty {
+  flex: 0 0 auto;
+}
+
+/* Keep the selected-day card fully visible without an inner scrollbar. */
+.report-calendar-insights {
+  overflow: visible !important;
+}
+
+.report-selected-day {
+  overflow: visible !important;
+}
+
+.report-selected-ticket-list {
+  flex: 0 0 auto;
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+  padding-right: 0;
+}
+
+.report-selected-ticket {
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+.report-selected-day-head {
+  flex-wrap: nowrap !important;
+  align-items: baseline !important;
+  justify-content: space-between !important;
+}
+
+.report-selected-day-head span {
+  flex: 0 0 auto !important;
+}
+
+.report-selected-day-head strong {
+  flex: 0 1 auto !important;
+  text-align: right !important;
+}
+
+@media (max-width: 1080px) {
+  .report-calendar-card,
+  .report-calendar-insights {
+    height: auto;
+    min-height: 0;
+  }
+
+  .report-calendar-grid {
+    flex: initial;
+    grid-template-rows: auto;
+  }
+
+  .report-calendar-day {
+    min-height: 76px;
+  }
+
+  .report-selected-day {
+    flex: initial;
+    min-height: 0;
+    overflow: visible;
+  }
+
+  .report-selected-ticket-list {
+    flex: initial;
+    overflow: visible;
+  }
+}
+
+@media (max-width: 640px) {
+  .report-calendar-day {
+    min-height: 52px;
+  }
+
+  .report-selected-day-head strong {
+    text-align: right !important;
+  }
+}
+
+/* Reports refresh: a compact summary band and a cleaner submissions grid. */
+.reports-compact-view {
+  gap: 0.7rem;
+}
+
+.reports-compact-view .report-toolbar {
+  grid-template-columns: minmax(280px, 1fr) minmax(560px, 1.04fr);
+  gap: 1.25rem;
+  padding: 0.78rem 0.9rem;
+  border-color: rgba(203, 213, 225, 0.72);
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.035);
+}
+
+.reports-compact-view .report-toolbar-copy h2 {
+  margin: 0.16rem 0 0.12rem;
+  font-size: clamp(1.3rem, 1.7vw, 1.65rem);
+  letter-spacing: -0.045em;
+}
+
+.reports-compact-view .report-toolbar-copy p {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.35;
+}
+
+.reports-compact-view .report-toolbar-metrics {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0;
+  padding: 0.3rem;
+  border: 1px solid rgba(226, 232, 240, 0.86);
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.reports-compact-view .report-metric {
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: auto auto auto;
+  align-content: center;
+  gap: 0.02rem;
+  min-height: 74px;
+  padding: 0.38rem 0.65rem;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.reports-compact-view .report-metric + .report-metric {
+  border-left: 1px solid rgba(203, 213, 225, 0.82);
+}
+
+.reports-compact-view .report-metric strong {
+  grid-row: 1;
+  margin: 0 0 0.08rem;
+  font-size: 1.55rem;
+  line-height: 1;
+  letter-spacing: -0.045em;
+}
+
+.reports-compact-view .report-metric-label {
+  grid-row: 2;
+  font-size: 0.72rem;
+  line-height: 1.15;
+}
+
+.reports-compact-view .report-metric-meta {
+  grid-row: 3;
+  margin-top: 0.12rem;
+  font-size: 0.62rem;
+  line-height: 1.1;
+}
+
+.reports-compact-view .report-period-card {
+  padding: 0.78rem 0.9rem 0.58rem;
+  border-color: rgba(203, 213, 225, 0.72);
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.035);
+}
+
+.reports-compact-view .report-period-head {
+  align-items: center;
+  margin-bottom: 0.55rem;
+}
+
+.reports-compact-view .report-period-head h3 {
+  margin-top: 0.08rem;
+  font-size: 1rem;
+}
+
+.reports-compact-view .report-period-actions {
+  gap: 0.45rem;
+}
+
+.reports-compact-view .report-print-btn {
+  min-height: 34px;
+  padding: 0.3rem 0.62rem;
+  border-color: rgba(203, 213, 225, 0.9);
+  border-radius: 9px;
+  background: #fff;
+  color: var(--text-soft);
+  font-size: 0.84rem;
+  font-weight: 750;
+}
+
+.reports-compact-view .report-print-btn:hover {
+  border-color: rgba(220, 38, 38, 0.28);
+  background: #fffafa;
+  color: var(--red-600);
+}
+
+.reports-compact-view .report-period-tabs {
+  padding: 0.12rem;
+  border: 1px solid rgba(226, 232, 240, 0.92);
+  border-radius: 9px;
+  background: #f8fafc;
+}
+
+.reports-compact-view .report-period-tabs button {
+  min-width: 56px;
+  min-height: 30px;
+  padding: 0.25rem 0.55rem;
+  border-radius: 7px;
+  font-size: 0.84rem;
+}
+
+.reports-compact-view .report-period-tabs button.active {
+  background: #fff;
+  color: var(--red-600);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08), inset 0 0 0 1px rgba(220, 38, 38, 0.16);
+}
+
+.reports-compact-view .report-period-card .admin-breakdown-list {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.42rem;
+}
+
+.reports-compact-view .report-period-card .admin-breakdown-item {
+  min-height: 42px;
+  padding: 0.4rem 0.58rem;
+  border: 0;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.92);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  transition: border-color 140ms ease, background 140ms ease;
+}
+
+.reports-compact-view .report-period-card .admin-breakdown-copy {
+  margin: 0;
+  gap: 0.4rem;
+}
+
+.reports-compact-view .report-period-card .admin-breakdown-copy strong {
+  font-size: 0.88rem;
+  font-weight: 750;
+  line-height: 1.2;
+}
+
+.reports-compact-view .report-period-card .admin-breakdown-copy span {
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.reports-compact-view .report-period-card .admin-breakdown-list.selectable .admin-breakdown-item:hover {
+  transform: none;
+  border-bottom-color: rgba(220, 38, 38, 0.35);
+  background: #fffafa;
+  box-shadow: none;
+}
+
+.reports-compact-view .report-period-card .admin-breakdown-list.selectable .admin-breakdown-item.selected {
+  border-bottom-color: rgba(220, 38, 38, 0.48);
+  background: #fff5f5;
+  box-shadow: inset 3px 0 0 var(--red-500);
+}
+
+.reports-compact-view .report-period-pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  margin-top: 0.24rem;
+}
+
+.reports-compact-view .report-period-pager button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-soft);
+  cursor: pointer;
+}
+
+.reports-compact-view .report-period-pager button:hover:not(:disabled) {
+  background: #f1f5f9;
+}
+
+.reports-compact-view .report-period-pager button:disabled {
+  color: #b5bfcc;
+  cursor: default;
+}
+
+.reports-compact-view .report-period-pager button svg {
+  width: 16px;
+  height: 16px;
+}
+
+.reports-compact-view .report-period-pager span {
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+@media (max-width: 1280px) {
+  .reports-compact-view .report-toolbar {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.65rem;
+  }
+}
+
+@media (max-width: 900px) {
+  .reports-compact-view .report-period-card .admin-breakdown-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .reports-compact-view .report-toolbar-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .reports-compact-view .report-metric:nth-child(3) {
+    border-left: 0;
+  }
+
+  .reports-compact-view .report-metric:nth-child(n + 3) {
+    border-top: 1px solid rgba(203, 213, 225, 0.82);
+  }
+
+  .reports-compact-view .report-period-head {
+    align-items: stretch;
+  }
+
+  .reports-compact-view .report-period-actions {
+    justify-content: space-between;
+  }
+}
+
+/* Actionable report panels: compact, aligned, and content-sized. */
+.reports-compact-view .report-toolbar {
+  grid-template-columns: minmax(220px, 0.9fr) minmax(0, 1.35fr);
+  gap: 1rem;
+}
+
+.reports-compact-view .report-toolbar-copy p {
+  max-width: 56ch;
+  overflow-wrap: anywhere;
+}
+
+.reports-compact-view .report-metric {
+  min-width: 0;
+  padding-inline: 0.5rem;
+}
+
+.reports-compact-view .report-metric-label,
+.reports-compact-view .report-metric-meta {
+  overflow-wrap: anywhere;
+}
+
+.reports-compact-view .admin-report-grid.compact {
+  align-items: stretch;
+  gap: 0.7rem;
+}
+
+.reports-compact-view .admin-report-grid.compact > .panel-card {
+  min-width: 0;
+  min-height: 0;
+  padding: 0.8rem;
+}
+
+.reports-compact-view .admin-report-grid.compact .section-head {
+  gap: 0.5rem;
+}
+
+.reports-compact-view .admin-report-grid.compact .section-head h3 {
+  overflow-wrap: anywhere;
+}
+
+.reports-compact-view .admin-workload-list {
+  gap: 0.35rem;
+}
+
+.reports-compact-view .admin-workload-card {
+  grid-template-columns: minmax(0, 1.1fr) minmax(155px, 0.9fr);
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.45rem 0.5rem;
+  border-radius: 9px;
+}
+
+.reports-compact-view .admin-workload-person {
+  gap: 0.45rem;
+}
+
+.reports-compact-view .admin-workload-avatar {
+  width: 29px;
+  height: 29px;
+  border-radius: 8px;
+}
+
+.reports-compact-view .admin-workload-person strong {
+  font-size: 0.82rem;
+  line-height: 1.22;
+}
+
+.reports-compact-view .admin-workload-person p {
+  font-size: 0.69rem;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.reports-compact-view .admin-workload-stats {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.25rem;
+}
+
+.reports-compact-view .admin-workload-stats div {
+  padding: 0.32rem;
+  border: 0;
+  background: #f8fafc;
+}
+
+.reports-compact-view .admin-workload-stats em {
+  font-size: 0.58rem;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.reports-compact-view .admin-workload-stats b {
+  font-size: 0.92rem;
+}
+
+.report-breakdown-rows {
+  display: grid;
+  align-content: start;
+  gap: 0.35rem;
+}
+
+.report-breakdown-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  min-height: 38px;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #1e293b;
+  text-align: left;
+  cursor: pointer;
+}
+
+.report-breakdown-row:hover,
+.report-breakdown-row.selected {
+  border-color: rgba(220, 38, 38, 0.35);
+  background: #fff7f7;
+}
+
+.report-breakdown-row:focus-visible,
+.report-ticket-scope button:focus-visible {
+  outline: 3px solid rgba(220, 38, 38, 0.24);
+  outline-offset: 2px;
+}
+
+.report-breakdown-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 0.82rem;
+  font-weight: 750;
+}
+
+.report-breakdown-value {
+  font-size: 0.84rem;
+  font-weight: 850;
+  font-variant-numeric: tabular-nums;
+}
+
+.report-breakdown-percent {
+  min-width: 2.5rem;
+  color: #64748b;
+  text-align: right;
+  font-size: 0.74rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.report-empty-inline {
+  margin: 0;
+  padding: 0.65rem 0.4rem;
+  color: #64748b;
+  font-size: 0.82rem;
+}
+
+.report-ticket-table-card {
+  min-width: 0;
+  padding: 0.9rem;
+}
+
+.report-ticket-table-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  margin-bottom: 0.75rem;
+}
+
+.report-ticket-table-head h3 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0.15rem 0 0;
+  color: #1e293b;
+  font-size: 1rem;
+}
+
+.report-ticket-table-head h3 span {
+  display: inline-flex;
+  min-width: 1.6rem;
+  justify-content: center;
+  padding: 0.12rem 0.35rem;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 0.72rem;
+}
+
+.report-ticket-table-head p {
+  margin: 0.18rem 0 0;
+  color: #64748b;
+  font-size: 0.76rem;
+  line-height: 1.35;
+}
+
+.report-ticket-scope {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.report-ticket-scope button {
+  min-height: 32px;
+  padding: 0.35rem 0.62rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  color: #475569;
+  font-size: 0.76rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.report-ticket-scope button.active {
+  border-color: rgba(220, 38, 38, 0.25);
+  background: #fff5f5;
+  color: #b91c1c;
+}
+
+.report-ticket-scope .report-clear-filters {
+  border-color: transparent;
+  background: transparent;
+  color: #64748b;
+}
+
+.report-ticket-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+}
+
+.report-ticket-table {
+  width: 100%;
+  min-width: 780px;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.report-ticket-table th,
+.report-ticket-table td {
+  padding: 0.55rem 0.65rem;
+  border-bottom: 1px solid #edf1f5;
+  color: #475569;
+  font-size: 0.76rem;
+  line-height: 1.35;
+  vertical-align: middle;
+}
+
+.report-ticket-table th {
+  position: sticky;
+  top: 0;
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 0.67rem;
+  font-weight: 850;
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
+}
+
+.report-ticket-table td:first-child strong {
+  color: #1e293b;
+  white-space: nowrap;
+}
+
+.report-ticket-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.report-ticket-table tbody tr[tabindex] {
+  cursor: pointer;
+}
+
+.report-ticket-table tbody tr[tabindex]:hover {
+  background: #fffafa;
+}
+
+.report-ticket-table tbody tr[tabindex]:focus-visible {
+  outline: 2px solid rgba(220, 38, 38, 0.35);
+  outline-offset: -2px;
+}
+
+.report-table-empty {
+  padding: 1.2rem !important;
+  color: #64748b !important;
+  text-align: center;
+}
+
+.report-priority-pill,
+.report-deadline-pill {
+  display: inline-flex;
+  max-width: 100%;
+  padding: 0.18rem 0.42rem;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 0.69rem;
+  font-weight: 800;
+  line-height: 1.35;
+  white-space: normal;
+}
+
+.report-priority-pill.critical,
+.report-deadline-pill.overdue {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.report-priority-pill.high,
+.report-deadline-pill.due-soon {
+  background: #fff7ed;
+  color: #c2410c;
+}
+
+.report-priority-pill.medium { background: #eff6ff; color: #1d4ed8; }
+.report-priority-pill.low { background: #f1f5f9; color: #475569; }
+
+.report-table-footnote {
+  margin: 0.5rem 0 0;
+  color: #64748b;
+  font-size: 0.75rem;
+}
+
+@media (max-width: 900px) {
+  .reports-compact-view .admin-workload-card {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Keep workload labels readable at narrow report widths. */
+.reports-compact-view .admin-workload-card {
+  grid-template-columns: minmax(0, 1fr);
+  align-items: stretch;
+  gap: 0.45rem;
+}
+
+.reports-compact-view .admin-workload-person strong,
+.reports-compact-view .admin-workload-person p {
+  overflow-wrap: break-word;
+  word-break: normal;
+}
+
+.reports-compact-view .admin-workload-stats {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.35rem;
+}
+
+.reports-compact-view .admin-workload-stats div {
+  padding: 0.38rem 0.45rem;
+}
+
+.reports-compact-view .admin-workload-stats em {
+  font-size: 0.64rem;
+  line-height: 1.2;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
+/* Give report cards only the height their content needs and use the wide
+   workload panel for a two-column staff list. */
+.reports-compact-view .admin-report-grid.compact {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 0.7rem;
+}
+
+.reports-compact-view .admin-report-grid.compact > .panel-card {
+  min-height: 0;
+  align-self: start;
+}
+
+.reports-compact-view .admin-report-grid.compact > .admin-workload-panel {
+  grid-column: 1 / -1;
+}
+
+.reports-compact-view .admin-workload-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+}
+
+.reports-compact-view .admin-workload-card {
+  grid-template-columns: minmax(0, 1fr) minmax(190px, 0.9fr);
+  align-items: center;
+}
+
+@media (max-width: 760px) {
+  .reports-compact-view .admin-report-grid.compact {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .reports-compact-view .admin-report-grid.compact > .admin-workload-panel {
+    grid-column: auto;
+  }
+
+  .reports-compact-view .admin-workload-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .reports-compact-view .admin-workload-card {
+    grid-template-columns: minmax(0, 1fr) minmax(165px, 0.9fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .reports-compact-view .report-toolbar {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .reports-compact-view .report-toolbar-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .reports-compact-view .report-metric:nth-child(3) {
+    border-left: 0;
+  }
+
+  .reports-compact-view .report-metric:nth-child(n + 3) {
+    border-top: 1px solid rgba(203, 213, 225, 0.82);
+  }
+}

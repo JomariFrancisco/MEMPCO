@@ -1946,17 +1946,6 @@ button {
   text-decoration: underline;
 }
 
-.form-error {
-  width: 100%;
-  padding: 0.85rem 0.95rem;
-  border-radius: var(--radius-md);
-  background: rgba(220, 38, 38, 0.08);
-  border: 1px solid rgba(220, 38, 38, 0.16);
-  color: #b91c1c;
-  font-size: 1.032rem;
-  font-weight: 700;
-}
-
 /* =========================
    TICKET CARDS
 ========================= */
@@ -5136,6 +5125,28 @@ button {
   display: flex;
   flex-direction: column;
   gap: 0.55rem;
+}
+
+.issue-description-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.issue-description-heading label {
+  margin: 0;
+}
+
+.issue-description-heading .char-count {
+  flex: 0 0 auto;
+  margin: 0;
+  color: #94a3b8;
+  font-size: 0.78rem;
+  font-weight: 650;
+  line-height: 1.25;
+  text-align: right;
+  white-space: nowrap;
 }
 
 .issue-description-paper {

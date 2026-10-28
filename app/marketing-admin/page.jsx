@@ -1086,7 +1086,7 @@ export default function MarketingAdminPage() {
               </section>
 
               {message.text && (
-                <div className={`admin-alert ${message.type}`} role="status">
+                <div className={`admin-alert ${message.type}${message.type === 'error' ? ' app-error-alert' : ''}`} role={message.type === 'error' ? 'alert' : 'status'}>
                   {message.text}
                 </div>
               )}

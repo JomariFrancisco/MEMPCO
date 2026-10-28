@@ -1443,23 +1443,17 @@ html {
 }
 
 .cp-application-alert {
-  padding: 0.65rem 0.75rem;
+  padding: 0.75rem 0.9rem;
   border-radius: 12px;
-  font-size: 0.984rem;
-  font-weight: 800;
-  line-height: 1.35;
+  font-size: 0.9rem;
+  font-weight: 650;
+  line-height: 1.45;
 }
 
 .cp-application-alert--success {
   border: 1px solid rgba(22, 101, 52, 0.18);
   background: #dcfce7;
   color: #166534;
-}
-
-.cp-application-alert--error {
-  border: 1px solid rgba(220, 38, 38, 0.22);
-  background: #fee2e2;
-  color: #991b1b;
 }
 
 .cp-application-modal {

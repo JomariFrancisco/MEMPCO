@@ -3,6 +3,7 @@
 -- Run this consolidated schema in Supabase SQL Editor for new deployments. The standalone ICT hardening migration remains for existing deployments.
 -- Existing deployments that already applied ICT hardening should also run supabase/ticket_handling_activity_details_migration.sql.
 -- Existing deployments should also run supabase/ticket_message_idempotency_migration.sql to install the current message RPC.
+-- Existing deployments should run supabase/ticket_escalation_partner_company_migration.sql for third-party escalation company names.
 -- Then run supabase/ict_employee_notifications_migration.sql for employee notification delivery.
 -- Separate MRDSS migration files are for existing deployments only.
 -- Includes:
@@ -4913,6 +4914,7 @@ alter table public.tickets
   add column if not exists resolution_due_at timestamptz,
   add column if not exists first_response_at timestamptz,
   add column if not exists resolved_at timestamptz,
+  add column if not exists escalation_partner_company text not null default '',
   add column if not exists technician_id uuid references public.profiles(id) on delete set null,
   add column if not exists private_note_update jsonb;
 comment on column public.tickets.response_due_at is 'First human ICT response target, measured in calendar hours from submission.';

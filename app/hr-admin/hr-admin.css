@@ -26,7 +26,11 @@
 .hr-admin-main .admin-alert {
   align-self: start;
   min-height: 0;
-  padding: 0.72rem 0.95rem;
+  padding: 0.75rem 0.9rem;
+}
+
+.hr-admin-main .admin-alert.app-error-alert {
+  padding: 0;
 }
 
 .hr-sidebar-nav {

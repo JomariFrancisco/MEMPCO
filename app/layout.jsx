@@ -2,6 +2,7 @@ import 'leaflet/dist/leaflet.css';
 import 'react-leaflet-cluster/dist/assets/MarkerCluster.css';
 import 'react-leaflet-cluster/dist/assets/MarkerCluster.Default.css';
 import './globals.css';
+import '@/components/PortalFilters.css';
 import PortalSessionGuard from '@/components/PortalSessionGuard';
 import { ConfirmationProvider } from '@/components/ConfirmationDialog';
 import '@/components/ConfirmationDialog.css';

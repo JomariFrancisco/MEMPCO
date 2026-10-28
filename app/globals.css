@@ -226,3 +226,39 @@ main {
   background-image: none !important;
   -webkit-text-fill-color: #111111 !important;
 }
+
+/* Shared error banner styling for forms and portal notices. */
+.app-error-alert {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #b4232c;
+  box-shadow: none;
+  font-size: 0.84rem;
+  font-weight: 650;
+  line-height: 1.35;
+  white-space: normal;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
+.app-error-alert > button {
+  margin-left: 0.4rem;
+}
+
+.auth-alert.app-error-alert,
+.admin-alert.app-error-alert,
+.cp-application-alert.app-error-alert {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+body[data-portal-theme='dark'] .app-error-alert {
+  color: #ffb0b8;
+}
