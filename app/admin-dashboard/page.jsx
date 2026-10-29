@@ -17,13 +17,11 @@ import {
   ExternalLink,
   FileText,
   ImageIcon,
-  Mail,
   Megaphone,
   Menu,
   MessageCircle,
   Monitor,
   Paperclip,
-  Phone,
   Plus,
   Printer,
   RotateCcw,
@@ -155,6 +153,7 @@ const ADMIN_DEVICE_SUPPORT_CATEGORY_MAP = {
   ],
   'MBWin / Sky360': ['Software / System Support', 'Account / Access Support'],
   'Excel / Office Application': ['Software / System Support', 'Account / Access Support'],
+  'Other Device': ADMIN_HELPDESK_SUPPORT_CATEGORIES.filter((category) => category !== 'Other Support').concat('Other Support'),
 };
 const ADMIN_DEVICE_CONCERN_TYPE_MAP = {
   'MBWin / Sky360': {
@@ -167,7 +166,6 @@ const ADMIN_DEVICE_CONCERN_TYPE_MAP = {
       'New user account request',
       'Password reset',
       'Login problem',
-      'Access permission request',
       'Teller role / user role concern',
       'Other account access concern',
     ],
@@ -3195,20 +3193,6 @@ function AdminProfileView({
   const resolvedHandledTickets = handledTickets.filter(isTicketResolved).length;
   const recentHandledTickets = handledTickets.slice(0, 3);
 
-  const profileFacts = isSystemAccount
-    ? [
-        { label: 'Job Title', value: 'ICT Super Admin', icon: BriefcaseBusiness },
-        { label: 'Account Type', value: 'Shared system account', icon: ShieldCheck },
-      ]
-    : [
-        { label: 'Job Title', value: designation || 'Not provided', icon: BriefcaseBusiness, fullWidth: true },
-        { label: 'Employee ID', value: admin?.employeeId || 'Not provided', icon: UserRound },
-        { label: 'Department', value: department, icon: Building2 },
-        { label: 'Branch / Office', value: assignedOffice, icon: Building2 },
-        { label: 'Email Address', value: admin?.email || 'Not provided', icon: Mail },
-        { label: 'Phone Number', value: admin?.phone || 'Not provided', icon: Phone },
-      ];
-
   const profileStats = [
     {
       label: 'Handled Tickets',
@@ -3280,6 +3264,11 @@ function AdminProfileView({
       photoControl={photoControl}
       name={adminName}
       subtitle={isSystemAccount ? 'ICT Super Admin' : `${designation} - ${department}`}
+      headerDetails={[
+        { label: 'Employee ID', value: admin?.employeeId || 'Not provided' },
+        { label: 'Phone Number', value: admin?.phone || 'Not provided' },
+        { label: 'Email Address', value: admin?.email || 'Not provided' },
+      ]}
       meta={isSystemAccount
         ? [{ label: 'Role', value: formatRoleLabel(admin?.role) }]
         : [
@@ -3287,7 +3276,7 @@ function AdminProfileView({
             { label: 'Office', value: assignedOffice },
           ]}
       stats={profileStats}
-      facts={profileFacts}
+      showProfilePanels={false}
       scopeEyebrow={isSystemAccount ? 'System Account' : 'Admin Scope'}
       scopeTitle={isSystemAccount ? 'Access & Audit Trail' : 'Permissions & Accountability'}
       scopeItems={isSystemAccount
@@ -3401,7 +3390,6 @@ function BurnoutReportEditor({
   technicianProfiles,
   canEditOutcomeFields,
   lockedOutcomePlaceholder,
-  onNoteBlur,
   canReopen,
   formError,
   onPreviewAttachment,
@@ -3718,16 +3706,16 @@ function BurnoutReportEditor({
           <summary><span><FileText aria-hidden="true" />Additional details</span><span className="burnout-optional-badge">Optional</span></summary>
           <div className="burnout-handling-notes">
             <div className="ticket-form-group"><label>Action Taken</label>
-              <textarea className="ticket-field ticket-textarea" value={draft.actionTaken} onChange={(event) => updateDraft('actionTaken', event.target.value)} onBlur={onNoteBlur} placeholder={canEditOutcomeFields ? 'Record the work completed...' : lockedOutcomePlaceholder} readOnly={!canEditOutcomeFields} />
+              <textarea className="ticket-field ticket-textarea" value={draft.actionTaken} onChange={(event) => updateDraft('actionTaken', event.target.value)} placeholder={canEditOutcomeFields ? 'Record the work completed...' : lockedOutcomePlaceholder} readOnly={!canEditOutcomeFields} />
             </div>
             <div className="ticket-form-group"><label>Internal ICT Notes</label>
-              <textarea className="ticket-field ticket-textarea" value={draft.adminRemarks} onChange={(event) => updateDraft('adminRemarks', event.target.value)} onBlur={onNoteBlur} placeholder={canEditOutcomeFields ? 'Internal remarks or follow-up notes...' : lockedOutcomePlaceholder} readOnly={!canEditOutcomeFields} />
+              <textarea className="ticket-field ticket-textarea" value={draft.adminRemarks} onChange={(event) => updateDraft('adminRemarks', event.target.value)} placeholder={canEditOutcomeFields ? 'Internal remarks or follow-up notes...' : lockedOutcomePlaceholder} readOnly={!canEditOutcomeFields} />
             </div>
             <div className="ticket-form-group"><label>Burnout Notes</label>
-              <textarea className="ticket-field ticket-textarea" value={draft.resolution} onChange={(event) => updateDraft('resolution', event.target.value)} onBlur={onNoteBlur} placeholder={canEditOutcomeFields ? 'Unit condition, pass/fail, repair, or turnover notes...' : lockedOutcomePlaceholder} readOnly={!canEditOutcomeFields} />
+              <textarea className="ticket-field ticket-textarea" value={draft.resolution} onChange={(event) => updateDraft('resolution', event.target.value)} placeholder={canEditOutcomeFields ? 'Unit condition, pass/fail, repair, or turnover notes...' : lockedOutcomePlaceholder} readOnly={!canEditOutcomeFields} />
             </div>
             <div className="ticket-form-group"><label>Recommendation</label>
-              <textarea className="ticket-field ticket-textarea" value={draft.recommendation} onChange={(event) => updateDraft('recommendation', event.target.value)} onBlur={onNoteBlur} placeholder={canEditOutcomeFields ? 'Prevention or follow-up recommendation...' : lockedOutcomePlaceholder} readOnly={!canEditOutcomeFields} />
+              <textarea className="ticket-field ticket-textarea" value={draft.recommendation} onChange={(event) => updateDraft('recommendation', event.target.value)} placeholder={canEditOutcomeFields ? 'Prevention or follow-up recommendation...' : lockedOutcomePlaceholder} readOnly={!canEditOutcomeFields} />
             </div>
           </div>
         </details>
@@ -3854,16 +3842,16 @@ function BurnoutReportEditor({
             </div>
             <div className="burnout-handling-notes">
               <div className="ticket-form-group"><label>Action Taken</label>
-                <textarea className="ticket-field ticket-textarea" value={draft.actionTaken} onChange={(event) => updateDraft('actionTaken', event.target.value)} onBlur={onNoteBlur} placeholder={canEditOutcomeFields ? 'Record the work completed...' : lockedOutcomePlaceholder} readOnly={!canEditOutcomeFields} />
+                <textarea className="ticket-field ticket-textarea" value={draft.actionTaken} onChange={(event) => updateDraft('actionTaken', event.target.value)} placeholder={canEditOutcomeFields ? 'Record the work completed...' : lockedOutcomePlaceholder} readOnly={!canEditOutcomeFields} />
               </div>
               <div className="ticket-form-group"><label>Internal ICT Notes</label>
-                <textarea className="ticket-field ticket-textarea" value={draft.adminRemarks} onChange={(event) => updateDraft('adminRemarks', event.target.value)} onBlur={onNoteBlur} placeholder={canEditOutcomeFields ? 'Internal remarks or follow-up notes...' : lockedOutcomePlaceholder} readOnly={!canEditOutcomeFields} />
+                <textarea className="ticket-field ticket-textarea" value={draft.adminRemarks} onChange={(event) => updateDraft('adminRemarks', event.target.value)} placeholder={canEditOutcomeFields ? 'Internal remarks or follow-up notes...' : lockedOutcomePlaceholder} readOnly={!canEditOutcomeFields} />
               </div>
               <div className="ticket-form-group"><label>Burnout Notes</label>
-                <textarea className="ticket-field ticket-textarea" value={draft.resolution} onChange={(event) => updateDraft('resolution', event.target.value)} onBlur={onNoteBlur} placeholder={canEditOutcomeFields ? 'Unit condition, pass/fail, repair, or turnover notes...' : lockedOutcomePlaceholder} readOnly={!canEditOutcomeFields} />
+                <textarea className="ticket-field ticket-textarea" value={draft.resolution} onChange={(event) => updateDraft('resolution', event.target.value)} placeholder={canEditOutcomeFields ? 'Unit condition, pass/fail, repair, or turnover notes...' : lockedOutcomePlaceholder} readOnly={!canEditOutcomeFields} />
               </div>
               <div className="ticket-form-group"><label>Recommendation</label>
-                <textarea className="ticket-field ticket-textarea" value={draft.recommendation} onChange={(event) => updateDraft('recommendation', event.target.value)} onBlur={onNoteBlur} placeholder={canEditOutcomeFields ? 'Prevention or follow-up recommendation...' : lockedOutcomePlaceholder} readOnly={!canEditOutcomeFields} />
+                <textarea className="ticket-field ticket-textarea" value={draft.recommendation} onChange={(event) => updateDraft('recommendation', event.target.value)} placeholder={canEditOutcomeFields ? 'Prevention or follow-up recommendation...' : lockedOutcomePlaceholder} readOnly={!canEditOutcomeFields} />
               </div>
               {canReopen && <div className="ticket-form-group burnout-reopen-reason"><label>Reopen Reason (required to reopen)</label>
                 <textarea className="ticket-field ticket-textarea" value={draft.reopenReason} onChange={(event) => updateDraft('reopenReason', event.target.value)} minLength={8} />
@@ -7285,18 +7273,6 @@ function TicketActionModal({ ticket, currentUser, users = [], onClose, onSave, o
     actionReason: ticket.actionReason || '',
     reopenReason: '',
   });
-  const [autosaveState, setAutosaveState] = useState({ status: 'idle', message: '' });
-  const autosaveTimeoutRef = useRef(null);
-  const lastAutosavedNotesRef = useRef(
-    JSON.stringify({
-      actionTaken: ticket.actionTaken || '',
-      adminRemarks: ticket.adminRemarks || '',
-      resolution: ticket.resolution || '',
-      recommendation: ticket.recommendation || '',
-    })
-  );
-  const latestDraftRef = useRef(draft);
-  const autosaveInFlightRef = useRef(null);
   const normalizedDraftStatus = normalizeTicketStatus(draft.status);
   const isEscalationStatus = normalizedDraftStatus === 'escalated';
   const isWaitingStatus = ['waiting for requester', 'waiting for vendor', 'waiting for approval'].includes(normalizedDraftStatus);
@@ -7313,10 +7289,6 @@ function TicketActionModal({ ticket, currentUser, users = [], onClose, onSave, o
   const canSendConversationMessage = canTicketAcceptMessages(ticket);
   const shouldShowConversation = isTicketBeingHandled(ticket) || ticketMessages.length > 0;
   const isChatOpen = shouldShowConversation && !isChatMinimized;
-
-  useEffect(() => {
-    latestDraftRef.current = draft;
-  }, [draft]);
 
   useEffect(() => {
     isChatMinimizedRef.current = isChatMinimized;
@@ -7510,150 +7482,15 @@ function TicketActionModal({ ticket, currentUser, users = [], onClose, onSave, o
     setDraft((prev) => ({ ...prev, burnoutReport: nextReport }));
   };
 
-  const getAutosaveNotes = useCallback((sourceDraft = latestDraftRef.current) => ({
+  const getDraftNotes = useCallback((sourceDraft = draft) => ({
     actionTaken: sourceDraft.actionTaken || '',
     adminRemarks: sourceDraft.adminRemarks || '',
     resolution: sourceDraft.resolution || '',
     recommendation: sourceDraft.recommendation || '',
-  }), []);
-
-  const performNotesAutosave = useCallback(async ({ force = false } = {}) => {
-    if (!ticket?.id || isResolvedLocked || submittingRef.current) return null;
-
-    if (autosaveInFlightRef.current) {
-      try {
-        await autosaveInFlightRef.current;
-      } catch {
-        // The next save attempt below will surface the current result.
-      }
-    }
-
-    const notes = getAutosaveNotes();
-    const signature = JSON.stringify(notes);
-
-    if (signature === lastAutosavedNotesRef.current) {
-      return null;
-    }
-
-    setAutosaveState({ status: 'saving', message: 'Saving...' });
-
-    const timestamp = new Date().toLocaleString();
-    const savePromise = updateTicket(
-      ticket.id,
-      {
-        ...notes,
-        adminUpdatedAt: timestamp,
-      },
-      {
-        requestedByRole: currentUser?.role || 'admin',
-        updateScope: 'admin-autosave',
-        autoSave: true,
-        expectedVersion: savedVersionRef.current,
-      }
-    );
-
-    autosaveInFlightRef.current = savePromise;
-
-    try {
-      const updatedTicket = await savePromise;
-      savedVersionRef.current = updatedTicket.version;
-      lastAutosavedNotesRef.current = signature;
-      setAutosaveState({ status: 'saved', message: 'Saved' });
-
-      if (updatedTicket?.id) {
-        onTicketRealtimeUpdate?.(updatedTicket);
-      }
-
-      return updatedTicket;
-    } catch (error) {
-      setAutosaveState({ status: 'error', message: 'Unable to save' });
-      throw error;
-    } finally {
-      if (autosaveInFlightRef.current === savePromise) {
-        autosaveInFlightRef.current = null;
-      }
-    }
-  }, [currentUser?.role, getAutosaveNotes, isResolvedLocked, onTicketRealtimeUpdate, ticket?.id]);
-
-  const scheduleNotesAutosave = useCallback(() => {
-    if (autosaveTimeoutRef.current) {
-      window.clearTimeout(autosaveTimeoutRef.current);
-    }
-
-    autosaveTimeoutRef.current = window.setTimeout(() => {
-      autosaveTimeoutRef.current = null;
-      void performNotesAutosave().catch(() => {});
-    }, 750);
-  }, [performNotesAutosave]);
-
-  useEffect(() => {
-    if (isResolvedLocked) return undefined;
-
-    scheduleNotesAutosave();
-
-    return () => {
-      if (autosaveTimeoutRef.current) {
-        window.clearTimeout(autosaveTimeoutRef.current);
-        autosaveTimeoutRef.current = null;
-      }
-    };
-  }, [
-    draft.actionTaken,
-    draft.adminRemarks,
-    draft.resolution,
-    draft.recommendation,
-    isResolvedLocked,
-    scheduleNotesAutosave,
-  ]);
-
-  useEffect(() => {
-    if (isResolvedLocked) return undefined;
-
-    const flushAutosave = () => {
-      if (autosaveTimeoutRef.current) {
-        window.clearTimeout(autosaveTimeoutRef.current);
-        autosaveTimeoutRef.current = null;
-      }
-
-      void performNotesAutosave({ force: true }).catch(() => {});
-    };
-
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'hidden') {
-        flushAutosave();
-      }
-    };
-
-    window.addEventListener('beforeunload', flushAutosave);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    return () => {
-      window.removeEventListener('beforeunload', flushAutosave);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, [isResolvedLocked, performNotesAutosave]);
-
-  const handleNoteBlur = () => {
-    if (autosaveTimeoutRef.current) {
-      window.clearTimeout(autosaveTimeoutRef.current);
-      autosaveTimeoutRef.current = null;
-    }
-
-    void performNotesAutosave({ force: true }).catch(() => {});
-  };
+  }), [draft]);
 
   const handleRequestClose = async () => {
-    if (autosaveTimeoutRef.current) {
-      window.clearTimeout(autosaveTimeoutRef.current);
-      autosaveTimeoutRef.current = null;
-    }
-
-    try {
-      await performNotesAutosave({ force: true });
-      onClose();
-    } catch (error) {
-      setFormError(error.message || 'Unable to autosave the latest notes. Please try again.');
-    }
+    onClose();
   };
 
   const getPrintableTicketSnapshot = () => ({
@@ -7663,17 +7500,12 @@ function TicketActionModal({ ticket, currentUser, users = [], onClose, onSave, o
     technician: draft.technician || ticket.technician,
     escalationPartner: draft.escalationPartner,
     escalationPartnerCompany: draft.escalationPartnerCompany,
-    ...getAutosaveNotes(draft),
+    ...getDraftNotes(draft),
   });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (submittingRef.current) return;
-
-    if (autosaveTimeoutRef.current) {
-      window.clearTimeout(autosaveTimeoutRef.current);
-      autosaveTimeoutRef.current = null;
-    }
 
     if (isResolvedLocked) {
       setFormError(isBurnout ? 'Completed Burnout records are locked and cannot be changed.' : 'Resolved tickets are locked and cannot be changed.');
@@ -7718,7 +7550,6 @@ function TicketActionModal({ ticket, currentUser, users = [], onClose, onSave, o
     submittingRef.current=true;
     setIsSubmitting(true);
     try {
-    if (autosaveInFlightRef.current) await autosaveInFlightRef.current;
     await onSave(ticket.id, {
       ...sanitizedDraft,
       technician: sanitizedDraft.technician || currentStaffName,
@@ -7803,7 +7634,6 @@ function TicketActionModal({ ticket, currentUser, users = [], onClose, onSave, o
             technicianProfiles={technicianProfiles}
             canEditOutcomeFields={canEditOutcomeFields}
             lockedOutcomePlaceholder={lockedOutcomePlaceholder}
-            onNoteBlur={handleNoteBlur}
             canReopen={canReopen}
             formError={formError}
             onPreviewAttachment={setSelectedAttachment}
@@ -7973,7 +7803,7 @@ function TicketActionModal({ ticket, currentUser, users = [], onClose, onSave, o
               className="ticket-field ticket-textarea admin-small-textarea"
               value={draft.actionTaken}
               onChange={(e) => updateDraft('actionTaken', e.target.value)}
-              onBlur={handleNoteBlur}
+             
               placeholder={canEditOutcomeFields ? 'Write the action taken by ICT/admin...' : lockedOutcomePlaceholder}
               readOnly={!canEditOutcomeFields}
             />
@@ -7985,7 +7815,7 @@ function TicketActionModal({ ticket, currentUser, users = [], onClose, onSave, o
               className="ticket-field ticket-textarea admin-small-textarea"
               value={draft.adminRemarks}
               onChange={(e) => updateDraft('adminRemarks', e.target.value)}
-              onBlur={handleNoteBlur}
+             
               placeholder={canEditOutcomeFields ? 'Write internal remarks or follow-up notes...' : lockedOutcomePlaceholder}
               readOnly={!canEditOutcomeFields}
             />
@@ -7997,7 +7827,7 @@ function TicketActionModal({ ticket, currentUser, users = [], onClose, onSave, o
               className="ticket-field ticket-textarea admin-small-textarea"
               value={draft.resolution}
               onChange={(e) => updateDraft('resolution', e.target.value)}
-              onBlur={handleNoteBlur}
+             
               placeholder={canEditOutcomeFields ? (isBurnout ? 'Write unit condition, pass/fail, repair, replacement, or turnover notes...' : 'Write final resolution once completed...') : lockedOutcomePlaceholder}
               readOnly={!canEditOutcomeFields}
             />
@@ -8009,7 +7839,7 @@ function TicketActionModal({ ticket, currentUser, users = [], onClose, onSave, o
               className="ticket-field ticket-textarea admin-small-textarea"
               value={draft.recommendation}
               onChange={(e) => updateDraft('recommendation', e.target.value)}
-              onBlur={handleNoteBlur}
+             
               placeholder={canEditOutcomeFields ? 'Write any recommendation, prevention step, or follow-up action...' : lockedOutcomePlaceholder}
               readOnly={!canEditOutcomeFields}
             />
@@ -8072,7 +7902,7 @@ function TicketActionModal({ ticket, currentUser, users = [], onClose, onSave, o
         {!isBurnout && shouldShowConversation && isChatMinimized && (
           typeof document !== 'undefined' && createPortal(
             <TicketChatLauncher
-              className="ticket-modal-floating-launcher"
+              className="ticket-modal-floating-launcher admin-ticket-chat-launcher"
               unreadCount={unreadConversationCount}
               onClick={() => {
                 setIsChatMinimized(false);
@@ -8110,12 +7940,6 @@ function TicketActionModal({ ticket, currentUser, users = [], onClose, onSave, o
               </button>
             )}
 
-            {!isResolvedLocked && autosaveState.message && (
-              <span className={`ticket-autosave-status ${autosaveState.status}`}>
-                {autosaveState.message}
-              </span>
-            )}
-
             <button type="button" className="modal-btn print" onClick={() => printResolvedTicket(getPrintableTicketSnapshot())}>
               <MonoIcon icon={Printer} />
               Print Ticket
@@ -8123,7 +7947,6 @@ function TicketActionModal({ ticket, currentUser, users = [], onClose, onSave, o
 
             {!isResolvedLocked && (
               <button type="submit" className="modal-btn confirm" disabled={isSubmitting}>
-                <MonoIcon icon={ShieldCheck} />
                 {isBurnout ? 'Save Burnout Update' : isStartMode ? 'Start Ticket' : 'Save Ticket Update'}
               </button>
             )}

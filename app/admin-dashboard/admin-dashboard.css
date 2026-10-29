@@ -14763,7 +14763,8 @@ button:not(:disabled),
 .ticket-action-overlay,
 .ticket-action-overlay.chat-open {
   --ticket-action-inline-gap: clamp(1rem, 4.2vw, 5rem);
-  --ticket-action-block-gap: 0.5rem;
+  --ticket-action-block-gap: 0.9rem;
+  box-sizing: border-box !important;
   align-items: center !important;
   justify-content: center !important;
   overflow: hidden !important;
@@ -16954,8 +16955,12 @@ button:not(:disabled),
 }
 
 .ticket-message-icon-btn .admin-mono-icon {
+  display: block !important;
+  flex: 0 0 18px !important;
   width: 18px !important;
   height: 18px !important;
+  margin: 0 !important;
+  transform: none !important;
 }
 
 .ticket-message-send-btn {
@@ -19323,6 +19328,40 @@ button:not(:disabled),
   flex: 0 0 12px !important;
 }
 
+body[data-portal-theme='dark'] .ticket-action-overlay form.ticket-action-modal:is(.is-support-modal, .is-burnout-modal) .ticket-handling-status.is-detailed .ticket-handling-badge {
+  border-color: #536274 !important;
+  background: #263342 !important;
+  color: #f1f5f9 !important;
+}
+
+body[data-portal-theme='dark'] .ticket-action-overlay form.ticket-action-modal:is(.is-support-modal, .is-burnout-modal) .ticket-handling-status.is-detailed .ticket-handling-badge.tone-active {
+  border-color: #3c8178 !important;
+  background: #173d39 !important;
+  color: #b9f3e6 !important;
+}
+
+body[data-portal-theme='dark'] .ticket-action-overlay form.ticket-action-modal:is(.is-support-modal, .is-burnout-modal) .ticket-handling-status.is-detailed .ticket-handling-badge.tone-waiting {
+  border-color: #927638 !important;
+  background: #493919 !important;
+  color: #ffe6a6 !important;
+}
+
+body[data-portal-theme='dark'] .ticket-action-overlay form.ticket-action-modal:is(.is-support-modal, .is-burnout-modal) .ticket-handling-status.is-detailed .ticket-handling-badge.tone-success {
+  border-color: #4e855c !important;
+  background: #203d2a !important;
+  color: #c4f3cb !important;
+}
+
+body[data-portal-theme='dark'] .ticket-action-overlay form.ticket-action-modal:is(.is-support-modal, .is-burnout-modal) .ticket-handling-status.is-detailed .ticket-handling-badge.tone-danger {
+  border-color: #98535c !important;
+  background: #48262d !important;
+  color: #ffd0d4 !important;
+}
+
+body[data-portal-theme='dark'] .ticket-action-overlay form.ticket-action-modal:is(.is-support-modal, .is-burnout-modal) .ticket-handling-status.is-detailed .ticket-handling-editor {
+  color: #e2eaf3 !important;
+}
+
 @media (max-width: 1050px) {
   .ticket-action-overlay form.ticket-action-modal.is-support-modal .ticket-action-head-main {
     grid-template-columns: minmax(0, 1fr) !important;
@@ -20381,4 +20420,22 @@ button:not(:disabled),
   .reports-compact-view .report-metric:nth-child(n + 3) {
     border-top: 1px solid rgba(203, 213, 225, 0.82);
   }
+}
+
+body[data-portal-theme='dark'] .ticket-autosave-status.saved {
+  border-color: rgba(52, 211, 153, 0.42);
+  background: #12392f;
+  color: #a7f3d0;
+}
+
+body[data-portal-theme='dark'] .ticket-autosave-status.saving {
+  border-color: rgba(251, 191, 36, 0.46);
+  background: #493716;
+  color: #fde68a;
+}
+
+body[data-portal-theme='dark'] .ticket-autosave-status.error {
+  border-color: rgba(248, 113, 113, 0.48);
+  background: #4a2025;
+  color: #fecaca;
 }

@@ -5807,7 +5807,12 @@ button {
 .employee-ticket-modal {
   overflow-x: hidden !important;
   overflow-y: auto !important;
+  scrollbar-gutter: auto !important;
   overscroll-behavior: contain;
+}
+
+.employee-ticket-modal.has-attachments {
+  scrollbar-gutter: auto !important;
 }
 
 .ticket-chat-launcher {
@@ -11722,8 +11727,12 @@ button {
 }
 
 .ticket-message-icon-btn .admin-mono-icon {
+  display: block !important;
+  flex: 0 0 18px !important;
   width: 18px !important;
   height: 18px !important;
+  margin: 0 !important;
+  transform: none !important;
 }
 
 .ticket-message-send-btn {

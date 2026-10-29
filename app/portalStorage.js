@@ -12,6 +12,7 @@ export const SUPPORT_CATEGORIES = [
   'Biometric / Attendance Support',
   'Server / NAS / Database Support',
   'Other ICT Request',
+  'Other Support',
 ];
 
 export const BRANCHES = [
@@ -94,7 +95,6 @@ export const CATEGORY_CONCERN_TYPES = {
     'New user account request',
     'Password reset',
     'Login problem',
-    'Access permission request',
     'Teller role / user role concern',
     'Other account access concern',
   ],
@@ -143,6 +143,7 @@ export const CATEGORY_CONCERN_TYPES = {
     'Technical consultation',
     'Concern not listed',
   ],
+  'Other Support': ['Other support concern'],
 };
 
 export const CONCERN_TYPES = Array.from(
@@ -197,7 +198,7 @@ export const DEVICE_OPTIONS = [
   'Server',
   'MBWin / Sky360',
   'Excel / Office Application',
-  'Other ICT Device',
+  'Other Device',
 ];
 
 export const slugify = (value) =>

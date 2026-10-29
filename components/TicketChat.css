@@ -32,6 +32,50 @@
   display: none !important;
 }
 
+.ticket-chat-launcher.admin-ticket-chat-launcher.ticket-modal-floating-launcher {
+  right: 0.75rem !important;
+  bottom: 2.2rem !important;
+  border-color: #e2e8f0 !important;
+  background: #fff !important;
+  color: #243247 !important;
+  box-shadow: 0 8px 24px rgb(15 23 42 / 16%) !important;
+}
+
+.ticket-chat-launcher.admin-ticket-chat-launcher.ticket-modal-floating-launcher .admin-mono-icon {
+  color: #dc2626 !important;
+  stroke: #dc2626 !important;
+}
+
+.ticket-chat-launcher.admin-ticket-chat-launcher.ticket-modal-floating-launcher .ticket-chat-unread-count {
+  border-color: #fff !important;
+}
+
+.ticket-chat-launcher.admin-ticket-chat-launcher.ticket-modal-floating-launcher:hover {
+  border-color: #fca5a5 !important;
+  background: #fff5f5 !important;
+}
+
+body[data-portal-theme='dark'] .ticket-chat-launcher.admin-ticket-chat-launcher.ticket-modal-floating-launcher {
+  border-color: #394456 !important;
+  background: #202a39 !important;
+  color: #e6edf7 !important;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 42%) !important;
+}
+
+body[data-portal-theme='dark'] .ticket-chat-launcher.admin-ticket-chat-launcher.ticket-modal-floating-launcher .admin-mono-icon {
+  color: #ff7474 !important;
+  stroke: #ff7474 !important;
+}
+
+body[data-portal-theme='dark'] .ticket-chat-launcher.admin-ticket-chat-launcher.ticket-modal-floating-launcher .ticket-chat-unread-count {
+  border-color: #202a39 !important;
+}
+
+body[data-portal-theme='dark'] .ticket-chat-launcher.admin-ticket-chat-launcher.ticket-modal-floating-launcher:hover {
+  border-color: #59677b !important;
+  background: #2a3546 !important;
+}
+
 .ticket-chat-launcher.ticket-modal-floating-launcher .ticket-chat-unread-count {
   position: absolute !important;
   top: -6px !important;
@@ -294,10 +338,254 @@
   background: #b91c1c !important;
 }
 
+/* Employee chat adopts the portal's dark theme while preserving its light theme. */
+body[data-portal-theme='dark'] .ticket-chat-launcher.ticket-modal-floating-launcher {
+  border-color: #394456 !important;
+  background: #202a39 !important;
+  color: #e6edf7 !important;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 42%) !important;
+}
+
+body[data-portal-theme='dark'] .ticket-chat-launcher.ticket-modal-floating-launcher .admin-mono-icon {
+  color: #ff7474 !important;
+  stroke: #ff7474 !important;
+}
+
+body[data-portal-theme='dark'] .ticket-chat-launcher.ticket-modal-floating-launcher .ticket-chat-unread-count {
+  border-color: #202a39 !important;
+}
+
+body[data-portal-theme='dark'] .ticket-chat-launcher.ticket-modal-floating-launcher:hover {
+  border-color: #59677b !important;
+  background: #2a3546 !important;
+}
+
+body[data-portal-theme='dark'] .employee-floating-ticket-chat.ticket-modal-floating-chat {
+  border-color: #394456 !important;
+  background: #18212e !important;
+  color: #e6edf7 !important;
+  color-scheme: dark;
+  box-shadow: 0 20px 56px rgb(0 0 0 / 48%) !important;
+}
+
+body[data-portal-theme='dark'] .employee-floating-ticket-chat .ticket-conversation-head,
+body[data-portal-theme='dark'] .employee-floating-ticket-chat.ticket-modal-floating-chat .ticket-message-composer {
+  border-color: #354154 !important;
+  background: #18212e !important;
+}
+
+body[data-portal-theme='dark'] .employee-floating-ticket-chat .ticket-conversation-head h4,
+body[data-portal-theme='dark'] .employee-floating-ticket-chat .ticket-conversation-head .ticket-chat-title-label,
+body[data-portal-theme='dark'] .employee-floating-ticket-chat .ticket-message-meta strong,
+body[data-portal-theme='dark'] .employee-floating-ticket-chat .ticket-message-bubble,
+body[data-portal-theme='dark'] .employee-floating-ticket-chat .ticket-message-empty p {
+  color: #e6edf7 !important;
+}
+
+body[data-portal-theme='dark'] .employee-floating-ticket-chat .ticket-message-item:not(.mine) .ticket-message-bubble p {
+  color: #e6edf7 !important;
+}
+
+body[data-portal-theme='dark'] .employee-floating-ticket-chat .ticket-chat-requester,
+body[data-portal-theme='dark'] .employee-floating-ticket-chat .ticket-conversation-count,
+body[data-portal-theme='dark'] .employee-floating-ticket-chat .ticket-message-meta,
+body[data-portal-theme='dark'] .employee-floating-ticket-chat .ticket-message-sent-at {
+  color: #aab7c9 !important;
+}
+
+body[data-portal-theme='dark'] .employee-floating-ticket-chat .ticket-chat-close {
+  color: #c0cada !important;
+}
+
+body[data-portal-theme='dark'] .employee-floating-ticket-chat .ticket-chat-close:hover {
+  background: #354154 !important;
+  color: #fff !important;
+}
+
+body[data-portal-theme='dark'] .employee-floating-ticket-chat .ticket-message-list {
+  background: #151c27 !important;
+}
+
+body[data-portal-theme='dark'] .employee-floating-ticket-chat .ticket-message-item:not(.mine) .ticket-message-bubble,
+body[data-portal-theme='dark'] .employee-floating-ticket-chat .ticket-message-empty {
+  border-color: #354154 !important;
+  background: #202a39 !important;
+  color: #e6edf7 !important;
+}
+
+body[data-portal-theme='dark'] .employee-floating-ticket-chat .ticket-message-item.mine .ticket-message-bubble {
+  background: #8f2028 !important;
+  color: #fff !important;
+}
+
+body[data-portal-theme='dark'] .employee-floating-ticket-chat .ticket-message-item.mine .ticket-message-bubble p {
+  color: #fff !important;
+}
+
+body[data-portal-theme='dark'] .employee-floating-ticket-chat .ticket-message-empty .admin-mono-icon {
+  color: #aab7c9 !important;
+  stroke: #aab7c9 !important;
+}
+
+body[data-portal-theme='dark'] .employee-floating-ticket-chat.ticket-modal-floating-chat .ticket-message-textarea {
+  border-color: #46536a !important;
+  outline: none !important;
+  background: #151c27 !important;
+  color: #f1f5fb !important;
+  caret-color: #fff !important;
+  box-shadow: none !important;
+  transform: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+body[data-portal-theme='dark'] .employee-floating-ticket-chat.ticket-modal-floating-chat .ticket-message-textarea:focus {
+  border-color: #74839a !important;
+  outline: none !important;
+  background: #151c27 !important;
+  box-shadow: 0 0 0 2px rgb(116 131 154 / 22%) !important;
+  transform: none !important;
+}
+
+body[data-portal-theme='dark'] .employee-floating-ticket-chat.ticket-modal-floating-chat .ticket-message-textarea::placeholder {
+  color: #aab7c9 !important;
+  opacity: 1 !important;
+}
+
+body[data-portal-theme='dark'] .employee-floating-ticket-chat.ticket-modal-floating-chat .ticket-message-textarea:disabled {
+  color: #c0cada !important;
+  opacity: 1 !important;
+}
+
+body[data-portal-theme='dark'] .employee-floating-ticket-chat.ticket-modal-floating-chat .ticket-message-icon-btn {
+  border-color: #46536a !important;
+  background: #293447 !important;
+  color: #d8e1ef !important;
+}
+
+body[data-portal-theme='dark'] .employee-floating-ticket-chat.ticket-modal-floating-chat .ticket-message-icon-btn .admin-mono-icon {
+  color: #d8e1ef !important;
+  stroke: #d8e1ef !important;
+}
+
+/* ICT dashboard uses a dark canvas, so its floating ticket chat follows suit. */
+.admin-floating-ticket-chat.ticket-modal-floating-chat {
+  border-color: #394456 !important;
+  background: #18212e !important;
+  color: #e6edf7 !important;
+  color-scheme: dark;
+  box-shadow: 0 20px 56px rgb(0 0 0 / 48%) !important;
+}
+
+.admin-floating-ticket-chat .ticket-conversation-head,
+.admin-floating-ticket-chat.ticket-modal-floating-chat .ticket-message-composer {
+  border-color: #354154 !important;
+  background: #18212e !important;
+}
+
+.admin-floating-ticket-chat .ticket-conversation-head h4,
+.admin-floating-ticket-chat .ticket-conversation-head .ticket-chat-title-label,
+.admin-floating-ticket-chat .ticket-message-meta strong,
+.admin-floating-ticket-chat .ticket-message-bubble,
+.admin-floating-ticket-chat .ticket-message-empty p {
+  color: #e6edf7 !important;
+}
+
+.admin-floating-ticket-chat .ticket-message-item:not(.mine) .ticket-message-bubble p {
+  color: #e6edf7 !important;
+}
+
+.admin-floating-ticket-chat .ticket-chat-requester,
+.admin-floating-ticket-chat .ticket-conversation-count,
+.admin-floating-ticket-chat .ticket-message-meta,
+.admin-floating-ticket-chat .ticket-message-sent-at {
+  color: #aab7c9 !important;
+}
+
+.admin-floating-ticket-chat .ticket-chat-close {
+  color: #c0cada !important;
+}
+
+.admin-floating-ticket-chat .ticket-chat-close:hover {
+  background: #354154 !important;
+  color: #fff !important;
+}
+
+.admin-floating-ticket-chat .ticket-message-list {
+  background: #151c27 !important;
+}
+
+.admin-floating-ticket-chat .ticket-message-item:not(.mine) .ticket-message-bubble,
+.admin-floating-ticket-chat .ticket-message-empty {
+  border-color: #354154 !important;
+  background: #202a39 !important;
+  color: #e6edf7 !important;
+}
+
+.admin-floating-ticket-chat .ticket-message-item.mine .ticket-message-bubble {
+  background: #8f2028 !important;
+  color: #fff !important;
+}
+
+.admin-floating-ticket-chat .ticket-message-item.mine .ticket-message-bubble p {
+  color: #fff !important;
+}
+
+.admin-floating-ticket-chat .ticket-message-empty .admin-mono-icon {
+  color: #aab7c9 !important;
+  stroke: #aab7c9 !important;
+}
+
+.admin-floating-ticket-chat.ticket-modal-floating-chat .ticket-message-textarea {
+  border-color: #46536a !important;
+  outline: none !important;
+  background: #151c27 !important;
+  color: #f1f5fb !important;
+  caret-color: #fff !important;
+  box-shadow: none !important;
+  transform: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.admin-floating-ticket-chat.ticket-modal-floating-chat .ticket-message-textarea:focus {
+  border-color: #74839a !important;
+  outline: none !important;
+  background: #151c27 !important;
+  box-shadow: 0 0 0 2px rgb(116 131 154 / 22%) !important;
+  transform: none !important;
+}
+
+.admin-floating-ticket-chat.ticket-modal-floating-chat .ticket-message-textarea::placeholder {
+  color: #aab7c9 !important;
+  opacity: 1 !important;
+}
+
+.admin-floating-ticket-chat.ticket-modal-floating-chat .ticket-message-textarea:disabled {
+  color: #c0cada !important;
+  opacity: 1 !important;
+}
+
+.admin-floating-ticket-chat.ticket-modal-floating-chat .ticket-message-icon-btn {
+  border-color: #46536a !important;
+  background: #293447 !important;
+  color: #d8e1ef !important;
+}
+
+.admin-floating-ticket-chat.ticket-modal-floating-chat .ticket-message-icon-btn .admin-mono-icon {
+  color: #d8e1ef !important;
+  stroke: #d8e1ef !important;
+}
+
 @media (max-width: 700px) {
   .ticket-chat-launcher.ticket-modal-floating-launcher {
     right: 0.75rem !important;
     bottom: 0.75rem !important;
+  }
+
+  .ticket-chat-launcher.admin-ticket-chat-launcher.ticket-modal-floating-launcher {
+    right: 0.75rem !important;
+    bottom: 2.2rem !important;
   }
 
   .floating-ticket-chat.ticket-modal-floating-chat {

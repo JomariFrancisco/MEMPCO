@@ -1,6 +1,6 @@
 'use client';
 
-import { ChevronRight, ShieldCheck } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 import './PortalProfileLayout.css';
 
 export default function PortalProfileLayout({
@@ -8,6 +8,8 @@ export default function PortalProfileLayout({
   name,
   subtitle,
   meta = [],
+  headerDetails = [],
+  showProfilePanels = true,
   stats = [],
   facts = [],
   scopeEyebrow,
@@ -40,6 +42,16 @@ export default function PortalProfileLayout({
             </div>
           </div>
         </div>
+        {headerDetails.length > 0 && (
+          <div className="portal-profile-header-details">
+            {headerDetails.map((item) => (
+              <div key={item.label}>
+                <small>{item.label}</small>
+                <strong>{item.value}</strong>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       <section className="portal-profile-stats" aria-label="Profile summary">
@@ -52,7 +64,7 @@ export default function PortalProfileLayout({
         ))}
       </section>
 
-      <div className="portal-profile-main-grid">
+      {showProfilePanels && <div className="portal-profile-main-grid">
         <section className="portal-profile-panel">
           <div className="portal-profile-panel-heading">
             <div>
@@ -86,13 +98,12 @@ export default function PortalProfileLayout({
           <div className="portal-profile-scope-list">
             {scopeItems.map((item) => (
               <div key={item}>
-                <ShieldCheck aria-hidden="true" />
                 <span>{item}</span>
               </div>
             ))}
           </div>
         </section>
-      </div>
+      </div>}
 
       <section className="portal-profile-panel portal-profile-activity-panel">
         <div className="portal-profile-panel-heading">

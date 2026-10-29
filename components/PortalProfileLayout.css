@@ -35,6 +35,44 @@
   min-width: 0;
 }
 
+.portal-profile-header-details {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 58%;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.portal-profile-header-details > div {
+  min-width: 0;
+  min-height: 66px;
+  display: grid;
+  align-content: center;
+  gap: 4px;
+  padding: 9px 11px;
+  border: 1px solid #e4e8ef;
+  border-radius: 7px;
+  background: #f8fafc;
+}
+
+.portal-profile-header-details small {
+  color: #778397;
+  font-size: 0.68rem;
+  font-weight: 750;
+  line-height: 1.15;
+  text-transform: uppercase;
+}
+
+.portal-profile-header-details strong {
+  min-width: 0;
+  color: #263244;
+  font-size: 0.84rem;
+  font-weight: 700;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
 .portal-profile-photo {
   position: relative;
   flex: 0 0 84px;
@@ -334,9 +372,8 @@
 .portal-profile-scope-list > div {
   min-width: 0;
   display: grid;
-  grid-template-columns: 17px minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   align-items: start;
-  gap: 8px;
   padding: 10px;
   border: 1px solid #e7ebf1;
   border-radius: 7px;
@@ -346,13 +383,6 @@
   font-weight: 600;
   line-height: 1.35;
   overflow-wrap: anywhere;
-}
-
-.portal-profile-scope-list svg {
-  width: 16px;
-  height: 16px;
-  margin-top: 1px;
-  color: #b42323;
 }
 
 .portal-profile-action {
@@ -519,6 +549,11 @@
     gap: 12px;
   }
 
+  .portal-profile-header-details {
+    width: 100%;
+    max-width: none;
+  }
+
   .portal-profile-stats {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 9px;
@@ -567,6 +602,10 @@
 
   .portal-profile-identity {
     gap: 10px;
+  }
+
+  .portal-profile-header-details {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .portal-profile-photo,

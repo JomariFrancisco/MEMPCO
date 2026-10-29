@@ -337,6 +337,16 @@ body[data-portal-theme='dark'] .latest-activity-card :is(.ticket-id, .ticket-dat
   height: 0 !important;
 }
 
+/* Hidden scrollbars must not reserve a phantom right-side gutter in the details modal. */
+.employee-ticket-action-overlay article.employee-ticket-modal.ticket-action-modal.is-support-modal.ticket-modal-readable[data-employee-details] > .employee-admin-scroll-content {
+  scrollbar-gutter: auto !important;
+}
+
+.employee-ticket-action-overlay article.employee-ticket-modal.ticket-action-modal.is-support-modal.ticket-modal-readable[data-employee-details] {
+  scrollbar-gutter: auto !important;
+  scrollbar-width: none !important;
+}
+
 .employee-ticket-action-overlay article.employee-ticket-modal.ticket-action-modal.is-support-modal.ticket-modal-readable[data-employee-details] .ticket-meta-cell p {
   font-weight: 600 !important;
   line-height: 1.4 !important;

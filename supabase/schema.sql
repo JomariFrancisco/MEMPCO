@@ -4,6 +4,7 @@
 -- Existing deployments that already applied ICT hardening should also run supabase/ticket_handling_activity_details_migration.sql.
 -- Existing deployments should also run supabase/ticket_message_idempotency_migration.sql to install the current message RPC.
 -- Existing deployments should run supabase/ticket_escalation_partner_company_migration.sql for third-party escalation company names.
+-- Existing deployments should run supabase/ticket_saar_teller_expiry_migration.sql for current teller SAAR rules.
 -- Then run supabase/ict_employee_notifications_migration.sql for employee notification delivery.
 -- Separate MRDSS migration files are for existing deployments only.
 -- Includes:
@@ -1376,13 +1377,21 @@ begin
   ));
   saar_required_for_request :=
     ticket_context ~ '(mbwin|mb[[:space:]]+win|sky360|mbwim|mb[[:space:]]+wim)'
-    and ticket_context ~ '(^|[[:space:]])(teller[[:space:]]+)?(user[[:space:]]+)?role([[:space:]]|$)'
-    and ticket_context ~ '(^|[[:space:]])(modify|modification|change|update|amend|add|remove)([[:space:]]|$)';
+    and (
+      ticket_context ~ '(^|[[:space:]])new user( account)? request([[:space:]]|$)'
+      or ticket_context ~ '(^|[[:space:]])password reset([[:space:]]|$)'
+      or ticket_context ~ '(^|[[:space:]])teller (role|function) modification request([[:space:]]|$)'
+      or (
+        ticket_context ~ '(^|[[:space:]])(teller[[:space:]]+)?(user[[:space:]]+)?(role|function)([[:space:]]|$)'
+        and ticket_context ~ '(^|[[:space:]])(modify|modification|change|update|amend|add|remove)([[:space:]]|$)'
+        and ticket_context !~ '(^|[[:space:]])(expiry|expiration|expire|expires|expired|expiring)([[:space:]]|$)'
+      )
+    );
 
   if saar_required_for_request
     and saar_context_changed
     and coalesce(nullif(new.saar_attachment ->> 'dataUrl', ''), nullif(new.saar_attachment ->> 'url', ''), nullif(new.saar_attachment ->> 'publicUrl', ''), nullif(new.saar_attachment ->> 'path', '')) is null then
-    raise exception 'SAAR PDF attachment is required when modifying an MBWin / Sky360 teller role.';
+    raise exception 'SAAR PDF attachment is required for MBWin / Sky360 new user, password reset, or teller role/function modification requests.';
   end if;
 
   new.saar_required := saar_required_for_request;

@@ -17,17 +17,14 @@ import {
   ExternalLink,
   Eye,
   FileText,
-  IdCard,
   ImageIcon,
   LayoutDashboard,
   Link2,
   LogOut,
-  Mail,
   Menu,
   MessageCircle,
   Paperclip,
   PenLine,
-  Phone,
   Printer,
   Save,
   Send,
@@ -111,7 +108,6 @@ const HELPDESK_CATEGORY_CONCERNS = {
     'New user account request',
     'Password reset',
     'Login problem',
-    'Access permission request',
     'Teller role / user role concern',
     'Other account access concern',
   ],
@@ -154,6 +150,7 @@ const HELPDESK_CATEGORY_CONCERNS = {
     'Database or system connection issue',
     'Other server concern',
   ],
+  'Other Support': ['Other support concern'],
 };
 
 const HELPDESK_SUPPORT_CATEGORIES = Object.keys(HELPDESK_CATEGORY_CONCERNS);
@@ -192,6 +189,7 @@ const DEVICE_SUPPORT_CATEGORY_MAP = {
   ],
   'MBWin / Sky360': ['Account / Access Support', 'Software / System Support'],
   'Excel / Office Application': ['Software / System Support', 'Account / Access Support'],
+  'Other Device': HELPDESK_SUPPORT_CATEGORIES.filter((category) => category !== 'Other Support').concat('Other Support'),
 };
 
 const DEVICE_CONCERN_TYPE_MAP = {
@@ -205,7 +203,6 @@ const DEVICE_CONCERN_TYPE_MAP = {
       'New user account request',
       'Password reset',
       'Login problem',
-      'Access permission request',
       'Teller reactivation request',
       'Teller role modification request',
       'Other account access concern',
@@ -554,10 +551,12 @@ const isMbwinTellerRoleModificationRequest = (formOrTicket = {}) => {
   if (!isMbwinRequest(formOrTicket)) return false;
 
   const requestText = getIssueContextText(formOrTicket).replace(/[^a-z0-9]+/g, ' ');
-  const referencesRole = /\b(?:teller\s+)?(?:user\s+)?role\b/.test(requestText);
+  const requiresSaarConcern = /\bnew user(?: account)? request\b|\bpassword reset\b|\bteller (?:role|function) modification request\b/.test(requestText);
+  const referencesRoleOrFunction = /\b(?:teller\s+)?(?:user\s+)?(?:role|function)\b/.test(requestText);
+  const concernsExpiry = /\b(?:expiry|expiration|expire|expires|expired|expiring)\b/.test(requestText);
   const requestsModification = /\b(?:modify|modification|change|update|amend|add|remove)\b/.test(requestText);
 
-  return referencesRole && requestsModification;
+  return requiresSaarConcern || (referencesRoleOrFunction && requestsModification && !concernsExpiry);
 };
 
 const hasSaarAttachment = (attachment) =>
@@ -2315,7 +2314,7 @@ function DashboardView({ user, tickets, openTickets, onGoTo, now }) {
               </div>
               <div className="submission-guide-item">
                 <span className="submission-guide-number">04</span>
-                <p>For MBWin / Sky360 teller role modifications, attach the approved SAAR PDF. Teller reactivation does not require SAAR. Photos or screenshots are optional and limited to {PHOTO_MAX_COUNT} files.</p>
+                <p>For MBWin / Sky360 new user account requests, password resets, and teller role or function modifications, attach the approved SAAR PDF. Teller reactivation and expiry changes do not require SAAR. Photos or screenshots are optional and limited to {PHOTO_MAX_COUNT} files.</p>
               </div>
             </div>
 
@@ -2344,14 +2343,6 @@ function ProfileView({ user, tickets = [], onGoTo, onUserUpdate }) {
   const resolvedTickets = tickets.filter(isEmployeeResolvedTicket).length;
   const cancelledTickets = tickets.filter((ticket) => getEmployeeTicketStatusLabel(ticket.status) === 'Cancelled').length;
   const latestTickets = Array.isArray(tickets) ? tickets.slice(0, 3) : [];
-  const profileRows = [
-    { label: 'Job Title', value: designation, icon: BriefcaseBusiness },
-    { label: 'Employee ID', value: user.employeeId || 'Not provided', icon: IdCard },
-    { label: 'Department', value: user.department || 'Not assigned', icon: Building2 },
-    { label: 'Branch / Office', value: assignedOffice, icon: Building2 },
-    { label: 'Email Address', value: user.email || 'Not provided', icon: Mail },
-    { label: 'Phone Number', value: user.phone || 'Not provided', icon: Phone },
-  ];
   const profileStats = [
     { label: 'Submitted Tickets', value: tickets.length, meta: 'requests filed' },
     {
@@ -2484,11 +2475,15 @@ function ProfileView({ user, tickets = [], onGoTo, onUserUpdate }) {
       name={user.name}
       subtitle={`${designation} - ${user.department || 'Department not assigned'}`}
       meta={[
-        { label: 'Employee ID', value: user.employeeId || 'Not provided' },
         { label: 'Office', value: assignedOffice },
       ]}
+      headerDetails={[
+        { label: 'Employee ID', value: user.employeeId || 'Not provided' },
+        { label: 'Phone Number', value: user.phone || 'Not provided' },
+        { label: 'Email Address', value: user.email || 'Not provided' },
+      ]}
+      showProfilePanels={false}
       stats={profileStats}
-      facts={profileRows}
       scopeEyebrow="Employee Access"
       scopeTitle="Helpdesk & Account Access"
       scopeItems={[
@@ -3072,7 +3067,7 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab, now, notificat
     }
 
     if (saarRequired && !hasSaarAttachment(form.saarAttachment)) {
-      setFormError('SAAR PDF attachment is required when modifying an MBWin / Sky360 teller role.');
+      setFormError('Attach the approved SAAR PDF for this MBWin / Sky360 account or teller role/function request.');
       return false;
     }
 
@@ -3549,7 +3544,7 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab, now, notificat
 
               {saarRequired && (
                 <div className="ticket-form-group full saar-upload-card required">
-                  <label htmlFor="ticket-saar">SAAR PDF Attachment (Required for Teller Role Modification)</label>
+                  <label htmlFor="ticket-saar">SAAR PDF Attachment (Required for Selected MBWin / Sky360 Requests)</label>
 
                   <input
                     id="ticket-saar"
@@ -3583,7 +3578,7 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab, now, notificat
                     </div>
                   ) : (
                     <span className="ticket-form-hint">
-                      Attach the approved SAAR PDF when changing an MBWin / Sky360 teller role.
+                      Attach the approved SAAR PDF for new user account requests, password resets, or teller role/function modifications.
                     </span>
                   )}
                 </div>
