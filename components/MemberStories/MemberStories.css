@@ -1575,9 +1575,7 @@ body.ms-modal-lock {
 
 /* Final single-story viewport layout */
 .ms {
-  width: 100vw;
-  max-width: 100%;
-  height: 100vh;
+  width: 100%;
   min-height: 100vh;
   padding: clamp(4.5rem, 8vh, 6rem) clamp(1rem, 4vw, 2rem) clamp(2rem, 4vh, 3rem);
   display: flex;

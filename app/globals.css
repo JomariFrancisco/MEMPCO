@@ -185,6 +185,14 @@ main {
   display: flex;
   flex-direction: column;
   width: 100%;
+  min-width: 0;
+}
+
+/* Let page roots and embedded media shrink to the available viewport width. */
+main > *,
+main :where(img, picture, video, canvas, iframe) {
+  min-width: 0;
+  max-width: 100%;
 }
 
 /* Eyebrow labels are intentionally removed across the entire website. */

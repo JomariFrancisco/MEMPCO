@@ -945,9 +945,13 @@ button {
 }
 
 .portal-auth-main.portal-flat-auth .login-submit-btn {
-  min-height: 44px;
-  height: 44px;
-  margin-top: 2px;
+  width: fit-content;
+  min-width: 0;
+  min-height: 42px;
+  height: 42px;
+  margin: 2px auto 0;
+  padding: 0 20px;
+  align-self: center;
   border: 1px solid #bd2525;
   border-radius: 6px;
   background: #c62828;
@@ -975,6 +979,7 @@ button {
   font-size: 0.875rem;
   font-weight: 600;
   line-height: 1.4;
+  text-align: center;
 }
 
 @media (max-width: 760px) {
@@ -1004,6 +1009,136 @@ button {
   .portal-auth-main.portal-flat-auth .auth-panel {
     min-height: 0;
     padding: 0;
+  }
+}
+
+/* First-login password setup follows the same flat helpdesk form styling. */
+.forced-password-overlay {
+  padding: 1.25rem;
+  background: rgba(243, 245, 247, 0.94);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.forced-password-modal {
+  width: min(460px, 100%);
+  gap: 1rem;
+  padding: 1.6rem;
+  border: 1px solid #dce2e9;
+  border-top: 3px solid #c62828;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.12);
+}
+
+.forced-password-modal .auth-form-head {
+  align-items: center;
+  gap: 0.25rem;
+  text-align: center;
+}
+
+.forced-password-modal .auth-kicker {
+  align-self: flex-start;
+  color: #a33a3a;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-align: left;
+}
+
+.forced-password-modal .auth-form-head h2 {
+  color: #172033;
+  font-size: clamp(1.35rem, 4vw, 1.6rem);
+  font-weight: 750;
+  letter-spacing: 0;
+  line-height: 1.25;
+}
+
+.forced-password-modal .auth-form-head p {
+  color: #64748b;
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.forced-password-modal .password-hint {
+  margin: 0;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.forced-password-modal .form-grid.single {
+  gap: 0.85rem;
+}
+
+.forced-password-modal .form-group {
+  gap: 0.35rem;
+}
+
+.forced-password-modal .form-group label {
+  color: #344256;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.forced-password-modal .form-group input {
+  height: 44px;
+  padding: 0.6rem 2.8rem 0.6rem 0.75rem;
+  border: 1px solid #d9e0e9;
+  border-radius: 6px;
+  background: #fff;
+  color: #172033;
+  box-shadow: none;
+  font-size: 1rem;
+}
+
+.forced-password-modal .form-group input:focus {
+  border-color: #bd4545;
+  box-shadow: 0 0 0 3px rgba(198, 40, 40, 0.12);
+  transform: none;
+}
+
+.forced-password-modal .password-toggle {
+  right: 4px;
+  width: 36px;
+  height: 36px;
+}
+
+.forced-password-modal .auth-submit-btn {
+  justify-self: center;
+  width: fit-content;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 40px;
+  height: 40px;
+  margin: 0 auto;
+  padding: 0.55rem 1rem;
+  border: 1px solid #bd2525;
+  border-radius: 6px;
+  background: #c62828;
+  box-shadow: none;
+  font-size: 0.92rem;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.forced-password-modal .auth-submit-btn:hover:not(:disabled) {
+  transform: none;
+  border-color: #a91f1f;
+  background: #b42323;
+  box-shadow: none;
+}
+
+@media (max-width: 520px) {
+  .forced-password-overlay {
+    padding: 1rem;
+  }
+
+  .forced-password-modal {
+    padding: 1.25rem;
   }
 }
 

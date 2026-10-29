@@ -306,7 +306,15 @@ begin
     end if;
     new.technician := assigned_technician.full_name;
   elsif tg_op = 'UPDATE' and new.technician is distinct from old.technician
-    and lower(trim(coalesce(new.technician, ''))) <> 'unassigned' then
+    and lower(trim(coalesce(new.technician, ''))) <> 'unassigned'
+    and not (
+      lower(trim(coalesce(old.status, ''))) = 'escalated'
+      and lower(trim(coalesce(new.status, ''))) = 'resolved'
+      and old.escalation_partner = 'Third Party Company'
+      and nullif(trim(old.escalation_partner_company), '') is not null
+      and new.technician = trim(old.escalation_partner_company)
+      and new.technician_id is null
+    ) then
     raise exception 'Choose an ICT staff profile; technician names cannot be assigned as free text.';
   end if;
   if tg_op = 'INSERT' then

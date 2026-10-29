@@ -22,8 +22,8 @@
 
 .app-confirm-header {
   display: grid;
-  grid-template-columns: 40px minmax(0, 1fr) 32px;
-  align-items: start;
+  grid-template-columns: auto minmax(0, 1fr) 32px;
+  align-items: center;
   gap: 0.75rem;
 }
 
@@ -142,9 +142,16 @@
 }
 
 .app-confirm-dialog.is-danger .app-confirm-icon {
-  border-color: #f0d5d7;
-  background: #fff5f5;
+  width: auto;
+  height: auto;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   color: #a51d25;
+}
+
+.app-confirm-dialog.is-danger .app-confirm-eyebrow {
+  display: none;
 }
 
 .app-confirm-dialog.is-danger .app-confirm-submit {

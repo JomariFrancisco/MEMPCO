@@ -65,7 +65,7 @@ function ConfirmationDialog({ request, onResolve }) {
         aria-describedby="app-confirm-message"
       >
         <div className="app-confirm-header">
-          <span className="app-confirm-icon" aria-hidden="true"><Icon size={20} /></span>
+          <span className="app-confirm-icon" aria-hidden="true"><Icon size={isDanger ? 23 : 20} /></span>
           <div className="app-confirm-copy">
             <span className="app-confirm-eyebrow">Confirmation</span>
             <h2 id="app-confirm-title">{request.title}</h2>

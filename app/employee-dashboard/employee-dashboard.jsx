@@ -1173,8 +1173,14 @@ const printEmployeeTicket = (ticket = {}, user = {}) => {
     ['First ICT Response', formatPrintDateTime(ticket.firstResponseAt || ticket.first_response_at)],
     ['Moved Date', formatPrintDateTime(ticket.movedDateAt || ticket.movedDate || ticket.movedAt)],
     ['Resolved Date', formatPrintDateTime(ticket.workEndedAt || ticket.work_ended_at || ticket.resolvedAt || ticket.resolved_at)],
-    ['Assigned ICT Staff', ticket.technician || ticket.assignedTo || 'Unassigned'],
-    ['Escalation Partner', normalizedStatus === 'escalated'
+    [normalizedStatus === 'resolved'
+      && ticket.escalationPartner === 'Third Party Company'
+      && String(ticket.escalationPartnerCompany || '').trim()
+      ? 'Resolved By'
+      : 'Assigned ICT Staff', ticket.technician || ticket.assignedTo || 'Unassigned'],
+    ['Escalation Partner', normalizedStatus === 'escalated' || (normalizedStatus === 'resolved'
+      && ticket.escalationPartner === 'Third Party Company'
+      && String(ticket.escalationPartnerCompany || '').trim())
       ? [ticket.escalationPartner, ticket.escalationPartner === 'Third Party Company' ? ticket.escalationPartnerCompany : ''].filter(Boolean).join(' — ')
       : ''],
     ['Device / System', ticket.deviceName || ticket.deviceType],
@@ -1946,7 +1952,9 @@ function EmployeeTicketDetailModal({
               <dd className="employee-admin-readonly-field">{assignedStaff}</dd>
             </div>
 
-            {isEscalated && <div className="ticket-form-group">
+            {(isEscalated || (normalizeEmployeeTicketStatus(ticket.status) === 'resolved'
+              && ticket.escalationPartner === 'Third Party Company'
+              && String(ticket.escalationPartnerCompany || '').trim())) && <div className="ticket-form-group">
               <dt>Escalation Partner</dt>
               <dd className="employee-admin-readonly-field">
                 {ticket.escalationPartner === 'Third Party Company' && ticket.escalationPartnerCompany

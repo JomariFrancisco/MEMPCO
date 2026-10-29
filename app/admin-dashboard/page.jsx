@@ -275,49 +275,25 @@ function InactiveAccountNotice() {
   );
 }
 
-function TicketLockNoticeModal({ notice, onClose }) {
+function TicketLockNotice({ notice, onClose }) {
+  const onCloseRef = useRef(onClose);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
+  useEffect(() => {
+    if (!notice) return undefined;
+
+    const timeoutId = window.setTimeout(() => onCloseRef.current(), 5000);
+    return () => window.clearTimeout(timeoutId);
+  }, [notice]);
+
   if (!notice) return null;
 
   return (
-    <div className="modal-overlay ticket-lock-notice-overlay" role="presentation" onClick={onClose}>
-      <section
-        className="modal-box glass ticket-lock-notice-modal"
-        role="alertdialog"
-        aria-modal="true"
-        aria-labelledby="ticket-lock-notice-title"
-        aria-describedby="ticket-lock-notice-description"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <div className="ticket-lock-notice-icon" aria-hidden="true">
-          <ShieldCheck className="admin-mono-icon" />
-        </div>
-
-        <div className="ticket-lock-notice-copy">
-          <span className="section-kicker">Ticket already assigned</span>
-          <h3 id="ticket-lock-notice-title">Another ICT staff is handling this ticket.</h3>
-          <p id="ticket-lock-notice-description">
-            This prevents two admins from updating the same request at the same time. Please refresh the queue or open
-            another ticket.
-          </p>
-        </div>
-
-        <div className="ticket-lock-notice-details" aria-label="Ticket handling details">
-          <div>
-            <span>Ticket Code</span>
-            <strong>{notice.ticketCode}</strong>
-          </div>
-          <div>
-            <span>Currently Handled By</span>
-            <strong>{notice.staffName}</strong>
-          </div>
-        </div>
-
-        <div className="modal-footer ticket-lock-notice-footer">
-          <button type="button" className="modal-btn confirm" onClick={onClose} autoFocus>
-            Got it
-          </button>
-        </div>
-      </section>
+    <div className="ticket-lock-notice" role="alert">
+      Ticket {notice.ticketCode} is already assigned to {notice.staffName}. Refresh the queue or open another ticket.
     </div>
   );
 }
@@ -346,7 +322,7 @@ function useBodyScrollLock(active) {
   }, [active]);
 }
 
-function TemporaryPasswordPanel({ password, accountName, onDismiss }) {
+function TemporaryPasswordPanel({ password, accountName, onDismiss, compact = false }) {
   const [copyStatus, setCopyStatus] = useState('idle');
   const copyStatusTimer = useRef(null);
 
@@ -388,31 +364,30 @@ function TemporaryPasswordPanel({ password, accountName, onDismiss }) {
     setCopyStatus(copied ? 'copied' : 'error');
     window.clearTimeout(copyStatusTimer.current);
     copyStatusTimer.current = window.setTimeout(() => setCopyStatus('idle'), 1800);
+    return copied;
+  };
+
+  const copyAndDismiss = async () => {
+    const copied = await copyPassword();
+    if (copied) onDismiss?.();
   };
 
   return (
-    <div className="admin-alert success temporary-password-panel">
+    <div className={`admin-alert success temporary-password-panel${compact ? ' is-compact' : ''}`}>
       <div>
         <strong>Temporary password issued{accountName ? ` for ${accountName}` : ''}</strong>
         <p>This password is shown only once. The user must change it after first login.</p>
-        <code>{password}</code>
+        <code className="temporary-password-value">{password}</code>
       </div>
-      <div className="temporary-password-actions">
-        <button
-          type="button"
-          className={`modal-btn cancel temporary-password-copy${copyStatus === 'copied' ? ' is-copied' : ''}${copyStatus === 'error' ? ' is-error' : ''}`}
-          onClick={copyPassword}
-          aria-live="polite"
-        >
-          <MonoIcon icon={copyStatus === 'copied' ? Check : Clipboard} />
-          {copyStatus === 'copied' ? 'Copied' : copyStatus === 'error' ? 'Copy failed' : 'Copy'}
-        </button>
-        {onDismiss && (
-          <button type="button" className="modal-btn confirm temporary-password-done" onClick={onDismiss}>
-            Done
-          </button>
-        )}
-      </div>
+      <button
+        type="button"
+        className={`modal-btn confirm temporary-password-copy${copyStatus === 'copied' ? ' is-copied' : ''}${copyStatus === 'error' ? ' is-error' : ''}`}
+        onClick={onDismiss ? copyAndDismiss : copyPassword}
+        aria-live="polite"
+      >
+        <MonoIcon icon={copyStatus === 'copied' ? Check : Clipboard} />
+        {copyStatus === 'error' ? 'Copy failed' : onDismiss ? 'Copy & Done' : copyStatus === 'copied' ? 'Copied' : 'Copy'}
+      </button>
     </div>
   );
 }
@@ -1598,6 +1573,11 @@ const getEscalationPartnerLabel = (ticket = {}) => {
   return company ? `${partner} — ${company}` : partner;
 };
 
+const isResolvedByThirdPartyPartner = (ticket = {}) =>
+  normalizeTicketStatus(ticket.status) === 'resolved'
+  && String(ticket.escalationPartner || '').trim() === 'Third Party Company'
+  && Boolean(String(ticket.escalationPartnerCompany || '').trim());
+
 const printResolvedTicket = (ticket) => {
   const burnoutReport = isBurnoutTicket(ticket) ? normalizeBurnoutReport(ticket) : null;
   const startedAt = ticket.workStartedAt || ticket.work_started_at || '';
@@ -1695,8 +1675,8 @@ const printResolvedTicket = (ticket) => {
     ['Submitted', (ticket.createdAt || ticket.date) ? formatPrintDateTime(ticket.createdAt || ticket.date) : ''],
     ['Moved Date', getTicketMovedDateTime(ticket) ? formatPrintDateTime(getTicketMovedDateTime(ticket)) : ''],
     ['Resolved Date', getTicketResolvedTime(ticket) ? formatPrintDateTime(getTicketResolvedTime(ticket)) : ''],
-    ['Assigned ICT Staff', ticket.technician || 'Unassigned'],
-    ['Escalation Partner', normalizeTicketStatus(ticket.status) === 'escalated' ? getEscalationPartnerLabel(ticket) : ''],
+    [isResolvedByThirdPartyPartner(ticket) ? 'Resolved By' : 'Assigned ICT Staff', ticket.technician || 'Unassigned'],
+    ['Escalation Partner', normalizeTicketStatus(ticket.status) === 'escalated' || isResolvedByThirdPartyPartner(ticket) ? getEscalationPartnerLabel(ticket) : ''],
     ['Device / System', ticket.deviceName || ticket.deviceType],
     ['Contact', ticket.contactNumber],
     ['Work Started', startedAt ? formatPrintDateTime(startedAt) : ''],
@@ -6422,6 +6402,12 @@ function UsersView({ users, canEditUsers, canDeleteUsers, canEditRoles, currentU
                     ))}
                   </select>
                 </div>
+                <TemporaryPasswordPanel
+                  password={refreshedPassword?.password}
+                  accountName={refreshedPassword?.accountName}
+                  onDismiss={() => setRefreshedPassword(null)}
+                  compact
+                />
               </aside>
 
               <div className="user-detail-main">
@@ -6585,12 +6571,6 @@ function UsersView({ users, canEditUsers, canDeleteUsers, canEditRoles, currentU
             </div>
               </div>
             </div>
-
-            <TemporaryPasswordPanel
-              password={refreshedPassword?.password}
-              accountName={refreshedPassword?.accountName}
-              onDismiss={() => setRefreshedPassword(null)}
-            />
 
             <div className="modal-footer">
               {canDeleteUsers && (
@@ -7530,7 +7510,10 @@ function TicketActionModal({ ticket, currentUser, users = [], onClose, onSave, o
         setFormError('Enter the third-party company name before saving.');
         return;
       }
-    } else {
+    } else if (!(draftStatus === 'resolved'
+      && normalizeTicketStatus(ticket.status) === 'escalated'
+      && ticket.escalationPartner === 'Third Party Company'
+      && String(ticket.escalationPartnerCompany || '').trim())) {
       sanitizedDraft.escalationPartner = '';
       sanitizedDraft.escalationPartnerCompany = '';
     }
@@ -7759,14 +7742,27 @@ function TicketActionModal({ ticket, currentUser, users = [], onClose, onSave, o
           {isEscalationStatus && <div className="ticket-form-group">
             <div className="escalation-partner-label-row">
               <label>Escalation Partner</label>
-              {draft.escalationPartner === 'Third Party Company' && (
+              {draft.escalationPartner === 'Third Party Company' && normalizeTicketStatus(ticket.status) === 'escalated' && (
                 <button
                   type="button"
                   className="escalation-partner-change"
-                  onClick={() => updateDraft('escalationPartner', '')}
+                  onClick={() => {
+                    const company = String(draft.escalationPartnerCompany || '').trim();
+                    if (!company) {
+                      setFormError('Enter the third-party company name before marking this ticket resolved.');
+                      return;
+                    }
+                    setFormError('');
+                    setDraft((current) => ({
+                      ...current,
+                      status: 'Resolved',
+                      technician: company,
+                      technicianId: '',
+                    }));
+                  }}
                   disabled={isResolvedLocked}
                 >
-                  Change
+                  Resolved
                 </button>
               )}
             </div>
@@ -8563,6 +8559,7 @@ Current role: ${activeUser.role || 'No role found'}`
   return (
     <>
       <main className="portal-main portal-app-main">
+        <TicketLockNotice notice={ticketLockNotice} onClose={() => setTicketLockNotice(null)} />
         <div className="portal-shell">
           <header className="portal-topbar glass">
             <div className="portal-topbar-copy">
@@ -8739,8 +8736,6 @@ Current role: ${activeUser.role || 'No role found'}`
           onTicketRealtimeUpdate={handleTicketRealtimeUpdate}
         />
       )}
-
-      <TicketLockNoticeModal notice={ticketLockNotice} onClose={() => setTicketLockNotice(null)} />
 
     </>
   );
