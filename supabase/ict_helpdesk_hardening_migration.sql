@@ -217,8 +217,11 @@ grant execute on function public.get_helpdesk_internal_notes(text[]) to authenti
 
 -- Allocate immutable numbers atomically; never recycle deleted identifiers.
 select setval('public.ticket_number_seq',
-  greatest((select last_value from public.ticket_number_seq),coalesce((select max(substring(id from '[0-9]+$')::bigint) from public.tickets where id ~ '^TCK-[0-9]{4}-[0-9]+$'),0),1),
-  (select is_called from public.ticket_number_seq) or exists(select 1 from public.tickets where id ~ '^TCK-[0-9]{4}-[0-9]+$'));
+  case when exists(select 1 from public.tickets)
+    then greatest((select last_value from public.ticket_number_seq),coalesce((select max(substring(id from '[0-9]+$')::bigint) from public.tickets where id ~ '^TCK-[0-9]{4}-[0-9]+$'),0),1)
+    else 1
+  end,
+  exists(select 1 from public.tickets));
 grant usage, select on sequence public.ticket_number_seq to service_role;
 create or replace function public.generate_ticket_id() returns text language plpgsql set search_path = public as $$
 declare n text := nextval('public.ticket_number_seq')::text;
@@ -226,8 +229,11 @@ begin return 'TCK-' || to_char(now(), 'YYYY') || '-' || lpad(n, greatest(4,lengt
 $$;
 create sequence if not exists public.burnout_number_seq;
 select setval('public.burnout_number_seq',
-  greatest((select last_value from public.burnout_number_seq),coalesce((select max(substring(ticket_code from '^[^-]+-([0-9]+)-')::bigint) from public.tickets where support_category = 'Burnout'),0),1),
-  (select is_called from public.burnout_number_seq) or exists(select 1 from public.tickets where support_category = 'Burnout' and ticket_code is not null));
+  case when exists(select 1 from public.tickets)
+    then greatest((select last_value from public.burnout_number_seq),coalesce((select max(substring(ticket_code from '^[^-]+-([0-9]+)-')::bigint) from public.tickets where support_category = 'Burnout'),0),1)
+    else 1
+  end,
+  exists(select 1 from public.tickets));
 create or replace function public.allocate_burnout_code(branch_code text, brand_code text, device_code text)
 returns text language sql security definer set search_path = public as $$
   select branch_code || '-' || lpad(n, greatest(5,length(n)), '0') || '-' || brand_code || '-' || device_code
