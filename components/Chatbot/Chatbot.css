@@ -3104,3 +3104,122 @@
     text-align: center;
   }
 }
+
+/* Keep the public chat surfaces in sync with the portal's selected theme. */
+body[data-portal-theme='dark'] .chatbot-toggle-prompt {
+  background: #202631;
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #f1f5f9;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.36);
+}
+
+body[data-portal-theme='dark'] .chatbot-toggle-image {
+  padding: 4px;
+  border-radius: 50%;
+  background: rgba(32, 38, 49, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  filter:
+    drop-shadow(0 14px 24px rgba(0, 0, 0, 0.5))
+    drop-shadow(0 8px 18px rgba(220, 38, 38, 0.22));
+}
+
+body[data-portal-theme='dark'] .chatbot-panel {
+  background: linear-gradient(180deg, #171c24 0%, #11161d 100%);
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.48), 0 8px 22px rgba(0, 0, 0, 0.24);
+  color: #e2e8f0;
+  color-scheme: dark;
+}
+
+body[data-portal-theme='dark'] .chatbot-brand-icon {
+  background: #252c37;
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+body[data-portal-theme='dark'] .chatbot-page-chip,
+body[data-portal-theme='dark'] .chatbot-search-shell,
+body[data-portal-theme='dark'] .chatbot-askbar {
+  background: rgba(25, 31, 40, 0.96);
+  border-color: rgba(255, 255, 255, 0.09);
+  color: #aab6c5;
+}
+
+body[data-portal-theme='dark'] .chatbot-page-context strong,
+body[data-portal-theme='dark'] .chatbot-search-input,
+body[data-portal-theme='dark'] .chatbot-askbar-input,
+body[data-portal-theme='dark'] .chatbot-search-result-label,
+body[data-portal-theme='dark'] .chatbot-search-empty em,
+body[data-portal-theme='dark'] .chatbot-answer-card h4,
+body[data-portal-theme='dark'] .chatbot-goal-title {
+  color: #f1f5f9;
+}
+
+body[data-portal-theme='dark'] .chatbot-page-action,
+body[data-portal-theme='dark'] .chatbot-search,
+body[data-portal-theme='dark'] .chatbot-search-results,
+body[data-portal-theme='dark'] .chatbot-action-chip.is-secondary,
+body[data-portal-theme='dark'] .chatbot-quick-reply,
+body[data-portal-theme='dark'] .chatbot-link-pill.is-secondary {
+  background: #252c37;
+  border-color: rgba(255, 255, 255, 0.11);
+  color: #d5deea;
+}
+
+body[data-portal-theme='dark'] .chatbot-page-action.is-active,
+body[data-portal-theme='dark'] .chatbot-page-action.is-primary {
+  background: rgba(220, 38, 38, 0.16);
+  border-color: rgba(248, 113, 113, 0.28);
+  color: #ffb4b4;
+}
+
+body[data-portal-theme='dark'] .chatbot-search-result:hover,
+body[data-portal-theme='dark'] .chatbot-action-chip.is-secondary:hover,
+body[data-portal-theme='dark'] .chatbot-quick-reply:hover,
+body[data-portal-theme='dark'] .chatbot-link-pill.is-secondary:hover,
+body[data-portal-theme='dark'] .chatbot-goal-card:hover,
+body[data-portal-theme='dark'] .chatbot-topic-card:hover {
+  background: #303744;
+}
+
+body[data-portal-theme='dark'] .chatbot-search-result-desc,
+body[data-portal-theme='dark'] .chatbot-search-empty,
+body[data-portal-theme='dark'] .chatbot-answer-card p,
+body[data-portal-theme='dark'] .chatbot-inline-tool {
+  color: #aab6c5;
+}
+
+body[data-portal-theme='dark'] .chatbot-search-clear,
+body[data-portal-theme='dark'] .chatbot-topic-arrow {
+  background: rgba(255, 255, 255, 0.08);
+  color: #cbd5e1;
+}
+
+body[data-portal-theme='dark'] .chatbot-messages {
+  background: linear-gradient(180deg, #171c24 0%, #11161d 100%);
+}
+
+body[data-portal-theme='dark'] .chatbot-message.bot .chatbot-bubble,
+body[data-portal-theme='dark'] .chatbot-answer-card,
+body[data-portal-theme='dark'] .chatbot-goal-card,
+body[data-portal-theme='dark'] .chatbot-topic-card {
+  background: linear-gradient(180deg, #252c37 0%, #202631 100%);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #e2e8f0;
+}
+
+body[data-portal-theme='dark'] .chatbot-answer-card {
+  background: linear-gradient(180deg, #2c252b 0%, #25232a 100%);
+}
+
+body[data-portal-theme='dark'] .chatbot-inline-tools {
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+body[data-portal-theme='dark'] .chatbot-detail-item,
+body[data-portal-theme='dark'] .chatbot-goal-card,
+body[data-portal-theme='dark'] .chatbot-topic-card,
+body[data-portal-theme='dark'] .chatbot-link-pill.is-secondary,
+body[data-portal-theme='dark'] .chatbot-action-chip.is-secondary,
+body[data-portal-theme='dark'] .chatbot-quick-reply {
+  color: #d5deea;
+}

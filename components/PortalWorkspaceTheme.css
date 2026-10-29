@@ -1012,6 +1012,7 @@ body[data-portal-theme='dark'] .portal-app-main .portal-profile-panel {
 body[data-portal-theme='dark'] .portal-app-main .portal-profile-heading h2,
 body[data-portal-theme='dark'] .portal-app-main .portal-profile-panel-heading h3,
 body[data-portal-theme='dark'] .portal-app-main .portal-profile-stat > strong,
+body[data-portal-theme='dark'] .portal-app-main .portal-profile-header-details strong,
 body[data-portal-theme='dark'] .portal-app-main .portal-profile-fact strong,
 body[data-portal-theme='dark'] .portal-app-main .portal-profile-activity-copy strong,
 body[data-portal-theme='dark'] .portal-app-main .portal-profile-empty strong {
@@ -1028,6 +1029,7 @@ body[data-portal-theme='dark'] .portal-app-main .portal-profile-empty p {
 }
 
 body[data-portal-theme='dark'] .portal-app-main .portal-profile-meta > span,
+body[data-portal-theme='dark'] .portal-app-main .portal-profile-header-details > div,
 body[data-portal-theme='dark'] .portal-app-main .portal-profile-fact,
 body[data-portal-theme='dark'] .portal-app-main .portal-profile-scope-list > div,
 body[data-portal-theme='dark'] .portal-app-main .portal-profile-activity,
@@ -1038,6 +1040,10 @@ body[data-portal-theme='dark'] .portal-app-main .portal-profile-empty {
 }
 
 body[data-portal-theme='dark'] .portal-app-main .portal-profile-meta small {
+  color: #a2afbe;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .portal-profile-header-details small {
   color: #a2afbe;
 }
 
@@ -1052,10 +1058,6 @@ body[data-portal-theme='dark'] .portal-app-main .portal-profile-eyebrow {
 
 body[data-portal-theme='dark'] .portal-app-main .portal-profile-fact-icon {
   background: #3b292e;
-  color: #ff9b9b;
-}
-
-body[data-portal-theme='dark'] .portal-app-main .portal-profile-scope-list svg {
   color: #ff9b9b;
 }
 

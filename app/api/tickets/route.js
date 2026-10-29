@@ -257,10 +257,12 @@ const isMbwinTellerRoleModificationRequest = (form = {}) => {
   if (!isMbwinSky360Request(form)) return false;
 
   const requestText = getTicketRequestContext(form).replace(/[^a-z0-9]+/g, ' ');
-  const referencesRole = /\b(?:teller\s+)?(?:user\s+)?role\b/.test(requestText);
+  const requiresSaarConcern = /\bnew user(?: account)? request\b|\bpassword reset\b|\bteller (?:role|function) modification request\b/.test(requestText);
+  const referencesRoleOrFunction = /\b(?:teller\s+)?(?:user\s+)?(?:role|function)\b/.test(requestText);
+  const concernsExpiry = /\b(?:expiry|expiration|expire|expires|expired|expiring)\b/.test(requestText);
   const requestsModification = /\b(?:modify|modification|change|update|amend|add|remove)\b/.test(requestText);
 
-  return referencesRole && requestsModification;
+  return requiresSaarConcern || (referencesRoleOrFunction && requestsModification && !concernsExpiry);
 };
 
 const hasStoredSaarAttachment = (attachment) =>
@@ -624,7 +626,7 @@ export async function POST(request) {
     const saarAttachment = await processSaarAttachment(dbClient, form.saarAttachment, requesterProfile.id, uploadedPaths);
 
     if (saarRequired && !hasStoredSaarAttachment(saarAttachment)) {
-      throw new Error('SAAR PDF attachment is required when modifying an MBWin / Sky360 teller role.');
+      throw new Error('Attach the approved SAAR PDF for this MBWin / Sky360 account or teller role/function request.');
     }
 
     const now = new Date();
@@ -914,7 +916,7 @@ export async function PATCH(request) {
           ? saarAttachment
           : await processSaarAttachment(dbClient,saarAttachment,currentTicket.owner_id,uploadedPaths);
         if (!hasStoredSaarAttachment(verifiedAttachment)) {
-          throw new Error('A verified SAAR PDF in private storage is required when modifying an MBWin / Sky360 teller role.');
+          throw new Error('A verified SAAR PDF in private storage is required for this MBWin / Sky360 account or teller role/function request.');
         }
         nextUpdates.saarAttachment = verifiedAttachment;
       }

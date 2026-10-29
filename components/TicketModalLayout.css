@@ -346,9 +346,91 @@ body[data-portal-theme='dark'] :is(.ticket-action-overlay, .employee-ticket-acti
   -webkit-text-fill-color: #edf2f7 !important;
 }
 
+/* Remove the pale inset highlight left by the shared light form-field styles. */
+body[data-portal-theme='dark'] :is(.ticket-action-overlay, .employee-ticket-action-overlay) :is(form, article).ticket-action-modal.ticket-modal-readable:is(.is-support-modal, .is-burnout-modal) :is(
+  .ticket-meta-cell,
+  .ticket-action-control-stack,
+  .ticket-action-description,
+  .employee-ticket-followup-note,
+  .ticket-action-notes-grid .admin-small-textarea,
+  .ticket-action-control-stack .ticket-select,
+  .ticket-action-control-stack .ticket-input,
+  .ticket-action-control-stack .employee-admin-readonly-field
+) {
+  border-color: #384456 !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+body[data-portal-theme='dark'] :is(.ticket-action-overlay, .employee-ticket-action-overlay) :is(form, article).ticket-action-modal.ticket-modal-readable:is(.is-support-modal, .is-burnout-modal) :is(
+  .ticket-action-notes-grid .admin-small-textarea,
+  .ticket-action-control-stack .ticket-select,
+  .ticket-action-control-stack .ticket-input
+) {
+  background-color: #151c27 !important;
+  color: #edf2f7 !important;
+  -webkit-text-fill-color: #edf2f7 !important;
+}
+
+body[data-portal-theme='dark'] :is(.ticket-action-overlay, .employee-ticket-action-overlay) :is(form, article).ticket-action-modal.ticket-modal-readable:is(.is-support-modal, .is-burnout-modal) :is(
+  .ticket-action-notes-grid .admin-small-textarea,
+  .ticket-action-control-stack .ticket-select,
+  .ticket-action-control-stack .ticket-input
+):focus {
+  border-color: #64748b !important;
+  outline: none !important;
+  box-shadow: 0 0 0 2px rgb(100 116 139 / 24%) !important;
+}
+
 body[data-portal-theme='dark'] :is(.ticket-action-overlay, .employee-ticket-action-overlay) :is(form, article).ticket-action-modal.ticket-modal-readable:is(.is-support-modal, .is-burnout-modal) :is(.ticket-action-title-copy p, .ticket-action-identity-group > .ticket-id, .ticket-form-group > dt) {
   color: #b6c4d6 !important;
   -webkit-text-fill-color: #b6c4d6 !important;
+}
+
+body[data-portal-theme='dark'] :is(.ticket-action-overlay, .employee-ticket-action-overlay) :is(form, article).ticket-action-modal.ticket-modal-readable:is(.is-support-modal, .is-burnout-modal) .ticket-handling-status :is(.ticket-handling-assignee, .ticket-handling-timestamp, .ticket-handling-editor, .ticket-handling-follow-up) {
+  color: #cbd5e1 !important;
+  -webkit-text-fill-color: #cbd5e1 !important;
+}
+
+body[data-portal-theme='dark'] :is(.ticket-action-overlay, .employee-ticket-action-overlay) :is(form, article).ticket-action-modal.ticket-modal-readable:is(.is-support-modal, .is-burnout-modal) .ticket-handling-status .ticket-handling-assignee {
+  color: #e2e8f0 !important;
+  -webkit-text-fill-color: #e2e8f0 !important;
+}
+
+body[data-portal-theme='dark'] :is(.ticket-action-overlay, .employee-ticket-action-overlay) :is(form, article).ticket-action-modal.ticket-modal-readable:is(.is-support-modal, .is-burnout-modal) .ticket-handling-status .ticket-handling-badge.tone-active {
+  --handling-border: #37635e;
+  --handling-background: #193c38;
+  --handling-color: #9eddd0;
+  border-color: #37635e !important;
+  background: #193c38 !important;
+  color: #9eddd0 !important;
+  -webkit-text-fill-color: #9eddd0 !important;
+}
+
+body[data-portal-theme='dark'] :is(.ticket-action-overlay, .employee-ticket-action-overlay) :is(form, article).ticket-action-modal.ticket-modal-readable:is(.is-support-modal, .is-burnout-modal) .ticket-action-head .admin-modal-close {
+  color: #f1f5f9 !important;
+  -webkit-text-fill-color: #f1f5f9 !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+body[data-portal-theme='dark'] :is(.ticket-action-overlay, .employee-ticket-action-overlay) :is(form, article).ticket-action-modal.ticket-modal-readable:is(.is-support-modal, .is-burnout-modal) .ticket-action-head .admin-modal-close svg {
+  color: #f1f5f9 !important;
+  stroke: #f1f5f9 !important;
+}
+
+body[data-portal-theme='dark'] :is(.ticket-action-overlay, .employee-ticket-action-overlay) :is(form, article).ticket-action-modal.ticket-modal-readable:is(.is-support-modal, .is-burnout-modal) .ticket-action-head .admin-modal-close:hover,
+body[data-portal-theme='dark'] :is(.ticket-action-overlay, .employee-ticket-action-overlay) :is(form, article).ticket-action-modal.ticket-modal-readable:is(.is-support-modal, .is-burnout-modal) .ticket-action-head .admin-modal-close:focus-visible {
+  color: #ffffff !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+body[data-portal-theme='dark'] :is(.ticket-action-overlay, .employee-ticket-action-overlay) :is(form, article).ticket-action-modal.ticket-modal-readable:is(.is-support-modal, .is-burnout-modal) .ticket-action-head .admin-modal-close:focus-visible {
+  outline: 2px solid #f1f5f9 !important;
+  outline-offset: 2px !important;
 }
 
 body[data-portal-theme='dark'] :is(.ticket-action-overlay, .employee-ticket-action-overlay) :is(form, article).ticket-action-modal.ticket-modal-readable:is(.is-support-modal, .is-burnout-modal) .modal-footer :is(.ticket-locked-pill, .modal-btn.print) {

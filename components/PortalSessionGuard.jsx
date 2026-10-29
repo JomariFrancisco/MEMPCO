@@ -38,6 +38,11 @@ const isPortalRoute = (pathname = '') =>
     (route) => pathname === route || pathname.startsWith(`${route}/`)
   );
 
+const isAdminPortalRoute = (pathname = '') =>
+  ['/admin-dashboard', '/marketing-admin', '/hr-admin', '/mrdss-admin'].some(
+    (route) => pathname === route || pathname.startsWith(`${route}/`)
+  );
+
 const getLoginRoute = (pathname = '') => {
   if (pathname.startsWith('/marketing-admin')) return '/marketing';
   if (pathname.startsWith('/hr-admin')) return '/hr';
@@ -54,7 +59,7 @@ export default function PortalSessionGuard() {
     let cancelled = false;
     let isEndingSession = false;
     let hasVerifiedSession = false;
-    let isAdminSession = false;
+    let isAdminSession = isAdminPortalRoute(pathname);
     let lastActivityAt = 0;
     let lastHeartbeatAt = 0;
     let idleTimer = null;
@@ -168,7 +173,11 @@ export default function PortalSessionGuard() {
       if (isActive && !cancelled) {
         try {
           const user = await getCurrentPortalUser();
-          isAdminSession = ADMIN_ROLES.has(String(user?.role || '').trim().toLowerCase());
+          isAdminSession = isAdminSession || ADMIN_ROLES.has(String(user?.role || '').trim().toLowerCase());
+          if (isAdminSession && idleTimer) {
+            window.clearTimeout(idleTimer);
+            idleTimer = null;
+          }
           if (isAdminSession && !hasAdminBrowserSession()) {
             await endSession('browser-closed');
             return;
