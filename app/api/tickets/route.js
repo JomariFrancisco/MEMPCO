@@ -518,6 +518,16 @@ const applyServerTicketStateRules = (payload, currentTicket) => {
       payload.escalation_partner_company = '';
     }
   } else if (
+    resultingStatus === 'resolved'
+    && normalizeStatus(currentTicket.status) === 'escalated'
+    && String(currentTicket.escalation_partner || '').trim() === 'Third Party Company'
+    && String(currentTicket.escalation_partner_company || '').trim()
+  ) {
+    // For an escalated third-party resolution, record the company as the
+    // technician who completed the work while retaining partner attribution.
+    payload.technician = String(currentTicket.escalation_partner_company).trim();
+    payload.technician_id = null;
+  } else if (
     Object.hasOwn(payload, 'status')
     || Object.hasOwn(payload, 'escalation_partner')
     || Object.hasOwn(payload, 'escalation_partner_company')

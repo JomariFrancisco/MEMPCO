@@ -7,6 +7,8 @@
 -- the old_id -> new_id mapping; the final query lists the resulting tickets.
 -- Keep creation and use of temporary tables inside ONE atomic statement so
 -- SQL Editor execution does not depend on a session between statements.
+-- The migration stops before changing data if it finds a composite foreign key
+-- that references tickets.id, because this script only rewrites single-column FKs.
 
 do $renumber$
 declare
@@ -18,6 +20,26 @@ declare
 begin
 
 lock table public.tickets in access exclusive mode;
+
+-- Fail safely rather than leaving part of a composite ticket reference stale.
+if exists (
+  select 1
+  from pg_constraint constraint_row
+  join pg_attribute referenced_column
+    on referenced_column.attrelid = constraint_row.confrelid
+   and referenced_column.attname = 'id'
+   and not referenced_column.attisdropped
+  where constraint_row.contype = 'f'
+    and constraint_row.confrelid = 'public.tickets'::regclass
+    and referenced_column.attnum = any(constraint_row.confkey)
+    and (
+      cardinality(constraint_row.conkey) <> 1
+      or cardinality(constraint_row.confkey) <> 1
+      or constraint_row.confkey[1] <> referenced_column.attnum
+    )
+) then
+  raise exception 'Ticket renumbering stopped: a composite foreign key references public.tickets.id. Update the migration to handle that relationship before retrying.';
+end if;
 
 create temporary table ticket_id_renumber_map (
   old_id text primary key,

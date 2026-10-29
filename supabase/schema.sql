@@ -7,8 +7,10 @@
 -- Existing deployments should run supabase/ticket_saar_teller_expiry_migration.sql for current teller SAAR rules.
 -- Existing deployments that cleared all tickets should run supabase/ticket_number_reset_after_clear_migration.sql to restart ticket numbering.
 -- Existing deployments should run supabase/ticket_number_gap_reuse_migration.sql to reuse deleted ticket numbers automatically.
--- The final section actively renumbers current-year tickets from 0001 and resets the next ticket number.
--- To apply only this reset to an existing deployment, run supabase/ticket_id_renumber_current_year_migration.sql.
+-- Existing deployments should run supabase/ticket_escalation_partner_resolution_migration.sql for third-party resolved-by attribution.
+-- Existing deployments should run supabase/ticket_sla_deadline_policy_migration.sql to synchronize priority and repair SLA deadlines.
+-- Existing deployments should run supabase/ticket_sla_due_day_notification_migration.sql after ICT hardening for response and resolution deadline-day alerts.
+-- Ticket IDs are renumbered only when supabase/ticket_id_renumber_current_year_migration.sql is run manually.
 -- Then run supabase/ict_employee_notifications_migration.sql for employee notification delivery.
 -- Separate MRDSS migration files are for existing deployments only.
 -- Includes:
@@ -4964,10 +4966,98 @@ alter table public.ticket_status_events
   add column if not exists technician_id uuid references public.profiles(id) on delete set null;
 create index if not exists ticket_status_events_technician_created_idx
   on public.ticket_status_events(technician_id, created_at desc) where technician_id is not null;
+create or replace function public.normalize_helpdesk_sla_level(value text)
+returns text
+language sql
+immutable
+set search_path = public
+as $$
+  select case lower(trim(coalesce(value, '')))
+    when 'critical' then 'Critical'
+    when 'high' then 'High'
+    when 'medium' then 'Medium'
+    else 'Low'
+  end;
+$$;
+revoke all on function public.normalize_helpdesk_sla_level(text) from public, anon, authenticated;
+
+create or replace function public.helpdesk_sla_target_hours(priority_value text, target_type text)
+returns integer
+language sql
+immutable
+set search_path = public
+as $$
+  select case public.normalize_helpdesk_sla_level(priority_value)
+    when 'Critical' then 8
+    when 'High' then 24
+    when 'Medium' then case when lower(coalesce(target_type, '')) = 'response' then 24 else 72 end
+    else case when lower(coalesce(target_type, '')) = 'response' then 72 else 120 end
+  end;
+$$;
+revoke all on function public.helpdesk_sla_target_hours(text, text) from public, anon, authenticated;
+
+create or replace function public.sync_helpdesk_ticket_sla_priority()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  sla_level text := public.normalize_helpdesk_sla_level(new.sla);
+  priority_level text := public.normalize_helpdesk_sla_level(new.priority);
+  canonical_level text;
+begin
+  if tg_op = 'UPDATE'
+    and new.sla is distinct from old.sla
+    and new.priority is not distinct from old.priority then
+    canonical_level := sla_level;
+  elsif tg_op = 'UPDATE'
+    and new.priority is distinct from old.priority
+    and new.sla is not distinct from old.sla then
+    canonical_level := priority_level;
+  elsif sla_level = 'Low' and priority_level <> 'Low' then
+    canonical_level := priority_level;
+  else
+    canonical_level := sla_level;
+  end if;
+
+  new.sla := canonical_level;
+  new.priority := canonical_level;
+  return new;
+end;
+$$;
+revoke all on function public.sync_helpdesk_ticket_sla_priority() from public, anon, authenticated;
+
+drop trigger if exists tickets_00_a_sla_sync on public.tickets;
+create trigger tickets_00_a_sla_sync
+before insert or update on public.tickets
+for each row execute function public.sync_helpdesk_ticket_sla_priority();
+
+with canonical_ticket_sla as (
+  select t.id,
+    case
+      when public.normalize_helpdesk_sla_level(t.sla) = 'Low'
+        and public.normalize_helpdesk_sla_level(t.priority) <> 'Low'
+        then public.normalize_helpdesk_sla_level(t.priority)
+      else public.normalize_helpdesk_sla_level(t.sla)
+    end as sla_level
+  from public.tickets t
+)
 update public.tickets t
-set response_due_at = coalesce(t.response_due_at,t.created_at + make_interval(hours => case lower(coalesce(t.priority,t.sla,'low')) when 'critical' then 8 when 'high' then 24 when 'medium' then 24 else 72 end)),
-    resolution_due_at = coalesce(t.resolution_due_at,t.created_at + make_interval(hours => case lower(coalesce(t.priority,t.sla,'low')) when 'critical' then 8 when 'high' then 24 when 'medium' then 72 else 120 end)),
-    burnout_started_at = case when lower(t.support_category) = 'burnout' and lower(t.status) = 'under burnout' then coalesce(t.burnout_started_at,public.try_parse_helpdesk_timestamp(t.work_started_at),t.created_at) else t.burnout_started_at end;
+set sla = canonical.sla_level,
+    priority = canonical.sla_level,
+    response_due_at = t.created_at + make_interval(hours => public.helpdesk_sla_target_hours(canonical.sla_level, 'response')),
+    resolution_due_at = t.created_at + make_interval(hours => public.helpdesk_sla_target_hours(canonical.sla_level, 'resolution')),
+    burnout_started_at = case when lower(t.support_category) = 'burnout' and lower(t.status) = 'under burnout' then coalesce(t.burnout_started_at,public.try_parse_helpdesk_timestamp(t.work_started_at),t.created_at) else t.burnout_started_at end
+from canonical_ticket_sla canonical
+where canonical.id = t.id
+  and (
+    t.sla is distinct from canonical.sla_level
+    or t.priority is distinct from canonical.sla_level
+    or t.response_due_at is distinct from t.created_at + make_interval(hours => public.helpdesk_sla_target_hours(canonical.sla_level, 'response'))
+    or t.resolution_due_at is distinct from t.created_at + make_interval(hours => public.helpdesk_sla_target_hours(canonical.sla_level, 'resolution'))
+    or (lower(t.support_category) = 'burnout' and lower(t.status) = 'under burnout' and t.burnout_started_at is null)
+  );
 update public.tickets
 set handling_seconds = greatest(0,extract(epoch from (public.try_parse_helpdesk_timestamp(work_ended_at)-public.try_parse_helpdesk_timestamp(work_started_at))))::bigint
 where handling_seconds = 0 and public.try_parse_helpdesk_timestamp(work_started_at) is not null and public.try_parse_helpdesk_timestamp(work_ended_at) is not null;
@@ -5223,16 +5313,22 @@ begin
     end if;
     new.technician := assigned_technician.full_name;
   elsif tg_op = 'UPDATE' and new.technician is distinct from old.technician
-    and lower(trim(coalesce(new.technician, ''))) <> 'unassigned' then
+    and lower(trim(coalesce(new.technician, ''))) <> 'unassigned'
+    and not (
+      lower(trim(coalesce(old.status, ''))) = 'escalated'
+      and lower(trim(coalesce(new.status, ''))) = 'resolved'
+      and old.escalation_partner = 'Third Party Company'
+      and nullif(trim(old.escalation_partner_company), '') is not null
+      and new.technician = trim(old.escalation_partner_company)
+      and new.technician_id is null
+    ) then
     raise exception 'Choose an ICT staff profile; technician names cannot be assigned as free text.';
   end if;
   if tg_op = 'INSERT' then
     if new.owner_id is distinct from actor.id and actor.role::text <> 'superadmin' then raise exception 'You cannot submit for another account.'; end if;
     new.created_at := coalesce(new.created_at,now());
-    new.response_due_at := new.created_at + make_interval(hours => case lower(coalesce(new.priority,new.sla,'low'))
-      when 'critical' then 8 when 'high' then 24 when 'medium' then 24 else 72 end);
-    new.resolution_due_at := new.created_at + make_interval(hours => case lower(coalesce(new.priority,new.sla,'low'))
-      when 'critical' then 8 when 'high' then 24 when 'medium' then 72 else 120 end);
+    new.response_due_at := new.created_at + make_interval(hours => public.helpdesk_sla_target_hours(new.priority, 'response'));
+    new.resolution_due_at := new.created_at + make_interval(hours => public.helpdesk_sla_target_hours(new.priority, 'resolution'));
     new.status := 'Created';
     activity_changes := jsonb_build_object(
       'status', jsonb_build_object('from', null, 'to', new.status),
@@ -5262,11 +5358,9 @@ begin
   burnout := lower(old.support_category) = 'burnout';
   closed := before_status in ('resolved','cancelled','canceled','passed burnout','ready for deployment','deployed','failed burnout','damaged','for repair','for replacement');
   reason := trim(new.action_reason);
-  if new.priority is distinct from old.priority then
-    new.response_due_at := old.created_at + make_interval(hours => case lower(coalesce(new.priority,new.sla,'low'))
-      when 'critical' then 8 when 'high' then 24 when 'medium' then 24 else 72 end);
-    new.resolution_due_at := old.created_at + make_interval(hours => case lower(coalesce(new.priority,new.sla,'low'))
-      when 'critical' then 8 when 'high' then 24 when 'medium' then 72 else 120 end);
+  if new.priority is distinct from old.priority or new.sla is distinct from old.sla then
+    new.response_due_at := old.created_at + make_interval(hours => public.helpdesk_sla_target_hours(new.priority, 'response'));
+    new.resolution_due_at := old.created_at + make_interval(hours => public.helpdesk_sla_target_hours(new.priority, 'resolution'));
   end if;
   if is_ict then
     if old.locked_by is distinct from actor.id or old.lock_expires_at is null or old.lock_expires_at <= now() then
@@ -5551,11 +5645,14 @@ create trigger messages_notify_activity after insert on public.ticket_messages f
 create table if not exists public.helpdesk_sla_alerts (
   id uuid primary key default gen_random_uuid(),
   ticket_id text not null references public.tickets(id) on delete cascade,
-  alert_type text not null check (alert_type in ('first_response_overdue', 'resolution_overdue', 'next_action_due')),
+  alert_type text not null check (alert_type in ('first_response_due_today', 'resolution_due_today', 'first_response_overdue', 'resolution_overdue', 'next_action_due')),
   due_at timestamptz not null,
   created_at timestamptz not null default now(),
   unique(ticket_id, alert_type, due_at)
 );
+alter table public.helpdesk_sla_alerts drop constraint if exists helpdesk_sla_alerts_alert_type_check;
+alter table public.helpdesk_sla_alerts add constraint helpdesk_sla_alerts_alert_type_check
+  check (alert_type in ('first_response_due_today', 'resolution_due_today', 'first_response_overdue', 'resolution_overdue', 'next_action_due'));
 alter table public.helpdesk_sla_alerts enable row level security;
 revoke all on public.helpdesk_sla_alerts from public, anon, authenticated;
 grant all on public.helpdesk_sla_alerts to service_role;
@@ -5570,18 +5667,34 @@ begin
     raise exception 'Only the scheduled helpdesk service can dispatch SLA alerts.';
   end if;
 
-  with due_alerts as (
-    select t.id as ticket_id, 'first_response_overdue'::text as alert_type, t.response_due_at as due_at
+  with local_clock as (
+    select (now() at time zone 'Asia/Manila')::date as local_date
+  ), due_alerts as (
+    select t.id as ticket_id, 'first_response_due_today'::text as alert_type, t.response_due_at as due_at
     from public.tickets t
-    where t.response_due_at is not null and t.response_due_at <= now() and t.first_response_at is null
+    cross join local_clock clock
+    where t.response_due_at is not null and t.first_response_at is null
+      and (t.response_due_at at time zone 'Asia/Manila')::date <= clock.local_date
       and lower(regexp_replace(coalesce(t.status,''), '[-_]+', ' ', 'g')) not in
         ('resolved','cancelled','canceled','passed burnout','ready for deployment','deployed','failed burnout','damaged','for repair','for replacement')
+      and not exists (
+        select 1 from public.helpdesk_sla_alerts prior
+        where prior.ticket_id = t.id and prior.due_at = t.response_due_at
+          and prior.alert_type in ('first_response_due_today', 'first_response_overdue')
+      )
     union all
-    select t.id, 'resolution_overdue', t.resolution_due_at
+    select t.id, 'resolution_due_today', t.resolution_due_at
     from public.tickets t
-    where t.resolution_due_at is not null and t.resolution_due_at <= now() and t.resolved_at is null
+    cross join local_clock clock
+    where t.resolution_due_at is not null and t.resolved_at is null
+      and (t.resolution_due_at at time zone 'Asia/Manila')::date <= clock.local_date
       and lower(regexp_replace(coalesce(t.status,''), '[-_]+', ' ', 'g')) not in
         ('resolved','cancelled','canceled','passed burnout','ready for deployment','deployed','failed burnout','damaged','for repair','for replacement')
+      and not exists (
+        select 1 from public.helpdesk_sla_alerts prior
+        where prior.ticket_id = t.id and prior.due_at = t.resolution_due_at
+          and prior.alert_type in ('resolution_due_today', 'resolution_overdue')
+      )
     union all
     select t.id, 'next_action_due', t.next_action_at
     from public.tickets t
@@ -5615,16 +5728,17 @@ begin
     insert into public.user_notifications(user_id, title, message, type, related_ticket_id)
     select distinct p.id,
       case r.alert_type
-        when 'first_response_overdue' then 'First response overdue'
-        when 'resolution_overdue' then 'Resolution target overdue'
+        when 'first_response_due_today' then case when (r.due_at at time zone 'Asia/Manila')::date < (now() at time zone 'Asia/Manila')::date then 'First response overdue' else 'First response deadline today' end
+        when 'resolution_due_today' then case when (r.due_at at time zone 'Asia/Manila')::date < (now() at time zone 'Asia/Manila')::date then 'Resolution overdue' else 'Resolution deadline today' end
         else 'Next action is due'
       end,
-      coalesce(nullif(t.ticket_code, ''), t.id) || ' is overdue for ' ||
+      coalesce(nullif(t.ticket_code, ''), t.id) ||
         case r.alert_type
-          when 'first_response_overdue' then 'its first ICT response.'
-          when 'resolution_overdue' then 'resolution.'
-          else 'its scheduled ' || t.status || ' follow-up.'
-        end,
+          when 'first_response_due_today' then case when (r.due_at at time zone 'Asia/Manila')::date < (now() at time zone 'Asia/Manila')::date then ' is past its first ICT response deadline and is still awaiting a response. Deadline: ' else ' is due today for its first ICT response and is still awaiting a response. Deadline: ' end
+          when 'resolution_due_today' then case when (r.due_at at time zone 'Asia/Manila')::date < (now() at time zone 'Asia/Manila')::date then ' is past its resolution deadline and remains unresolved. Deadline: ' else ' is due for resolution today and remains unresolved. Deadline: ' end
+          else ' is overdue for its scheduled ' || t.status || ' follow-up.'
+        end ||
+        case when r.alert_type = 'next_action_due' then '' else to_char(r.due_at at time zone 'Asia/Manila', 'Mon DD, YYYY HH12:MI AM') || '. Current status: ' || coalesce(nullif(t.status, ''), 'Unknown') || '.' end,
       'helpdesk_sla_alert', t.id
     from recipient_events r
     join public.profiles p on p.id = r.user_id and p.status = 'Active'
@@ -5641,191 +5755,3 @@ grant execute on function public.dispatch_helpdesk_due_alerts() to service_role;
 
 commit;
 notify pgrst, 'reload schema';
-
--- =====================================================
--- CURRENT-YEAR TICKET RENUMBERING
--- =====================================================
--- This section runs when the schema is applied, including on existing data.
--- Renumber all generated tickets for the current year from 0001, oldest first.
--- Updates every single-column foreign key that references public.tickets.id,
--- repairs ticket IDs embedded in notification text, and resets the allocator.
--- Take a database backup and run during a maintenance window.
--- This intentionally changes existing public ticket IDs. The SQL notices show
--- the old_id -> new_id mapping; the final query lists the resulting tickets.
--- Keep creation and use of temporary tables inside ONE atomic statement so
--- SQL Editor execution does not depend on a session between statements.
-
-do $renumber$
-declare
-  ticket_count bigint;
-  next_number bigint;
-  fk record;
-  trigger_row record;
-  mapping_row record;
-begin
-
-lock table public.tickets in access exclusive mode;
-
-create temporary table ticket_id_renumber_map (
-  old_id text primary key,
-  temporary_id text not null unique,
-  new_id text not null unique
-) on commit drop;
-
-insert into ticket_id_renumber_map (old_id, temporary_id, new_id)
-select
-  ranked.id,
-  '__ticket_renumber__' || gen_random_uuid()::text,
-  'TCK-' || to_char(now(), 'YYYY') || '-' ||
-    lpad(ranked.position::text, greatest(4, length(ranked.position::text)), '0')
-from (
-  select t.id,
-         row_number() over (order by t.created_at asc, t.id asc) as position
-  from public.tickets t
-  where t.id ~ ('^TCK-' || to_char(now(), 'YYYY') || '-[0-9]+$')
-) ranked;
-
-  select count(*) into ticket_count from ticket_id_renumber_map;
-  if ticket_count > 999999 then
-    raise exception 'Cannot renumber more than 999999 tickets for one year.';
-  end if;
-
-  if exists (
-    select 1
-    from public.tickets t
-    join ticket_id_renumber_map m on m.new_id = t.id
-    where not exists (
-      select 1 from ticket_id_renumber_map current_ids where current_ids.old_id = t.id
-    )
-  ) then
-    raise exception 'A target ticket ID is occupied by a ticket outside the renumbering set.';
-  end if;
--- Record all foreign keys pointing directly at tickets.id and their original
--- deferrability, so linked rows can be changed in the same transaction.
-create temporary table ticket_id_renumber_fks on commit drop as
-select
-  child_ns.nspname as schema_name,
-  child.relname as table_name,
-  constraint_row.conname as constraint_name,
-  child_column.attname as column_name,
-  constraint_row.condeferrable as was_deferrable,
-  constraint_row.condeferred as was_initially_deferred
-from pg_constraint constraint_row
-join pg_class child on child.oid = constraint_row.conrelid
-join pg_namespace child_ns on child_ns.oid = child.relnamespace
-join pg_attribute referenced_column
-  on referenced_column.attrelid = constraint_row.confrelid
- and referenced_column.attname = 'id'
- and not referenced_column.attisdropped
-join pg_attribute child_column
-  on child_column.attrelid = constraint_row.conrelid
- and child_column.attnum = constraint_row.conkey[1]
- and not child_column.attisdropped
-where constraint_row.contype = 'f'
-  and constraint_row.confrelid = 'public.tickets'::regclass
-  and constraint_row.confkey = array[referenced_column.attnum]::smallint[]
-  and cardinality(constraint_row.conkey) = 1;
-
-  for fk in select * from ticket_id_renumber_fks loop
-    execute format(
-      'alter table %I.%I alter constraint %I deferrable initially deferred',
-      fk.schema_name, fk.table_name, fk.constraint_name
-    );
-  end loop;
-
-  set constraints all deferred;
-
-  -- Preserve existing trigger enablement, then suppress ticket side effects
-  -- (audit notifications and updated_at changes) while only the ID is changed.
-  create temporary table ticket_id_renumber_triggers on commit drop as
-  select tgname, tgenabled
-  from pg_trigger
-  where tgrelid = 'public.tickets'::regclass and not tgisinternal;
-
-  alter table public.tickets disable trigger user;
-
-  -- Update notification prose while the old IDs are still available.
-  update public.user_notifications n
-  set message = replace(n.message, m.old_id, m.new_id)
-  from ticket_id_renumber_map m
-  where n.related_ticket_id = m.old_id;
-
-  -- Move child references to temporary IDs, then move the ticket primary keys.
-  for fk in select * from ticket_id_renumber_fks loop
-    execute format(
-      'update %I.%I child set %I = mapping.temporary_id from ticket_id_renumber_map mapping where child.%I = mapping.old_id',
-      fk.schema_name, fk.table_name, fk.column_name, fk.column_name
-    );
-  end loop;
-
-  update public.tickets t
-  set id = m.temporary_id
-  from ticket_id_renumber_map m
-  where t.id = m.old_id;
-
-  -- Complete the parent and child references with their final IDs.
-  update public.tickets t
-  set id = m.new_id
-  from ticket_id_renumber_map m
-  where t.id = m.temporary_id;
-
-  for fk in select * from ticket_id_renumber_fks loop
-    execute format(
-      'update %I.%I child set %I = mapping.new_id from ticket_id_renumber_map mapping where child.%I = mapping.temporary_id',
-      fk.schema_name, fk.table_name, fk.column_name, fk.column_name
-    );
-  end loop;
-
-  -- Validate references and flush pending FK events before changing constraints
-  -- or re-enabling triggers on the updated tables.
-  set constraints all immediate;
-
-  -- Restore original FK deferrability and ticket trigger states.
-  for fk in select * from ticket_id_renumber_fks loop
-    if fk.was_deferrable then
-      execute format(
-        'alter table %I.%I alter constraint %I deferrable initially %s',
-        fk.schema_name, fk.table_name, fk.constraint_name,
-        case when fk.was_initially_deferred then 'deferred' else 'immediate' end
-      );
-    else
-      execute format(
-        'alter table %I.%I alter constraint %I not deferrable',
-        fk.schema_name, fk.table_name, fk.constraint_name
-      );
-    end if;
-  end loop;
-
-  for trigger_row in select * from ticket_id_renumber_triggers loop
-    if trigger_row.tgenabled = 'O' then
-      execute format('alter table public.tickets enable trigger %I', trigger_row.tgname);
-    elsif trigger_row.tgenabled = 'R' then
-      execute format('alter table public.tickets enable replica trigger %I', trigger_row.tgname);
-    elsif trigger_row.tgenabled = 'A' then
-      execute format('alter table public.tickets enable always trigger %I', trigger_row.tgname);
-    end if;
-  end loop;
--- Ensure the next generated ID follows the renumbered current-year tickets.
--- RESTART is transactional, so a failed reset also rolls back the allocator.
-  select count(*) + 1 into next_number from ticket_id_renumber_map;
-  execute format('alter sequence public.ticket_number_seq restart with %s', next_number);
-
-  for mapping_row in select old_id, new_id from ticket_id_renumber_map order by new_id loop
-    raise notice '% -> %', mapping_row.old_id, mapping_row.new_id;
-  end loop;
-  raise notice 'Renumbered % tickets. Next ticket number: %.', ticket_count, next_number;
-
-  -- Also allow this block to be rerun within a caller-managed transaction.
-  drop table pg_temp.ticket_id_renumber_triggers;
-  drop table pg_temp.ticket_id_renumber_fks;
-  drop table pg_temp.ticket_id_renumber_map;
-
-  notify pgrst, 'reload schema';
-end;
-$renumber$;
-
--- This result query uses the permanent table, never a dropped temporary table.
-select id, created_at
-from public.tickets
-where id ~ ('^TCK-' || to_char(now(), 'YYYY') || '-[0-9]+$')
-order by created_at, id;

@@ -75,7 +75,7 @@ import '@/components/TicketHandlingStatus.css';
 import '@/components/TicketModalLayout.css';
 import './employee-ticket-parity.css';
 import '@/components/TicketChat.css';
-import { mergeMessages } from '@/lib/tickets/workflow.mjs';
+import { mergeMessages, SLA_TARGET_HOURS } from '@/lib/tickets/workflow.mjs';
 import { createRequestId } from '@/lib/tickets/requestIdentity.mjs';
 
 /* =========================
@@ -282,7 +282,6 @@ const SLA_PICKER_OPTIONS = [
     title: 'Low',
     impact: 'Routine request or non-blocking assistance',
     text: 'For minor concerns affecting only one user and work can still continue.',
-    meta: 'Standard response',
   },
   {
     level: 'Medium',
@@ -290,7 +289,6 @@ const SLA_PICKER_OPTIONS = [
     title: 'Medium',
     impact: 'Work affected with workaround',
     text: 'For concerns affecting several users or causing delay in work.',
-    meta: 'Priority review',
   },
   {
     level: 'High',
@@ -298,7 +296,6 @@ const SLA_PICKER_OPTIONS = [
     title: 'High',
     impact: 'Work or branch function blocked',
     text: 'For concerns affecting branch operation, important transactions, or system availability.',
-    meta: 'Urgent handling',
   },
   {
     level: 'Critical',
@@ -306,9 +303,24 @@ const SLA_PICKER_OPTIONS = [
     title: 'Critical',
     impact: 'Core operation stopped',
     text: 'For concerns where operation is stopped, the system is down, or there is possible data loss.',
-    meta: 'Immediate action',
   },
 ];
+
+const formatSlaTargetWindow = (hours) => {
+  if (hours % 24 === 0) {
+    const days = hours / 24;
+    return `${days} calendar day${days === 1 ? '' : 's'}`;
+  }
+  return `${hours} hours`;
+};
+
+const getSlaTargetSummary = (level) => {
+  const targets = SLA_TARGET_HOURS[level] || SLA_TARGET_HOURS.Low;
+  if (targets.response === targets.resolution) {
+    return `Response and resolution within ${formatSlaTargetWindow(targets.response)}.`;
+  }
+  return `Response within ${formatSlaTargetWindow(targets.response)}; resolution within ${formatSlaTargetWindow(targets.resolution)}.`;
+};
 
 const SUPPORT_FLOW = [
   {
@@ -1173,8 +1185,14 @@ const printEmployeeTicket = (ticket = {}, user = {}) => {
     ['First ICT Response', formatPrintDateTime(ticket.firstResponseAt || ticket.first_response_at)],
     ['Moved Date', formatPrintDateTime(ticket.movedDateAt || ticket.movedDate || ticket.movedAt)],
     ['Resolved Date', formatPrintDateTime(ticket.workEndedAt || ticket.work_ended_at || ticket.resolvedAt || ticket.resolved_at)],
-    ['Assigned ICT Staff', ticket.technician || ticket.assignedTo || 'Unassigned'],
-    ['Escalation Partner', normalizedStatus === 'escalated'
+    [normalizedStatus === 'resolved'
+      && ticket.escalationPartner === 'Third Party Company'
+      && String(ticket.escalationPartnerCompany || '').trim()
+      ? 'Resolved By'
+      : 'Assigned ICT Staff', ticket.technician || ticket.assignedTo || 'Unassigned'],
+    ['Escalation Partner', normalizedStatus === 'escalated' || (normalizedStatus === 'resolved'
+      && ticket.escalationPartner === 'Third Party Company'
+      && String(ticket.escalationPartnerCompany || '').trim())
       ? [ticket.escalationPartner, ticket.escalationPartner === 'Third Party Company' ? ticket.escalationPartnerCompany : ''].filter(Boolean).join(' — ')
       : ''],
     ['Device / System', ticket.deviceName || ticket.deviceType],
@@ -1946,7 +1964,9 @@ function EmployeeTicketDetailModal({
               <dd className="employee-admin-readonly-field">{assignedStaff}</dd>
             </div>
 
-            {isEscalated && <div className="ticket-form-group">
+            {(isEscalated || (normalizeEmployeeTicketStatus(ticket.status) === 'resolved'
+              && ticket.escalationPartner === 'Third Party Company'
+              && String(ticket.escalationPartnerCompany || '').trim())) && <div className="ticket-form-group">
               <dt>Escalation Partner</dt>
               <dd className="employee-admin-readonly-field">
                 {ticket.escalationPartner === 'Third Party Company' && ticket.escalationPartnerCompany
@@ -2175,6 +2195,7 @@ function DashboardView({ user, tickets, openTickets, onGoTo, now }) {
                 <span key={option.level} className={`dashboard-sla-pill ${slugify(option.level)}`}>
                   <strong>{option.level}</strong>
                   {option.impact}
+                  <small>{getSlaTargetSummary(option.level)}</small>
                 </span>
               ))}
             </div>
@@ -3527,6 +3548,7 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab, now, notificat
                       <span>SLA</span>
                       <strong>{derivedImpact.sla}</strong>
                     </div>
+                    <p className="sla-target-window">{getSlaTargetSummary(derivedImpact.sla)}</p>
                   </div>
                 </div>
               )}
@@ -4126,6 +4148,15 @@ export default function EmployeeDashboardPage() {
                   <span>{user.department}</span>
                 </div>
               </div>
+              <button
+                type="button"
+                className="burger"
+                aria-label={sidebarOpen ? 'Close navigation' : 'Open navigation'}
+                aria-expanded={sidebarOpen}
+                onClick={() => setSidebarOpen((prev) => !prev)}
+              >
+                <Menu className="admin-mono-icon" aria-hidden="true" />
+              </button>
             </div>
           </header>
 
@@ -4145,15 +4176,6 @@ export default function EmployeeDashboardPage() {
             )}
 
             <section className="portal-view">
-              <button
-                type="button"
-                className="burger"
-                aria-label="Open navigation"
-                onClick={() => setSidebarOpen((prev) => !prev)}
-              >
-                <Menu className="admin-mono-icon" aria-hidden="true" />
-              </button>
-
               {activeSection === 'dashboard' && (
                 <DashboardView
                   user={user}

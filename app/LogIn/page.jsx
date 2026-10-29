@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { CheckCircle2, Eye, EyeOff, LogIn, Mail } from 'lucide-react';
+import { CheckCircle2, Eye, EyeOff, LogIn } from 'lucide-react';
 import {
   completeRequiredPasswordChange,
   getCurrentPortalUser,
@@ -16,7 +16,6 @@ import {
   isMarketingAdminRole,
   isMrdssAdminRole,
   isPasswordChangeRequired,
-  sendPasswordResetEmail,
   signInPortal,
   signOutPortal,
   updatePortalPassword,
@@ -25,7 +24,6 @@ import './login.css';
 
 const REMEMBERED_EMAIL_KEY = 'mempco.portal.rememberedEmail';
 const SESSION_TIMEOUT_MESSAGE = 'You were signed out after 15 minutes of inactivity.';
-const INVALID_LOGIN_MESSAGE = 'Invalid email or password. Please check your login details.';
 
 const PORTAL_CONFIG = {
   superadmin: {
@@ -63,9 +61,6 @@ const PORTAL_CONFIG = {
   },
 };
 
-const isInvalidLoginError = (error) =>
-  String(error?.message || '').trim() === INVALID_LOGIN_MESSAGE;
-
 const AuthButtonIcon = ({ icon: IconComponent }) => (
   <IconComponent className="auth-button-icon" aria-hidden="true" />
 );
@@ -74,22 +69,15 @@ export default function LoginPage({ portal = 'superadmin' }) {
   const portalConfig = PORTAL_CONFIG[portal] || null;
   const [authMode, setAuthMode] = useState('signin');
   const [loginForm, setLoginForm] = useState({ email: '', password: '' });
-  const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
   const [resetForm, setResetForm] = useState({ password: '', confirmPassword: '' });
   const [forcedPasswordForm, setForcedPasswordForm] = useState({ password: '', confirmPassword: '' });
   const [forcedPasswordUser, setForcedPasswordUser] = useState(null);
   const [message, setMessage] = useState({ type: '', text: '' });
-  const [failedLogin, setFailedLogin] = useState({ email: '', count: 0 });
   const [shouldDismissSessionTimeout, setShouldDismissSessionTimeout] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [showForcedPassword, setShowForcedPassword] = useState(false);
-  const normalizedLoginEmail = loginForm.email.trim().toLowerCase();
-  const failedLoginAttempts =
-    failedLogin.email === normalizedLoginEmail ? failedLogin.count : 0;
-  const canRecoverPassword = failedLoginAttempts >= 3;
-
   const getLoginDestination = (user) => {
     const role = String(user?.role || '').trim().toLowerCase().replace(/[-_\s]+/g, '');
 
@@ -227,7 +215,6 @@ export default function LoginPage({ portal = 'superadmin' }) {
     try {
       const user = await signInPortal(loginForm);
       window.localStorage.removeItem(REMEMBERED_EMAIL_KEY);
-      setFailedLogin({ email: '', count: 0 });
 
       if (isInactivePortalUser(user)) {
         await signOutPortal().catch(() => {});
@@ -272,13 +259,6 @@ export default function LoginPage({ portal = 'superadmin' }) {
 
       redirectToRoute(destination);
     } catch (error) {
-      if (isInvalidLoginError(error) && normalizedLoginEmail) {
-        setFailedLogin((current) => ({
-          email: normalizedLoginEmail,
-          count: current.email === normalizedLoginEmail ? current.count + 1 : 1,
-        }));
-      }
-
       setMessage({
         type: 'error',
         text: error.message || 'Unable to login. Please try again.',
@@ -346,30 +326,6 @@ export default function LoginPage({ portal = 'superadmin' }) {
     }
   };
 
-  const handleForgotPassword = async (e) => {
-    e.preventDefault();
-
-    if (isSubmitting || isRedirecting) return;
-
-    setIsSubmitting(true);
-    setMessage({ type: '', text: '' });
-
-    try {
-      await sendPasswordResetEmail(forgotPasswordEmail);
-      setMessage({
-        type: 'success',
-        text: 'If an account uses this email address, a password reset link has been sent. Check your inbox and spam folder.',
-      });
-    } catch (error) {
-      setMessage({
-        type: 'error',
-        text: error.message || 'Unable to send a password reset email. Please try again.',
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   const handleUpdatePassword = async (e) => {
     e.preventDefault();
 
@@ -424,10 +380,6 @@ export default function LoginPage({ portal = 'superadmin' }) {
   };
 
   const switchMode = (mode) => {
-    if (mode === 'forgot') {
-      setForgotPasswordEmail(loginForm.email);
-    }
-
     setAuthMode(mode);
     setShouldDismissSessionTimeout(false);
     setMessage({ type: '', text: '' });
@@ -521,62 +473,6 @@ export default function LoginPage({ portal = 'superadmin' }) {
                       {isBusy ? 'Please wait...' : 'Sign in'}
                     </button>
 
-                    {canRecoverPassword && (
-                      <p className="auth-switch-text">
-                        <button
-                          type="button"
-                          className="text-link"
-                          onClick={() => switchMode('forgot')}
-                          disabled={isBusy}
-                        >
-                          Forgot password?
-                        </button>
-                      </p>
-                    )}
-                  </form>
-
-                  <form
-                    onSubmit={handleForgotPassword}
-                    className={`auth-form forgot-password-form ${authMode === 'forgot' ? 'active' : ''}`}
-                  >
-                    <div className="auth-form-head">
-                      <span className="auth-kicker">Password Reset</span>
-                      <h2>Forgot your password?</h2>
-                      <p>Enter your email address and we will send a password reset link.</p>
-                    </div>
-
-                    <div className="form-grid single">
-                      <div className="form-group">
-                        <label htmlFor="forgot-password-email">Email Address</label>
-                        <input
-                          id="forgot-password-email"
-                          type="email"
-                          required
-                          autoComplete="email"
-                          placeholder="Enter your email"
-                          value={forgotPasswordEmail}
-                          onChange={(e) => setForgotPasswordEmail(e.target.value)}
-                          disabled={isBusy}
-                        />
-                      </div>
-                    </div>
-
-                    <button type="submit" className="auth-submit-btn login-submit-btn" disabled={isBusy}>
-                      <AuthButtonIcon icon={Mail} />
-                      {isBusy ? 'Sending reset link...' : 'Send Reset Link'}
-                    </button>
-
-                    <p className="auth-switch-text">
-                      Return to{' '}
-                      <button
-                        type="button"
-                        className="text-link"
-                        onClick={() => switchMode('signin')}
-                        disabled={isBusy}
-                      >
-                        sign in
-                      </button>
-                    </p>
                   </form>
 
                   <form
@@ -653,16 +549,13 @@ export default function LoginPage({ portal = 'superadmin' }) {
         <div className="forced-password-overlay" role="dialog" aria-modal="true" aria-label="Create permanent password">
           <form className="forced-password-modal" onSubmit={handleRequiredPasswordChange}>
             <div className="auth-form-head">
-              <span className="auth-kicker">First Login Security</span>
-              <h2>Create your permanent password</h2>
-              <p>
-                Your temporary password worked. Set a new password before opening the MEMPCO portal.
-              </p>
+              <span className="auth-kicker">Required before continuing</span>
+              <h2>Set a permanent password</h2>
+              <p>Your temporary password is for first-time access only.</p>
             </div>
 
             <p className="password-hint">
-              Use at least 8 characters. Combine uppercase and lowercase letters, a number, and a symbol.
-              Example format: <strong>Mempco@2026</strong>
+              Use at least 8 characters, including uppercase and lowercase letters, a number, and a symbol.
             </p>
 
             <div className="form-grid single">
@@ -733,8 +626,7 @@ export default function LoginPage({ portal = 'superadmin' }) {
             </div>
 
             <button type="submit" className="auth-submit-btn" disabled={isBusy}>
-              <AuthButtonIcon icon={CheckCircle2} />
-              {isBusy ? 'Updating...' : 'Save Permanent Password'}
+              {isBusy ? 'Updating...' : 'Save Password'}
             </button>
           </form>
         </div>

@@ -779,6 +779,90 @@ body[data-portal-theme='dark'] .portal-app-main .stat-value {
   color: #e8edf4;
 }
 
+/* Keep the mobile navigation control with the portal header controls. */
+@media (max-width: 820px) {
+  .portal-app-main .portal-topbar.glass {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.65rem;
+  }
+
+  .portal-app-main .portal-topbar-copy,
+  .portal-app-main .portal-topbar-copy h1 {
+    min-width: 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .portal-app-main .portal-topbar-actions {
+    display: grid;
+    grid-template-columns: 44px 44px minmax(0, 1fr) 44px;
+    align-items: center;
+    justify-content: stretch;
+    gap: 0.4rem;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .portal-app-main .portal-topbar-actions > .helpdesk-inbox {
+    grid-column: 1;
+    width: 44px;
+    min-width: 0;
+  }
+
+  .portal-app-main .portal-topbar-actions > .portal-theme-toggle {
+    grid-column: 2;
+    justify-self: center;
+  }
+
+  .portal-app-main .portal-topbar-actions > .profile-chip {
+    grid-column: 3;
+    display: flex;
+    flex: 1 1 auto;
+    width: auto;
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+  }
+
+  .portal-app-main .portal-topbar-actions .profile-chip-copy {
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+  }
+
+  .portal-app-main .portal-topbar-actions .profile-chip-copy :is(strong, span) {
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .portal-app-main .portal-topbar-actions > .burger {
+    grid-column: 4;
+    justify-self: end;
+    align-self: center;
+  }
+}
+
+/* The compact report layout has its own nested surface and separators. */
+body[data-portal-theme='dark'] .portal-app-main .reports-compact-view .report-toolbar-metrics {
+  border-color: #354252 !important;
+  background: #202b39 !important;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .reports-compact-view .report-metric + .report-metric {
+  border-left-color: #354252 !important;
+}
+
+@media (max-width: 640px) {
+  body[data-portal-theme='dark'] .portal-app-main .reports-compact-view .report-metric:nth-child(n + 3) {
+    border-top-color: #354252 !important;
+  }
+}
+
 body[data-portal-theme='dark'] .portal-app-main .portal-topbar-copy p,
 body[data-portal-theme='dark'] .portal-app-main .hero-copy p,
 body[data-portal-theme='dark'] .portal-app-main .stat-meta {
@@ -3385,3 +3469,121 @@ body[data-portal-theme='dark'] .portal-app-main .portal-user-edit-modal .modal-b
 body[data-portal-theme='dark'] .portal-app-main .portal-user-edit-modal .modal-btn.danger { border-color: #704047; background: #3b292e; color: #ffaaaa; }
 body[data-portal-theme='dark'] .portal-app-main .portal-user-edit-modal .modal-btn.danger:hover:not(:disabled) { border-color: #8a5158; background: #472e34; }
 body[data-portal-theme='dark'] .portal-app-main .portal-user-edit-modal .modal-btn:focus-visible { outline-color: #f08c8c; }
+
+/* Report breakdown controls and the action queue have independent light
+   defaults, so give each of their surfaces and text explicit dark colors. */
+body[data-portal-theme='dark'] .portal-app-main .reports-compact-view .report-breakdown-row {
+  border-color: #354252;
+  background: #202b39;
+  color: #edf2f7;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .reports-compact-view .report-breakdown-row:is(:hover, .selected) {
+  border-color: #87515a;
+  background: #32282d;
+  color: #fff1f2;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .reports-compact-view .report-breakdown-percent {
+  color: #b6c4d6;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .reports-compact-view .report-breakdown-row:focus-visible {
+  outline-color: #f08c8c;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .report-ticket-table-card .report-ticket-table-head h3 {
+  color: #edf2f7;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .report-ticket-table-card .report-ticket-table-head h3 span {
+  background: #303b49;
+  color: #e8edf4;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .report-ticket-table-card .report-ticket-table-head p,
+body[data-portal-theme='dark'] .portal-app-main .report-ticket-table-card .report-clear-filters {
+  color: #aebaca;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .report-ticket-table-card .report-ticket-scope button {
+  border-color: #3a4655;
+  background: #202b39;
+  color: #d4dce6;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .report-ticket-table-card .report-ticket-scope button:hover:not(.active) {
+  border-color: #536174;
+  background: #283545;
+  color: #f1f5f9;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .report-ticket-table-card .report-ticket-scope button.active {
+  border-color: #704047;
+  background: #3b292e;
+  color: #ffb0b0;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .report-ticket-table-card .report-ticket-table-wrap {
+  border-color: #354252;
+  background: #1b2531;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .report-ticket-table th {
+  border-bottom-color: #354252;
+  background: #202b39;
+  color: #b6c4d6;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .report-ticket-table td {
+  border-bottom-color: #303c4a;
+  background: #1b2531;
+  color: #c6d0dc;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .report-ticket-table td:first-child strong {
+  color: #f1f5f9;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .report-ticket-table tbody tr[tabindex]:hover td {
+  background: #202b39;
+  color: #edf2f7;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .report-ticket-table tbody tr[tabindex]:focus-visible {
+  outline-color: #f08c8c;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .report-ticket-table .report-table-empty {
+  color: #b6c4d6 !important;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .report-ticket-table-card .report-priority-pill,
+body[data-portal-theme='dark'] .portal-app-main .report-ticket-table-card .report-deadline-pill {
+  background: #303b49;
+  color: #d4dce6;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .report-ticket-table-card :is(.report-priority-pill.critical, .report-deadline-pill.overdue) {
+  background: #3b272c;
+  color: #ffaaaa;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .report-ticket-table-card :is(.report-priority-pill.high, .report-deadline-pill.due-soon) {
+  background: #382c22;
+  color: #ffc078;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .report-ticket-table-card .report-priority-pill.medium {
+  background: #1e3554;
+  color: #a8ceff;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .report-ticket-table-card .report-priority-pill.low {
+  background: #303b49;
+  color: #d4dce6;
+}
+
+body[data-portal-theme='dark'] .portal-app-main .report-table-footnote {
+  color: #aebaca;
+}
