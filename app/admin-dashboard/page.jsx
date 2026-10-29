@@ -809,6 +809,15 @@ const getReportSlaState = (ticket, now = Date.now()) => {
   return 'clear';
 };
 
+const getReportResolutionSlaState = (ticket, now = Date.now()) => {
+  if (!isUnresolved(ticket.status)) return 'clear';
+  const resolutionDue = getReportDeadline(ticket, 'resolution');
+  if (!resolutionDue) return 'clear';
+  if (resolutionDue <= now) return 'overdue';
+  if (resolutionDue - now <= 24 * 60 * 60 * 1000) return 'due-soon';
+  return 'clear';
+};
+
 const getReportNextDeadlineInfo = (ticket) => {
   if (!isUnresolved(ticket.status)) return 0;
   const responseComplete = Boolean(ticket.firstResponseAt || ticket.first_response_at);
@@ -5912,7 +5921,7 @@ function ReportsView({ tickets, users = [], summary, categorySummary, statusSumm
           <div>
             <span className="section-kicker">Action queue</span>
             <h3>Tickets to review <span>{reportTicketRows.length}</span></h3>
-            <p>Overdue first, then nearest deadline, priority, and oldest submission.</p>
+            <p>Tickets with overdue response or resolution targets first, then the nearest unmet target, priority, and oldest submission.</p>
           </div>
           <div className="report-ticket-scope" role="group" aria-label="Ticket list scope">
             <button type="button" className={reportTicketScope === 'open' ? 'active' : ''} onClick={() => setReportTicketScope('open')}>Open</button>
@@ -5924,13 +5933,13 @@ function ReportsView({ tickets, users = [], summary, categorySummary, statusSumm
         </div>
         <div className="report-ticket-table-wrap">
           <table className="report-ticket-table">
-            <thead><tr><th>Ticket</th><th>Requester</th><th>Status</th><th>Priority</th><th>Technician</th><th>Age</th><th>SLA deadline</th></tr></thead>
+            <thead><tr><th>Ticket</th><th>Requester</th><th>Status</th><th>Priority</th><th>Technician</th><th>Age</th><th>Resolution deadline</th></tr></thead>
             <tbody>
               {reportTicketRows.length ? reportTicketRows.slice(0, 100).map((ticket) => {
-                const deadline = getReportNextDeadline(ticket) || Number.MAX_SAFE_INTEGER;
+                const deadline = getReportDeadline(ticket, 'resolution') || Number.MAX_SAFE_INTEGER;
                 const submittedAt = getSubmittedTime(ticket);
                 const ageDays = submittedAt ? Math.max(0, Math.floor((reportNow - submittedAt) / (24 * 60 * 60 * 1000))) : null;
-                const slaState = getReportSlaState(ticket, reportNow);
+                const slaState = getReportResolutionSlaState(ticket, reportNow);
                 return (
                   <tr key={ticket.id} onClick={() => onOpenTicket?.(ticket)} tabIndex={onOpenTicket ? 0 : undefined} onKeyDown={(event) => { if (onOpenTicket && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); onOpenTicket(ticket); } }}>
                     <td><strong>{getTicketDisplayCode(ticket)}</strong></td>
@@ -5939,7 +5948,7 @@ function ReportsView({ tickets, users = [], summary, categorySummary, statusSumm
                     <td><span className={`report-priority-pill ${slugify(ticket.sla || 'low')}`}>{ticket.sla || 'Low'}</span></td>
                     <td>{getReportTechnicianName(ticket.technician) || 'Unassigned'}</td>
                     <td>{ageDays === null ? '—' : `${ageDays}d`}</td>
-                    <td><span className={`report-deadline-pill ${slaState}`}>{deadline === Number.MAX_SAFE_INTEGER ? 'Not set' : `${slaState === 'overdue' ? 'Overdue · ' : ''}${getReportNextDeadlineInfo(ticket)?.kind} · ${new Date(deadline).toLocaleString()}`}</span></td>
+                    <td><span className={`report-deadline-pill ${slaState}`}>{deadline === Number.MAX_SAFE_INTEGER ? 'Not set' : `${slaState === 'overdue' ? 'Overdue · ' : ''}${new Date(deadline).toLocaleString()}`}</span></td>
                   </tr>
                 );
               }) : <tr><td colSpan="7" className="report-table-empty">No tickets match these filters.</td></tr>}
@@ -8588,6 +8597,15 @@ Current role: ${activeUser.role || 'No role found'}`
                   <span>{admin.designation || admin.department}</span>
                 </button>
               </div>
+              <button
+                type="button"
+                className="burger"
+                aria-label={sidebarOpen ? 'Close navigation' : 'Open navigation'}
+                aria-expanded={sidebarOpen}
+                onClick={() => setSidebarOpen((prev) => !prev)}
+              >
+                <Menu className="admin-mono-icon" aria-hidden="true" />
+              </button>
             </div>
           </header>
 
@@ -8605,15 +8623,6 @@ Current role: ${activeUser.role || 'No role found'}`
             {sidebarOpen && <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />}
 
             <section className="portal-view">
-              <button
-                type="button"
-                className="burger"
-                aria-label="Open navigation"
-                onClick={() => setSidebarOpen((prev) => !prev)}
-              >
-                <Menu className="admin-mono-icon" aria-hidden="true" />
-              </button>
-
               {activeSection === 'profile' && (
                 <AdminProfileView
                   admin={admin}

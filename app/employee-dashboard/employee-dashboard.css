@@ -6692,6 +6692,13 @@ button {
   letter-spacing: -0.02em;
 }
 
+.dashboard-sla-pill small {
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
 .dashboard-sla-pill.low strong {
   color: #15803d;
 }
