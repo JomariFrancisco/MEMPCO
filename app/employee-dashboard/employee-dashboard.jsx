@@ -1547,11 +1547,10 @@ function TicketPagination({ page, totalPages, totalItems, pageSize, onPageChange
   );
 }
 
-function StatCard({ icon, label, value, meta }) {
+function StatCard({ label, value, meta }) {
   return (
     <article className="stat-card glass">
       <div className="stat-card-head">
-        <span className="stat-icon"><MonoIcon icon={icon} /></span>
         <span className="stat-label">{label}</span>
       </div>
       <p className="stat-value">{value}</p>
@@ -2158,10 +2157,10 @@ function DashboardView({ user, tickets, openTickets, onGoTo, now }) {
 
       <section className="stats-grid" aria-label="Key statistics">
         {[
-          { icon: ShieldCheck, label: 'Employee Status', value: user.status || 'Active', meta: 'Authorized employee' },
-          { icon: FileText, label: 'My Tickets', value: tickets.length, meta: 'Submitted requests' },
-          { icon: Clock3, label: 'Pending Review', value: pendingCount, meta: 'Awaiting ICT action' },
-          { icon: Wrench, label: 'Urgent Active', value: urgentCount, meta: `${resolvedCount} resolved` },
+          { label: 'Employee Status', value: user.status || 'Active', meta: 'Authorized employee' },
+          { label: 'My Tickets', value: tickets.length, meta: 'Submitted requests' },
+          { label: 'Pending Review', value: pendingCount, meta: 'Awaiting ICT action' },
+          { label: 'Urgent Active', value: urgentCount, meta: `${resolvedCount} resolved` },
         ].map((item) => <StatCard key={item.label} {...item} />)}
       </section>
 
@@ -2205,7 +2204,7 @@ function DashboardView({ user, tickets, openTickets, onGoTo, now }) {
             {supportCategoryEntries.map(([category, concernList]) => (
               <section key={category} className="support-guide-card">
                 <div className="support-guide-card-head">
-                  <span className="support-guide-icon"><MonoIcon icon={Ticket} /></span>
+                  <MonoIcon icon={Ticket} />
                   <div>
                     <span>Support Category</span>
                     <h4>{category}</h4>
@@ -2277,7 +2276,7 @@ function DashboardView({ user, tickets, openTickets, onGoTo, now }) {
                   </span>
                 </div>
 
-                <TicketHandlingIndicator ticket={latestTicket} now={now} compact currentUserId={user?.id} />
+                <TicketHandlingIndicator ticket={latestTicket} now={now} compact showStatus={false} currentUserId={user?.id} />
 
                 <div className="dashboard-ticket-info-grid">
                   <div className="dashboard-ticket-meta-cell">
@@ -3235,22 +3234,22 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab, now, notificat
 
       <section className="support-insight-grid" aria-label="Support insights">
         <article className="support-insight-card">
-          <span><MonoIcon icon={FileText} />Queue</span>
+          <span>Queue</span>
           <strong>{queueCount}</strong>
           <p>Pending or in-progress requests currently with ICT.</p>
         </article>
         <article className="support-insight-card">
-          <span><MonoIcon icon={Clock3} />Active</span>
+          <span>Active</span>
           <strong>{activeCount}</strong>
           <p>Concerns currently awaiting action or resolution.</p>
         </article>
         <article className="support-insight-card">
-          <span><MonoIcon icon={CheckCircle2} />Resolved</span>
+          <span>Resolved</span>
           <strong>{resolvedCount}</strong>
           <p>Completed requests with recorded ICT resolution.</p>
         </article>
         <article className="support-insight-card">
-          <span><MonoIcon icon={BadgeCheck} />SAAR</span>
+          <span>SAAR</span>
           <strong>PDF</strong>
           <p>Required for MBWin / Sky360 role requests.</p>
         </article>
@@ -3372,7 +3371,7 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab, now, notificat
 
                         <div className="employee-ticket-handling-summary">
                           <div className="employee-ticket-status-row">
-                            <TicketHandlingIndicator ticket={ticket} now={now} compact currentUserId={user?.id} />
+                            <TicketHandlingIndicator ticket={ticket} now={now} compact showStatus={false} currentUserId={user?.id} />
                             <TicketWorkTimer ticket={ticket} now={now} compact />
                           </div>
                           {queueLabel && <span className="employee-ticket-queue-position"
@@ -3383,12 +3382,12 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab, now, notificat
 
                         <div className="employee-admin-ticket-summary-grid">
                           <div>
-                            <span><MonoIcon icon={UserRound} />Requester</span>
+                            <span>Requester</span>
                             <strong>{requesterName}</strong>
                             <p>{ticket.department || user.department || 'Department not set'}</p>
                           </div>
                           <div>
-                            <span><MonoIcon icon={Building2} />Branch</span>
+                            <span>Branch</span>
                             <strong>{ticket.branch || user.branch || user.office || 'Branch not set'}</strong>
                             <p>{ticket.supportCategory || 'Support category not set'}</p>
                           </div>
@@ -3548,7 +3547,6 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab, now, notificat
                       <span>SLA</span>
                       <strong>{derivedImpact.sla}</strong>
                     </div>
-                    <p className="sla-target-window">{getSlaTargetSummary(derivedImpact.sla)}</p>
                   </div>
                 </div>
               )}

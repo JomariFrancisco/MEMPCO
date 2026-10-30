@@ -3041,11 +3041,10 @@ const getVisibleTicketDescription = (description = '') =>
     .join('\n')
     .trim();
 
-function StatCard({ icon, label, value, meta }) {
+function StatCard({ label, value, meta }) {
   return (
     <article className="stat-card glass">
       <div className="stat-card-head">
-        <span className="stat-icon">{typeof icon === 'string' ? icon : <MonoIcon icon={icon} />}</span>
         <span className="stat-label">{label}</span>
       </div>
       <p className="stat-value">{value}</p>
@@ -4290,19 +4289,19 @@ function TicketTable({
                 </div>
 
                 <div className="admin-ticket-status-row">
-                  <TicketHandlingIndicator ticket={ticket} now={now} compact />
+                  <TicketHandlingIndicator ticket={ticket} now={now} compact showStatus={false} />
                   <TicketWorkTimer ticket={ticket} now={now} compact />
                 </div>
 
                 <div className="admin-ticket-summary-grid">
                   <div>
-                    <span><MonoIcon icon={UserRound} />Requester</span>
+                    <span>Requester</span>
                     <strong>{ticket.requester || ticket.ownerEmail || 'Employee'}</strong>
                     <p>{ticket.department || 'No department'}</p>
                   </div>
 
                   <div>
-                    <span><MonoIcon icon={Building2} />Branch</span>
+                    <span>Branch</span>
                     <strong>{ticket.branch || 'Unspecified'}</strong>
                     <p>{ticket.supportCategory || 'No category'}</p>
                   </div>
@@ -4784,10 +4783,10 @@ function DashboardView({ tickets, summary, categorySummary, onGoTo, onOpenTicket
       </section>
 
       <section className="stats-grid" aria-label="Admin statistics">
-        <StatCard icon={FileText} label="Total Tickets" value={summary.total} meta="All received concerns" />
-        <StatCard icon={Clock3} label="New / Modified" value={summary.created + summary.modified} meta="Needs admin review" />
-        <StatCard icon={Wrench} label="In Progress" value={summary.inProgress} meta="Currently handled" />
-        <StatCard icon={ShieldCheck} label="High / Critical" value={summary.critical} meta="Needs immediate attention" />
+        <StatCard label="Total Tickets" value={summary.total} meta="All received concerns" />
+        <StatCard label="New / Modified" value={summary.created + summary.modified} meta="Needs admin review" />
+        <StatCard label="In Progress" value={summary.inProgress} meta="Currently handled" />
+        <StatCard label="High / Critical" value={summary.critical} meta="Needs immediate attention" />
       </section>
 
       <div className="dashboard-columns equal-columns dashboard-ticket-columns">
@@ -5213,12 +5212,11 @@ function BurnoutReportView({ tickets, onOpenTicket, now }) {
       </section>
 
       <section className="stats-grid burnout-report-stats" aria-label="Burnout report summary">
-        <StatCard icon={FileText} label="Total Burnout" value={burnoutTickets.length} meta="submitted requests" />
-        <StatCard icon={Clock3} label="Active" value={activeCount} meta="not yet resolved" />
-        <StatCard icon={Monitor} label="Monitoring" value={monitoringCount} meta="3-5 day process" />
-        <StatCard icon={ShieldCheck} label="Completed" value={completedCount} meta={`${softwareCompleteCount} software-ready`} />
+        <StatCard label="Total Burnout" value={burnoutTickets.length} meta="submitted requests" />
+        <StatCard label="Active" value={activeCount} meta="not yet resolved" />
+        <StatCard label="Monitoring" value={monitoringCount} meta="3-5 day process" />
+        <StatCard label="Completed" value={completedCount} meta={`${softwareCompleteCount} software-ready`} />
         <StatCard
-          icon={CalendarDays}
           label="Monthly Summary"
           value={monthlyBurnoutData.monthlyTickets.length}
           meta={monthlyBurnoutData.monthTitle}
@@ -5451,18 +5449,18 @@ function BranchesView({ branchSummary, tickets, onOpenTicket, now }) {
                   </div>
 
                   <div className="admin-ticket-status-row">
-                    <TicketHandlingIndicator ticket={ticket} now={now} compact />
+                    <TicketHandlingIndicator ticket={ticket} now={now} compact showStatus={false} />
                     <TicketWorkTimer ticket={ticket} now={now} compact />
                   </div>
 
                   <div className="admin-ticket-summary-grid">
                     <div>
-                      <span><MonoIcon icon={UserRound} />Requester</span>
+                      <span>Requester</span>
                       <strong>{ticket.requester || ticket.ownerEmail || 'Employee'}</strong>
                       <p>{ticket.department || 'No department'}</p>
                     </div>
                     <div>
-                      <span><MonoIcon icon={Building2} />Branch</span>
+                      <span>Branch</span>
                       <strong>{ticket.branch || 'Unspecified'}</strong>
                       <p>{ticket.supportCategory || 'No category'}</p>
                     </div>

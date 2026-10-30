@@ -441,13 +441,10 @@ const getSaveSuccessMessage = ({ nextStatus, wasExisting, shouldRepublish }) => 
   return 'Saved as draft.';
 };
 
-function StatCard({ icon: IconComponent, label, value, meta }) {
+function StatCard({ label, value, meta }) {
   return (
     <article className="stat-card glass">
       <div className="stat-card-head">
-        <div className="stat-icon">
-          <IconComponent className="admin-mono-icon" aria-hidden="true" />
-        </div>
         <span className="stat-label">{label}</span>
       </div>
       <p className="stat-value">{value}</p>
@@ -1092,10 +1089,10 @@ export default function MarketingAdminPage() {
               )}
 
               <section className="stats-grid" aria-label="Marketing post statistics">
-                <StatCard icon={Newspaper} label="Total Posts" value={counts.total} meta="All marketing entries" />
-                <StatCard icon={Send} label="Published" value={counts.published} meta="Visible on public pages" />
-                <StatCard icon={Clock3} label="Drafts" value={counts.draft} meta="Needs review or copy" />
-                <StatCard icon={ShieldCheck} label="Featured" value={counts.featured} meta="Homepage and page spotlight" />
+                <StatCard label="Total Posts" value={counts.total} meta="All marketing entries" />
+                <StatCard label="Published" value={counts.published} meta="Visible on public pages" />
+                <StatCard label="Drafts" value={counts.draft} meta="Needs review or copy" />
+                <StatCard label="Featured" value={counts.featured} meta="Homepage and page spotlight" />
               </section>
 
               <section className="panel-card glass marketing-post-panel">

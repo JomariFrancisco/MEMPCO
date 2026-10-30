@@ -1051,15 +1051,15 @@ function MrdssAdminWorkspace() {
     || (item.workflowStage === 'closed' && item.closureOutcome !== 'unable_to_contact')).length;
   const reportUrgentCount = reportCases.filter((item) => item.priority === 'Urgent').length;
   const caseSummary = isCaseHandler ? [
-    { Icon: FileText, label: `${adminRoleLabel} queue`, queue: 'All', value: cases.filter((item) => canHandleConcern(item, admin)).length, meta: isBranchManager ? admin?.branch || 'Cases routed to your branch' : isAreaManager ? admin?.areaId?.replace('-', ' ') || 'Assigned area cases' : 'Assigned COO escalations' },
-    { Icon: Inbox, label: 'New / returned', queue: 'new_returned', value: cases.filter((item) => canHandleConcern(item, admin) && ['New', 'Returned for Further Action'].includes(item.status)).length, meta: 'Awaiting review' },
-    { Icon: Clock3, label: 'In review', queue: 'in_review', value: cases.filter((item) => canHandleConcern(item, admin) && item.status === 'In Review').length, meta: 'Currently being handled' },
-    { Icon: MessageCircle, label: 'Waiting for member', queue: 'waiting_for_member', value: cases.filter((item) => canHandleConcern(item, admin) && item.status === 'Waiting for Member').length, meta: 'Follow-up is pending' },
+    { label: `${adminRoleLabel} queue`, queue: 'All', value: cases.filter((item) => canHandleConcern(item, admin)).length, meta: isBranchManager ? admin?.branch || 'Cases routed to your branch' : isAreaManager ? admin?.areaId?.replace('-', ' ') || 'Assigned area cases' : 'Assigned COO escalations' },
+    { label: 'New / returned', queue: 'new_returned', value: cases.filter((item) => canHandleConcern(item, admin) && ['New', 'Returned for Further Action'].includes(item.status)).length, meta: 'Awaiting review' },
+    { label: 'In review', queue: 'in_review', value: cases.filter((item) => canHandleConcern(item, admin) && item.status === 'In Review').length, meta: 'Currently being handled' },
+    { label: 'Waiting for member', queue: 'waiting_for_member', value: cases.filter((item) => canHandleConcern(item, admin) && item.status === 'Waiting for Member').length, meta: 'Follow-up is pending' },
   ] : [
-    { Icon: FileText, label: 'Total Cases', queue: 'All', value: cases.length, meta: 'All received concerns' },
-    { Icon: Inbox, label: 'MRDSS Review', queue: 'mrdss_review', value: counts.mrdss_review || 0, meta: 'Needs MRDSS response' },
-    { Icon: Building2, label: 'With External Parties', queue: 'external', value: externalCount, meta: 'Branch, Area Manager, or COO' },
-    { Icon: CheckCircle2, label: 'Final Tagging', queue: 'final_tagging', value: counts.final_tagging || 0, meta: 'Ready to close' },
+    { label: 'Total Cases', queue: 'All', value: cases.length, meta: 'All received concerns' },
+    { label: 'MRDSS Review', queue: 'mrdss_review', value: counts.mrdss_review || 0, meta: 'Needs MRDSS response' },
+    { label: 'With External Parties', queue: 'external', value: externalCount, meta: 'Branch, Area Manager, or COO' },
+    { label: 'Final Tagging', queue: 'final_tagging', value: counts.final_tagging || 0, meta: 'Ready to close' },
   ];
 
   const resetQueueNavigation = () => {
@@ -1531,7 +1531,7 @@ function MrdssAdminWorkspace() {
         </section>
 
         {activeView === 'cases' && <section className="stats-grid mrdss-summary" aria-label="Case summary">
-          {caseSummary.map(({ Icon, label, queue, value, meta }) => (
+          {caseSummary.map(({ label, queue, value, meta }) => (
             <Link
               className="stat-card glass mrdss-summary-link"
               key={label}
@@ -1540,9 +1540,7 @@ function MrdssAdminWorkspace() {
               aria-current={filter === queue ? 'page' : undefined}
             >
               <div className="stat-card-head">
-                <span className="stat-icon"><Icon size={18} aria-hidden="true" /></span>
                 <span className="stat-label">{label}</span>
-                <ArrowRight className="mrdss-summary-arrow" size={16} aria-hidden="true" />
               </div>
               <p className="stat-value">{value}</p>
               <span className="stat-meta">{meta}</span>
