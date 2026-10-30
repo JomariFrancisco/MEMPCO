@@ -1062,7 +1062,7 @@ export default function MarketingAdminPage() {
                   </a>
                 )}
 
-                <a className="sidebar-nav-btn sidebar-external-link" href={HRMAX_ROUTE}>
+                <a className="sidebar-nav-btn sidebar-external-link" href={HRMAX_ROUTE} target="_blank" rel="noopener noreferrer">
                   <BriefcaseBusiness className="sidebar-nav-icon" aria-hidden="true" />
                   HRMax
                   <ExternalLink className="sidebar-trailing-icon" aria-hidden="true" />
