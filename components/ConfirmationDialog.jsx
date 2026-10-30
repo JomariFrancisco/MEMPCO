@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { ShieldCheck, TriangleAlert, X } from 'lucide-react';
+import { TriangleAlert, X } from 'lucide-react';
 
 const ConfirmationContext = createContext(null);
 
@@ -10,7 +10,6 @@ function ConfirmationDialog({ request, onResolve }) {
   const dialogRef = useRef(null);
   const cancelButtonRef = useRef(null);
   const isDanger = request.variant === 'danger';
-  const Icon = isDanger ? TriangleAlert : ShieldCheck;
 
   useEffect(() => {
     const previousFocus = document.activeElement;
@@ -64,8 +63,8 @@ function ConfirmationDialog({ request, onResolve }) {
         aria-labelledby="app-confirm-title"
         aria-describedby="app-confirm-message"
       >
-        <div className="app-confirm-header">
-          <span className="app-confirm-icon" aria-hidden="true"><Icon size={isDanger ? 23 : 20} /></span>
+        <div className={`app-confirm-header${isDanger ? ' has-icon' : ''}`}>
+          {isDanger && <span className="app-confirm-icon" aria-hidden="true"><TriangleAlert size={23} /></span>}
           <div className="app-confirm-copy">
             <span className="app-confirm-eyebrow">Confirmation</span>
             <h2 id="app-confirm-title">{request.title}</h2>

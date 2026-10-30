@@ -26,7 +26,9 @@ import {
   Paperclip,
   PenLine,
   Printer,
+  RotateCcw,
   Save,
+  Search,
   Send,
   ShieldCheck,
   Ticket,
@@ -36,11 +38,15 @@ import {
 } from 'lucide-react';
 import {
   BRANCHES,
+  BURNOUT_TICKET_STATUSES,
   CATEGORY_TEMPLATES,
   DEPARTMENTS,
   DEVICE_OPTIONS,
   isUnresolved,
+  SLA_LEVELS,
   slugify,
+  SUPPORT_CATEGORIES,
+  TICKET_STATUSES,
 } from '../portalStorage';
 import {
   getCurrentPortalUser,
@@ -442,6 +448,18 @@ const getTemplateLabels = (template = DEFAULT_DESCRIPTION_TEMPLATE) =>
 const normalizeTextareaValue = (value = '') => String(value || '').replace(/\r\n/g, '\n');
 
 const normalize = (value) => String(value || '').trim().toLowerCase();
+const uniqueTicketFilterOptions = (values = []) => {
+  const seen = new Set();
+  return values
+    .filter(Boolean)
+    .map((value) => String(value).trim())
+    .filter((value) => {
+      const key = normalize(value);
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+};
 const normalizeEmployeeTicketStatus = (status = '') =>
   normalize(status).replace(/[-_]+/g, ' ').replace(/\s+/g, ' ');
 
@@ -1385,7 +1403,7 @@ function Sidebar({ active, onNav, onLogout, open }) {
           </button>
         ))}
 
-        <a className="sidebar-nav-btn sidebar-external-link" href={HRMAX_ROUTE}>
+        <a className="sidebar-nav-btn sidebar-external-link" href={HRMAX_ROUTE} target="_blank" rel="noopener noreferrer">
           <Icon.HRMax />
           HRMax
           <ExternalLink className="sidebar-trailing-icon" aria-hidden="true" />
@@ -1547,11 +1565,10 @@ function TicketPagination({ page, totalPages, totalItems, pageSize, onPageChange
   );
 }
 
-function StatCard({ icon, label, value, meta }) {
+function StatCard({ label, value, meta }) {
   return (
     <article className="stat-card glass">
       <div className="stat-card-head">
-        <span className="stat-icon"><MonoIcon icon={icon} /></span>
         <span className="stat-label">{label}</span>
       </div>
       <p className="stat-value">{value}</p>
@@ -2158,10 +2175,10 @@ function DashboardView({ user, tickets, openTickets, onGoTo, now }) {
 
       <section className="stats-grid" aria-label="Key statistics">
         {[
-          { icon: ShieldCheck, label: 'Employee Status', value: user.status || 'Active', meta: 'Authorized employee' },
-          { icon: FileText, label: 'My Tickets', value: tickets.length, meta: 'Submitted requests' },
-          { icon: Clock3, label: 'Pending Review', value: pendingCount, meta: 'Awaiting ICT action' },
-          { icon: Wrench, label: 'Urgent Active', value: urgentCount, meta: `${resolvedCount} resolved` },
+          { label: 'Employee Status', value: user.status || 'Active', meta: 'Authorized employee' },
+          { label: 'My Tickets', value: tickets.length, meta: 'Submitted requests' },
+          { label: 'Pending Review', value: pendingCount, meta: 'Awaiting ICT action' },
+          { label: 'Urgent Active', value: urgentCount, meta: `${resolvedCount} resolved` },
         ].map((item) => <StatCard key={item.label} {...item} />)}
       </section>
 
@@ -2205,7 +2222,7 @@ function DashboardView({ user, tickets, openTickets, onGoTo, now }) {
             {supportCategoryEntries.map(([category, concernList]) => (
               <section key={category} className="support-guide-card">
                 <div className="support-guide-card-head">
-                  <span className="support-guide-icon"><MonoIcon icon={Ticket} /></span>
+                  <MonoIcon icon={Ticket} />
                   <div>
                     <span>Support Category</span>
                     <h4>{category}</h4>
@@ -2277,7 +2294,7 @@ function DashboardView({ user, tickets, openTickets, onGoTo, now }) {
                   </span>
                 </div>
 
-                <TicketHandlingIndicator ticket={latestTicket} now={now} compact currentUserId={user?.id} />
+                <TicketHandlingIndicator ticket={latestTicket} now={now} compact showStatus={false} currentUserId={user?.id} />
 
                 <div className="dashboard-ticket-info-grid">
                   <div className="dashboard-ticket-meta-cell">
@@ -2545,6 +2562,13 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab, now, notificat
   const [formError, setFormError] = useState('');
   const [photoPasteNotice, setPhotoPasteNotice] = useState('');
   const [ticketPage, setTicketPage] = useState(1);
+  const [ticketFilters, setTicketFilters] = useState({
+    search: '',
+    status: 'All',
+    branch: 'All',
+    category: 'All',
+    sla: 'All',
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -2589,11 +2613,85 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab, now, notificat
     () => getConcernOptionsForSelection(form.supportCategory, form.deviceName),
     [form.supportCategory, form.deviceName]
   );
+  const statusFilterOptions = useMemo(() => uniqueTicketFilterOptions([
+    ...TICKET_STATUSES,
+    ...BURNOUT_TICKET_STATUSES,
+    ...tickets.map((ticket) => getEmployeeTicketStatusLabel(ticket.status)),
+  ].map((status) => getEmployeeTicketStatusLabel(status))), [tickets]);
+  const branchFilterOptions = useMemo(() => uniqueTicketFilterOptions([
+    ...BRANCHES,
+    ...tickets.map((ticket) => ticket.branch),
+  ]), [tickets]);
+  const categoryFilterOptions = useMemo(() => uniqueTicketFilterOptions([
+    ...SUPPORT_CATEGORIES,
+    ...tickets.map((ticket) => ticket.supportCategory),
+  ]), [tickets]);
+  const slaFilterOptions = useMemo(() => uniqueTicketFilterOptions([
+    ...SLA_LEVELS,
+    ...tickets.map((ticket) => ticket.sla),
+  ]), [tickets]);
+  const filteredTickets = useMemo(() => {
+    const search = ticketFilters.search.trim().toLowerCase();
+
+    return tickets.filter((ticket) => {
+      const matchesSearch = !search || [
+        ticket.ticketCode,
+        ticket.id,
+        ticket.requester,
+        ticket.name,
+        ticket.ownerEmail,
+        ticket.employeeId,
+        ticket.branch,
+        ticket.department,
+        ticket.supportCategory,
+        ticket.concernType,
+        ticket.deviceName,
+        ticket.contactNumber,
+        ticket.impact,
+        ticket.description,
+        ticket.status,
+        ticket.sla,
+        ticket.technician,
+        ticket.actionTaken,
+        ticket.resolution,
+        ticket.recommendation,
+      ].filter(Boolean).join(' ').toLowerCase().includes(search);
+      const matchesStatus = ticketFilters.status === 'All'
+        || getEmployeeTicketStatusLabel(ticket.status) === ticketFilters.status;
+      const matchesBranch = ticketFilters.branch === 'All'
+        || normalize(ticket.branch) === normalize(ticketFilters.branch);
+      const matchesCategory = ticketFilters.category === 'All'
+        || normalize(ticket.supportCategory) === normalize(ticketFilters.category);
+      const matchesSla = ticketFilters.sla === 'All'
+        || normalize(ticket.sla || 'Low') === normalize(ticketFilters.sla);
+
+      return matchesSearch && matchesStatus && matchesBranch && matchesCategory && matchesSla;
+    }).sort((a, b) => {
+      const dateA = toDate(a.createdAt || a.submittedAt || a.date)?.getTime() || 0;
+      const dateB = toDate(b.createdAt || b.submittedAt || b.date)?.getTime() || 0;
+      return dateB - dateA || String(b.ticketCode || b.id || '').localeCompare(String(a.ticketCode || a.id || ''));
+    });
+  }, [tickets, ticketFilters]);
+  const clearTicketFilters = () => setTicketFilters({
+    search: '',
+    status: 'All',
+    branch: 'All',
+    category: 'All',
+    sla: 'All',
+  });
   const pageSize = 2;
-  const totalPages = Math.max(1, Math.ceil(tickets.length / pageSize));
+  const totalPages = Math.max(1, Math.ceil(filteredTickets.length / pageSize));
   const currentPage = Math.min(ticketPage, totalPages);
-  const pagedTickets = tickets.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const pagedTickets = filteredTickets.slice((currentPage - 1) * pageSize, currentPage * pageSize);
   const goToTicketPage = (page) => setTicketPage(Math.min(Math.max(page, 1), totalPages));
+
+  useEffect(() => {
+    setTicketPage(1);
+  }, [ticketFilters]);
+
+  useEffect(() => {
+    if (ticketPage > totalPages) setTicketPage(totalPages);
+  }, [ticketPage, totalPages]);
 
   const ticketHasAssignedStaff = viewTicket
     ? Boolean(String(viewTicket.technician || '').trim()) && normalize(viewTicket.technician) !== 'unassigned'
@@ -3235,22 +3333,22 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab, now, notificat
 
       <section className="support-insight-grid" aria-label="Support insights">
         <article className="support-insight-card">
-          <span><MonoIcon icon={FileText} />Queue</span>
+          <span>Queue</span>
           <strong>{queueCount}</strong>
           <p>Pending or in-progress requests currently with ICT.</p>
         </article>
         <article className="support-insight-card">
-          <span><MonoIcon icon={Clock3} />Active</span>
+          <span>Active</span>
           <strong>{activeCount}</strong>
           <p>Concerns currently awaiting action or resolution.</p>
         </article>
         <article className="support-insight-card">
-          <span><MonoIcon icon={CheckCircle2} />Resolved</span>
+          <span>Resolved</span>
           <strong>{resolvedCount}</strong>
           <p>Completed requests with recorded ICT resolution.</p>
         </article>
         <article className="support-insight-card">
-          <span><MonoIcon icon={BadgeCheck} />SAAR</span>
+          <span>SAAR</span>
           <strong>PDF</strong>
           <p>Required for MBWin / Sky360 role requests.</p>
         </article>
@@ -3331,6 +3429,93 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab, now, notificat
               </div>
             ) : (
               <>
+                <div className="employee-ticket-filter-toolbar">
+                  <div className="ticket-form-group full employee-ticket-filter-search">
+                    <label htmlFor="employee-ticket-search">Search Ticket</label>
+                    <span className="employee-ticket-filter-search-icon" aria-hidden="true">
+                      <Search size={17} />
+                    </span>
+                    <input
+                      id="employee-ticket-search"
+                      className="ticket-field ticket-input"
+                      type="search"
+                      value={ticketFilters.search}
+                      onChange={(event) => setTicketFilters((current) => ({ ...current, search: event.target.value }))}
+                      placeholder="Search ticket ID, category, concern, branch, device, status..."
+                    />
+                  </div>
+
+                  <div className="ticket-form-group">
+                    <label htmlFor="employee-ticket-status">Status</label>
+                    <select
+                      id="employee-ticket-status"
+                      className="ticket-field ticket-select"
+                      value={ticketFilters.status}
+                      onChange={(event) => setTicketFilters((current) => ({ ...current, status: event.target.value }))}
+                    >
+                      <option value="All">All Status</option>
+                      {statusFilterOptions.map((status) => <option key={status} value={status}>{status}</option>)}
+                    </select>
+                  </div>
+
+                  <div className="ticket-form-group">
+                    <label htmlFor="employee-ticket-branch">Branch</label>
+                    <select
+                      id="employee-ticket-branch"
+                      className="ticket-field ticket-select"
+                      value={ticketFilters.branch}
+                      onChange={(event) => setTicketFilters((current) => ({ ...current, branch: event.target.value }))}
+                    >
+                      <option value="All">All Branches</option>
+                      {branchFilterOptions.map((branch) => <option key={branch} value={branch}>{branch}</option>)}
+                    </select>
+                  </div>
+
+                  <div className="ticket-form-group">
+                    <label htmlFor="employee-ticket-category">Category</label>
+                    <select
+                      id="employee-ticket-category"
+                      className="ticket-field ticket-select"
+                      value={ticketFilters.category}
+                      onChange={(event) => setTicketFilters((current) => ({ ...current, category: event.target.value }))}
+                    >
+                      <option value="All">All Categories</option>
+                      {categoryFilterOptions.map((category) => <option key={category} value={category}>{category}</option>)}
+                    </select>
+                  </div>
+
+                  <div className="ticket-form-group">
+                    <label htmlFor="employee-ticket-sla">SLA</label>
+                    <select
+                      id="employee-ticket-sla"
+                      className="ticket-field ticket-select"
+                      value={ticketFilters.sla}
+                      onChange={(event) => setTicketFilters((current) => ({ ...current, sla: event.target.value }))}
+                    >
+                      <option value="All">All SLA</option>
+                      {slaFilterOptions.map((sla) => <option key={sla} value={sla}>{sla}</option>)}
+                    </select>
+                  </div>
+
+                  <button
+                    type="button"
+                    className="employee-ticket-filter-reset"
+                    onClick={clearTicketFilters}
+                    aria-label="Clear ticket filters"
+                    title="Clear filters"
+                  >
+                    <RotateCcw size={17} aria-hidden="true" />
+                  </button>
+                </div>
+
+                {filteredTickets.length === 0 ? (
+                  <div className="empty-state small employee-ticket-filter-empty">
+                    <h4>No matching tickets</h4>
+                    <p>Try changing or clearing your search and filters.</p>
+                    <button type="button" className="quick-action-btn" onClick={clearTicketFilters}>Clear filters</button>
+                  </div>
+                ) : (
+                <>
                 <div className="employee-ticket-queue-grid">
                   {pagedTickets.map((ticket) => {
                     const employeeStatusLabel = getEmployeeTicketStatusLabel(ticket.status);
@@ -3372,7 +3557,7 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab, now, notificat
 
                         <div className="employee-ticket-handling-summary">
                           <div className="employee-ticket-status-row">
-                            <TicketHandlingIndicator ticket={ticket} now={now} compact currentUserId={user?.id} />
+                            <TicketHandlingIndicator ticket={ticket} now={now} compact showStatus={false} currentUserId={user?.id} />
                             <TicketWorkTimer ticket={ticket} now={now} compact />
                           </div>
                           {queueLabel && <span className="employee-ticket-queue-position"
@@ -3383,12 +3568,12 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab, now, notificat
 
                         <div className="employee-admin-ticket-summary-grid">
                           <div>
-                            <span><MonoIcon icon={UserRound} />Requester</span>
+                            <span>Requester</span>
                             <strong>{requesterName}</strong>
                             <p>{ticket.department || user.department || 'Department not set'}</p>
                           </div>
                           <div>
-                            <span><MonoIcon icon={Building2} />Branch</span>
+                            <span>Branch</span>
                             <strong>{ticket.branch || user.branch || user.office || 'Branch not set'}</strong>
                             <p>{ticket.supportCategory || 'Support category not set'}</p>
                           </div>
@@ -3406,10 +3591,12 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab, now, notificat
                 <TicketPagination
                   page={currentPage}
                   totalPages={totalPages}
-                  totalItems={tickets.length}
+                  totalItems={filteredTickets.length}
                   pageSize={pageSize}
                   onPageChange={goToTicketPage}
                 />
+                </>
+                )}
               </>
             )}
           </div>
@@ -3548,7 +3735,6 @@ function HelpdeskView({ user, tickets, reloadTickets, initialTab, now, notificat
                       <span>SLA</span>
                       <strong>{derivedImpact.sla}</strong>
                     </div>
-                    <p className="sla-target-window">{getSlaTargetSummary(derivedImpact.sla)}</p>
                   </div>
                 </div>
               )}

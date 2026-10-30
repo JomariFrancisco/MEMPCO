@@ -591,7 +591,7 @@ const escapeReportHtml = (value = '') =>
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#039;');
 
-function StatCard({ icon: IconComponent, label, value, meta, active = false, onClick }) {
+function StatCard({ label, value, meta, active = false, onClick }) {
   const CardElement = onClick ? 'button' : 'article';
   const cardProps = onClick
     ? {
@@ -607,9 +607,6 @@ function StatCard({ icon: IconComponent, label, value, meta, active = false, onC
       {...cardProps}
     >
       <div className="stat-card-head">
-        <span className="stat-icon">
-          <IconComponent className="admin-mono-icon" aria-hidden="true" />
-        </span>
         <span className="stat-label">{label}</span>
       </div>
       <div>
@@ -1896,7 +1893,7 @@ export default function HrAdminPage() {
                 <ExternalLink className="sidebar-nav-icon" aria-hidden="true" />
                 Careers Page
               </a>
-              <a className="sidebar-nav-btn sidebar-external-link" href={HRMAX_ROUTE}>
+              <a className="sidebar-nav-btn sidebar-external-link" href={HRMAX_ROUTE} target="_blank" rel="noopener noreferrer">
                 <BriefcaseBusiness className="sidebar-nav-icon" aria-hidden="true" />
                 HRMax
                 <ExternalLink className="sidebar-trailing-icon" aria-hidden="true" />
@@ -1928,25 +1925,21 @@ export default function HrAdminPage() {
 
             <section className="stats-grid hr-dashboard-stats" aria-label="HR dashboard summary">
               <StatCard
-                icon={BriefcaseBusiness}
                 label="Published Posts"
                 value={openingStats.open}
                 meta="Visible on Careers"
               />
               <StatCard
-                icon={Edit3}
                 label="Draft Posts"
                 value={openingStats.draft}
                 meta="Not yet public"
               />
               <StatCard
-                icon={UsersRound}
                 label="Applicants"
                 value={openingStats.applications}
                 meta="Total applicant records"
               />
               <StatCard
-                icon={CalendarDays}
                 label="Needs Attention"
                 value={hrCommandCenter.actionableApplications.length}
                 meta="New, reviewing, or shortlisted"

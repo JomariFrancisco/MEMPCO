@@ -22,9 +22,13 @@
 
 .app-confirm-header {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) 32px;
+  grid-template-columns: minmax(0, 1fr) 32px;
   align-items: center;
   gap: 0.75rem;
+}
+
+.app-confirm-header.has-icon {
+  grid-template-columns: auto minmax(0, 1fr) 32px;
 }
 
 .app-confirm-icon {

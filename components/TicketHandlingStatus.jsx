@@ -16,7 +16,7 @@ const formatStatusTime = (value) => new Intl.DateTimeFormat('en-PH', {
   timeZone: 'Asia/Manila', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
 }).format(new Date(value));
 
-export default function TicketHandlingStatus({ ticket, now = Date.now(), compact = false, detailed = false, currentUserId }) {
+export default function TicketHandlingStatus({ ticket, now = Date.now(), compact = false, detailed = false, showStatus = true, currentUserId }) {
   const state = useMemo(() => getTicketHandlingState(ticket, now), [ticket, now]);
   const timing = state.closed && state.completedAt !== null
     ? `Recorded ${formatStatusTime(state.completedAt)}`
@@ -25,18 +25,20 @@ export default function TicketHandlingStatus({ ticket, now = Date.now(), compact
 
   return (
     <div className={`ticket-handling-status${compact ? ' is-compact' : ''}${detailed ? ' is-detailed' : ''}`}>
-      <div className="ticket-handling-topline">
-        <span className={`ticket-handling-badge tone-${state.tone}`} role="status" aria-live="polite" aria-atomic="true">
-          <span className="ticket-handling-dot" aria-hidden="true" />
-          {state.title}
-        </span>
+      {(showStatus || state.editor) && <div className="ticket-handling-topline">
+        {showStatus && (
+          <span className={`ticket-handling-badge tone-${state.tone}`} role="status" aria-live="polite" aria-atomic="true">
+            <span className="ticket-handling-dot" aria-hidden="true" />
+            {state.title}
+          </span>
+        )}
         {state.editor && (
           <p className="ticket-handling-editor" title={`Edit reservation expires ${formatTime(state.editor.expiresAt)}`}>
             <LockKeyhole size={12} aria-hidden="true" />
             {state.closed ? 'Viewing' : 'Editing'}: {state.editor.id === currentUserId ? 'You' : state.editor.name}
           </p>
         )}
-      </div>
+      </div>}
       <p className="ticket-handling-assignee">{state.assignee}</p>
       {timing && <p className="ticket-handling-timestamp">{timing}</p>}
       {state.nextActionAt !== null && (
